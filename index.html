@@ -1,16 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Hello World!</title>
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        connect-src http://localhost:10000;
+    ">
+    <!--<meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self :10000'">-->
+    <title>Memo Desktop Title!</title>
+    <link rel="stylesheet" href="res/style.css"/>
 </head>
 <body>
 <h1>Memo Desktop!</h1>
-We are using Node.js <span id="node-version"></span>,
-Chromium <span id="chrome-version"></span>,
-and Electron <span id="electron-version"></span>.
+<p>
+    We are using Node.js <span id="node-version"></span>,
+    Chromium <span id="chrome-version"></span>,
+    and Electron <span id="electron-version"></span>.
+</p>
+<form id="form-server">
+    <label for="form-server-server">Server</label>
+    <input id="form-server-server" type="text" name="server" value="http://localhost:10000"/>
+    <input type="submit" value="Connect"/>
+</form>
+<pre class="server-response" id="server-response">Loading...</pre>
+<script src="res/script.js"></script>
 </body>
 </html>
