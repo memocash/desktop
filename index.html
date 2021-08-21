@@ -5,25 +5,31 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
-        connect-src http://localhost:10000;
+        script-src 'self' 'unsafe-inline' https://unpkg.com;
+        connect-src 'self' http://localhost:10000;
     ">
     <!--<meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self :10000'">-->
     <title>Memo Desktop Title!</title>
     <link rel="stylesheet" href="res/style.css"/>
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+    <!--<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>-->
 </head>
 <body>
-<h1>Memo Desktop!</h1>
-<p>
-    We are using Node.js <span id="node-version"></span>,
-    Chromium <span id="chrome-version"></span>,
-    and Electron <span id="electron-version"></span>.
-</p>
+<div id="home"></div>
+<script src="res/js/home.js"></script>
 <form id="form-server">
     <label for="form-server-server">Server</label>
     <input id="form-server-server" type="text" name="server" value="http://localhost:10000"/>
     <input type="submit" value="Connect"/>
 </form>
 <pre class="server-response" id="server-response">Loading...</pre>
+<div>
+    <div id="like_button_container"></div>
+</div>
+<script src="res/js/like_button.js"></script>
 <script src="res/script.js"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
         fetch(url)
             .then(res => res.text())
             .then(res => {
-                $response.innerHTML = res
+                $response.innerHTML = "Connection successful!"
             })
             .catch(err => {
                 alert("error connecting to server:\n" + err)
