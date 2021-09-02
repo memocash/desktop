@@ -2,7 +2,7 @@
   "name": "desktop",
   "version": "1.0.0",
   "description": "Memo Desktop Application",
-  "main": "main.js",
+  "main": "main/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "babel": "babel res/jsx -d res/js",
