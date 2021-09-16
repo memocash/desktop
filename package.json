@@ -1,27 +1,25 @@
 {
   "name": "desktop",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "Memo Desktop Application",
   "main": "main/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "babel": "babel res/jsx -d res/js",
-    "start": "electron ."
+    "start": "electron .",
+    "build": "next build renderer && next export renderer",
+    "pack-app": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Jason Chavannes",
+  "license": "MIT",
   "devDependencies": {
     "electron": "^13.1.9",
-    "electron-is-dev": "^2.0.0"
+    "electron-builder": "^22.10.5",
+    "next": "^11.1.2",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
   },
   "dependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-react": "^6.24.1",
-    "babel-preset-react-app": "^3.1.2"
-  },
-  "babel": {
-    "presets": [
-      "react"
-    ]
+    "electron-next": "^3.1.5",
+    "electron-is-dev": "^2.0.0"
   }
 }

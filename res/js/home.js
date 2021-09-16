@@ -1,33 +1,28 @@
-'use strict';
+import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 
-class Home extends React.Component {
-    constructor(props) {
-        super(props);
-    }
-
-    render() {
-        return React.createElement(
-            'div',
+Home = () => {
+    const [node, chrome, electron] = useState(0);
+    return React.createElement(
+        'div',
+        null,
+        React.createElement(
+            'h1',
             null,
-            React.createElement(
-                'h1',
-                null,
-                'Memo Desktop!'
-            ),
-            React.createElement(
-                'p',
-                null,
-                'We are using Node.js ',
-                window.Versions.node,
-                ', Chromium ',
-                window.Versions.chrome,
-                ', and Electron ',
-                window.Versions.electron,
-                '.'
-            )
-        );
-    }
-}
+            'Memo Desktop!'
+        ),
+        React.createElement(
+            'p',
+            null,
+            'We are using Node.js ',
+            node,
+            ', Chromium ',
+            chrome,
+            ', and Electron ',
+            electron,
+            '.'
+        )
+    );
+};
 
-const domContainer = document.querySelector('#home');
-ReactDOM.render(React.createElement(Home), domContainer);
+ReactDOM.render(React.createElement(Home, null), document.querySelector('#home'));
