@@ -1,11 +1,5 @@
 const {ipcRenderer, contextBridge} = require('electron')
 
-let Versions = {}
-for (const dependency of ['chrome', 'node', 'electron']) {
-    Versions[dependency] = process.versions[dependency]
-}
-contextBridge.exposeInMainWorld("Versions", Versions);
-
 contextBridge.exposeInMainWorld('electron', {
     message: {
         send: (payload) => ipcRenderer.send('message', payload),
