@@ -1,8 +1,8 @@
-const { app, BrowserWindow } = require('electron')
+const {app, BrowserWindow} = require('electron')
 const path = require('path')
 const isDev = require('electron-is-dev')
 
-function createWindow () {
+app.whenReady().then(() => {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
@@ -14,10 +14,6 @@ function createWindow () {
     win.loadFile('index.html')
 
     if (isDev) {
-        win.webContents.openDevTools({ mode: 'detach' });
+        win.webContents.openDevTools({mode: 'detach'});
     }
-}
-
-app.whenReady().then(() => {
-    createWindow()
 })
