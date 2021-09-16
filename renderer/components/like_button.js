@@ -3,7 +3,11 @@ import React, {useState} from 'react';
 const LikeButton = () => {
     const [liked, setLiked] = useState(false);
     if (liked) {
-        return 'You liked this.';
+        return (
+            <p>
+                You liked this.
+            </p>
+        );
     }
     return (
         <button onClick={() => setLiked(true)}>

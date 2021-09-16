@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import LikeButton from "../components/like_button";
+import ConnectForm from "../components/connect_form";
 
 const Home = () => {
     const [node, chrome, electron] = useState(0);
@@ -12,6 +13,7 @@ const Home = () => {
                 Chromium {chrome},
                 and Electron {electron}.
             </p>
+            <ConnectForm/>
             <LikeButton/>
         </div>
     );
