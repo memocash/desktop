@@ -1,5 +1,6 @@
 import React from 'react'
 import Head from 'next/head'
+import "../public/style.css"
 
 function App({Component, pageProps}) {
     const CSP = "" +
