@@ -16,6 +16,7 @@ const ConnectForm = () => {
             })
             .catch(err => {
                 setError(err.toString())
+                setConnected(false)
             })
     }
     const InputChange = (e) => {
