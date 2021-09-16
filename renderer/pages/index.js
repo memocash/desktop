@@ -7,7 +7,7 @@ const Home = () => {
             <h1>Memo Desktop!</h1>
             <ConnectForm/>
         </div>
-    );
+    )
 }
 
 export default Home

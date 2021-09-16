@@ -3,13 +3,11 @@ import Head from 'next/head'
 import "../public/style.css"
 
 function App({Component, pageProps}) {
-    const CSP = "" +
-        "connect-src 'self' http://localhost:10000;"
     return (
         <>
             <Head>
                 <title>Memo Desktop</title>
-                <meta httpEquiv="Content-Security-Policy" content={CSP}/>
+                <meta httpEquiv="Content-Security-Policy" content="connect-src 'self' http://localhost:10000;"/>
             </Head>
             <Component {...pageProps} />
         </>

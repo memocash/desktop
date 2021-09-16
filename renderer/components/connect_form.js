@@ -1,10 +1,10 @@
 import React, {useState} from 'react';
 
 const ConnectForm = () => {
-    const [connected, setConnected] = useState(false);
-    const [response, setResponse] = useState("");
-    const [error, setError] = useState("");
-    const [url, setUrl] = useState("http://localhost:10000");
+    const [connected, setConnected] = useState(false)
+    const [response, setResponse] = useState("")
+    const [error, setError] = useState("")
+    const [url, setUrl] = useState("http://localhost:10000")
     const FormSubmit = (e) => {
         e.preventDefault();
         fetch(url, {mode: "no-cors"})
