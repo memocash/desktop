@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 
-const ConnectForm = () => {
-    const [connected, setConnected] = useState(false)
+const ConnectForm = ({setConnected}) => {
     const [response, setResponse] = useState("")
     const [error, setError] = useState("")
     const [url, setUrl] = useState("http://localhost:10000")
@@ -19,9 +18,7 @@ const ConnectForm = () => {
                 setConnected(false)
             })
     }
-    const InputChange = (e) => {
-        setUrl(e.target.value)
-    }
+    const InputChange = (e) => setUrl(e.target.value)
     return (
         <form onSubmit={FormSubmit}>
             <label>
@@ -29,11 +26,10 @@ const ConnectForm = () => {
                 <input type="text" value={url} onChange={InputChange}/>
             </label>
             <input type="submit" value="Connect"/>
-            <p>Connected: {connected ? "Yes" : "No"}</p>
             {response ? <p>Response: {response}</p> : ""}
             {error ? <p>Error: {error}</p> : ""}
         </form>
-    );
+    )
 }
 
 export default ConnectForm
