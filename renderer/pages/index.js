@@ -8,6 +8,7 @@ const Home = () => {
             <ul>
                 <li><a href="/connect">Connect to Server</a></li>
                 <li><a href="/login">Login</a></li>
+                <li><a href="/file">File</a></li>
             </ul>
         </div>
     )
