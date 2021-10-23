@@ -10,6 +10,10 @@ const File = () => {
         })
     }, [])
 
+    const buttonOnClick = (e) => {
+        window.electron.openDialog()
+    }
+
     return (
         <div>
             <div>
@@ -18,6 +22,9 @@ const File = () => {
                 <div>
                     {contents}
                 </div>
+                <p>
+                    <button onClick={buttonOnClick}>Open File</button>
+                </p>
             </div>
         </div>
     )
