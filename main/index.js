@@ -1,4 +1,4 @@
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow, ipcMain, dialog} = require('electron')
 const path = require('path')
 //const isDev = require('electron-is-dev')
 const prepareNext = require('electron-next')
@@ -17,4 +17,16 @@ app.whenReady().then(async () => {
     /*if (isDev) {
         win.webContents.openDevTools({mode: 'detach'});
     }*/
+
+    // open app where on screen where cursor is
+    // const { screen } = require("electron")
+    // const { getCursorScreenPoint, getDisplayNearestPoint } = screen
+    // const currentScreen = getDisplayNearestPoint(getCursorScreenPoint())
+    // win.setBounds(currentScreen.workArea)
+
+    console.log(win.webContents)
+    ipcMain.on("open-dialog", async () => {
+        const { filePaths } = await dialog.showOpenDialog(win)
+        win.webContents.send('channel', filePaths[0])
+    })
 })

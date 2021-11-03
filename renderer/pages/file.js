@@ -4,14 +4,32 @@ const File = () => {
 
     const [contents, setContents] = useState("")
 
-    useEffect(() => {
-        window.electron.getFile().then((con) => {
-            setContents(con)
-        })
+    useEffect(async () => {
+        try {
+            const returnValue = await window.electron.getFile()
+            setContents(returnValue)
+        } catch (error) {
+            console.log("error reading file, ", error)
+        }
     }, [])
 
-    const buttonOnClick = (e) => {
+    const handleClickOpen = () => {
         window.electron.openDialog()
+    }
+
+    window.electron.on("channel2", (e, result) => {
+        
+    })
+
+    const handleClickCreate = async () => {
+        try {
+            await window.electron.createFile()
+            const wallet = await window.electron.getFile()
+            setContents(wallet)
+            console.log("file created")
+        } catch (error) {
+            console.log("error creating file, ", error)
+        }
     }
 
     return (
@@ -23,7 +41,10 @@ const File = () => {
                     {contents}
                 </div>
                 <p>
-                    <button onClick={buttonOnClick}>Open File</button>
+                    <button onClick={handleClickOpen}>Open File</button>
+                </p>
+                <p>
+                    <button onClick={handleClickCreate}>Create File</button>
                 </p>
             </div>
         </div>

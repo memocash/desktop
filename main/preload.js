@@ -1,5 +1,6 @@
-const {ipcRenderer, contextBridge, dialog} = require('electron')
-const fs = require("fs")
+const {ipcRenderer, contextBridge} = require('electron')
+const myElectron = require('electron')
+const fs = require("fs/promises")
 const homedir = require('os').homedir()
 
 contextBridge.exposeInMainWorld('electron', {
@@ -8,18 +9,20 @@ contextBridge.exposeInMainWorld('electron', {
         on: (handler) => ipcRenderer.on('message', handler),
         off: (handler) => ipcRenderer.off('message', handler),
     },
-    getFile: () => {
-        return new Promise((res, rej) => {
-            fs.readFile(homedir + "/.bash_profile", "utf8", (err, data) => {
-                if (err) {
-                    rej(err)
-                    return
-                }
-                res(data)
-            })
-        })
+    getFile: async () => {
+        return await fs.readFile(homedir + "/.memo/wallets/myWallet.json", { encoding: "utf8"})
     },
     openDialog: () => {
-        dialog.showOpenDialog(window)
+        console.log(fs)
+        // dialog.showOpenDialog(window)
+        ipcRenderer.send("open-dialog")
     },
+    createFile: async () => {
+        await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
+        fs.writeFile(homedir + "/.memo/wallets/" + "myWallet.json", JSON.stringify({ time: new Date() }))
+    },
+})
+
+myElectron.ipcRenderer.on("channel", (e, result) => {
+    console.log(result)
 })
