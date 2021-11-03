@@ -27,6 +27,6 @@ app.whenReady().then(async () => {
     console.log(win.webContents)
     ipcMain.on("open-dialog", async () => {
         const { filePaths } = await dialog.showOpenDialog(win)
-        win.webContents.send('channel', filePaths[0])
+        win.webContents.send("listenFile", filePaths[0])
     })
 })

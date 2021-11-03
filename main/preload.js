@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('electron', {
         on: (handler) => ipcRenderer.on('message', handler),
         off: (handler) => ipcRenderer.off('message', handler),
     },
+    listenFile: (handler) => {
+        ipcRenderer.on("listenFile", handler)
+    },
     getFile: async () => {
         return await fs.readFile(homedir + "/.memo/wallets/myWallet.json", { encoding: "utf8"})
     },

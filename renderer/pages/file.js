@@ -11,15 +11,14 @@ const File = () => {
         } catch (error) {
             console.log("error reading file, ", error)
         }
+        window.electron.listenFile((e, msg) => {
+            console.log(msg)
+        })
     }, [])
 
     const handleClickOpen = () => {
         window.electron.openDialog()
     }
-
-    window.electron.on("channel2", (e, result) => {
-        
-    })
 
     const handleClickCreate = async () => {
         try {
