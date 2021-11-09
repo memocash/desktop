@@ -12,20 +12,14 @@ contextBridge.exposeInMainWorld('electron', {
     listenFile: (handler) => {
         ipcRenderer.on("listenFile", handler)
     },
-    getFile: async () => {
-        return await fs.readFile(homedir + "/.memo/wallets/myWallet.json", { encoding: "utf8"})
+    getFile: async (walletName) => {
+        return await fs.readFile(homedir + "/.memo/wallets/" + walletName + ".json", { encoding: "utf8"})
     },
     openDialog: () => {
-        console.log(fs)
-        // dialog.showOpenDialog(window)
         ipcRenderer.send("open-dialog")
     },
-    createFile: async () => {
+    createFile: async (walletName) => {
         await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
-        fs.writeFile(homedir + "/.memo/wallets/" + "myWallet.json", JSON.stringify({ time: new Date() }))
+        fs.writeFile(homedir + "/.memo/wallets/" + walletName + ".json", JSON.stringify({ time: new Date() }))
     },
-})
-
-myElectron.ipcRenderer.on("channel", (e, result) => {
-    console.log(result)
 })

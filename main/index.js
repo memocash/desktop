@@ -1,4 +1,5 @@
 const {app, BrowserWindow, ipcMain, dialog} = require('electron')
+const homedir = require("os").homedir()
 const path = require('path')
 //const isDev = require('electron-is-dev')
 const prepareNext = require('electron-next')
@@ -19,14 +20,17 @@ app.whenReady().then(async () => {
     }*/
 
     // open app where on screen where cursor is
-    // const { screen } = require("electron")
-    // const { getCursorScreenPoint, getDisplayNearestPoint } = screen
-    // const currentScreen = getDisplayNearestPoint(getCursorScreenPoint())
-    // win.setBounds(currentScreen.workArea)
+    const { screen } = require("electron")
+    const { getCursorScreenPoint, getDisplayNearestPoint } = screen
+    const currentScreen = getDisplayNearestPoint(getCursorScreenPoint())
+    const currentScreenXValue = currentScreen.bounds.x
+    const boundsObject = { x: currentScreenXValue + 200, y: 200, width: 800, height: 600 }
+    win.setBounds(boundsObject)
 
-    console.log(win.webContents)
+    // console.log(win.webContents)
+
     ipcMain.on("open-dialog", async () => {
-        const { filePaths } = await dialog.showOpenDialog(win)
+        const { filePaths } = await dialog.showOpenDialog(win, { defaultPath: homedir + "/.memo/wallets" })
         win.webContents.send("listenFile", filePaths[0])
     })
 })
