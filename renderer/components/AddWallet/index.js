@@ -18,10 +18,10 @@ const AddWalletHome = ({
             <div>
                 <label>Wallet name:
                     <input ref={walletNameInput} onChange={onChange} type="text" />
-                    <button onClick={onClickImport}>Import</button>
+                    <button onClick={onClickImport}>Choose...</button>
                 </label>
                 <p>{fileStatus ? "Exists!" : "Doesn't exist!"}</p>
-                <button onClick={onCreateWallet}>Choose...</button>
+                <button onClick={onCreateWallet}>Next</button>
             </div>
         </div>
     )
