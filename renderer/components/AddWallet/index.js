@@ -2,22 +2,29 @@ import {useRef, useState} from "react"
 
 const AddWalletHome = ({
     onClickImport,
-    onCreateWallet
+    onCreateWallet,
+    walletNameInput,
 }) => {
     const [addWalletMethod, setAddWalletMethod] = useState() // check initial value
-
-    const walletNameInput = useRef()
+    const [fileStatus, setFileStatus] = useState(false)
 
     const handleChooseAddWallet = (e) => {
         setAddWalletMethod(e.target.value)
     };
 
+    const onChange = (e) => {
+        window.electron.checkFile(e.target.value).then((status) => {
+            setFileStatus(status)
+        })
+    }
+
     const walletOptions = {
         create: (
             <div>
                 <label>Wallet name:
-                    <input ref={walletNameInput} type="text" />
+                    <input ref={walletNameInput} onChange={onChange} type="text" />
                 </label>
+                <p>{fileStatus ? "Exists!" : "Doesn't exist!"}</p>
                 <button onClick={onCreateWallet}>Create</button>
             </div>
         ),

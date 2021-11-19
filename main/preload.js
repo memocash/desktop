@@ -22,5 +22,13 @@ contextBridge.exposeInMainWorld('electron', {
         await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
         fs.writeFile(homedir + "/.memo/wallets/" + walletName + ".json", JSON.stringify({ time: new Date() }))
     },
+    checkFile: async (walletName) => {
+        try {
+            await fs.access(homedir + "/.memo/wallets/"+walletName +".json")
+        } catch(err) {
+            return false
+        }
+        return true
+    },
     clearClipboard: () => clipboard.clear(),
 })
