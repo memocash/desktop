@@ -23,8 +23,11 @@ contextBridge.exposeInMainWorld('electron', {
         fs.writeFile(homedir + "/.memo/wallets/" + walletName + ".json", JSON.stringify({ time: new Date() }))
     },
     checkFile: async (walletName) => {
+        if (!walletName.startsWith("/")) {
+            walletName = homedir + "/.memo/wallets/"+walletName +".json"
+        }
         try {
-            await fs.access(homedir + "/.memo/wallets/"+walletName +".json")
+            await fs.access(walletName)
         } catch(err) {
             return false
         }
