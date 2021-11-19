@@ -1,9 +1,8 @@
-import {useRef, useState} from "react"
+import {useState} from "react"
 
 const AddWalletHome = ({
     onClickImport,
     onCreateWallet,
-    walletNameInput,
 }) => {
     const [fileStatus, setFileStatus] = useState(false)
 
@@ -17,7 +16,7 @@ const AddWalletHome = ({
         <div>
             <div>
                 <label>Wallet name:
-                    <input ref={walletNameInput} onChange={onChange} type="text" />
+                    <input onChange={onChange} type="text" />
                     <button onClick={onClickImport}>Choose...</button>
                 </label>
                 <p>{fileStatus ? "Exists!" : "Doesn't exist!"}</p>
