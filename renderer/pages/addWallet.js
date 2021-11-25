@@ -16,23 +16,29 @@ const AddWallet = () => {
         })
     }, [])
 
+    const handleAddWallet = ({ addWalletMethod, pathToWallet }) => {
+        if(addWalletMethod === "create") {
+            setPane("add seed")
+        }
+    }
+
     const generateSeedPhrase = () => {
         // generate seed
         setSeedPhrase("is this Seed Phrase working")
     }
 
-    const handleCreateWallet = async () => {
-        // const walletName = walletNameInput.current.value
-        // await window.electron.createFile(walletName)
-        // const fileContents = await window.electron.getFile(walletName)
-        // setCreatedWallet(fileContents)
-        generateSeedPhrase()
-        setPane("add seed")
-    };
+    // const handleCreateWallet = async () => {
+    //     // const walletName = walletNameInput.current.value
+    //     // await window.electron.createFile(walletName)
+    //     // const fileContents = await window.electron.getFile(walletName)
+    //     // setCreatedWallet(fileContents)
+    //     generateSeedPhrase()
+    //     setPane("add seed")
+    // };
 
-    const handleClickImport = () => {
-        window.electron.openDialog()
-    };
+    // const handleClickImport = () => {
+    //     window.electron.openDialog()
+    // };
 
     const handleStoredSeed = () => {
         window.electron.clearClipboard()
@@ -49,8 +55,7 @@ const AddWallet = () => {
             <h1>Add a Memo wallet</h1>
             {pane === "add wallet" &&
                 <AddWalletHome
-                    onClickImport={handleClickImport}
-                    onCreateWallet={handleCreateWallet}
+                    onAddWallet={handleAddWallet}
                 />
             }
             {pane === "add seed" &&
