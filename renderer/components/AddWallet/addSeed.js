@@ -1,14 +1,22 @@
-import {useState} from "react"
+import {useRef, useState} from "react"
 
 const AddSeed = ({
     onStoredSeed,
+    onUserProvidedSeed,
     seedOnBack,
     seedPhrase
 }) => {
     const [addSeedMethod, setAddSeedMethod] = useState() // check intial value
 
+    const userProvidedSeed = useRef()
+
     const handleChooseAddSeed = (e) => {
         setAddSeedMethod(e.target.value)
+    }
+
+    const handleEnteredSeed = () => {
+        const userSeed = userProvidedSeed.current.value
+        onUserProvidedSeed(userSeed)
     }
 
     const seedOptions = {
@@ -25,7 +33,10 @@ const AddSeed = ({
         import: (
             <div>
                 <div>Enter your 12-word seed phrase.</div>
-                <textarea></textarea>
+                <textarea ref={userProvidedSeed}></textarea>
+                <p>
+                    <button onClick={handleEnteredSeed}>Next</button>
+                </p>
             </div>
         )
     }

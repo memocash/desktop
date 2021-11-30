@@ -60,6 +60,11 @@ const AddWallet = () => {
         setPane("create password")
     }
 
+    const handleUserProvidedSeed = (seed) => {
+        setSeedPhrase(seed)
+        setPane("create password")
+    }
+
     const handlePasswordCreated = async (password) => {
         await window.electron.createFile(filePath, seedPhrase, password)
         setPane("wallet loaded")
@@ -77,6 +82,7 @@ const AddWallet = () => {
             {pane === "add seed" &&
             <AddSeed
                 onStoredSeed={handleStoredSeed}
+                onUserProvidedSeed={handleUserProvidedSeed}
                 seedOnBack={seedOnBack}
                 seedPhrase={seedPhrase}
             />
