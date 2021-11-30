@@ -5,21 +5,18 @@ import ConfirmSeed from "../components/AddWallet/confirmSeed"
 import CreatePassword from "../components/AddWallet/createPassword"
 
 const AddWallet = () => {
-    const [importedFilePath, setImportedFilePath] = useState()
+    const [filePath, setFilePath] = useState()
     const [createdWallet, setCreatedWallet] = useState()
     const [pane, setPane] = useState("add wallet")
     const [seedPhrase, setSeedPhrase] = useState("")
 
-    useEffect(() => {
-        window.electron.listenFile((e, filePath) => {
-            setImportedFilePath(filePath)
-        })
-    }, [])
-
-    const handleAddWallet = ({ addWalletMethod, pathToWallet }) => {
-        if(addWalletMethod === "create") {
+    const handleAddWallet = ({addWalletMethod, pathToWallet}) => {
+        setFilePath(pathToWallet)
+        if (addWalletMethod === "create") {
             generateSeedPhrase()
             setPane("add seed")
+        } else {
+            setPane("wallet loaded")
         }
     }
 
@@ -54,30 +51,45 @@ const AddWallet = () => {
         setPane("create password")
     }
 
+    const handlePasswordCreated = async (password) => {
+        await window.electron.createFile(filePath, seedPhrase, password)
+        setPane("wallet loaded")
+    }
+
     return (
         <div>
             <a href="/">Home</a>
             <h1>Add a Memo wallet</h1>
             {pane === "add wallet" &&
-                <AddWalletHome
-                    onAddWallet={handleAddWallet}
-                />
+            <AddWalletHome
+                onAddWallet={handleAddWallet}
+            />
             }
             {pane === "add seed" &&
-                <AddSeed
-                    onStoredSeed={handleStoredSeed}
-                    seedOnBack={seedOnBack}
-                    seedPhrase={seedPhrase}
-                />
+            <AddSeed
+                onStoredSeed={handleStoredSeed}
+                seedOnBack={seedOnBack}
+                seedPhrase={seedPhrase}
+            />
             }
             {pane === "confirm seed" &&
-                <ConfirmSeed
-                    onSeedPhraseConfirmed={handleSeedPhraseConfirmed}
-                    seedPhrase={seedPhrase}
-                />
+            <ConfirmSeed
+                onSeedPhraseConfirmed={handleSeedPhraseConfirmed}
+                seedPhrase={seedPhrase}
+            />
             }
             {pane === "create password" &&
-                <CreatePassword />
+            <CreatePassword
+                onPasswordCreated={handlePasswordCreated}
+            />
+            }
+            {pane === "wallet loaded" &&
+            <div>
+                Wallet date: TODO
+                <p>
+                    <button onClick={() => setPane("add wallet")}>Back</button>
+                </p>
+            </div>
             }
         </div>
     )

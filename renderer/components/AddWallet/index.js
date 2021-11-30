@@ -1,8 +1,6 @@
 import {useRef, useState} from "react"
 
-const AddWalletHome = ({
-    onAddWallet
-}) => {
+const AddWalletHome = ({onAddWallet}) => {
     const [addWalletOption, setAddWalletOption] = useState("")
     const walletInput = useRef()
 
@@ -10,7 +8,7 @@ const AddWalletHome = ({
         const fileContents = await window.electron.getWalletFile(walletFile)
         const data = JSON.parse(fileContents)
         const hasPassword = !!data.password
-        if(hasPassword) {
+        if (hasPassword) {
             setAddWalletOption("importWithPassword")
         } else {
             setAddWalletOption("importWithoutPassword")
@@ -18,12 +16,12 @@ const AddWalletHome = ({
     }
 
     const handleInputChange = async (e) => {
-        if(!e.target.value) {
+        if (!e.target.value) {
             setAddWalletOption("")
             return
         }
         const fileExists = await window.electron.checkFile(e.target.value)
-        if(!fileExists) {
+        if (!fileExists) {
             setAddWalletOption("create")
         } else {
             handleUserImportingFile(e.target.value)
@@ -40,10 +38,9 @@ const AddWalletHome = ({
     }
 
     const handleClickNext = () => {
-        const walletFile = window.electron.getPathForWallet(walletInput.current.value)
         onAddWallet({
             addWalletMethod: addWalletOption,
-            pathToWallet: walletFile
+            pathToWallet: walletInput.current.value,
         })
     }
 
@@ -57,7 +54,7 @@ const AddWalletHome = ({
             <div>
                 This file is encrypted. Enter password for this wallet.
                 <label>Password:
-                    <input type="password" />
+                    <input type="password"/>
                 </label>
             </div>
         ),
@@ -72,7 +69,7 @@ const AddWalletHome = ({
         <div>
             <div>
                 <label>Wallet:
-                    <input ref={walletInput} onChange={handleInputChange} type="text" />
+                    <input ref={walletInput} onChange={handleInputChange} type="text"/>
                     <button onClick={handleClickImport}>Choose...</button>
                 </label>
                 {walletOptions[addWalletOption]}

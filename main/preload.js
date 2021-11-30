@@ -4,7 +4,7 @@ const fs = require("fs/promises")
 const homedir = require('os').homedir()
 
 const getPathForWallet = wallet => {
-    if(!wallet.startsWith("/")) {
+    if (!wallet.startsWith("/")) {
         wallet = homedir + "/.memo/wallets/" + wallet + ".json"
     }
     return wallet
@@ -22,21 +22,31 @@ contextBridge.exposeInMainWorld('electron', {
     },
     getWalletFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
-        return await fs.readFile(wallet, { encoding: "utf8"})
+        return await fs.readFile(wallet, {encoding: "utf8"})
     },
     openDialog: () => {
         ipcRenderer.send("open-dialog")
     },
-    createFile: async (walletName) => {
-        await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
-        fs.writeFile(homedir + "/.memo/wallets/" + walletName + ".json", JSON.stringify({ time: new Date() }))
+    createFile: async (walletName, seedPhrase, password) => {
+        if (!walletName.startsWith("/")) {
+            await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
+        }
+        const wallet = getPathForWallet(walletName)
+        let obj = {
+            time: new Date(),
+            seed: seedPhrase,
+        }
+        if (password) {
+            obj.password = password
+        }
+        await fs.writeFile(wallet, JSON.stringify(obj))
     },
     checkFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
         try {
             await fs.access(wallet)
             return true
-        } catch(err) {
+        } catch (err) {
             return false
         }
     },
