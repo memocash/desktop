@@ -9,6 +9,15 @@ const AddWallet = () => {
     const [createdWallet, setCreatedWallet] = useState()
     const [pane, setPane] = useState("add wallet")
     const [seedPhrase, setSeedPhrase] = useState("")
+    const [wallet, setWallet] = useState({})
+
+    useEffect(async () => {
+        if(pane === "wallet loaded") {
+            const walletJson = await window.electron.getWalletFile(filePath)
+            setWallet(JSON.parse(walletJson))
+            console.log(walletJson)
+        }
+    }, [pane])
 
     const handleAddWallet = ({addWalletMethod, pathToWallet}) => {
         setFilePath(pathToWallet)
@@ -85,7 +94,7 @@ const AddWallet = () => {
             }
             {pane === "wallet loaded" &&
             <div>
-                Wallet date: TODO
+                Wallet date: {wallet.time}
                 <p>
                     <button onClick={() => setPane("add wallet")}>Back</button>
                 </p>
