@@ -2,7 +2,7 @@ import {useState} from "react"
 
 const AddSeed = ({
     onStoredSeed,
-     seedOnBack,
+    seedOnBack,
     seedPhrase
 }) => {
     const [addSeedMethod, setAddSeedMethod] = useState() // check intial value
@@ -14,10 +14,12 @@ const AddSeed = ({
     const seedOptions = {
         create: (
             <div>
-                <div>Here is the seed phrase for your new wallet.</div>
-                <div>{seedPhrase}</div>
-                <div>Store this seed securely. It will be used to recover your wallet.</div>
-                <button onClick={onStoredSeed}>Next</button>
+                <p>Here is the seed phrase for your new wallet:</p>
+                <pre>{seedPhrase}</pre>
+                <p>Store this seed securely. It will be used to recover your wallet.</p>
+                <p>
+                    <button onClick={onStoredSeed}>Next</button>
+                </p>
             </div>
         ),
         import: (
@@ -41,7 +43,9 @@ const AddSeed = ({
             </div>
             <div>
                 {seedOptions[addSeedMethod]}
-                <button onClick={seedOnBack}>Back</button>
+                <p>
+                    <button onClick={seedOnBack}>Back</button>
+                </p>
             </div>
         </div>
     )

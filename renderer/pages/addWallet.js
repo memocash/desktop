@@ -8,7 +8,7 @@ const AddWallet = () => {
     const [importedFilePath, setImportedFilePath] = useState()
     const [createdWallet, setCreatedWallet] = useState()
     const [pane, setPane] = useState("add wallet")
-    const [seedPhrase, setSeedPhrase] = useState()
+    const [seedPhrase, setSeedPhrase] = useState("")
 
     useEffect(() => {
         window.electron.listenFile((e, filePath) => {
@@ -18,13 +18,14 @@ const AddWallet = () => {
 
     const handleAddWallet = ({ addWalletMethod, pathToWallet }) => {
         if(addWalletMethod === "create") {
+            generateSeedPhrase()
             setPane("add seed")
         }
     }
 
     const generateSeedPhrase = () => {
         // generate seed
-        setSeedPhrase("is this Seed Phrase working")
+        setSeedPhrase("stuff weapon degree shallow grant sponsor sure police crumble exclude champion tank")
     }
 
     // const handleCreateWallet = async () => {
