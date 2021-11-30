@@ -3,7 +3,6 @@ import {useRef, useState} from "react"
 const AddWalletHome = ({
     onAddWallet
 }) => {
-    const [fileStatus, setFileStatus] = useState(false)
     const [addWalletOption, setAddWalletOption] = useState("")
     const walletInput = useRef()
 
@@ -77,7 +76,6 @@ const AddWalletHome = ({
                     <button onClick={handleClickImport}>Choose...</button>
                 </label>
                 {walletOptions[addWalletOption]}
-                {/*<p>{fileStatus ? "Exists!" : "Doesn't exist!"}</p>*/}
                 <div>
                     <button disabled={!addWalletOption} onClick={handleClickNext}>Next</button>
                 </div>

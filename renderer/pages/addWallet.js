@@ -45,6 +45,10 @@ const AddWallet = () => {
         setPane("confirm seed")
     }
 
+    const seedOnBack = () => {
+        setPane("add wallet")
+    }
+
     const handleSeedPhraseConfirmed = () => {
         setPane("create password")
     }
@@ -61,6 +65,7 @@ const AddWallet = () => {
             {pane === "add seed" &&
                 <AddSeed
                     onStoredSeed={handleStoredSeed}
+                    seedOnBack={seedOnBack}
                     seedPhrase={seedPhrase}
                 />
             }

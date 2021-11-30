@@ -2,6 +2,7 @@ import {useState} from "react"
 
 const AddSeed = ({
     onStoredSeed,
+     seedOnBack,
     seedPhrase
 }) => {
     const [addSeedMethod, setAddSeedMethod] = useState() // check intial value
@@ -40,6 +41,7 @@ const AddSeed = ({
             </div>
             <div>
                 {seedOptions[addSeedMethod]}
+                <button onClick={seedOnBack}>Back</button>
             </div>
         </div>
     )
