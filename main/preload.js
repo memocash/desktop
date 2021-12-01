@@ -2,6 +2,7 @@ const {ipcRenderer, clipboard, contextBridge} = require('electron')
 const crypto = require("crypto")
 const fs = require("fs/promises")
 const homedir = require('os').homedir()
+const CryptoJS = require("crypto-js")
 
 const getPathForWallet = wallet => {
     if (!wallet.startsWith("/")) {
@@ -39,6 +40,12 @@ contextBridge.exposeInMainWorld('electron', {
         if (password) {
             obj.password = password
             let contents = JSON.stringify(obj)
+
+            const cEncrypted = CryptoJS.AES.encrypt(contents, password).toString()
+            console.log("cEncrypted2: " + cEncrypted)
+            const cDecryptedBytes = CryptoJS.AES.decrypt(cEncrypted, password)
+            console.log("cDecrypted2: " + cDecryptedBytes.toString(CryptoJS.enc.Utf8))
+
             let salt = crypto.randomBytes(128)
             let derivedKey = crypto.pbkdf2Sync(password, salt, 10000, 32, "sha256")
             let iv = crypto.randomBytes(16)
@@ -56,8 +63,9 @@ contextBridge.exposeInMainWorld('electron', {
             decrypted = Buffer.from(decrypted, "utf8")
             console.log("decrypted: " + decrypted)
             // TODO: Save encrypted file and be able to read it
+        } else {
+            await fs.writeFile(wallet, JSON.stringify(obj))
         }
-        await fs.writeFile(wallet, JSON.stringify(obj))
     },
     checkFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
