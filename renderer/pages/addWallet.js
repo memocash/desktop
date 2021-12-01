@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from "react"
+import { generateMnemonic } from "bip39"
 import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
 import ConfirmSeed from "../components/AddWallet/confirmSeed"
@@ -30,8 +31,8 @@ const AddWallet = () => {
     }
 
     const generateSeedPhrase = () => {
-        // generate seed
-        setSeedPhrase("stuff weapon degree shallow grant sponsor sure police crumble exclude champion tank")
+        const mnemonic = generateMnemonic()
+        setSeedPhrase(mnemonic)
     }
 
     // const handleCreateWallet = async () => {
@@ -100,7 +101,8 @@ const AddWallet = () => {
             }
             {pane === "wallet loaded" &&
             <div>
-                Wallet date: {wallet.time}
+                <p>Wallet date: {wallet.time}</p>
+                <p>Wallet seed phrase: {wallet.seed}</p>
                 <p>
                     <button onClick={() => setPane("add wallet")}>Back</button>
                 </p>

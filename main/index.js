@@ -30,7 +30,9 @@ app.whenReady().then(async () => {
     // console.log(win.webContents)
 
     ipcMain.on("open-dialog", async () => {
-        const { filePaths } = await dialog.showOpenDialog(win, { defaultPath: homedir + "/.memo/wallets" })
-        win.webContents.send("listenFile", filePaths[0])
+        const { canceled, filePaths } = await dialog.showOpenDialog(win, { defaultPath: homedir + "/.memo/wallets" })
+        if(!canceled) {
+            win.webContents.send("listenFile", filePaths[0])
+        }
     })
 })

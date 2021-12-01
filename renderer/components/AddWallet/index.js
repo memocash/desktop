@@ -1,8 +1,12 @@
-import {useRef, useState} from "react"
+import {useEffect, useRef, useState} from "react"
 
 const AddWalletHome = ({onAddWallet}) => {
     const [addWalletOption, setAddWalletOption] = useState("")
     const walletInput = useRef()
+
+    useEffect(() => {
+
+    }, [])
 
     const handleUserImportingFile = async (walletFile) => {
         const fileContents = await window.electron.getWalletFile(walletFile)
