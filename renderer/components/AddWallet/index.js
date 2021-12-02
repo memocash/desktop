@@ -3,6 +3,7 @@ import {useEffect, useRef, useState} from "react"
 const AddWalletHome = ({onAddWallet}) => {
     const [addWalletOption, setAddWalletOption] = useState("")
     const walletInput = useRef()
+    const passwordInput = useRef()
 
     useEffect(() => {
 
@@ -10,9 +11,7 @@ const AddWalletHome = ({onAddWallet}) => {
 
     const handleUserImportingFile = async (walletFile) => {
         const fileContents = await window.electron.getWalletFile(walletFile)
-        const data = JSON.parse(fileContents)
-        const hasPassword = !!data.password
-        if (hasPassword) {
+        if (!fileContents.startsWith("{")) {
             setAddWalletOption("importWithPassword")
         } else {
             setAddWalletOption("importWithoutPassword")
@@ -42,10 +41,14 @@ const AddWalletHome = ({onAddWallet}) => {
     }
 
     const handleClickNext = () => {
-        onAddWallet({
+        let wallet = {
             addWalletMethod: addWalletOption,
             pathToWallet: walletInput.current.value,
-        })
+        }
+        if (addWalletOption === "importWithPassword") {
+            wallet.password = passwordInput.current.value;
+        }
+        onAddWallet(wallet)
     }
 
     const walletOptions = {
@@ -58,7 +61,7 @@ const AddWalletHome = ({onAddWallet}) => {
             <div>
                 This file is encrypted. Enter password for this wallet.
                 <label>Password:
-                    <input type="password"/>
+                    <input ref={passwordInput} type="password"/>
                 </label>
             </div>
         ),

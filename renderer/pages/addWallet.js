@@ -1,27 +1,33 @@
 import {useEffect, useRef, useState} from "react"
-import { generateMnemonic } from "bip39"
+import {generateMnemonic} from "bip39"
 import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
 import ConfirmSeed from "../components/AddWallet/confirmSeed"
 import CreatePassword from "../components/AddWallet/createPassword"
+import CryptoJS from "crypto-js";
 
 const AddWallet = () => {
     const [filePath, setFilePath] = useState()
+    const [password, setPassword] = useState("")
     const [createdWallet, setCreatedWallet] = useState()
     const [pane, setPane] = useState("add wallet")
     const [seedPhrase, setSeedPhrase] = useState("")
     const [wallet, setWallet] = useState({})
 
     useEffect(async () => {
-        if(pane === "wallet loaded") {
-            const walletJson = await window.electron.getWalletFile(filePath)
+        if (pane === "wallet loaded") {
+            let walletJson = await window.electron.getWalletFile(filePath)
+            if (password) {
+                const bytes = CryptoJS.AES.decrypt(walletJson, password)
+                walletJson = bytes.toString(CryptoJS.enc.Utf8);
+            }
             setWallet(JSON.parse(walletJson))
-            console.log(walletJson)
         }
     }, [pane])
 
-    const handleAddWallet = ({addWalletMethod, pathToWallet}) => {
+    const handleAddWallet = ({addWalletMethod, pathToWallet, password}) => {
         setFilePath(pathToWallet)
+        setPassword(password)
         if (addWalletMethod === "create") {
             generateSeedPhrase()
             setPane("add seed")
