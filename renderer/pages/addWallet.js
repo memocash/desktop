@@ -73,6 +73,7 @@ const AddWallet = () => {
     }
 
     const handlePasswordCreated = async (password) => {
+        setPassword(password)
         await window.electron.createFile(filePath, seedPhrase, password)
         setPane("wallet loaded")
     }
