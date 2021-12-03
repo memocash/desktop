@@ -5,8 +5,19 @@ const AddWalletHome = ({onAddWallet}) => {
     const walletInput = useRef()
     const passwordInput = useRef()
 
-    useEffect(() => {
-
+    useEffect(async () => {
+        const existingWallets = await electron.getExistingWalletFiles()
+        let suggestedName = "default_wallet"
+        if(existingWallets.includes(suggestedName)) {
+            for(let number = 1; true; number++) {
+                suggestedName = "wallet_" + number
+                if(!existingWallets.includes(suggestedName)) {
+                    break
+                }
+            }
+        }
+        walletInput.current.value = suggestedName
+        setAddWalletOption("create")
     }, [])
 
     const handleUserImportingFile = async (walletFile) => {

@@ -1,5 +1,6 @@
 const {ipcRenderer, clipboard, contextBridge} = require('electron')
 const fs = require("fs/promises")
+const path = require("path")
 const homedir = require('os').homedir()
 const CryptoJS = require("crypto-js")
 
@@ -19,6 +20,13 @@ contextBridge.exposeInMainWorld('electron', {
     getPathForWallet,
     listenFile: (handler) => {
         ipcRenderer.on("listenFile", handler)
+    },
+    getExistingWalletFiles: async () => {
+        const files = await fs.readdir(homedir + "/.memo/wallets")
+        const fileNames = files.map(file => {
+            return path.parse(file).name
+        })
+        return fileNames
     },
     getWalletFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
