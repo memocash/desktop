@@ -6,7 +6,7 @@ const CryptoJS = require("crypto-js")
 
 const getPathForWallet = wallet => {
     if (!wallet.startsWith("/")) {
-        wallet = homedir + "/.memo/wallets/" + wallet + ".json"
+        wallet = homedir + "/.memo/wallets/" + wallet
     }
     return wallet
 }
