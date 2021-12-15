@@ -1,6 +1,7 @@
 import {useRef, useState} from "react"
 
 const ConfirmSeed = ({
+    onBack,
     onSeedPhraseConfirmed,
     seedPhrase
 }) => {
@@ -26,6 +27,9 @@ const ConfirmSeed = ({
             {isWrongSeedPhrase &&
                 <div>That is the wrong seed phrase! Try again</div>
             }
+            <p>
+                <button onClick={onBack}>Back</button>
+            </p>
         </div>
     )
 }

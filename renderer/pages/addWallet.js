@@ -14,53 +14,61 @@ const AddWallet = () => {
     const [seedPhrase, setSeedPhrase] = useState("")
     const [wallet, setWallet] = useState({})
 
+    const decryptWallet = (encryptedWallet, inputPassword) => {
+        const bytes = CryptoJS.AES.decrypt(encryptedWallet, inputPassword)
+        const decryptedWallet = bytes.toString(CryptoJS.enc.Utf8)
+        return decryptedWallet
+    }
+
     useEffect(async () => {
         if (pane === "wallet loaded") {
             let walletJson = await window.electron.getWalletFile(filePath)
             if (password) {
-                const bytes = CryptoJS.AES.decrypt(walletJson, password)
-                walletJson = bytes.toString(CryptoJS.enc.Utf8);
+                try {
+                    walletJson = decryptWallet(walletJson, password)
+                } catch(err) {
+                    console.log(err)
+                }
             }
             setWallet(JSON.parse(walletJson))
         }
     }, [pane])
-
-    const handleAddWallet = ({addWalletMethod, pathToWallet, password}) => {
-        setFilePath(pathToWallet)
-        setPassword(password)
-        if (addWalletMethod === "create") {
-            generateSeedPhrase()
-            setPane("add seed")
-        } else {
-            setPane("wallet loaded")
-        }
-    }
 
     const generateSeedPhrase = () => {
         const mnemonic = generateMnemonic()
         setSeedPhrase(mnemonic)
     }
 
-    // const handleCreateWallet = async () => {
-    //     // const walletName = walletNameInput.current.value
-    //     // await window.electron.createFile(walletName)
-    //     // const fileContents = await window.electron.getFile(walletName)
-    //     // setCreatedWallet(fileContents)
-    //     generateSeedPhrase()
-    //     setPane("add seed")
-    // };
-
-    // const handleClickImport = () => {
-    //     window.electron.openDialog()
-    // };
+    const handleAddWallet = ({ addWalletMethod, pathToWallet, password }) => {
+        setFilePath(pathToWallet)
+        if (addWalletMethod === "create") {
+            generateSeedPhrase()
+            setPane("add seed")
+        } else {
+            if(password) {
+                setPassword(password)
+            }
+            setPane("wallet loaded")
+        }
+    }
 
     const handleStoredSeed = () => {
-        window.electron.clearClipboard()
+        // window.electron.clearClipboard()
         setPane("confirm seed")
     }
 
-    const seedOnBack = () => {
+    const onBackFromAddSeed = () => {
         setPane("add wallet")
+    }
+
+    const onBackFromConfirmSeed = () => {
+        generateSeedPhrase()
+        setPane("add seed")
+    }
+
+    const onBackFromCreatePassword = () => {
+        generateSeedPhrase()
+        setPane("add seed")
     }
 
     const handleSeedPhraseConfirmed = () => {
@@ -84,6 +92,7 @@ const AddWallet = () => {
             <h1>Add a Memo wallet</h1>
             {pane === "add wallet" &&
             <AddWalletHome
+                decryptWallet={decryptWallet}
                 onAddWallet={handleAddWallet}
             />
             }
@@ -91,18 +100,20 @@ const AddWallet = () => {
             <AddSeed
                 onStoredSeed={handleStoredSeed}
                 onUserProvidedSeed={handleUserProvidedSeed}
-                seedOnBack={seedOnBack}
+                onBack={onBackFromAddSeed}
                 seedPhrase={seedPhrase}
             />
             }
             {pane === "confirm seed" &&
             <ConfirmSeed
+                onBack={onBackFromConfirmSeed}
                 onSeedPhraseConfirmed={handleSeedPhraseConfirmed}
                 seedPhrase={seedPhrase}
             />
             }
             {pane === "create password" &&
             <CreatePassword
+                onBack={onBackFromCreatePassword}
                 onPasswordCreated={handlePasswordCreated}
             />
             }

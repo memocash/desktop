@@ -1,6 +1,9 @@
 import {useRef, useState} from "react"
 
-const CreatePassword = ({onPasswordCreated}) => {
+const CreatePassword = ({
+    onBack,
+    onPasswordCreated
+}) => {
     const [passwordsDontMatch, setPasswordsDontMatch] = useState(false)
     const password = useRef()
     const confirmPassword = useRef()
@@ -32,6 +35,9 @@ const CreatePassword = ({onPasswordCreated}) => {
             {passwordsDontMatch &&
             <div>Passwords do not match. Try again.</div>
             }
+            <p>
+                <button onClick={onBack}>Back</button>
+            </p>
         </div>
     )
 }

@@ -1,7 +1,12 @@
 import {useEffect, useRef, useState} from "react"
 
-const AddWalletHome = ({onAddWallet}) => {
+const AddWalletHome = ({
+    decryptWallet,
+    onAddWallet
+}) => {
     const [addWalletOption, setAddWalletOption] = useState("")
+    const [walletContents, setWalletContents] = useState("")
+    const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
     const walletInput = useRef()
     const passwordInput = useRef()
 
@@ -27,6 +32,7 @@ const AddWalletHome = ({onAddWallet}) => {
         } else {
             setAddWalletOption("importWithoutPassword")
         }
+        setWalletContents(fileContents)
     }
 
     const handleInputChange = async (e) => {
@@ -42,6 +48,12 @@ const AddWalletHome = ({onAddWallet}) => {
         }
     }
 
+    const handleEditPassword = () => {
+        if(hasEnteredWrongPassword) {
+            setHasEnteredWrongPassword(false)
+        }
+    }
+
     const handleClickImport = () => {
         window.electron.listenFile((e, filePath) => {
             walletInput.current.value = filePath
@@ -52,12 +64,23 @@ const AddWalletHome = ({onAddWallet}) => {
     }
 
     const handleClickNext = () => {
-        let wallet = {
-            addWalletMethod: addWalletOption,
-            pathToWallet: walletInput.current.value,
-        }
+        let password;
         if (addWalletOption === "importWithPassword") {
-            wallet.password = passwordInput.current.value;
+            try {
+                password = passwordInput.current.value
+                const decryptedWallet = decryptWallet(walletContents, password)
+                if(!decryptedWallet.startsWith("{")) {
+                    throw "wrong password"
+                }
+            } catch(err) {
+                setHasEnteredWrongPassword(true)
+                return
+            }
+        }
+        const wallet = {
+            addWalletMethod: addWalletOption,
+            password,
+            pathToWallet: walletInput.current.value,
         }
         onAddWallet(wallet)
     }
@@ -72,8 +95,13 @@ const AddWalletHome = ({onAddWallet}) => {
             <div>
                 This file is encrypted. Enter password for this wallet.
                 <label>Password:
-                    <input ref={passwordInput} type="password"/>
+                    <input ref={passwordInput} onChange={handleEditPassword} type="password"/>
                 </label>
+                {hasEnteredWrongPassword &&
+                    <div>
+                        Incorrect password. Please try again.
+                    </div>
+                }
             </div>
         ),
         importWithoutPassword: (
