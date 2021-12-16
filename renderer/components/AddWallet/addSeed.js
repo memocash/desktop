@@ -7,6 +7,7 @@ const AddSeed = ({
     seedPhrase
 }) => {
     const [addSeedMethod, setAddSeedMethod] = useState() // check intial value
+    const [hasEnteredInvalidSeedPhrase, setHasEnteredInvalidSeedPhrase] = useState(false)
 
     const userProvidedSeed = useRef()
 
@@ -16,7 +17,16 @@ const AddSeed = ({
 
     const handleEnteredSeed = () => {
         const userSeed = userProvidedSeed.current.value
-        onUserProvidedSeed(userSeed)
+        const isInvalidSeedPhrase = onUserProvidedSeed(userSeed)
+        if(isInvalidSeedPhrase) {
+            setHasEnteredInvalidSeedPhrase(true)
+        }
+    }
+
+    const handleEditImportedSeed = () => {
+        if(hasEnteredInvalidSeedPhrase) {
+            setHasEnteredInvalidSeedPhrase(false)
+        }
     }
 
     const seedOptions = {
@@ -33,7 +43,7 @@ const AddSeed = ({
         import: (
             <div>
                 <div>Enter your 12-word seed phrase.</div>
-                <textarea ref={userProvidedSeed}></textarea>
+                <textarea ref={userProvidedSeed} onChange={handleEditImportedSeed}></textarea>
                 <p>
                     <button onClick={handleEnteredSeed}>Next</button>
                 </p>
@@ -54,6 +64,9 @@ const AddSeed = ({
             </div>
             <div>
                 {seedOptions[addSeedMethod]}
+                {hasEnteredInvalidSeedPhrase &&
+                    <div>Please enter a valid seed phrase.</div>
+                }
                 <p>
                     <button onClick={onBack}>Back</button>
                 </p>

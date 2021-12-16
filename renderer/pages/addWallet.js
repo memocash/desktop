@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from "react"
-import {generateMnemonic} from "bip39"
+import { generateMnemonic, validateMnemonic } from "bip39"
 import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
 import ConfirmSeed from "../components/AddWallet/confirmSeed"
@@ -53,7 +53,7 @@ const AddWallet = () => {
     }
 
     const handleStoredSeed = () => {
-        // window.electron.clearClipboard()
+        window.electron.clearClipboard()
         setPane("confirm seed")
     }
 
@@ -76,8 +76,13 @@ const AddWallet = () => {
     }
 
     const handleUserProvidedSeed = (seed) => {
-        setSeedPhrase(seed)
-        setPane("create password")
+        const isValidSeed = validateMnemonic(seed)
+        if(isValidSeed) {
+            setSeedPhrase(seed)
+            setPane("create password")
+        } else {
+            return true
+        }
     }
 
     const handlePasswordCreated = async (password) => {
