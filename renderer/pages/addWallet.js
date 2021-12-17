@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from "react"
+import { useRouter } from "next/router"
 import { generateMnemonic, validateMnemonic } from "bip39"
 import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
@@ -7,6 +8,8 @@ import CreatePassword from "../components/AddWallet/createPassword"
 import CryptoJS from "crypto-js";
 
 const AddWallet = () => {
+    const router = useRouter()
+
     const [filePath, setFilePath] = useState()
     const [password, setPassword] = useState("")
     const [createdWallet, setCreatedWallet] = useState()
@@ -48,7 +51,8 @@ const AddWallet = () => {
             if(password) {
                 setPassword(password)
             }
-            setPane("wallet loaded")
+            // setPane("wallet loaded")
+            router.push("/wallet")
         }
     }
 
@@ -88,7 +92,8 @@ const AddWallet = () => {
     const handlePasswordCreated = async (password) => {
         setPassword(password)
         await window.electron.createFile(filePath, seedPhrase, password)
-        setPane("wallet loaded")
+        // setPane("wallet loaded")
+        router.push("/wallet")
     }
 
     return (

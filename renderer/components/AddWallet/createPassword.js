@@ -23,6 +23,7 @@ const CreatePassword = ({
     return (
         <div>
             <h2>Create a Password to encrypt your key</h2>
+            <p>If you wish to skip encryption, leave password fields blank.</p>
             <div>
                 <label>Password:
                     <input ref={password} type="password"/>
@@ -31,7 +32,7 @@ const CreatePassword = ({
                     <input ref={confirmPassword} type="password"/>
                 </label>
             </div>
-            <button onClick={handleVerifyPassword}>Next</button>
+            <button onClick={handleVerifyPassword}>Finish</button>
             {passwordsDontMatch &&
             <div>Passwords do not match. Try again.</div>
             }

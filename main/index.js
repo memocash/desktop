@@ -14,18 +14,19 @@ app.whenReady().then(async () => {
             preload: path.join(__dirname, 'preload.js')
         }
     })
-    await win.loadURL("http://localhost:8000")
-    /*if (isDev) {
-        win.webContents.openDevTools({mode: 'detach'});
-    }*/
 
-    // open app where on screen where cursor is
+    // open app on screen where cursor is
     const { screen } = require("electron")
     const { getCursorScreenPoint, getDisplayNearestPoint } = screen
     const currentScreen = getDisplayNearestPoint(getCursorScreenPoint())
     const currentScreenXValue = currentScreen.bounds.x
     const boundsObject = { x: currentScreenXValue + 200, y: 200, width: 800, height: 600 }
     win.setBounds(boundsObject)
+
+    await win.loadURL("http://localhost:8000")
+    /*if (isDev) {
+        win.webContents.openDevTools({mode: 'detach'});
+    }*/
 
     // console.log(win.webContents)
 
