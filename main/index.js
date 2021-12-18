@@ -4,6 +4,8 @@ const path = require('path')
 //const isDev = require('electron-is-dev')
 const prepareNext = require('electron-next')
 
+const wallets = [];
+
 app.whenReady().then(async () => {
     await prepareNext('./renderer')
     const win = new BrowserWindow({
@@ -35,5 +37,11 @@ app.whenReady().then(async () => {
         if(!canceled) {
             win.webContents.send("listenFile", filePaths[0])
         }
+    })
+
+    ipcMain.on("store-wallet", (event, walletInfo) => wallets.push(walletInfo))
+
+    ipcMain.on("get-wallet", () => {
+        win.webContents.send("added-wallet", wallets[0])
     })
 })

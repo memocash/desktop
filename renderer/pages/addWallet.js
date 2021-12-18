@@ -92,6 +92,12 @@ const AddWallet = () => {
     const handlePasswordCreated = async (password) => {
         setPassword(password)
         await window.electron.createFile(filePath, seedPhrase, password)
+        const walletInfo = {
+            filePath,
+            password,
+            seedPhrase
+        }
+        electron.storeWalletInMainProcess(walletInfo)
         // setPane("wallet loaded")
         router.push("/wallet")
     }

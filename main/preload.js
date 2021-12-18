@@ -60,4 +60,13 @@ contextBridge.exposeInMainWorld('electron', {
         }
     },
     clearClipboard: () => clipboard.clear(),
+    getWalletFromMainProcess: () => {
+        ipcRenderer.send("get-wallet")
+    },
+    listenAddedWallet: (handler) => {
+        ipcRenderer.on("added-wallet", handler)
+    },
+    storeWalletInMainProcess: (walletInfo) => {
+        ipcRenderer.send("store-wallet", walletInfo)
+    },
 })
