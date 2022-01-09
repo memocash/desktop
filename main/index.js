@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, dialog} = require('electron')
+const {app, BrowserWindow, Menu, ipcMain, dialog} = require('electron')
 const homedir = require("os").homedir()
 const path = require('path')
 //const isDev = require('electron-is-dev')
@@ -16,6 +16,41 @@ app.whenReady().then(async () => {
             preload: path.join(__dirname, 'preload.js')
         }
     })
+
+    const menu = Menu.buildFromTemplate([{
+        label: "File",
+        submenu: [
+            {label: "New/Restore"},
+            {type: "separator"},
+            {role: "quit"},
+        ]
+    }, {
+        label: "Wallet",
+        submenu: [
+            {label: "Information"},
+            {type: "separator"},
+            {label: "Seed"},
+        ]
+    }, {
+        label: "View",
+        submenu: [
+            {label: "Show Addresses"},
+            {label: "Show Coins"},
+        ]
+    }, {
+        label: "Tools",
+        submenu: [
+            {label: "Preferences"},
+            {label: "Network"},
+        ]
+    }, {
+        label: "Help",
+        submenu: [
+            {label: "About"},
+        ]
+    }])
+
+    Menu.setApplicationMenu(null)
 
     // open app on screen where cursor is
     const { screen } = require("electron")
@@ -43,5 +78,9 @@ app.whenReady().then(async () => {
 
     ipcMain.on("get-wallet", () => {
         win.webContents.send("added-wallet", wallets[0])
+    })
+
+    ipcMain.on("wallet-loaded", () => {
+        Menu.setApplicationMenu(menu)
     })
 })

@@ -9,6 +9,7 @@ const WalletLoaded = () => {
             setSeedPhrase(walletInfo.seedPhrase)
         })
         electron.getWalletFromMainProcess()
+        electron.walletLoaded()
     }, [])
 
     return (

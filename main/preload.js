@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('electron', {
     listenFile: (handler) => {
         ipcRenderer.on("listenFile", handler)
     },
+    walletLoaded: () => {
+        ipcRenderer.send("wallet-loaded")
+    },
     getExistingWalletFiles: async () => {
         const files = await fs.readdir(homedir + "/.memo/wallets")
         const fileNames = files.map(file => {
