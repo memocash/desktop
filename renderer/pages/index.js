@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react"
-import { useRouter } from "next/router"
-import { generateMnemonic, validateMnemonic } from "bip39"
+import {useRouter} from "next/router"
+import {generateMnemonic, validateMnemonic} from "bip39"
 import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
 import ConfirmSeed from "../components/AddWallet/confirmSeed"
@@ -28,7 +28,7 @@ const Index = () => {
             if (password) {
                 try {
                     walletJson = decryptWallet(walletJson, password)
-                } catch(err) {
+                } catch (err) {
                     console.log(err)
                 }
             }
@@ -41,18 +41,28 @@ const Index = () => {
         setSeedPhrase(mnemonic)
     }
 
-    const handleAddWallet = ({ addWalletMethod, pathToWallet, password }) => {
+    const createWalletStep1 = (pathToWallet) => {
         setFilePath(pathToWallet)
-        if (addWalletMethod === "create") {
-            generateSeedPhrase()
-            setPane("add seed")
-        } else {
-            if(password) {
-                setPassword(password)
-            }
-            // setPane("wallet loaded")
-            router.push("/wallet")
+        generateSeedPhrase()
+        setPane("add seed")
+    }
+
+    const loadWallet = async (pathToWallet, password) => {
+        setFilePath(pathToWallet)
+        if (password) {
+            setPassword(password)
         }
+        let walletJson = await window.electron.getWalletFile(pathToWallet)
+        if (password) {
+            try {
+                walletJson = decryptWallet(walletJson, password)
+                await window.electron.setWallet(JSON.parse(walletJson))
+            } catch (err) {
+                console.log(err)
+                return
+            }
+        }
+        router.push("/wallet")
     }
 
     const handleStoredSeed = () => {
@@ -80,7 +90,7 @@ const Index = () => {
 
     const handleUserProvidedSeed = (seed) => {
         const isValidSeed = validateMnemonic(seed)
-        if(isValidSeed) {
+        if (isValidSeed) {
             setSeedPhrase(seed)
             setPane("create password")
         } else {
@@ -91,13 +101,6 @@ const Index = () => {
     const handlePasswordCreated = async (password) => {
         setPassword(password)
         await window.electron.createFile(filePath, seedPhrase, password)
-        const walletInfo = {
-            filePath,
-            password,
-            seedPhrase
-        }
-        electron.storeWalletInMainProcess(walletInfo)
-        // setPane("wallet loaded")
         router.push("/wallet")
     }
 
@@ -107,7 +110,8 @@ const Index = () => {
             {pane === "add wallet" &&
             <AddWalletHome
                 decryptWallet={decryptWallet}
-                onAddWallet={handleAddWallet}
+                onCreateWallet={createWalletStep1}
+                onLoadWallet={loadWallet}
             />
             }
             {pane === "add seed" &&

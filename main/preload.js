@@ -12,11 +12,6 @@ const getPathForWallet = wallet => {
 }
 
 contextBridge.exposeInMainWorld('electron', {
-    message: {
-        send: (payload) => ipcRenderer.send('message', payload),
-        on: (handler) => ipcRenderer.on('message', handler),
-        off: (handler) => ipcRenderer.off('message', handler),
-    },
     getPathForWallet,
     listenFile: (handler) => {
         ipcRenderer.on("listenFile", handler)
@@ -26,10 +21,9 @@ contextBridge.exposeInMainWorld('electron', {
     },
     getExistingWalletFiles: async () => {
         const files = await fs.readdir(homedir + "/.memo/wallets")
-        const fileNames = files.map(file => {
+        return files.map(file => {
             return path.parse(file).name
         })
-        return fileNames
     },
     getWalletFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
@@ -38,20 +32,23 @@ contextBridge.exposeInMainWorld('electron', {
     openDialog: () => {
         ipcRenderer.send("open-dialog")
     },
+    setWallet: async (wallet) => {
+        ipcRenderer.send("store-wallet", wallet)
+    },
     createFile: async (walletName, seedPhrase, password) => {
         if (!walletName.startsWith("/")) {
             await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
         }
-        const wallet = getPathForWallet(walletName)
-        let obj = {
+        const filename = getPathForWallet(walletName)
+        let contents = JSON.stringify({
             time: new Date(),
             seed: seedPhrase,
-        }
-        let contents = JSON.stringify(obj)
+        })
         if (password) {
             contents = CryptoJS.AES.encrypt(contents, password).toString()
         }
-        await fs.writeFile(wallet, contents)
+        await fs.writeFile(filename, contents)
+        await ipcRenderer.send("store-wallet", JSON.parse(wallet))
     },
     checkFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
@@ -63,13 +60,10 @@ contextBridge.exposeInMainWorld('electron', {
         }
     },
     clearClipboard: () => clipboard.clear(),
-    getWalletFromMainProcess: () => {
-        ipcRenderer.send("get-wallet")
+    getWallet: async () => {
+        return await ipcRenderer.invoke("get-wallet")
     },
     listenAddedWallet: (handler) => {
         ipcRenderer.on("added-wallet", handler)
-    },
-    storeWalletInMainProcess: (walletInfo) => {
-        ipcRenderer.send("store-wallet", walletInfo)
     },
 })

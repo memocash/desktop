@@ -1,9 +1,6 @@
 import {useEffect, useRef, useState} from "react"
 
-const AddWalletHome = ({
-    decryptWallet,
-    onAddWallet
-}) => {
+const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
     const [addWalletOption, setAddWalletOption] = useState("")
     const [walletContents, setWalletContents] = useState("")
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
@@ -13,10 +10,10 @@ const AddWalletHome = ({
     useEffect(async () => {
         const existingWallets = await electron.getExistingWalletFiles()
         let suggestedName = "default_wallet"
-        if(existingWallets.includes(suggestedName)) {
-            for(let number = 1; true; number++) {
+        if (existingWallets.includes(suggestedName)) {
+            for (let number = 1; true; number++) {
                 suggestedName = "wallet_" + number
-                if(!existingWallets.includes(suggestedName)) {
+                if (!existingWallets.includes(suggestedName)) {
                     break
                 }
             }
@@ -49,7 +46,7 @@ const AddWalletHome = ({
     }
 
     const handleEditPassword = () => {
-        if(hasEnteredWrongPassword) {
+        if (hasEnteredWrongPassword) {
             setHasEnteredWrongPassword(false)
         }
     }
@@ -64,25 +61,25 @@ const AddWalletHome = ({
     }
 
     const handleClickNext = () => {
-        let password;
-        if (addWalletOption === "importWithPassword") {
-            try {
-                password = passwordInput.current.value
-                const decryptedWallet = decryptWallet(walletContents, password)
-                if(!decryptedWallet.startsWith("{")) {
-                    throw "wrong password"
+        const pathname = walletInput.current.value
+        if (addWalletOption === "create") {
+            onCreateWallet(pathname)
+        } else {
+            let password;
+            if (addWalletOption === "importWithPassword") {
+                try {
+                    password = passwordInput.current.value
+                    const decryptedWallet = decryptWallet(walletContents, password)
+                    if (!decryptedWallet.startsWith("{")) {
+                        throw "wrong password"
+                    }
+                } catch (err) {
+                    setHasEnteredWrongPassword(true)
+                    return
                 }
-            } catch(err) {
-                setHasEnteredWrongPassword(true)
-                return
             }
+            onLoadWallet(pathname, password)
         }
-        const wallet = {
-            addWalletMethod: addWalletOption,
-            password,
-            pathToWallet: walletInput.current.value,
-        }
-        onAddWallet(wallet)
     }
 
     const walletOptions = {
@@ -98,9 +95,9 @@ const AddWalletHome = ({
                     <input ref={passwordInput} onChange={handleEditPassword} type="password"/>
                 </label>
                 {hasEnteredWrongPassword &&
-                    <div>
-                        Incorrect password. Please try again.
-                    </div>
+                <div>
+                    Incorrect password. Please try again.
+                </div>
                 }
             </div>
         ),

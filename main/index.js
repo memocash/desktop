@@ -4,9 +4,8 @@ const path = require('path')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
 
-const wallets = [];
-
-let windows = {}
+const wallets = {}
+const windows = {}
 
 const CreateWindow = async () => {
     const win = new BrowserWindow({
@@ -18,7 +17,7 @@ const CreateWindow = async () => {
         }
     })
     menu.NoMenu(win)
-    windows[win.id] = win
+    windows[win.webContents.id] = win
     // open app on screen where cursor is
     const {screen} = require("electron")
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
@@ -26,7 +25,6 @@ const CreateWindow = async () => {
     const currentScreenXValue = currentScreen.bounds.x
     const boundsObject = {x: currentScreenXValue + 200, y: 200, width: 800, height: 600}
     win.setBounds(boundsObject)
-
     await win.loadURL("http://localhost:8000")
 }
 
@@ -42,17 +40,15 @@ app.whenReady().then(async () => {
         }
     })
 
-    ipcMain.on("store-wallet", (event, walletInfo) => {
-        wallets.push(walletInfo)
+    ipcMain.on("store-wallet", (e, wallet) => {
+        wallets[e.sender.id] = wallet
     })
 
-    ipcMain.on("get-wallet", (e) => {
-        windows[e.sender.id].webContents.send("added-wallet", wallets[0])
+    ipcMain.handle("get-wallet", async (e) => {
+        return wallets[e.sender.id]
     })
 
     ipcMain.on("wallet-loaded", (e) => {
-        menu.ShowMenu(windows[e.sender.id], () => {
-            CreateWindow()
-        })
+        menu.ShowMenu(windows[e.sender.id], CreateWindow)
     })
 })

@@ -1,14 +1,13 @@
-import { useEffect, useState } from "react"
+import {useEffect, useState} from "react"
 
 const WalletLoaded = () => {
     const [walletDate, setWalletDate] = useState("")
     const [seedPhrase, setSeedPhrase] = useState("")
 
-    useEffect(() => {
-        electron.listenAddedWallet((event, walletInfo) => {
-            setSeedPhrase(walletInfo.seedPhrase)
-        })
-        electron.getWalletFromMainProcess()
+    useEffect(async () => {
+        const wallet = await electron.getWallet()
+        setWalletDate(wallet.time)
+        setSeedPhrase(wallet.seed)
         electron.walletLoaded()
     }, [])
 
