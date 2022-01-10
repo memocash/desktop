@@ -77,4 +77,7 @@ contextBridge.exposeInMainWorld('electron', {
     listenAddedWallet: (handler) => {
         ipcRenderer.on("added-wallet", handler)
     },
+    graphQL: async (query, variables) => {
+        return await ipcRenderer.invoke("graphql", {query, variables})
+    },
 })

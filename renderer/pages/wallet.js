@@ -13,7 +13,6 @@ const WalletLoaded = () => {
         setWalletDate(wallet.time)
         setSeedPhrase(wallet.seed)
         determineAndSetAddress(wallet.seed)
-        loadBalances()
         window.electron.walletLoaded()
     }, [])
 
@@ -26,34 +25,24 @@ const WalletLoaded = () => {
             addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
         }
         setAddresses(addressList)
+        loadBalance(addressList[0])
     }
 
-    const loadBalances = () => {
-        const server = "127.0.0.1:19021"
+    const loadBalance = (address) => {
         const query = `
     query ($address: String!) {
         address(address: $address) {
-            hash
             address
             balance
         }
     }
     `
-        fetch(server + "/graphql", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                query: query,
-                variables: {
-                    address: addresses[0],
-                },
-            })
-        }).then(res => res.json()).then(data => {
+        window.electron.graphQL(query, {
+            address: address,
+        }).then(data => {
             console.log(data)
-        }).catch(error => {
-            console.log(error)
+        }).catch(err => {
+            console.log(err)
         })
     }
 
@@ -61,11 +50,11 @@ const WalletLoaded = () => {
         <div>
             <p>Wallet date: {walletDate}</p>
             <p>Wallet seed phrase: {seedPhrase}</p>
-            <p>Addresses: <pre>{addresses.map((address, i) => {
+            <div>Addresses: <pre>{addresses.map((address, i) => {
                 return (
-                    <p>{i}: {address}</p>
+                    <p key={i}>{i}: {address}</p>
                 )
-            })}</pre></p>
+            })}</pre></div>
         </div>
     )
 }

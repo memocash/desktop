@@ -56,5 +56,23 @@ app.whenReady().then(async () => {
         menu.ShowMenu(windows[e.sender.id], CreateWindow)
     })
 
+    ipcMain.handle("graphql", async (e, {query, variables}) => {
+        const server = "http://127.0.0.1:26770"
+        return new Promise((resolve, reject) => {
+            fetch(server + "/graphql", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    query: query,
+                    variables: variables,
+                })
+            }).then(res => res.json()).then(data => {
+                resolve(data)
+            }).catch(error => {
+                reject(error)
+            })
+        })
+    })
+
     await CreateWindow()
 })
