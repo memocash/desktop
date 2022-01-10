@@ -6,7 +6,7 @@ function App({Component, pageProps}) {
     return (
         <>
             <Head>
-                <title>Memo Desktop</title>
+                <title>Memo</title>
                 <meta httpEquiv="Content-Security-Policy" content="connect-src 'self' http://localhost:10000;"/>
             </Head>
             <Component {...pageProps} />

@@ -12,11 +12,11 @@ const WalletLoaded = () => {
         const wallet = await window.electron.getWallet()
         setWalletDate(wallet.time)
         setSeedPhrase(wallet.seed)
-        determineAndSetAddress(wallet.seed)
+        await determineAndSetAddress(wallet.seed)
         window.electron.walletLoaded()
     }, [])
 
-    const determineAndSetAddress = (mnemonic) => {
+    const determineAndSetAddress = async (mnemonic) => {
         const seed = mnemonicToSeedSync(mnemonic);
         const node = fromSeed(seed);
         let addressList = []
@@ -24,26 +24,23 @@ const WalletLoaded = () => {
             const child = node.derivePath("m/44'/0'/0'/0/" + i);
             addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
         }
-        setAddresses(addressList)
-        loadBalance(addressList[0])
+        const balances = await loadBalance(addressList)
+        setAddresses(balances)
     }
 
-    const loadBalance = (address) => {
+    const loadBalance = async (addresses) => {
         const query = `
-    query ($address: String!) {
-        address(address: $address) {
+    query ($addresses: [String!]) {
+        addresses(addresses: $addresses) {
             address
             balance
         }
     }
     `
-        window.electron.graphQL(query, {
-            address: address,
-        }).then(data => {
-            console.log(data)
-        }).catch(err => {
-            console.log(err)
+        let data = await window.electron.graphQL(query, {
+            addresses: addresses,
         })
+        return data.data.addresses
     }
 
     return (
@@ -52,7 +49,7 @@ const WalletLoaded = () => {
             <p>Wallet seed phrase: {seedPhrase}</p>
             <div>Addresses: <pre>{addresses.map((address, i) => {
                 return (
-                    <p key={i}>{i}: {address}</p>
+                    <p key={i}>{i}: {address.address} - {address.balance}</p>
                 )
             })}</pre></div>
         </div>
