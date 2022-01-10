@@ -17,7 +17,6 @@ const WalletLoaded = () => {
     }, [])
 
     const determineAndSetAddress = (mnemonic) => {
-        console.log("mnemonic: '" + mnemonic + "'")
         const seed = mnemonicToSeedSync(mnemonic);
         const node = fromSeed(seed);
         let addressList = []

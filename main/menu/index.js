@@ -45,7 +45,10 @@ const ShowMenu = (win, newWindow) => {
             },
         ]
     }])
-
+    if (process.platform === "darwin") {
+        Menu.setApplicationMenu(menu)
+        return
+    }
     win.setMenu(menu)
     win.setMenuBarVisibility(true)
 }
@@ -63,6 +66,10 @@ const NoMenu = (win) => {
             },
         ],
     }])
+    if (process.platform === "darwin") {
+        Menu.setApplicationMenu(menu)
+        return
+    }
     win.setMenu(menu)
     win.setMenuBarVisibility(false)
 }

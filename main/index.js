@@ -16,7 +16,9 @@ const CreateWindow = async () => {
             preload: path.join(__dirname, 'preload.js')
         }
     })
-    menu.NoMenu(win)
+    if (process.platform !== "darwin" || win.webContents.id === 1) {
+        menu.NoMenu(win)
+    }
     windows[win.webContents.id] = win
     // open app on screen where cursor is
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
