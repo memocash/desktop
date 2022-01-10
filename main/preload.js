@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('electron', {
         const wallet = getPathForWallet(walletName)
         return await fs.readFile(wallet, {encoding: "utf8"})
     },
+    getWindowId: async () => {
+        return await ipcRenderer.invoke("get-window-id")
+    },
     openDialog: () => {
         ipcRenderer.send("open-dialog")
     },

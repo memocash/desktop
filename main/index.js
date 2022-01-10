@@ -29,7 +29,6 @@ const CreateWindow = async () => {
 
 app.whenReady().then(async () => {
     await prepareNext('./renderer')
-    await CreateWindow()
 
     ipcMain.on("open-dialog", async (e) => {
         const win = windows[e.sender.id]
@@ -47,7 +46,13 @@ app.whenReady().then(async () => {
         return wallets[e.sender.id]
     })
 
+    ipcMain.handle("get-window-id", async (e) => {
+        return e.sender.id
+    })
+
     ipcMain.on("wallet-loaded", (e) => {
         menu.ShowMenu(windows[e.sender.id], CreateWindow)
     })
+
+    await CreateWindow()
 })

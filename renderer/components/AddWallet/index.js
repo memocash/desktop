@@ -11,7 +11,7 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
     useEffect(async () => {
         const existingWallets = await electron.getExistingWalletFiles()
         let suggestedName = "default_wallet"
-        if (existingWallets.includes(suggestedName)) {
+        if (await electron.getWindowId() !== 1 && existingWallets.includes(suggestedName)) {
             for (let number = 1; true; number++) {
                 suggestedName = "wallet_" + number
                 if (!existingWallets.includes(suggestedName)) {
@@ -20,6 +20,7 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
             }
         }
         walletInput.current.value = suggestedName
+        fileChangeHandler()
     }, [])
 
     const loadFile = async (walletFile) => {
@@ -33,12 +34,12 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
         setWalletContents(fileContents)
     }
 
-    const fileChangeHandler = async (e) => {
-        const fileExists = await window.electron.checkFile(e.target.value)
+    const fileChangeHandler = async () => {
+        const fileExists = await window.electron.checkFile(walletInput.current.value)
         if (!fileExists) {
             setFileExists(false)
         } else {
-            await loadFile(e.target.value)
+            await loadFile(walletInput.current.value)
         }
     }
 
