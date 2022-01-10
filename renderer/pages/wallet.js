@@ -6,7 +6,7 @@ import {ECPair} from '@bitcoin-dot-com/bitcoincashjs2-lib';
 const WalletLoaded = () => {
     const [walletDate, setWalletDate] = useState("")
     const [seedPhrase, setSeedPhrase] = useState("")
-    const [address, setAddress] = useState("")
+    const [addresses, setAddresses] = useState([])
 
     useEffect(async () => {
         const wallet = await electron.getWallet()
@@ -20,8 +20,12 @@ const WalletLoaded = () => {
         console.log("mnemonic: '" + mnemonic + "'")
         const seed = mnemonicToSeedSync(mnemonic);
         const node = fromSeed(seed);
-        const child = node.derivePath("m/44'/0'/0'/0/0");
-        setAddress(ECPair.fromWIF(child.toWIF()).getAddress());
+        let addressList = []
+        for (let i = 0; i < 20; i++) {
+            const child = node.derivePath("m/44'/0'/0'/0/" + i);
+            addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
+        }
+        setAddresses(addressList)
     }
 
     return (
@@ -29,7 +33,11 @@ const WalletLoaded = () => {
             <h1>This is the new wallet loaded page.</h1>
             <p>Wallet date: {walletDate}</p>
             <p>Wallet seed phrase: {seedPhrase}</p>
-            <p>Address: {address}</p>
+            <p>Addresses: <pre>{addresses.map((address, i) => {
+                return (
+                    <p>{i}: {address}</p>
+                )
+            })}</pre></p>
         </div>
     )
 }
