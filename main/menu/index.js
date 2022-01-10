@@ -36,14 +36,35 @@ const ShowMenu = (win, newWindow) => {
         label: "Help",
         submenu: [
             {label: "About"},
+            {
+                label: "Developer Tools",
+                accelerator: "CommandOrControl+Shift+I",
+                click: () => {
+                    win.webContents.openDevTools()
+                },
+            },
         ]
     }])
 
     win.setMenu(menu)
+    win.setMenuBarVisibility(true)
 }
 
 const NoMenu = (win) => {
-    win.setMenu(null)
+    const menu = Menu.buildFromTemplate([{
+        label: "Help",
+        submenu: [
+            {
+                label: "Developer Tools",
+                accelerator: "CommandOrControl+Shift+I",
+                click: () => {
+                    win.webContents.openDevTools()
+                },
+            },
+        ],
+    }])
+    win.setMenu(menu)
+    win.setMenuBarVisibility(false)
 }
 
 module.exports = {
