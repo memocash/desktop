@@ -90,9 +90,9 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
     const WalletOptionsImportWithPassword = () => {
         return (
             <div>
-                <p>This file is encrypted. Enter password for this wallet.</p>
+                <p>This file is encrypted. Enter your password or choose another file.</p>
                 <p><label>Password:
-                    <input ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
+                    <input autoFocus ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
                            onKeyDown={passwordKeyDown} type="password"/>
                 </label></p>
                 {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}

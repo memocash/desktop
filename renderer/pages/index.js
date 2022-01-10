@@ -90,7 +90,7 @@ const Index = () => {
 
     return (
         <div>
-            <h1>Add a Memo wallet</h1>
+            <h1>Memo wallet</h1>
             {pane === Panes.Step1ChooseFile &&
             <AddWalletHome
                 decryptWallet={decryptWallet}

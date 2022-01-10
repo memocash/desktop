@@ -9,11 +9,12 @@ const WalletLoaded = () => {
     const [addresses, setAddresses] = useState([])
 
     useEffect(async () => {
-        const wallet = await electron.getWallet()
+        const wallet = await window.electron.getWallet()
         setWalletDate(wallet.time)
         setSeedPhrase(wallet.seed)
         determineAndSetAddress(wallet.seed)
-        electron.walletLoaded()
+        loadBalances()
+        window.electron.walletLoaded()
     }, [])
 
     const determineAndSetAddress = (mnemonic) => {
@@ -27,9 +28,37 @@ const WalletLoaded = () => {
         setAddresses(addressList)
     }
 
+    const loadBalances = () => {
+        const server = "127.0.0.1:19021"
+        const query = `
+    query ($address: String!) {
+        address(address: $address) {
+            hash
+            address
+            balance
+        }
+    }
+    `
+        fetch(server + "/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                query: query,
+                variables: {
+                    address: addresses[0],
+                },
+            })
+        }).then(res => res.json()).then(data => {
+            console.log(data)
+        }).catch(error => {
+            console.log(error)
+        })
+    }
+
     return (
         <div>
-            <h1>This is the new wallet loaded page.</h1>
             <p>Wallet date: {walletDate}</p>
             <p>Wallet seed phrase: {seedPhrase}</p>
             <p>Addresses: <pre>{addresses.map((address, i) => {
