@@ -20,7 +20,7 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
             }
         }
         walletInput.current.value = suggestedName
-        fileChangeHandler()
+        await fileChangeHandler()
     }, [])
 
     const loadFile = async (walletFile) => {
@@ -74,6 +74,12 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
         onLoadWallet(pathname, password)
     }
 
+    const passwordKeyDown = (e) => {
+        if (e.keyCode === 13) {
+            handleClickNext()
+        }
+    }
+
     const WalletOptionsCreate = () => {
         return (
             <div>
@@ -87,7 +93,7 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
                 This file is encrypted. Enter password for this wallet.
                 <label>Password:
                     <input ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
-                           type="password"/>
+                           onKeyDown={passwordKeyDown} type="password"/>
                 </label>
                 {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
             </div>
