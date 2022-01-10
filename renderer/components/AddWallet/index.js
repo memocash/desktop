@@ -90,11 +90,11 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
     const WalletOptionsImportWithPassword = () => {
         return (
             <div>
-                This file is encrypted. Enter password for this wallet.
-                <label>Password:
+                <p>This file is encrypted. Enter password for this wallet.</p>
+                <p><label>Password:
                     <input ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
                            onKeyDown={passwordKeyDown} type="password"/>
-                </label>
+                </label></p>
                 {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
             </div>
         )
@@ -111,10 +111,12 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
     return (
         <div>
             <div>
-                <label>Wallet:
-                    <input ref={walletInput} onChange={fileChangeHandler} type="text"/>
-                    <button onClick={handleClickImport}>Choose...</button>
-                </label>
+                <p>
+                    <label>Wallet:
+                        <input ref={walletInput} onChange={fileChangeHandler} type="text"/>
+                        <button onClick={handleClickImport}>Choose...</button>
+                    </label>
+                </p>
                 {fileExists ?
                     passwordProtectedFile ? <WalletOptionsImportWithPassword/> : <WalletOptionsImportWithoutPassword/>
                     : <WalletOptionsCreate/>}
