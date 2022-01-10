@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react"
+import {useState} from "react"
 import {useRouter} from "next/router"
 import {generateMnemonic, validateMnemonic} from "bip39"
 import AddWalletHome from "../components/AddWallet"
@@ -7,34 +7,23 @@ import ConfirmSeed from "../components/AddWallet/confirmSeed"
 import CreatePassword from "../components/AddWallet/createPassword"
 import CryptoJS from "crypto-js";
 
+const Panes = {
+    Step1ChooseFile: "step1-choose-file",
+    Step2SetSeed: "step2-set-seed",
+    Step3ConfirmSeed: "step3-confirm-seed",
+    Step4SetPassword: "step4-set-password",
+}
+
 const Index = () => {
     const router = useRouter()
-
     const [filePath, setFilePath] = useState()
-    const [password, setPassword] = useState("")
-    const [pane, setPane] = useState("add wallet")
+    const [pane, setPane] = useState(Panes.Step1ChooseFile)
     const [seedPhrase, setSeedPhrase] = useState("")
-    const [wallet, setWallet] = useState({})
 
     const decryptWallet = (encryptedWallet, inputPassword) => {
         const bytes = CryptoJS.AES.decrypt(encryptedWallet, inputPassword)
-        const decryptedWallet = bytes.toString(CryptoJS.enc.Utf8)
-        return decryptedWallet
+        return bytes.toString(CryptoJS.enc.Utf8)
     }
-
-    useEffect(async () => {
-        if (pane === "wallet loaded") {
-            let walletJson = await window.electron.getWalletFile(filePath)
-            if (password) {
-                try {
-                    walletJson = decryptWallet(walletJson, password)
-                } catch (err) {
-                    console.log(err)
-                }
-            }
-            setWallet(JSON.parse(walletJson))
-        }
-    }, [pane])
 
     const generateSeedPhrase = () => {
         const mnemonic = generateMnemonic()
@@ -44,14 +33,10 @@ const Index = () => {
     const createWalletStep1 = (pathToWallet) => {
         setFilePath(pathToWallet)
         generateSeedPhrase()
-        setPane("add seed")
+        setPane(Panes.Step2SetSeed)
     }
 
     const loadWallet = async (pathToWallet, password) => {
-        setFilePath(pathToWallet)
-        if (password) {
-            setPassword(password)
-        }
         let walletJson = await window.electron.getWalletFile(pathToWallet)
         if (password) {
             try {
@@ -67,39 +52,38 @@ const Index = () => {
 
     const handleStoredSeed = () => {
         window.electron.clearClipboard()
-        setPane("confirm seed")
+        setPane(Panes.Step3ConfirmSeed)
     }
 
     const onBackFromAddSeed = () => {
-        setPane("add wallet")
+        setPane(Panes.Step1ChooseFile)
     }
 
     const onBackFromConfirmSeed = () => {
         generateSeedPhrase()
-        setPane("add seed")
+        setPane(Panes.Step2SetSeed)
     }
 
     const onBackFromCreatePassword = () => {
         generateSeedPhrase()
-        setPane("add seed")
+        setPane(Panes.Step2SetSeed)
     }
 
     const handleSeedPhraseConfirmed = () => {
-        setPane("create password")
+        setPane(Panes.Step4SetPassword)
     }
 
     const handleUserProvidedSeed = (seed) => {
         const isValidSeed = validateMnemonic(seed)
         if (isValidSeed) {
             setSeedPhrase(seed)
-            setPane("create password")
+            setPane(Panes.Step4SetPassword)
         } else {
             return true
         }
     }
 
     const handlePasswordCreated = async (password) => {
-        setPassword(password)
         await window.electron.createFile(filePath, seedPhrase, password)
         router.push("/wallet")
     }
@@ -107,14 +91,14 @@ const Index = () => {
     return (
         <div>
             <h1>Add a Memo wallet</h1>
-            {pane === "add wallet" &&
+            {pane === Panes.Step1ChooseFile &&
             <AddWalletHome
                 decryptWallet={decryptWallet}
                 onCreateWallet={createWalletStep1}
                 onLoadWallet={loadWallet}
             />
             }
-            {pane === "add seed" &&
+            {pane === Panes.Step2SetSeed &&
             <AddSeed
                 onStoredSeed={handleStoredSeed}
                 onUserProvidedSeed={handleUserProvidedSeed}
@@ -122,27 +106,18 @@ const Index = () => {
                 seedPhrase={seedPhrase}
             />
             }
-            {pane === "confirm seed" &&
+            {pane === Panes.Step3ConfirmSeed &&
             <ConfirmSeed
                 onBack={onBackFromConfirmSeed}
                 onSeedPhraseConfirmed={handleSeedPhraseConfirmed}
                 seedPhrase={seedPhrase}
             />
             }
-            {pane === "create password" &&
+            {pane === Panes.Step4SetPassword &&
             <CreatePassword
                 onBack={onBackFromCreatePassword}
                 onPasswordCreated={handlePasswordCreated}
             />
-            }
-            {pane === "wallet loaded" &&
-            <div>
-                <p>Wallet date: {wallet.time}</p>
-                <p>Wallet seed phrase: {wallet.seed}</p>
-                <p>
-                    <button onClick={() => setPane("add wallet")}>Back</button>
-                </p>
-            </div>
             }
         </div>
     )

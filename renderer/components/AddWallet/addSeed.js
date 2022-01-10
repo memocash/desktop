@@ -1,36 +1,35 @@
 import {useRef, useState} from "react"
 
-const AddSeed = ({
-    onStoredSeed,
-    onUserProvidedSeed,
-    onBack,
-    seedPhrase
-}) => {
-    const [addSeedMethod, setAddSeedMethod] = useState() // check intial value
-    const [hasEnteredInvalidSeedPhrase, setHasEnteredInvalidSeedPhrase] = useState(false)
+const SeedTypeOptions = {
+    Create: "create",
+    Import: "import",
+}
 
+const AddSeed = ({onStoredSeed, onUserProvidedSeed, onBack, seedPhrase}) => {
+    const [hasOwnSeed, setHasOwnSeed] = useState(false)
+    const [hasEnteredInvalidSeedPhrase, setHasEnteredInvalidSeedPhrase] = useState(false)
     const userProvidedSeed = useRef()
 
     const handleChooseAddSeed = (e) => {
-        setAddSeedMethod(e.target.value)
+        setHasOwnSeed(e.target.value !== SeedTypeOptions.Create)
     }
 
     const handleEnteredSeed = () => {
         const userSeed = userProvidedSeed.current.value
         const isInvalidSeedPhrase = onUserProvidedSeed(userSeed)
-        if(isInvalidSeedPhrase) {
+        if (isInvalidSeedPhrase) {
             setHasEnteredInvalidSeedPhrase(true)
         }
     }
 
     const handleEditImportedSeed = () => {
-        if(hasEnteredInvalidSeedPhrase) {
+        if (hasEnteredInvalidSeedPhrase) {
             setHasEnteredInvalidSeedPhrase(false)
         }
     }
 
-    const seedOptions = {
-        create: (
+    const SeedOptionsCreate = () => {
+        return (
             <div>
                 <p>Here is the seed phrase for your new wallet:</p>
                 <pre>{seedPhrase}</pre>
@@ -39,11 +38,14 @@ const AddSeed = ({
                     <button onClick={onStoredSeed}>Next</button>
                 </p>
             </div>
-        ),
-        import: (
+        )
+    }
+
+    const SeedOptionsImport = () => {
+        return (
             <div>
                 <div>Enter your 12-word seed phrase.</div>
-                <textarea ref={userProvidedSeed} onChange={handleEditImportedSeed}></textarea>
+                <textarea ref={userProvidedSeed} onChange={handleEditImportedSeed}/>
                 <p>
                     <button onClick={handleEnteredSeed}>Next</button>
                 </p>
@@ -56,16 +58,16 @@ const AddSeed = ({
             <h2>How would you like to add the seed for this wallet?</h2>
             <div onChange={handleChooseAddSeed}>
                 <label>Create a new seed
-                    <input type="radio" name="seed" value="create" />
+                    <input type="radio" name="seed" value={SeedTypeOptions.Create}/>
                 </label>
                 <label>I already have a seed
-                    <input type="radio" name="seed" value="import" />
+                    <input type="radio" name="seed" value={SeedTypeOptions.Import}/>
                 </label>
             </div>
             <div>
-                {seedOptions[addSeedMethod]}
+                {hasOwnSeed ? <SeedOptionsImport/> : <SeedOptionsCreate/>}
                 {hasEnteredInvalidSeedPhrase &&
-                    <div>Please enter a valid seed phrase.</div>
+                <div>Please enter a valid seed phrase.</div>
                 }
                 <p>
                     <button onClick={onBack}>Back</button>

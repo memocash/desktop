@@ -1,7 +1,8 @@
 import {useEffect, useRef, useState} from "react"
 
 const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
-    const [addWalletOption, setAddWalletOption] = useState("")
+    const [fileExists, setFileExists] = useState(false)
+    const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
     const [walletContents, setWalletContents] = useState("")
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
     const walletInput = useRef()
@@ -19,89 +20,81 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
             }
         }
         walletInput.current.value = suggestedName
-        setAddWalletOption("create")
     }, [])
 
-    const handleUserImportingFile = async (walletFile) => {
+    const loadFile = async (walletFile) => {
         const fileContents = await window.electron.getWalletFile(walletFile)
+        setFileExists(true)
         if (!fileContents.startsWith("{")) {
-            setAddWalletOption("importWithPassword")
+            setPasswordProtectedFile(true)
         } else {
-            setAddWalletOption("importWithoutPassword")
+            setPasswordProtectedFile(false)
         }
         setWalletContents(fileContents)
     }
 
-    const handleInputChange = async (e) => {
-        if (!e.target.value) {
-            setAddWalletOption("")
-            return
-        }
+    const fileChangeHandler = async (e) => {
         const fileExists = await window.electron.checkFile(e.target.value)
         if (!fileExists) {
-            setAddWalletOption("create")
+            setFileExists(false)
         } else {
-            handleUserImportingFile(e.target.value)
+            await loadFile(e.target.value)
         }
     }
 
-    const handleEditPassword = () => {
-        if (hasEnteredWrongPassword) {
-            setHasEnteredWrongPassword(false)
-        }
-    }
-
-    const handleClickImport = () => {
+    const handleClickImport = async () => {
         window.electron.listenFile((e, filePath) => {
-            walletInput.current.value = filePath
-            // async function. Make sure openDialog does not happen before this is done. May be fine as this is only a function definition
-            handleUserImportingFile(filePath)
+            walletInput.current.value = electron.getWalletShort(filePath)
+            loadFile(filePath)
         })
         window.electron.openDialog()
     }
 
     const handleClickNext = () => {
         const pathname = walletInput.current.value
-        if (addWalletOption === "create") {
+        if (!fileExists) {
             onCreateWallet(pathname)
-        } else {
-            let password;
-            if (addWalletOption === "importWithPassword") {
-                try {
-                    password = passwordInput.current.value
-                    const decryptedWallet = decryptWallet(walletContents, password)
-                    if (!decryptedWallet.startsWith("{")) {
-                        throw "wrong password"
-                    }
-                } catch (err) {
-                    setHasEnteredWrongPassword(true)
-                    return
-                }
-            }
-            onLoadWallet(pathname, password)
+            return
         }
+        if (!passwordProtectedFile) {
+            onLoadWallet(pathname)
+            return
+        }
+        let password;
+        try {
+            password = passwordInput.current.value
+            const decryptedWallet = decryptWallet(walletContents, password)
+            if (!decryptedWallet.startsWith("{")) {
+                setHasEnteredWrongPassword(true)
+            }
+        } catch (err) {
+            setHasEnteredWrongPassword(true)
+        }
+        onLoadWallet(pathname, password)
     }
 
-    const walletOptions = {
-        create: (
+    const WalletOptionsCreate = () => {
+        return (
             <div>
                 This file does not exist. To create a new wallet by this name, press "Next".
             </div>
-        ),
-        importWithPassword: (
+        )
+    }
+    const WalletOptionsImportWithPassword = () => {
+        return (
             <div>
                 This file is encrypted. Enter password for this wallet.
                 <label>Password:
-                    <input ref={passwordInput} onChange={handleEditPassword} type="password"/>
+                    <input ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
+                           type="password"/>
                 </label>
-                {hasEnteredWrongPassword &&
-                <div>
-                    Incorrect password. Please try again.
-                </div>
-                }
+                {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
             </div>
-        ),
-        importWithoutPassword: (
+        )
+    }
+
+    const WalletOptionsImportWithoutPassword = () => {
+        return (
             <div>
                 Wallet found. To import it, press "Next".
             </div>
@@ -112,12 +105,14 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
         <div>
             <div>
                 <label>Wallet:
-                    <input ref={walletInput} onChange={handleInputChange} type="text"/>
+                    <input ref={walletInput} onChange={fileChangeHandler} type="text"/>
                     <button onClick={handleClickImport}>Choose...</button>
                 </label>
-                {walletOptions[addWalletOption]}
+                {fileExists ?
+                    passwordProtectedFile ? <WalletOptionsImportWithPassword/> : <WalletOptionsImportWithoutPassword/>
+                    : <WalletOptionsCreate/>}
                 <div>
-                    <button disabled={!addWalletOption} onClick={handleClickNext}>Next</button>
+                    <button onClick={handleClickNext}>Next</button>
                 </div>
             </div>
         </div>

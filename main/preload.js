@@ -11,8 +11,16 @@ const getPathForWallet = wallet => {
     return wallet
 }
 
+const getWalletShort = wallet => {
+    if (wallet.startsWith(homedir + "/.memo/wallets/")) {
+        return wallet.slice((homedir + "/.memo/wallets/").length)
+    }
+    return wallet
+}
+
 contextBridge.exposeInMainWorld('electron', {
     getPathForWallet,
+    getWalletShort,
     listenFile: (handler) => {
         ipcRenderer.on("listenFile", handler)
     },

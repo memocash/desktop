@@ -1,9 +1,6 @@
 import {useRef, useState} from "react"
 
-const CreatePassword = ({
-    onBack,
-    onPasswordCreated
-}) => {
+const CreatePassword = ({onBack, onPasswordCreated}) => {
     const [passwordsDontMatch, setPasswordsDontMatch] = useState(false)
     const password = useRef()
     const confirmPassword = useRef()
@@ -12,8 +9,6 @@ const CreatePassword = ({
         const firstPassword = password.current.value
         const secondPassword = confirmPassword.current.value
         if (firstPassword === secondPassword) {
-            // success. Proceed and store password for encryption
-            console.log("wallet created")
             onPasswordCreated(firstPassword)
         } else {
             setPasswordsDontMatch(true)

@@ -19,7 +19,6 @@ const CreateWindow = async () => {
     menu.NoMenu(win)
     windows[win.webContents.id] = win
     // open app on screen where cursor is
-    const {screen} = require("electron")
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
     const currentScreen = getDisplayNearestPoint(getCursorScreenPoint())
     const currentScreenXValue = currentScreen.bounds.x
