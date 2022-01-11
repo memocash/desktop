@@ -13,16 +13,23 @@ const WalletLoaded = () => {
         const wallet = await window.electron.getWallet()
         setWalletDate(wallet.time)
         setSeedPhrase(wallet.seed)
-        await determineAndSetAddress(wallet.seed)
+        await determineAndSetAddress(wallet)
     }, [])
 
-    const determineAndSetAddress = async (mnemonic) => {
-        const seed = mnemonicToSeedSync(mnemonic);
-        const node = fromSeed(seed);
+    const determineAndSetAddress = async (wallet) => {
         let addressList = []
-        for (let i = 0; i < 20; i++) {
-            const child = node.derivePath("m/44'/0'/0'/0/" + i);
-            addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
+        if (wallet.seed && wallet.seed.length) {
+            const seed = mnemonicToSeedSync(wallet.seed);
+            const node = fromSeed(seed);
+            for (let i = 0; i < 20; i++) {
+                const child = node.derivePath("m/44'/0'/0'/0/" + i);
+                addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
+            }
+        }
+        if (wallet.keys && wallet.keys.length) {
+            for (let i = 0; i < wallet.keys.length; i++) {
+                addressList.push(ECPair.fromWIF(wallet.keys[i]).getAddress())
+            }
         }
         const balances = await loadBalance(addressList)
         setAddresses(balances)
