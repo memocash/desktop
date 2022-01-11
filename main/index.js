@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, dialog, screen} = require('electron')
+const {app, BrowserWindow, ipcMain, dialog, screen, Menu} = require('electron')
 const homedir = require("os").homedir()
 const path = require('path')
 const prepareNext = require('electron-next')
@@ -6,6 +6,7 @@ const menu = require("./menu")
 
 const wallets = {}
 const windows = {}
+const menus = {}
 
 const CreateWindow = async () => {
     const win = new BrowserWindow({
@@ -16,9 +17,7 @@ const CreateWindow = async () => {
             preload: path.join(__dirname, 'preload.js')
         }
     })
-    if (process.platform !== "darwin" || win.webContents.id === 1) {
-        menu.NoMenu(win)
-    }
+    menus[win.webContents.id] = menu.NoMenu(win)
     windows[win.webContents.id] = win
     // open app on screen where cursor is
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
@@ -31,6 +30,12 @@ const CreateWindow = async () => {
 
 app.whenReady().then(async () => {
     await prepareNext('./renderer')
+
+    app.on("browser-window-focus", (e, win) => {
+        if (process.platform === "darwin") {
+            Menu.setApplicationMenu(menus[win.webContents.id])
+        }
+    })
 
     ipcMain.on("open-dialog", async (e) => {
         const win = windows[e.sender.id]
@@ -53,7 +58,7 @@ app.whenReady().then(async () => {
     })
 
     ipcMain.on("wallet-loaded", (e) => {
-        menu.ShowMenu(windows[e.sender.id], CreateWindow)
+        menus[e.sender.id] = menu.ShowMenu(windows[e.sender.id], CreateWindow)
     })
 
     ipcMain.handle("graphql", async (e, {query, variables}) => {
