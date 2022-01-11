@@ -9,11 +9,11 @@ const WalletLoaded = () => {
     const [addresses, setAddresses] = useState([])
 
     useEffect(async () => {
+        window.electron.walletLoaded()
         const wallet = await window.electron.getWallet()
         setWalletDate(wallet.time)
         setSeedPhrase(wallet.seed)
         await determineAndSetAddress(wallet.seed)
-        window.electron.walletLoaded()
     }, [])
 
     const determineAndSetAddress = async (mnemonic) => {

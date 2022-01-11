@@ -65,7 +65,6 @@ const Index = () => {
     }
 
     const onSelectImport = () => {
-        generateSeedPhrase()
         setPane(Panes.Step3SetKeys)
     }
 
@@ -79,6 +78,8 @@ const Index = () => {
     }
 
     const onBackFromAddSeed = () => {
+        setSeedPhrase("")
+        setKeyList([])
         setPane(Panes.Step2SelectType)
     }
 
@@ -88,8 +89,13 @@ const Index = () => {
     }
 
     const onBackFromCreatePassword = () => {
-        generateSeedPhrase()
-        setPane(Panes.Step3SetSeed)
+        if (seedPhrase !== "") {
+            generateSeedPhrase()
+            setPane(Panes.Step3SetSeed)
+        } else {
+            setKeyList([])
+            setPane(Panes.Step3SetKeys)
+        }
     }
 
     const handleSeedPhraseConfirmed = () => {
@@ -107,7 +113,7 @@ const Index = () => {
     }
 
     const handlePasswordCreated = async (password) => {
-        await window.electron.createFile(filePath, seedPhrase, password)
+        await window.electron.createFile(filePath, seedPhrase, keyList, password)
         router.push("/wallet")
     }
 

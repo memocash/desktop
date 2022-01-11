@@ -5,7 +5,7 @@ const ImportKeys = ({onSetKeys, onBack}) => {
     const privateKeyList = useRef()
 
     const handleClickNext = () => {
-        onSetKeys(privateKeyList.current.value)
+        onSetKeys(privateKeyList.current.value.split("\n"))
     }
 
     return (

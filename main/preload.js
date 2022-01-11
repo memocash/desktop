@@ -46,15 +46,17 @@ contextBridge.exposeInMainWorld('electron', {
     setWallet: async (wallet) => {
         ipcRenderer.send("store-wallet", wallet)
     },
-    createFile: async (walletName, seedPhrase, password) => {
+    createFile: async (walletName, seedPhrase, keyList, password) => {
         if (!walletName.startsWith("/")) {
             await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
         }
         const filename = getPathForWallet(walletName)
-        let contents = JSON.stringify({
+        let wallet = JSON.stringify({
             time: new Date(),
             seed: seedPhrase,
+            keys: keyList,
         })
+        let contents = wallet
         if (password) {
             contents = CryptoJS.AES.encrypt(contents, password).toString()
         }
