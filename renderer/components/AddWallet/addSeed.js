@@ -57,12 +57,14 @@ const AddSeed = ({onStoredSeed, onUserProvidedSeed, onBack, seedPhrase}) => {
         <div>
             <h2>How would you like to add the seed for this wallet?</h2>
             <div onChange={handleChooseAddSeed}>
-                <label>Create a new seed
+                <p><label>
                     <input type="radio" name="seed" value={SeedTypeOptions.Create}/>
-                </label>
-                <label>I already have a seed
+                    Create a new seed
+                </label></p>
+                <p><label>
                     <input type="radio" name="seed" value={SeedTypeOptions.Import}/>
-                </label>
+                    I already have a seed
+                </label></p>
             </div>
             <div>
                 {hasOwnSeed ? <SeedOptionsImport/> : <SeedOptionsCreate/>}

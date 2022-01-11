@@ -5,13 +5,17 @@ import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
 import ConfirmSeed from "../components/AddWallet/confirmSeed"
 import CreatePassword from "../components/AddWallet/createPassword"
+import SelectType from "../components/AddWallet/select_type"
 import CryptoJS from "crypto-js";
+import ImportKeys from "../components/AddWallet/import_keys";
 
 const Panes = {
     Step1ChooseFile: "step1-choose-file",
-    Step2SetSeed: "step2-set-seed",
-    Step3ConfirmSeed: "step3-confirm-seed",
-    Step4SetPassword: "step4-set-password",
+    Step2SelectType: "step2-select-type",
+    Step3SetKeys: "step3-set-keys",
+    Step3SetSeed: "step3-set-seed",
+    Step4ConfirmSeed: "step4-confirm-seed",
+    Step5SetPassword: "step5-set-password",
 }
 
 const Index = () => {
@@ -19,6 +23,7 @@ const Index = () => {
     const [filePath, setFilePath] = useState()
     const [pane, setPane] = useState(Panes.Step1ChooseFile)
     const [seedPhrase, setSeedPhrase] = useState("")
+    const [keyList, setKeyList] = useState([])
 
     const decryptWallet = (encryptedWallet, inputPassword) => {
         const bytes = CryptoJS.AES.decrypt(encryptedWallet, inputPassword)
@@ -32,8 +37,7 @@ const Index = () => {
 
     const createWalletStep1 = (pathToWallet) => {
         setFilePath(pathToWallet)
-        generateSeedPhrase()
-        setPane(Panes.Step2SetSeed)
+        setPane(Panes.Step2SelectType)
     }
 
     const loadWallet = async (pathToWallet, password) => {
@@ -50,34 +54,53 @@ const Index = () => {
         router.push("/wallet")
     }
 
+    const onSelectStandard = () => {
+        generateSeedPhrase()
+        setPane(Panes.Step3SetSeed)
+    }
+
+    const onSetKeys = (keys) => {
+        setKeyList(keys)
+        setPane(Panes.Step5SetPassword)
+    }
+
+    const onSelectImport = () => {
+        generateSeedPhrase()
+        setPane(Panes.Step3SetKeys)
+    }
+
+    const onBackFromSelectType = () => {
+        setPane(Panes.Step1ChooseFile)
+    }
+
     const handleStoredSeed = () => {
         window.electron.clearClipboard()
-        setPane(Panes.Step3ConfirmSeed)
+        setPane(Panes.Step4ConfirmSeed)
     }
 
     const onBackFromAddSeed = () => {
-        setPane(Panes.Step1ChooseFile)
+        setPane(Panes.Step2SelectType)
     }
 
     const onBackFromConfirmSeed = () => {
         generateSeedPhrase()
-        setPane(Panes.Step2SetSeed)
+        setPane(Panes.Step3SetSeed)
     }
 
     const onBackFromCreatePassword = () => {
         generateSeedPhrase()
-        setPane(Panes.Step2SetSeed)
+        setPane(Panes.Step3SetSeed)
     }
 
     const handleSeedPhraseConfirmed = () => {
-        setPane(Panes.Step4SetPassword)
+        setPane(Panes.Step5SetPassword)
     }
 
     const handleUserProvidedSeed = (seed) => {
         const isValidSeed = validateMnemonic(seed)
         if (isValidSeed) {
             setSeedPhrase(seed)
-            setPane(Panes.Step4SetPassword)
+            setPane(Panes.Step5SetPassword)
         } else {
             return true
         }
@@ -98,7 +121,18 @@ const Index = () => {
                 onLoadWallet={loadWallet}
             />
             }
-            {pane === Panes.Step2SetSeed &&
+            {pane === Panes.Step2SelectType &&
+            <SelectType
+                onBack={onBackFromSelectType}
+                onSelectStandard={onSelectStandard}
+                onSelectImport={onSelectImport}
+            />}
+            {pane === Panes.Step3SetKeys &&
+            <ImportKeys
+                onBack={onBackFromAddSeed}
+                onSetKeys={onSetKeys}
+            />}
+            {pane === Panes.Step3SetSeed &&
             <AddSeed
                 onStoredSeed={handleStoredSeed}
                 onUserProvidedSeed={handleUserProvidedSeed}
@@ -106,14 +140,14 @@ const Index = () => {
                 seedPhrase={seedPhrase}
             />
             }
-            {pane === Panes.Step3ConfirmSeed &&
+            {pane === Panes.Step4ConfirmSeed &&
             <ConfirmSeed
                 onBack={onBackFromConfirmSeed}
                 onSeedPhraseConfirmed={handleSeedPhraseConfirmed}
                 seedPhrase={seedPhrase}
             />
             }
-            {pane === Panes.Step4SetPassword &&
+            {pane === Panes.Step5SetPassword &&
             <CreatePassword
                 onBack={onBackFromCreatePassword}
                 onPasswordCreated={handlePasswordCreated}
