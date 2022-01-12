@@ -53,7 +53,7 @@ const WalletLoaded = () => {
     return (
         <div>
             <p>Wallet date: {walletDate}</p>
-            <p>Wallet seed phrase: {seedPhrase}</p>
+            {seedPhrase ? <p>Wallet seed phrase: {seedPhrase}</p> : null}
             <div>Addresses: <pre>{addresses.map((address, i) => {
                 return (
                     <p key={i}>{i}: {address.address} - {address.balance}</p>
