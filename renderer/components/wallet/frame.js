@@ -20,11 +20,11 @@ const Frame = (props) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
-                <Tab name={Tabs.History}><a href={"/wallet"}>History</a></Tab>
-                <Tab name={Tabs.Send}><a href={"/send"}>Send</a></Tab>
-                <Tab name={Tabs.Receive}><a href={"/wallet"}>Receive</a></Tab>
-                <Tab name={Tabs.Addresses}><a href={"/wallet"}>Addresses</a></Tab>
-                <Tab name={Tabs.Coins}><a href={"/wallet"}>Coins</a></Tab>
+                <Tab name={Tabs.History}><a onClick={() => props.clicked(Tabs.History)}>History</a></Tab>
+                <Tab name={Tabs.Send}><a onClick={() => props.clicked(Tabs.Send)}>Send</a></Tab>
+                <Tab name={Tabs.Receive}><a onClick={() => props.clicked(Tabs.Receive)}>Receive</a></Tab>
+                <Tab name={Tabs.Addresses}><a onClick={() => props.clicked(Tabs.Addresses)}>Addresses</a></Tab>
+                <Tab name={Tabs.Coins}><a onClick={() => props.clicked(Tabs.Coins)}>Coins</a></Tab>
             </div>
             <div className={tabs.body}>
                 {props.children}
