@@ -1,6 +1,6 @@
 import {useState} from "react"
 import {useRouter} from "next/router"
-import {generateMnemonic, validateMnemonic} from "bip39"
+import {generateMnemonic, mnemonicToSeedSync, validateMnemonic} from "bip39"
 import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
 import ConfirmSeed from "../components/AddWallet/confirmSeed"
@@ -8,6 +8,8 @@ import CreatePassword from "../components/AddWallet/createPassword"
 import SelectType from "../components/AddWallet/select_type"
 import CryptoJS from "crypto-js";
 import ImportKeys from "../components/AddWallet/import_keys";
+import {fromSeed} from "bip32";
+import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
 const Panes = {
     Step1ChooseFile: "step1-choose-file",
@@ -113,7 +115,21 @@ const Index = () => {
     }
 
     const handlePasswordCreated = async (password) => {
-        await window.electron.createFile(filePath, seedPhrase, keyList, password)
+        let addressList = []
+        if (seedPhrase && seedPhrase.length) {
+            const seed = mnemonicToSeedSync(seedPhrase);
+            const node = fromSeed(seed);
+            for (let i = 0; i < 20; i++) {
+                const child = node.derivePath("m/44'/0'/0'/0/" + i);
+                addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
+            }
+        }
+        if (keyList && keyList.length) {
+            for (let i = 0; i < keyList.length; i++) {
+                addressList.push(ECPair.fromWIF(keyList[i]).getAddress())
+            }
+        }
+        await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
         router.push("/wallet")
     }
 

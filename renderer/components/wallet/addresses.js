@@ -1,7 +1,4 @@
 import {useEffect, useState} from "react";
-import {mnemonicToSeedSync} from "bip39";
-import {fromSeed} from "bip32";
-import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
 const Addresses = () => {
     const [addresses, setAddresses] = useState([])
@@ -13,21 +10,10 @@ const Addresses = () => {
     }, [])
 
     const determineAndSetAddress = async (wallet) => {
-        let addressList = []
-        if (wallet.seed && wallet.seed.length) {
-            const seed = mnemonicToSeedSync(wallet.seed);
-            const node = fromSeed(seed);
-            for (let i = 0; i < 20; i++) {
-                const child = node.derivePath("m/44'/0'/0'/0/" + i);
-                addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
-            }
+        if (!wallet.addresses || !wallet.addresses.length) {
+            return
         }
-        if (wallet.keys && wallet.keys.length) {
-            for (let i = 0; i < wallet.keys.length; i++) {
-                addressList.push(ECPair.fromWIF(wallet.keys[i]).getAddress())
-            }
-        }
-        const balances = await loadBalance(addressList)
+        const balances = await loadBalance(wallet.addresses)
         setAddresses(balances)
     }
 
@@ -49,6 +35,7 @@ const Addresses = () => {
     return (
         <div>
             <pre>
+                {(!addresses || !addresses.length) ? "No addresses" : null}
                 {addresses.map((address, i) => {
                     return (
                         <p key={i}>{i}: {address.address} - {address.balance}</p>
