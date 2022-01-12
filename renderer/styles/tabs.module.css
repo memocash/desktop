@@ -1,0 +1,34 @@
+.container {
+    height: calc(100vh - 10px);
+}
+
+.header {
+    height: 30px;
+    overflow-x: auto;
+}
+
+.tab {
+    display: inline-block;
+    border: 1px solid #ddd;
+}
+
+.tab a {
+    display: block;
+    color: #000;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 5px 10px;
+    height: 18px;
+}
+
+.selected {
+    background: #fff;
+}
+
+.body {
+    background: #fff;
+    border: 1px solid #999;
+    height: calc(100% - 32px);
+    padding: 0 5px;
+    overflow: auto;
+}

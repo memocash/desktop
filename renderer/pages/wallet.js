@@ -2,6 +2,7 @@ import {useEffect, useState} from "react"
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from 'bip32';
 import {ECPair} from '@bitcoin-dot-com/bitcoincashjs2-lib';
+import Frame, {Tabs} from "../components/wallet/frame";
 
 const WalletLoaded = () => {
     const [walletDate, setWalletDate] = useState("")
@@ -51,7 +52,7 @@ const WalletLoaded = () => {
     }
 
     return (
-        <div>
+        <Frame selected={Tabs.Addresses}>
             <p>Wallet date: {walletDate}</p>
             {seedPhrase ? <p>Wallet seed phrase: {seedPhrase}</p> : null}
             <div>Addresses: <pre>{addresses.map((address, i) => {
@@ -59,7 +60,7 @@ const WalletLoaded = () => {
                     <p key={i}>{i}: {address.address} - {address.balance}</p>
                 )
             })}</pre></div>
-        </div>
+        </Frame>
     )
 }
 
