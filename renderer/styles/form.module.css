@@ -1,0 +1,12 @@
+.span {
+    display: inline-block;
+    width: 200px;
+}
+
+.input {
+    width: 300px;
+}
+
+.input_small {
+    width: 150px;
+}
