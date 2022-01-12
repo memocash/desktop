@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react"
 
-const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
+const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
     const [walletContents, setWalletContents] = useState("")
@@ -9,7 +9,7 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
     const passwordInput = useRef()
 
     useEffect(async () => {
-        const existingWallets = await electron.getExistingWalletFiles()
+        const existingWallets = await window.electron.getExistingWalletFiles()
         let suggestedName = "default_wallet"
         if (await electron.getWindowId() !== 1 && existingWallets.includes(suggestedName)) {
             for (let number = 1; true; number++) {
@@ -45,7 +45,7 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
 
     const handleClickImport = async () => {
         window.electron.listenFile((e, filePath) => {
-            walletInput.current.value = electron.getWalletShort(filePath)
+            walletInput.current.value = window.electron.getWalletShort(filePath)
             loadFile(filePath)
         })
         window.electron.openDialog()
@@ -64,7 +64,7 @@ const AddWalletHome = ({decryptWallet, onCreateWallet, onLoadWallet}) => {
         let password;
         try {
             password = passwordInput.current.value
-            const decryptedWallet = decryptWallet(walletContents, password)
+            const decryptedWallet = window.electron.decryptWallet(walletContents, password)
             if (!decryptedWallet.startsWith("{")) {
                 setHasEnteredWrongPassword(true)
             }

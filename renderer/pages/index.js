@@ -10,6 +10,7 @@ import CryptoJS from "crypto-js";
 import ImportKeys from "../components/AddWallet/import_keys";
 import {fromSeed} from "bip32";
 import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import GetAddresses from "../components/util/addresses";
 
 const Panes = {
     Step1ChooseFile: "step1-choose-file",
@@ -27,11 +28,6 @@ const Index = () => {
     const [seedPhrase, setSeedPhrase] = useState("")
     const [keyList, setKeyList] = useState([])
 
-    const decryptWallet = (encryptedWallet, inputPassword) => {
-        const bytes = CryptoJS.AES.decrypt(encryptedWallet, inputPassword)
-        return bytes.toString(CryptoJS.enc.Utf8)
-    }
-
     const generateSeedPhrase = () => {
         const mnemonic = generateMnemonic()
         setSeedPhrase(mnemonic)
@@ -44,14 +40,15 @@ const Index = () => {
 
     const loadWallet = async (pathToWallet, password) => {
         let walletJson = await window.electron.getWalletFile(pathToWallet)
-        if (password) {
-            try {
-                walletJson = decryptWallet(walletJson, password)
-                await window.electron.setWallet(JSON.parse(walletJson))
-            } catch (err) {
-                console.log(err)
-                return
+        try {
+            if (password) {
+                walletJson = window.electron.decryptWallet(walletJson, password)
             }
+            const wallet = JSON.parse(walletJson)
+            await window.electron.setWallet(wallet, pathToWallet, password)
+        } catch (err) {
+            console.log(err)
+            return
         }
         router.push("/wallet")
     }
@@ -115,20 +112,7 @@ const Index = () => {
     }
 
     const handlePasswordCreated = async (password) => {
-        let addressList = []
-        if (seedPhrase && seedPhrase.length) {
-            const seed = mnemonicToSeedSync(seedPhrase);
-            const node = fromSeed(seed);
-            for (let i = 0; i < 20; i++) {
-                const child = node.derivePath("m/44'/0'/0'/0/" + i);
-                addressList.push(ECPair.fromWIF(child.toWIF()).getAddress())
-            }
-        }
-        if (keyList && keyList.length) {
-            for (let i = 0; i < keyList.length; i++) {
-                addressList.push(ECPair.fromWIF(keyList[i]).getAddress())
-            }
-        }
+        const addressList = GetAddresses(seedPhrase, keyList)
         await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
         router.push("/wallet")
     }
@@ -138,7 +122,6 @@ const Index = () => {
             <h1>Memo wallet</h1>
             {pane === Panes.Step1ChooseFile &&
             <AddWalletHome
-                decryptWallet={decryptWallet}
                 onCreateWallet={createWalletStep1}
                 onLoadWallet={loadWallet}
             />

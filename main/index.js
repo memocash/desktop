@@ -45,8 +45,8 @@ app.whenReady().then(async () => {
         }
     })
 
-    ipcMain.on("store-wallet", (e, wallet) => {
-        wallets[e.sender.id] = wallet
+    ipcMain.on("store-wallet", (e, wallet, filename, password) => {
+        wallets[e.sender.id] = {wallet, filename, password}
     })
 
     ipcMain.handle("get-wallet", async (e) => {

@@ -1,21 +1,20 @@
 import {useEffect, useState} from "react";
+import GetAddresses from "../util/addresses";
 
 const Addresses = () => {
     const [addresses, setAddresses] = useState([])
 
     useEffect(async () => {
         window.electron.walletLoaded()
-        const wallet = await window.electron.getWallet()
-        await determineAndSetAddress(wallet)
-    }, [])
-
-    const determineAndSetAddress = async (wallet) => {
+        let wallet = await window.electron.getWallet()
         if (!wallet.addresses || !wallet.addresses.length) {
-            return
+            const addressList = GetAddresses(wallet.seed, wallet.keys)
+            await window.electron.addAddresses(addressList)
+            wallet = await window.electron.getWallet()
         }
         const balances = await loadBalance(wallet.addresses)
         setAddresses(balances)
-    }
+    }, [])
 
     const loadBalance = async (addresses) => {
         const query = `

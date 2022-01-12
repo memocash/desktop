@@ -18,6 +18,11 @@ const getWalletShort = wallet => {
     return wallet
 }
 
+const decryptWallet = (encryptedWallet, inputPassword) => {
+    const bytes = CryptoJS.AES.decrypt(encryptedWallet, inputPassword)
+    return bytes.toString(CryptoJS.enc.Utf8)
+}
+
 contextBridge.exposeInMainWorld('electron', {
     getPathForWallet,
     getWalletShort,
@@ -33,6 +38,7 @@ contextBridge.exposeInMainWorld('electron', {
             return path.parse(file).name
         })
     },
+    decryptWallet,
     getWalletFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
         return await fs.readFile(wallet, {encoding: "utf8"})
@@ -43,8 +49,26 @@ contextBridge.exposeInMainWorld('electron', {
     openDialog: () => {
         ipcRenderer.send("open-dialog")
     },
-    setWallet: async (wallet) => {
-        ipcRenderer.send("store-wallet", wallet)
+    setWallet: async (wallet, filename, password) => {
+        ipcRenderer.send("store-wallet", wallet, getPathForWallet(filename), password)
+    },
+    addAddresses: async (addressList) => {
+        const {filename, password} = await ipcRenderer.invoke("get-wallet")
+        let walletJson = await fs.readFile(filename, {encoding: "utf8"})
+        if (password && password.length) {
+            walletJson = decryptWallet(walletJson, password)
+        }
+        const wallet = JSON.parse(walletJson)
+        if (!wallet.addresses) {
+            wallet.addresses = []
+        }
+        Array.prototype.push.apply(wallet.addresses, addressList)
+        let contents = JSON.stringify(wallet)
+        if (password && password.length) {
+            contents = CryptoJS.AES.encrypt(contents, password).toString()
+        }
+        await fs.writeFile(filename, contents)
+        await ipcRenderer.send("store-wallet", wallet, filename, password)
     },
     createFile: async (walletName, seedPhrase, keyList, addressList, password) => {
         if (!walletName.startsWith("/")) {
@@ -62,7 +86,7 @@ contextBridge.exposeInMainWorld('electron', {
             contents = CryptoJS.AES.encrypt(contents, password).toString()
         }
         await fs.writeFile(filename, contents)
-        await ipcRenderer.send("store-wallet", JSON.parse(wallet))
+        await ipcRenderer.send("store-wallet", JSON.parse(wallet), filename, password)
     },
     checkFile: async (walletName) => {
         const wallet = getPathForWallet(walletName)
@@ -75,7 +99,8 @@ contextBridge.exposeInMainWorld('electron', {
     },
     clearClipboard: () => clipboard.clear(),
     getWallet: async () => {
-        return await ipcRenderer.invoke("get-wallet")
+        const {wallet} = await ipcRenderer.invoke("get-wallet")
+        return wallet
     },
     listenAddedWallet: (handler) => {
         ipcRenderer.on("added-wallet", handler)
