@@ -34,7 +34,7 @@ const Addresses = () => {
     return (
         <div>
             <pre>
-                {(!addresses || !addresses.length) ? "No addresses" : null}
+                {(!addresses || !addresses.length) ? "Generating addresses, please wait..." : null}
                 {addresses.map((address, i) => {
                     return (
                         <p key={i}>{i}: {address.address} - {address.balance}</p>

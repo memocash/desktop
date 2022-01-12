@@ -112,8 +112,7 @@ const Index = () => {
     }
 
     const handlePasswordCreated = async (password) => {
-        const addressList = GetAddresses(seedPhrase, keyList)
-        await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
+        await window.electron.createFile(filePath, seedPhrase, keyList, [], password)
         router.push("/wallet")
     }
 
