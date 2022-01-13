@@ -5,6 +5,27 @@ const Send = () => {
     const payToRef = useRef()
     const messageRef = useRef()
     const amountRef = useRef()
+    const clickPreview = async () => {
+        const payTo = payToRef.current.value
+        const message = messageRef.current.value
+        const amount = amountRef.current.value
+        const query = `
+    query ($address: String!) {
+        address(address: $address) {
+            utxos {
+                hash
+                index
+                amount
+            }
+        }
+    }
+    `
+        const wallet = await window.electron.getWallet()
+        let data = await window.electron.graphQL(query, {
+            address: wallet.addresses[0],
+        })
+        console.log(data.data.address.utxos)
+    }
     return (
         <div>
             <p>
@@ -21,12 +42,12 @@ const Send = () => {
             </p>
             <p>
                 <label>
-                    <span className={form.span}>Amount:</span>
+                    <span className={form.span}>Amount (sats):</span>
                     <input className={form.input_small} ref={amountRef} type="text"/>
                 </label>
             </p>
             <p>
-                <button>Preview</button>
+                <button onClick={clickPreview}>Preview</button>
             </p>
         </div>
     )
