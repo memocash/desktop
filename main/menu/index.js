@@ -47,6 +47,8 @@ const ShowMenu = (win, newWindow) => {
         label: "Help",
         submenu: [
             {label: "About"},
+            {role: 'reload'},
+            {role: 'forceReload'},
             {
                 label: "Developer Tools",
                 accelerator: "CommandOrControl+Shift+I",
@@ -84,6 +86,8 @@ const NoMenu = (win) => {
     }, {
         label: "Help",
         submenu: [
+            {role: 'reload'},
+            {role: 'forceReload'},
             {
                 label: "Developer Tools",
                 accelerator: "CommandOrControl+Shift+I",

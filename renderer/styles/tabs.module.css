@@ -9,25 +9,35 @@
 
 .tab {
     display: inline-block;
-    border: 1px solid #ddd;
+    border-style: solid;
+    border-color: #bbb;
+    border-width: 1px 1px 0 1px;
+    border-radius: 5px 5px 0 0;
+    margin-right: 1px;
 }
 
 .tab a {
     display: block;
+    font-size: 14px;
     color: #000;
     cursor: pointer;
     text-decoration: none;
     padding: 5px 10px;
-    height: 18px;
+    height: 19px;
 }
 
-.selected {
+.tab:hover {
+    background: #f5f5f5;
+}
+
+.tab.selected {
     background: #fff;
 }
 
 .body {
     background: #fff;
     border: 1px solid #999;
+    border-radius: 0 5px 5px 5px;
     height: calc(100% - 32px);
     padding: 0 5px;
     overflow: auto;

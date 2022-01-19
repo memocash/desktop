@@ -1,6 +1,7 @@
 .span {
     display: inline-block;
     width: 200px;
+    font-size: 14px;
 }
 
 .input {
