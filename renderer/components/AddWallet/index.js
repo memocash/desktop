@@ -22,6 +22,7 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
         }
         walletInput.current.value = suggestedName
         await fileChangeHandler()
+        passwordInput.current?.focus()
     }, [])
 
     const loadFile = async (walletFile) => {
