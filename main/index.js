@@ -1,6 +1,7 @@
 const {app, BrowserWindow, ipcMain, dialog, screen, Menu} = require('electron')
 const homedir = require("os").homedir()
 const path = require('path')
+const http = require('http')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
 
@@ -14,8 +15,9 @@ const CreateWindow = async () => {
         height: 600,
         webPreferences: {
             nodeIntegration: false,
-            preload: path.join(__dirname, 'preload.js')
-        }
+            preload: path.join(__dirname, "preload.js")
+        },
+        icon: path.join(__dirname, "assets/memo-logo-small.icns"),
     })
     menus[win.webContents.id] = menu.NoMenu(win)
     windows[win.webContents.id] = win
@@ -62,20 +64,38 @@ app.whenReady().then(async () => {
     })
 
     ipcMain.handle("graphql", async (e, {query, variables}) => {
-        const server = "http://127.0.0.1:26770"
+        const body = JSON.stringify({
+            query: query,
+            variables: variables,
+        })
         return new Promise((resolve, reject) => {
-            fetch(server + "/graphql", {
+            const request = http.request("http://127.0.0.1:26770/graphql", {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    query: query,
-                    variables: variables,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Content-Length": body.length,
+                },
+            }, (res) => {
+                let data = "";
+                res.on("data", d => {
+                    data += d
                 })
-            }).then(res => res.json()).then(data => {
-                resolve(data)
-            }).catch(error => {
+                res.on("end", () => {
+                    try {
+                        const jsonData = JSON.parse(data)
+                        resolve(jsonData)
+                    } catch (e) {
+                        console.log("error parsing json response", e)
+                        reject(e)
+                    }
+                })
+            })
+            request.on("error", error => {
+                console.log("got error")
                 reject(error)
             })
+            request.write(body)
+            request.end()
         })
     })
 

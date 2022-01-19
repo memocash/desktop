@@ -1,10 +1,11 @@
 {
-  "name": "desktop",
+  "name": "memo",
   "version": "0.0.2",
   "description": "Memo Desktop Application",
   "main": "main/index.js",
   "scripts": {
     "start": "electron .",
+    "create": "npx electron-packager . Memo --overwrite --icon ./main/assets/memo-logo-small.icns --out dist",
     "build": "next build renderer && next export renderer",
     "pack-app": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder"
@@ -14,6 +15,7 @@
   "devDependencies": {
     "electron": "^13.6.3",
     "electron-builder": "^22.10.5",
+    "electron-packager": "^15.4.0",
     "next": "^11.1.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
