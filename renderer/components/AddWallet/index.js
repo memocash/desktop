@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from "react"
 
 const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
+    const [isUnreadableFile, setIsUnreadableFile] = useState(false);
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
     const [walletContents, setWalletContents] = useState("")
@@ -35,11 +36,16 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     }
 
     const fileChangeHandler = async () => {
-        const fileExists = await window.electron.checkFile(walletInput.current.value)
-        if (!fileExists) {
-            setFileExists(false)
-        } else {
-            await loadFile(walletInput.current.value)
+        try {
+            const fileExists = await window.electron.checkFile(walletInput.current.value)
+            if (!fileExists) {
+                setFileExists(false)
+            } else {
+                await loadFile(walletInput.current.value)
+            }
+            setIsUnreadableFile(false)
+        } catch {
+            setIsUnreadableFile(true)
         }
     }
 
@@ -80,19 +86,27 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
         }
     }
 
-    const WalletOptionsCreate = () => {
+    const renderUnreadableFile = () => {
+        return (
+            <div>
+                Cannot read file
+            </div>
+        )
+    }
+
+    const renderWalletOptionsCreate = () => {
         return (
             <div>
                 This file does not exist. To create a new wallet by this name, press "Next".
             </div>
         )
     }
-    const WalletOptionsImportWithPassword = () => {
+    const renderWalletOptionsImportWithPassword = () => {
         return (
             <div>
                 <p>This file is encrypted. Enter your password or choose another file.</p>
                 <p><label>Password:
-                    <input autoFocus ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
+                    <input ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
                            onKeyDown={passwordKeyDown} type="password"/>
                 </label></p>
                 {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
@@ -100,7 +114,7 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
         )
     }
 
-    const WalletOptionsImportWithoutPassword = () => {
+    const renderWalletOptionsImportWithoutPassword = () => {
         return (
             <div>
                 Wallet found. To import it, press "Next".
@@ -117,11 +131,14 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
                         <button onClick={handleClickImport}>Choose...</button>
                     </label>
                 </p>
-                {fileExists ?
-                    passwordProtectedFile ? <WalletOptionsImportWithPassword/> : <WalletOptionsImportWithoutPassword/>
-                    : <WalletOptionsCreate/>}
+                {isUnreadableFile ?
+                    renderUnreadableFile()
+                    : fileExists ?
+                        passwordProtectedFile ? renderWalletOptionsImportWithPassword() : renderWalletOptionsImportWithoutPassword()
+                        : renderWalletOptionsCreate()
+                }
                 <div>
-                    <button onClick={handleClickNext}>Next</button>
+                    <button onClick={handleClickNext} disabled={isUnreadableFile}>Next</button>
                 </div>
             </div>
         </div>
