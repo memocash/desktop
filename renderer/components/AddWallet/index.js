@@ -1,5 +1,46 @@
 import {useEffect, useRef, useState} from "react"
 
+const WalletOptions = {
+    UnreadableFile: () => {
+        return (
+            <div>
+                Cannot read file
+            </div>
+        )
+    },
+    Create: () => {
+        return (
+            <div>
+                This file does not exist. To create a new wallet by this name, press "Next".
+            </div>
+        )
+    },
+    ImportWithPassword: ({
+        hasEnteredWrongPassword,
+        onPasswordChange,
+        onPasswordKeyDown,
+        passwordInputRef
+    }) => {
+        return (
+            <div>
+                <p>This file is encrypted. Enter your password or choose another file.</p>
+                <p><label>Password:
+                    <input autoFocus ref={passwordInputRef} onChange={onPasswordChange}
+                           onKeyDown={onPasswordKeyDown} type="password"/>
+                </label></p>
+                {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
+            </div>
+        )
+    },
+    ImportWithoutPassword: () => {
+        return (
+            <div>
+                Wallet found. To import it, press "Next".
+            </div>
+        )
+    }
+}
+
 const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     const [isUnreadableFile, setIsUnreadableFile] = useState(false);
     const [fileExists, setFileExists] = useState(false)
@@ -22,7 +63,6 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
         }
         walletInput.current.value = suggestedName
         await fileChangeHandler()
-        passwordInput.current?.focus()
     }, [])
 
     const loadFile = async (walletFile) => {
@@ -87,42 +127,6 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
         }
     }
 
-    const renderUnreadableFile = () => {
-        return (
-            <div>
-                Cannot read file
-            </div>
-        )
-    }
-
-    const renderWalletOptionsCreate = () => {
-        return (
-            <div>
-                This file does not exist. To create a new wallet by this name, press "Next".
-            </div>
-        )
-    }
-    const renderWalletOptionsImportWithPassword = () => {
-        return (
-            <div>
-                <p>This file is encrypted. Enter your password or choose another file.</p>
-                <p><label>Password:
-                    <input ref={passwordInput} onChange={() => setHasEnteredWrongPassword(false)}
-                           onKeyDown={passwordKeyDown} type="password"/>
-                </label></p>
-                {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
-            </div>
-        )
-    }
-
-    const renderWalletOptionsImportWithoutPassword = () => {
-        return (
-            <div>
-                Wallet found. To import it, press "Next".
-            </div>
-        )
-    }
-
     return (
         <div>
             <div>
@@ -133,10 +137,17 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
                     </label>
                 </p>
                 {isUnreadableFile ?
-                    renderUnreadableFile()
+                    <WalletOptions.UnreadableFile />
                     : fileExists ?
-                        passwordProtectedFile ? renderWalletOptionsImportWithPassword() : renderWalletOptionsImportWithoutPassword()
-                        : renderWalletOptionsCreate()
+                        passwordProtectedFile ?
+                            <WalletOptions.ImportWithPassword
+                                hasEnteredWrongPassword={hasEnteredWrongPassword}
+                                onPasswordChange={() => setHasEnteredWrongPassword(false)}
+                                onPasswordKeyDown={passwordKeyDown}
+                                passwordInputRef={passwordInput}
+                            />
+                            : <WalletOptions.ImportWithoutPassword />
+                        : <WalletOptions.Create />
                 }
                 <div>
                     <button onClick={handleClickNext} disabled={isUnreadableFile}>Next</button>
