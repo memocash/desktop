@@ -15,12 +15,13 @@ const WalletOptions = {
             </div>
         )
     },
-    ImportWithPassword: ({
-        hasEnteredWrongPassword,
-        onPasswordChange,
-        onPasswordKeyDown,
-        passwordInputRef
-    }) => {
+    ImportWithPassword: (props) => {
+        const {
+            hasEnteredWrongPassword,
+            onPasswordChange,
+            onPasswordKeyDown,
+            passwordInputRef
+        } = props
         return (
             <div>
                 <p>This file is encrypted. Enter your password or choose another file.</p>
@@ -137,7 +138,7 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
                     </label>
                 </p>
                 {isUnreadableFile ?
-                    <WalletOptions.UnreadableFile />
+                    <WalletOptions.UnreadableFile/>
                     : fileExists ?
                         passwordProtectedFile ?
                             <WalletOptions.ImportWithPassword
@@ -146,8 +147,8 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
                                 onPasswordKeyDown={passwordKeyDown}
                                 passwordInputRef={passwordInput}
                             />
-                            : <WalletOptions.ImportWithoutPassword />
-                        : <WalletOptions.Create />
+                            : <WalletOptions.ImportWithoutPassword/>
+                        : <WalletOptions.Create/>
                 }
                 <div>
                     <button onClick={handleClickNext} disabled={isUnreadableFile}>Next</button>
