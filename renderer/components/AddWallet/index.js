@@ -69,6 +69,7 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     const loadFile = async (walletFile) => {
         const fileContents = await window.electron.getWalletFile(walletFile)
         setFileExists(true)
+        setIsUnreadableFile(false)
         if (!fileContents.startsWith("{")) {
             setPasswordProtectedFile(true)
         } else {
