@@ -1,22 +1,35 @@
 const {Menu} = require("electron");
 
+const isMac = process.platform === "darwin"
+
 const ShowMenu = (win, newWindow) => {
-    const menu = Menu.buildFromTemplate([{
-        label: "File",
-        submenu: [
-            {
-                label: "New/Restore",
-                click: async () => {
-                    newWindow()
-                },
+    let submenu = [
+        {
+            label: "New/Restore",
+            click: async () => {
+                newWindow()
             },
-            {type: "separator"},
+        },
+        {type: "separator"},
+    ]
+    if(isMac) {
+        submenu = [
+            ...submenu,
             {role: "hide"},
             {role: "hideOthers"},
             {role: "unhide"},
             {type: "separator"},
             {role: "quit"},
         ]
+    } else {
+        submenu = [
+            ...submenu,
+            {role: "quit"},
+        ]
+    }
+    const menu = Menu.buildFromTemplate([{
+        label: "File",
+        submenu
     }, {
         label: "Edit",
         submenu: [
@@ -62,7 +75,7 @@ const ShowMenu = (win, newWindow) => {
             },
         ]
     }])
-    if (process.platform === "darwin") {
+    if (isMac) {
         Menu.setApplicationMenu(menu)
         return menu
     }
@@ -71,15 +84,21 @@ const ShowMenu = (win, newWindow) => {
 }
 
 const NoMenu = (win) => {
-    const menu = Menu.buildFromTemplate([{
-        label: "File",
-        submenu: [
+    let submenu = [
+        {role: "quit"},
+    ]
+    if(isMac) {
+        submenu = [
             {role: "hide"},
             {role: "hideOthers"},
             {role: "unhide"},
             {type: "separator"},
-            {role: "quit"},
+            ...submenu
         ]
+    }
+    const menu = Menu.buildFromTemplate([{
+        label: "File",
+        submenu
     }, {
         label: "Edit",
         submenu: [
@@ -105,7 +124,7 @@ const NoMenu = (win) => {
             },
         ],
     }])
-    if (process.platform === "darwin") {
+    if (isMac) {
         Menu.setApplicationMenu(menu)
         return menu
     }
