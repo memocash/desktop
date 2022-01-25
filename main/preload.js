@@ -63,7 +63,7 @@ contextBridge.exposeInMainWorld('electron', {
         if (!wallet.addresses) {
             wallet.addresses = []
         }
-        Array.prototype.push.apply(wallet.addresses, addressList)
+        wallet.addresses.push(...addressList)
         let contents = JSON.stringify(wallet)
         if (password && password.length) {
             contents = CryptoJS.AES.encrypt(contents, password).toString()
