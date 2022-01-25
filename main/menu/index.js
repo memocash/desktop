@@ -11,6 +11,10 @@ const ShowMenu = (win, newWindow) => {
                 },
             },
             {type: "separator"},
+            {role: "hide"},
+            {role: "hideOthers"},
+            {role: "unhide"},
+            {type: "separator"},
             {role: "quit"},
         ]
     }, {
@@ -70,6 +74,10 @@ const NoMenu = (win) => {
     const menu = Menu.buildFromTemplate([{
         label: "File",
         submenu: [
+            {role: "hide"},
+            {role: "hideOthers"},
+            {role: "unhide"},
+            {type: "separator"},
             {role: "quit"},
         ]
     }, {
