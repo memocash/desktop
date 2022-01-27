@@ -31,13 +31,13 @@ const CreateWindow = async () => {
     await win.loadURL("http://localhost:8000")
 }
 
-const CreateTxWindow = async (winId) => {
+const CreateTxWindow = async (winId, {payTo, message, amount}) => {
     const win = new BrowserWindow({
         width: 600,
         height: 400,
         webPreferences: {
             nodeIntegration: false,
-            preload: path.join(__dirname, "preload-preview.js"),
+            preload: path.join(__dirname, "preload.js"),
         },
         icon: path.join(__dirname, "assets/memo-logo-small.icns"),
     })
@@ -46,7 +46,7 @@ const CreateTxWindow = async (winId) => {
     }
     menus[win.webContents.id] = menu.SimpleMenu(win, false)
     txWindows[winId].push(win)
-    await win.loadURL("http://localhost:8000/tx")
+    await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams({payTo, message, amount})).toString())
 }
 
 app.whenReady().then(async () => {
@@ -118,8 +118,8 @@ app.whenReady().then(async () => {
         })
     })
 
-    ipcMain.on("open-preview-send", async (e) => {
-        await CreateTxWindow(e.sender.id)
+    ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
+        await CreateTxWindow(e.sender.id, {payTo, message, amount})
     })
 
     await CreateWindow()

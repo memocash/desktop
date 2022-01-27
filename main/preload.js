@@ -109,7 +109,7 @@ contextBridge.exposeInMainWorld('electron', {
     graphQL: async (query, variables) => {
         return await ipcRenderer.invoke("graphql", {query, variables})
     },
-    openPreviewSend: async () => {
-        ipcRenderer.send("open-preview-send")
+    openPreviewSend: async ({payTo, message, amount}) => {
+        ipcRenderer.send("open-preview-send", {payTo, message, amount})
     },
 })

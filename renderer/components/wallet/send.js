@@ -25,7 +25,7 @@ const Send = () => {
             address: wallet.addresses[0],
         })
         console.log(data.data.address.utxos)
-        await window.electron.openPreviewSend()
+        await window.electron.openPreviewSend({payTo, message, amount})
     }
     return (
         <div>
