@@ -8,6 +8,7 @@ const menu = require("./menu")
 const wallets = {}
 const windows = {}
 const menus = {}
+const txWindows = {}
 
 const CreateWindow = async () => {
     const win = new BrowserWindow({
@@ -28,6 +29,23 @@ const CreateWindow = async () => {
     const boundsObject = {x: currentScreenXValue + 200, y: 200, width: 800, height: 600}
     win.setBounds(boundsObject)
     await win.loadURL("http://localhost:8000")
+}
+
+const CreateTxWindow = async (winId) => {
+    const win = new BrowserWindow({
+        width: 600,
+        height: 400,
+        webPreferences: {
+            nodeIntegration: false,
+            preload: path.join(__dirname, "preload-preview.js"),
+        },
+        icon: path.join(__dirname, "assets/memo-logo-small.icns"),
+    })
+    if (txWindows[winId] === undefined) {
+        txWindows[winId] = []
+    }
+    txWindows[winId].push(win)
+    await win.loadURL("http://localhost:8000/tx")
 }
 
 app.whenReady().then(async () => {
@@ -97,6 +115,10 @@ app.whenReady().then(async () => {
             request.write(body)
             request.end()
         })
+    })
+
+    ipcMain.on("open-preview-send", async (e) => {
+        await CreateTxWindow(e.sender.id)
     })
 
     await CreateWindow()
