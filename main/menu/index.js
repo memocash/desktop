@@ -3,7 +3,7 @@ const {Menu} = require("electron");
 const isMac = process.platform === "darwin"
 
 const ShowMenu = (win, newWindow) => {
-    let submenu = [
+    const submenu = [
         {
             label: "New/Restore",
             click: async () => {
@@ -11,22 +11,8 @@ const ShowMenu = (win, newWindow) => {
             },
         },
         {type: "separator"},
+        ...GetBasicFileSubMenu(),
     ]
-    if(isMac) {
-        submenu = [
-            ...submenu,
-            {role: "hide"},
-            {role: "hideOthers"},
-            {role: "unhide"},
-            {type: "separator"},
-            {role: "quit"},
-        ]
-    } else {
-        submenu = [
-            ...submenu,
-            {role: "quit"},
-        ]
-    }
     const menu = Menu.buildFromTemplate([{
         label: "File",
         submenu
@@ -83,11 +69,12 @@ const ShowMenu = (win, newWindow) => {
     win.setMenuBarVisibility(true)
 }
 
-const NoMenu = (win) => {
+const GetBasicFileSubMenu = () => {
     let submenu = [
+        {role: "close"},
         {role: "quit"},
     ]
-    if(isMac) {
+    if (isMac) {
         submenu = [
             {role: "hide"},
             {role: "hideOthers"},
@@ -96,9 +83,13 @@ const NoMenu = (win) => {
             ...submenu
         ]
     }
+    return submenu
+}
+
+const SimpleMenu = (win, hide) => {
     const menu = Menu.buildFromTemplate([{
         label: "File",
-        submenu
+        submenu: GetBasicFileSubMenu(),
     }, {
         label: "Edit",
         submenu: [
@@ -129,10 +120,12 @@ const NoMenu = (win) => {
         return menu
     }
     win.setMenu(menu)
-    win.setMenuBarVisibility(false)
+    if (hide) {
+        win.setMenuBarVisibility(false)
+    }
 }
 
 module.exports = {
     ShowMenu,
-    NoMenu,
+    SimpleMenu: SimpleMenu,
 }

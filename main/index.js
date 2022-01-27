@@ -20,7 +20,7 @@ const CreateWindow = async () => {
         },
         icon: path.join(__dirname, "assets/memo-logo-small.icns"),
     })
-    menus[win.webContents.id] = menu.NoMenu(win)
+    menus[win.webContents.id] = menu.SimpleMenu(win, true)
     windows[win.webContents.id] = win
     // open app on screen where cursor is
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
@@ -44,6 +44,7 @@ const CreateTxWindow = async (winId) => {
     if (txWindows[winId] === undefined) {
         txWindows[winId] = []
     }
+    menus[win.webContents.id] = menu.SimpleMenu(win, false)
     txWindows[winId].push(win)
     await win.loadURL("http://localhost:8000/tx")
 }
