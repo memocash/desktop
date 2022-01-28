@@ -54,12 +54,7 @@ const Tx = () => {
                         <p>
                             {inputPayTo}
                             &nbsp;&nbsp;&nbsp;&nbsp;
-                            1,000,000,000
-                        </p>
-                        <p>
-                            {inputPayTo}
-                            &nbsp;&nbsp;&nbsp;&nbsp;
-                            4,000,000,000
+                            {inputAmount}
                         </p>
                     </div>
                 </div>

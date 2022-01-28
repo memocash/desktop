@@ -50,7 +50,7 @@ const Send = () => {
             <p>
                 <label>
                     <span className={form.span}>Pay to:</span>
-                    <input className={form.input} ref={payToRef} type="text" autoFocus/>
+                    <input className={form.input} ref={payToRef} type="text" autoFocus spellCheck="false"/>
                 </label>
             </p>
             <p>
