@@ -13,14 +13,18 @@ const Send = () => {
         const payTo = payToRef.current.value
         const message = messageRef.current.value
         const amount = amountRef.current.value
-        if (amount < bitcoin.DustLimit) {
-            window.electron.showMessageDialog("Amount must be above dust limit (546)")
-            return
-        }
         try {
             address.fromBase58Check(payTo)
         } catch (err) {
             window.electron.showMessageDialog("Unable to parse address: " + err.toString())
+            return
+        }
+        if (message && message.length > bitcoin.MaxOpReturn) {
+            window.electron.showMessageDialog("Message length is too long (max: " + bitcoin.MaxOpReturn + ")")
+            return
+        }
+        if (amount < bitcoin.DustLimit) {
+            window.electron.showMessageDialog("Amount must be above dust limit (546)")
             return
         }
         const query = `
