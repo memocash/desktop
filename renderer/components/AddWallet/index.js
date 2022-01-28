@@ -97,7 +97,7 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
             walletInput.current.value = window.electron.getWalletShort(filePath)
             loadFile(filePath)
         })
-        window.electron.openDialog()
+        window.electron.openFileDialog()
     }
 
     const handleClickNext = () => {

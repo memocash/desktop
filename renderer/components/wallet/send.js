@@ -1,14 +1,20 @@
 import {useRef} from "react";
 import form from "../../styles/form.module.css"
+import bitcoin from "../util/bitcoin";
 
 const Send = () => {
     const payToRef = useRef()
     const messageRef = useRef()
     const amountRef = useRef()
-    const clickPreview = async () => {
+    const formSubmit = async (e) => {
+        e.preventDefault()
         const payTo = payToRef.current.value
         const message = messageRef.current.value
         const amount = amountRef.current.value
+        if (amount < bitcoin.DustLimit) {
+            window.electron.showMessageDialog("Amount must be above dust limit (546)")
+            return
+        }
         const query = `
     query ($address: String!) {
         address(address: $address) {
@@ -28,7 +34,7 @@ const Send = () => {
         await window.electron.openPreviewSend({payTo, message, amount})
     }
     return (
-        <div>
+        <form onSubmit={formSubmit}>
             <p>
                 <label>
                     <span className={form.span}>Pay to:</span>
@@ -48,9 +54,9 @@ const Send = () => {
                 </label>
             </p>
             <p>
-                <button onClick={clickPreview}>Preview</button>
+                <input type="submit" value="Preview"/>
             </p>
-        </div>
+        </form>
     )
 }
 

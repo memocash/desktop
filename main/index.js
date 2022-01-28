@@ -36,7 +36,7 @@ const CreateWindow = async () => {
 const CreateTxWindow = async (winId, {payTo, message, amount}) => {
     const win = new BrowserWindow({
         width: 650,
-        height: 400,
+        height: 500,
         minWidth: 650,
         minHeight: 300,
         webPreferences: {
@@ -62,12 +62,19 @@ app.whenReady().then(async () => {
         }
     })
 
-    ipcMain.on("open-dialog", async (e) => {
+    ipcMain.on("open-file-dialog", async (e) => {
         const win = windows[e.sender.id]
         const {canceled, filePaths} = await dialog.showOpenDialog(win, {defaultPath: homedir + "/.memo/wallets"})
         if (!canceled) {
             win.webContents.send("listenFile", filePaths[0])
         }
+    })
+
+    ipcMain.on("show-message-dialog", (e, message) => {
+        dialog.showMessageBoxSync(windows[e.sender.id], {
+            title: "Memo",
+            message: message,
+        })
     })
 
     ipcMain.on("store-wallet", (e, wallet, filename, password) => {

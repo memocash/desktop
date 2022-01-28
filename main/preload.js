@@ -47,8 +47,11 @@ contextBridge.exposeInMainWorld('electron', {
     getWindowId: async () => {
         return await ipcRenderer.invoke("get-window-id")
     },
-    openDialog: () => {
-        ipcRenderer.send("open-dialog")
+    openFileDialog: () => {
+        ipcRenderer.send("open-file-dialog")
+    },
+    showMessageDialog: (message) => {
+        ipcRenderer.send("show-message-dialog", message)
     },
     setWallet: async (wallet, filename, password) => {
         ipcRenderer.send("store-wallet", wallet, getPathForWallet(filename), password)
