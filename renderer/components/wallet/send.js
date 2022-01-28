@@ -1,4 +1,6 @@
 import {useRef} from "react";
+
+const {address} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
 import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 
@@ -13,6 +15,12 @@ const Send = () => {
         const amount = amountRef.current.value
         if (amount < bitcoin.DustLimit) {
             window.electron.showMessageDialog("Amount must be above dust limit (546)")
+            return
+        }
+        try {
+            address.fromBase58Check(payTo)
+        } catch (err) {
+            window.electron.showMessageDialog("Unable to parse address: " + err.toString())
             return
         }
         const query = `
