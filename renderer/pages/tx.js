@@ -12,7 +12,6 @@ const Tx = () => {
     const [inputAmount, setInputAmount] = useState()
 
     useEffect(() => {
-        console.log(router.query)
         if (!router || !router.query || !router.query.payTo || !router.query.amount) {
             return
         }

@@ -28,7 +28,11 @@ const CreateWindow = async () => {
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
     const currentScreen = getDisplayNearestPoint(getCursorScreenPoint())
     const currentScreenXValue = currentScreen.bounds.x
-    const boundsObject = {x: currentScreenXValue + 200, y: 200, width: 800, height: 600}
+    let idOffset = 20 * win.webContents.id
+    for (let i = 0; idOffset > currentScreen.bounds.height - 200 && i < 10; i++) {
+        idOffset -= currentScreen.bounds.height - 200
+    }
+    const boundsObject = {x: currentScreenXValue + 200 + idOffset, y: 200 + idOffset, width: 800, height: 600}
     win.setBounds(boundsObject)
     await win.loadURL("http://localhost:8000")
 }
