@@ -1,0 +1,20 @@
+.header {
+    height: 155px;
+}
+
+.input_output_box {
+    background: #fff;
+    border: 1px solid #999;
+    padding: 0 2px;
+    font-size: 12px;
+    height: calc((100vh - 218px) / 2)
+}
+
+.input_output_head {
+    padding-top: 4px;
+    height: 19px;
+}
+
+.input_output_box p {
+    margin: 2px 0;
+}

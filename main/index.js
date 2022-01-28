@@ -14,6 +14,8 @@ const CreateWindow = async () => {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
+        minWidth: 600,
+        minHeight: 300,
         webPreferences: {
             nodeIntegration: false,
             preload: path.join(__dirname, "preload.js")
@@ -33,8 +35,10 @@ const CreateWindow = async () => {
 
 const CreateTxWindow = async (winId, {payTo, message, amount}) => {
     const win = new BrowserWindow({
-        width: 600,
+        width: 650,
         height: 400,
+        minWidth: 650,
+        minHeight: 300,
         webPreferences: {
             nodeIntegration: false,
             preload: path.join(__dirname, "preload.js"),
@@ -44,7 +48,7 @@ const CreateTxWindow = async (winId, {payTo, message, amount}) => {
     if (txWindows[winId] === undefined) {
         txWindows[winId] = []
     }
-    menus[win.webContents.id] = menu.SimpleMenu(win, false)
+    menus[win.webContents.id] = menu.SimpleMenu(win, true)
     txWindows[winId].push(win)
     await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams({payTo, message, amount})).toString())
 }

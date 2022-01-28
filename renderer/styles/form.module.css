@@ -8,6 +8,11 @@
     width: 300px;
 }
 
+.input_wide {
+    font-size: 12px;
+    width: 500px;
+}
+
 .input_small {
     width: 150px;
 }
