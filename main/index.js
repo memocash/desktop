@@ -26,6 +26,7 @@ const CreateWindow = async () => {
         height: 600,
         minWidth: 600,
         minHeight: 300,
+        title: "Memo",
         webPreferences: {
             nodeIntegration: false,
             preload: path.join(__dirname, "preload.js")
@@ -44,6 +45,7 @@ const CreateTxWindow = async (winId, {payTo, message, amount}) => {
         height: 500,
         minWidth: 650,
         minHeight: 300,
+        title: "Transaction",
         webPreferences: {
             nodeIntegration: false,
             preload: path.join(__dirname, "preload.js"),
