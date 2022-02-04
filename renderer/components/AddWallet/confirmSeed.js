@@ -1,4 +1,5 @@
 import {useRef, useState} from "react"
+import styles from "../../styles/addWallet.module.css"
 
 const ConfirmSeed = ({onBack, onSeedPhraseConfirmed, seedPhrase}) => {
     const [isWrongSeedPhrase, setIsWrongSeedPhrase] = useState(false)
@@ -15,17 +16,21 @@ const ConfirmSeed = ({onBack, onSeedPhraseConfirmed, seedPhrase}) => {
     }
 
     return (
-        <div>
-            <h2>Confirm Seed</h2>
-            <div>Please type your seed here to confirm it has been stored.</div>
-            <textarea ref={seedPhraseInput}/>
-            <button onClick={validateSeedPhrase}>Next</button>
-            {isWrongSeedPhrase &&
-            <div>That is the wrong seed phrase! Try again</div>
-            }
-            <p>
+        <div className={styles.root}>
+            <div className={styles.box}>
+                <div><b>Confirm Seed</b></div>
+                <div className={styles.boxMain}>
+                    <p>Please type your seed here to confirm it has been stored.</p>
+                    <textarea className={styles.seedPhrase} ref={seedPhraseInput} rows="3" />
+                    {isWrongSeedPhrase &&
+                    <p>That is the wrong seed phrase! Try again</p>
+                    }
+                </div>
+            </div>
+            <div className={styles.buttons}>
                 <button onClick={onBack}>Back</button>
-            </p>
+                <button onClick={validateSeedPhrase}>Next</button>
+            </div>
         </div>
     )
 }

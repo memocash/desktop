@@ -1,0 +1,57 @@
+.rootPage {
+    height: calc(100vh - 10px);
+}
+
+.root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.buttons {
+    align-items: center;
+    display: flex;
+    height: 40px;
+    justify-content: flex-end;
+    padding-top: 20px;
+}
+
+.buttons button {
+    margin-left: 20px;
+}
+
+.box {
+    border: 1px solid #999;
+    flex-grow: 1;
+    padding: 20px;
+    margin-left: 20px;
+}
+
+.boxMain {
+    padding: 20px;
+}
+
+.content {
+    box-sizing: border-box;
+    display: flex;
+    height: 100%;
+    padding: 20px;
+}
+
+.imageWrapper {
+    margin-top: 10px;
+}
+
+.input {
+    margin-left: 8px;
+    margin-right: 16px;
+}
+
+.main {
+    flex-grow: 1;
+}
+
+.seedPhrase {
+    resize: none;
+    width: 100%;
+}

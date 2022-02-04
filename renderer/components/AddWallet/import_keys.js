@@ -1,5 +1,6 @@
 import {useRef, useState} from "react"
 import {ECPair} from '@bitcoin-dot-com/bitcoincashjs2-lib'
+import styles from "../../styles/addWallet.module.css"
 
 
 const ImportKeys = ({onSetKeys, onBack}) => {
@@ -26,18 +27,18 @@ const ImportKeys = ({onSetKeys, onBack}) => {
     }
 
     return (
-        <div>
-            <h2>Import Bitcoin Keys</h2>
-            <div>
-                <div>Enter a list of Bitcoin private keys.</div>
-                <textarea onChange={() => setShowError(false)} ref={privateKeyList}/>
-                {showError ? <p>ERROR: Invalid WIF(s) or no WIFs entered</p> : null}
-                <p>
-                    <button onClick={handleClickNext}>Next</button>
-                </p>
-                <p>
-                    <button onClick={onBack}>Back</button>
-                </p>
+        <div className={styles.root}>
+            <div className={styles.box}>
+                <div><b>Import Bitcoin Keys</b></div>
+                <div className={styles.boxMain}>
+                    <div>Enter a list of Bitcoin private keys.</div>
+                    <textarea onChange={() => setShowError(false)} ref={privateKeyList}/>
+                    {showError ? <p>ERROR: Invalid WIF(s) or no WIFs entered</p> : null}
+                </div>
+            </div>
+            <div className={styles.buttons}>
+                <button onClick={onBack}>Back</button>
+                <button onClick={handleClickNext}>Next</button>
             </div>
         </div>
     )

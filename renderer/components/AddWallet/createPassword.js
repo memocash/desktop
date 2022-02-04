@@ -1,4 +1,5 @@
 import {useRef, useState} from "react"
+import styles from "../../styles/addWallet.module.css"
 
 const CreatePassword = ({onBack, onPasswordCreated}) => {
     const [passwordsDontMatch, setPasswordsDontMatch] = useState(false)
@@ -16,24 +17,32 @@ const CreatePassword = ({onBack, onPasswordCreated}) => {
     }
 
     return (
-        <div>
-            <h2>Create a Password to encrypt your key</h2>
-            <p>If you wish to skip encryption, leave password fields blank.</p>
-            <div>
-                <label>Password:
-                    <input ref={password} type="password"/>
-                </label>
-                <label>Confirm Password:
-                    <input ref={confirmPassword} type="password"/>
-                </label>
+        <div className={styles.root}>
+            <div className={styles.box}>
+                <div><b>Create a Password to encrypt your key</b></div>
+                <div className={styles.boxMain}>
+                    <p>If you wish to skip encryption, leave password fields blank.</p>
+                    <div>
+                        <p>
+                            <label>Password:
+                                <input ref={password} type="password"/>
+                            </label>
+                        </p>
+                        <p>
+                            <label>Confirm Password:
+                                <input ref={confirmPassword} type="password"/>
+                            </label>
+                        </p>
+                    </div>
+                    {passwordsDontMatch &&
+                    <p>Passwords do not match. Try again.</p>
+                    }
+                </div>
             </div>
-            <button onClick={handleVerifyPassword}>Finish</button>
-            {passwordsDontMatch &&
-            <div>Passwords do not match. Try again.</div>
-            }
-            <p>
+            <div className={styles.buttons}>
                 <button onClick={onBack}>Back</button>
-            </p>
+                <button onClick={handleVerifyPassword}>Finish</button>
+            </div>
         </div>
     )
 }

@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from "react"
+import styles from "../../styles/addWallet.module.css"
 
 const WalletOptions = {
     UnreadableFile: () => {
@@ -26,7 +27,7 @@ const WalletOptions = {
             <div>
                 <p>This file is encrypted. Enter your password or choose another file.</p>
                 <p><label>Password:
-                    <input autoFocus ref={passwordInputRef} onChange={onPasswordChange}
+                    <input className={styles.input} autoFocus ref={passwordInputRef} onChange={onPasswordChange}
                            onKeyDown={onPasswordKeyDown} type="password"/>
                 </label></p>
                 {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
@@ -130,30 +131,33 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     }
 
     return (
-        <div>
-            <div>
-                <p>
-                    <label>Wallet:
-                        <input ref={walletInput} onChange={fileChangeHandler} type="text"/>
-                        <button onClick={handleClickImport}>Choose...</button>
-                    </label>
-                </p>
-                {isUnreadableFile ?
-                    <WalletOptions.UnreadableFile/>
-                    : fileExists ?
-                        passwordProtectedFile ?
-                            <WalletOptions.ImportWithPassword
-                                hasEnteredWrongPassword={hasEnteredWrongPassword}
-                                onPasswordChange={() => setHasEnteredWrongPassword(false)}
-                                onPasswordKeyDown={passwordKeyDown}
-                                passwordInputRef={passwordInput}
-                            />
-                            : <WalletOptions.ImportWithoutPassword/>
-                        : <WalletOptions.Create/>
-                }
-                <div>
-                    <button onClick={handleClickNext} disabled={isUnreadableFile}>Next</button>
+        <div className={styles.root}>
+            <div className={styles.box}>
+                <div><b>Memo wallet</b></div>
+                <div className={styles.boxMain}>
+                    <p>
+                        <label>Wallet:
+                            <input className={styles.input} ref={walletInput} onChange={fileChangeHandler} type="text"/>
+                            <button onClick={handleClickImport}>Choose...</button>
+                        </label>
+                    </p>
+                    {isUnreadableFile ?
+                        <WalletOptions.UnreadableFile/>
+                        : fileExists ?
+                            passwordProtectedFile ?
+                                <WalletOptions.ImportWithPassword
+                                    hasEnteredWrongPassword={hasEnteredWrongPassword}
+                                    onPasswordChange={() => setHasEnteredWrongPassword(false)}
+                                    onPasswordKeyDown={passwordKeyDown}
+                                    passwordInputRef={passwordInput}
+                                />
+                                : <WalletOptions.ImportWithoutPassword/>
+                            : <WalletOptions.Create/>
+                    }
                 </div>
+            </div>
+            <div className={styles.buttons}>
+                <button onClick={handleClickNext} disabled={isUnreadableFile}>Next</button>
             </div>
         </div>
     )
