@@ -5,3 +5,21 @@ body {
     padding: 5px;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
+
+button {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    padding: 3px 10px;
+    border: 1px solid #9C9C9C;
+    background-image: -webkit-linear-gradient(
+            #ffffff 0%, #F6F6F6 30%,
+            #F3F3F3 45%, #EDEDED 60%,
+            #eeeeee 100%);
+    border-radius: 3px;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.20);
+}
+
+button:active {
+    border-color: #705ebb;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.65);
+}
