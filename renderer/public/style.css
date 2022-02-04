@@ -6,7 +6,7 @@ body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-button {
+button, input[type=submit] {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 12px;
     padding: 3px 10px;
@@ -19,7 +19,7 @@ button {
     box-shadow: 0 0 1px rgba(0, 0, 0, 0.20);
 }
 
-button:active {
+button:active, input[type=submit]:active {
     border-color: #705ebb;
     box-shadow: 0 0 1px rgba(0, 0, 0, 0.65);
 }
