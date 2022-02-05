@@ -16,6 +16,12 @@ const CreatePassword = ({onBack, onPasswordCreated}) => {
         }
     }
 
+    const handleEditPassword = () => {
+        if(passwordsDontMatch) {
+            setPasswordsDontMatch(false)
+        }
+    }
+
     return (
         <div className={styles.root}>
             <div className={styles.box}>
@@ -25,12 +31,12 @@ const CreatePassword = ({onBack, onPasswordCreated}) => {
                     <div>
                         <p>
                             <label>Password:
-                                <input ref={password} type="password"/>
+                                <input ref={password} onChange={handleEditPassword} type="password"/>
                             </label>
                         </p>
                         <p>
                             <label>Confirm Password:
-                                <input ref={confirmPassword} type="password"/>
+                                <input ref={confirmPassword} onChange={handleEditPassword} type="password"/>
                             </label>
                         </p>
                     </div>
