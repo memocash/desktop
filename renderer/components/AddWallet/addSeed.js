@@ -6,6 +6,25 @@ const SeedTypeOptions = {
     Import: "import",
 }
 
+const SeedOptionsCreate = ({seedPhrase}) => {
+    return (
+        <div>
+            <p>Here is the seed phrase for your new wallet:</p>
+            <textarea className={styles.seedPhrase} readOnly rows="3">{seedPhrase}</textarea>
+            <p>Store this seed securely. It will be used to recover your wallet.</p>
+        </div>
+    )
+}
+
+const SeedOptionsImport = ({inputRef, onEditField}) => {
+    return (
+        <div>
+            <p>Enter your 12-word seed phrase.</p>
+            <textarea className={styles.seedPhrase} ref={inputRef} onChange={onEditField} rows="3" />
+        </div>
+    )
+}
+
 const AddSeed = ({onStoredSeed, onUserProvidedSeed, onBack, seedPhrase}) => {
     const [hasOwnSeed, setHasOwnSeed] = useState(false)
     const [hasEnteredInvalidSeedPhrase, setHasEnteredInvalidSeedPhrase] = useState(false)
@@ -34,25 +53,6 @@ const AddSeed = ({onStoredSeed, onUserProvidedSeed, onBack, seedPhrase}) => {
         }
     }
 
-    const SeedOptionsCreate = () => {
-        return (
-            <div>
-                <p>Here is the seed phrase for your new wallet:</p>
-                <textarea className={styles.seedPhrase} readOnly rows="3">{seedPhrase}</textarea>
-                <p>Store this seed securely. It will be used to recover your wallet.</p>
-            </div>
-        )
-    }
-
-    const SeedOptionsImport = () => {
-        return (
-            <div>
-                <p>Enter your 12-word seed phrase.</p>
-                <textarea className={styles.seedPhrase} ref={userProvidedSeed} onChange={handleEditImportedSeed} rows="3"></textarea>
-            </div>
-        )
-    }
-
     return (
         <div className={styles.root}>
             <div className={styles.box}>
@@ -69,7 +69,10 @@ const AddSeed = ({onStoredSeed, onUserProvidedSeed, onBack, seedPhrase}) => {
                         </label></p>
                     </div>
                     <div>
-                        {hasOwnSeed ? <SeedOptionsImport/> : <SeedOptionsCreate/>}
+                        {hasOwnSeed ?
+                            <SeedOptionsImport inputRef={userProvidedSeed} onEditField={handleEditImportedSeed} />
+                            : <SeedOptionsCreate seedPhrase={seedPhrase} />
+                        }
                         {hasEnteredInvalidSeedPhrase &&
                         <p>Please enter a valid seed phrase.</p>
                         }
