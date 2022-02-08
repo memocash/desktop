@@ -27,13 +27,13 @@ const ImportKeys = ({onSetKeys, onBack}) => {
     }
 
     return (
-        <div className={styles.root}>
+        <div className={`${styles.root} ${styles.importKeys}`}>
             <div className={styles.box}>
                 <div><b>Import Bitcoin Keys</b></div>
                 <div className={styles.boxMain}>
-                    <div>Enter a list of Bitcoin private keys.</div>
-                    <textarea onChange={() => setShowError(false)} ref={privateKeyList}/>
-                    {showError ? <p>ERROR: Invalid WIF(s) or no WIFs entered</p> : null}
+                    <p>Enter a list of Bitcoin private keys.</p>
+                    <textarea className={styles.bitcoinKeys} onChange={() => setShowError(false)} ref={privateKeyList} />
+                    {showError ? <p>ERROR: Invalid WIF(s) or no WIFs entered</p> : <p>&nbsp;</p>}
                 </div>
             </div>
             <div className={styles.buttons}>

@@ -10,7 +10,7 @@ const SeedOptionsCreate = ({seedPhrase}) => {
     return (
         <div>
             <p>Here is the seed phrase for your new wallet:</p>
-            <textarea className={styles.seedPhrase} readOnly rows="3">{seedPhrase}</textarea>
+            <textarea className={styles.seedPhrase} readOnly>{seedPhrase}</textarea>
             <p>Store this seed securely. It will be used to recover your wallet.</p>
         </div>
     )
@@ -20,7 +20,7 @@ const SeedOptionsImport = ({inputRef, onEditField}) => {
     return (
         <div>
             <p>Enter your 12-word seed phrase.</p>
-            <textarea className={styles.seedPhrase} ref={inputRef} onChange={onEditField} rows="3" />
+            <textarea className={styles.seedPhrase} ref={inputRef} onChange={onEditField} />
         </div>
     )
 }

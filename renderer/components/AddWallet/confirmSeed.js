@@ -27,7 +27,7 @@ const ConfirmSeed = ({onBack, onSeedPhraseConfirmed, seedPhrase}) => {
                 <div><b>Confirm Seed</b></div>
                 <div className={styles.boxMain}>
                     <p>Please type your seed here to confirm it has been stored.</p>
-                    <textarea className={styles.seedPhrase} ref={seedPhraseInput} onChange={handleEditSeedPhrase} rows="3" />
+                    <textarea className={styles.seedPhrase} ref={seedPhraseInput} onChange={handleEditSeedPhrase} />
                     {isWrongSeedPhrase &&
                     <p>That is the wrong seed phrase! Try again</p>
                     }
