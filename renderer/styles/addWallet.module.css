@@ -8,10 +8,27 @@
     height: 100%;
 }
 
+.root input[type="password"], .root input[type="text"] {
+    margin-left: 8px;
+}
+
+.root input[type="radio"] {
+    margin: 1px 5px 1px 0;
+}
+
+.root label {
+    align-items: center;
+    display: inline-flex;
+}
+
 .bitcoinKeys {
     flex-grow: 1;
     resize: none;
     width: 100%;
+}
+
+.buttonChoose {
+    margin-left: 16px;
 }
 
 .buttons {
@@ -54,11 +71,6 @@
 .importKeys .boxMain {
     display: flex;
     flex-direction: column;
-}
-
-.input {
-    margin-left: 8px;
-    margin-right: 16px;
 }
 
 .main {

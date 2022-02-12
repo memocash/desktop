@@ -27,7 +27,7 @@ const WalletOptions = {
             <div>
                 <p>This file is encrypted. Enter your password or choose another file.</p>
                 <p><label>Password:
-                    <input className={styles.input} autoFocus ref={passwordInputRef} onChange={onPasswordChange}
+                    <input autoFocus ref={passwordInputRef} onChange={onPasswordChange}
                            onKeyDown={onPasswordKeyDown} type="password"/>
                 </label></p>
                 {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
@@ -137,8 +137,8 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
                 <div className={styles.boxMain}>
                     <p>
                         <label>Wallet:
-                            <input className={styles.input} ref={walletInput} onChange={fileChangeHandler} type="text"/>
-                            <button onClick={handleClickImport}>Choose...</button>
+                            <input ref={walletInput} onChange={fileChangeHandler} type="text"/>
+                            <button className={styles.buttonChoose} onClick={handleClickImport}>Choose...</button>
                         </label>
                     </p>
                     {isUnreadableFile ?
