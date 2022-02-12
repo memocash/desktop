@@ -10,7 +10,7 @@ const SeedOptionsCreate = ({seedPhrase}) => {
     return (
         <div>
             <p>Here is the seed phrase for your new wallet:</p>
-            <textarea className={styles.seedPhrase} readOnly>{seedPhrase}</textarea>
+            <textarea className={styles.seedPhrase} value={seedPhrase} readOnly />
             <p>Store this seed securely. It will be used to recover your wallet.</p>
         </div>
     )
