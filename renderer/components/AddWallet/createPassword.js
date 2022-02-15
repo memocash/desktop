@@ -1,5 +1,6 @@
 import {useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
+import form from "../../styles/form.module.css"
 
 const CreatePassword = ({onBack, onPasswordCreated}) => {
     const [passwordsDontMatch, setPasswordsDontMatch] = useState(false)
@@ -17,7 +18,7 @@ const CreatePassword = ({onBack, onPasswordCreated}) => {
     }
 
     const handleEditPassword = () => {
-        if(passwordsDontMatch) {
+        if (passwordsDontMatch) {
             setPasswordsDontMatch(false)
         }
     }
@@ -28,17 +29,12 @@ const CreatePassword = ({onBack, onPasswordCreated}) => {
                 <div><b>Create a Password to encrypt your key</b></div>
                 <div className={styles.boxMain}>
                     <p>If you wish to skip encryption, leave password fields blank.</p>
-                    <div>
-                        <p>
-                            <label>Password:
-                                <input ref={password} onChange={handleEditPassword} type="password"/>
-                            </label>
-                        </p>
-                        <p>
-                            <label>Confirm Password:
-                                <input ref={confirmPassword} onChange={handleEditPassword} type="password"/>
-                            </label>
-                        </p>
+                    <div className={form.grid}>
+                        <label htmlFor="password">Password:</label>
+                        <input id="password" ref={password} onChange={handleEditPassword} type="password"/>
+                        <label htmlFor="password-confirm">Confirm Password:</label>
+                        <input id="password-confirm" ref={confirmPassword} onChange={handleEditPassword}
+                               type="password"/>
                     </div>
                     {passwordsDontMatch &&
                     <p>Passwords do not match. Try again.</p>

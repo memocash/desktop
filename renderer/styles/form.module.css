@@ -16,3 +16,9 @@
 .input_small {
     width: 150px;
 }
+
+.grid {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    grid-gap: 10px;
+}
