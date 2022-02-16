@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import tabs from '../../styles/tabs.module.css'
 
 export const Tabs = {
@@ -8,10 +7,11 @@ export const Tabs = {
     Addresses: "addresses",
     Coins: "coins",
 }
-const Tab = ({selected, name, children}) => {
+
+const Tab = ({selected, name, clicked, title}) => {
     return (
         <div className={selected === name ? [tabs.tab, tabs.selected].join(" ") : tabs.tab}>
-            {children}
+            <a onClick={() => clicked(name)}>{title}</a>
         </div>
     )
 }
@@ -20,11 +20,11 @@ const Frame = ({selected, clicked, children}) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
-                <Tab name={Tabs.History} selected={selected}><a onClick={() => clicked(Tabs.History)}>History</a></Tab>
-                <Tab name={Tabs.Send} selected={selected}><a onClick={() => clicked(Tabs.Send)}>Send</a></Tab>
-                <Tab name={Tabs.Receive} selected={selected}><a onClick={() => clicked(Tabs.Receive)}>Receive</a></Tab>
-                <Tab name={Tabs.Addresses} selected={selected}><a onClick={() => clicked(Tabs.Addresses)}>Addresses</a></Tab>
-                <Tab name={Tabs.Coins} selected={selected}><a onClick={() => clicked(Tabs.Coins)}>Coins</a></Tab>
+                <Tab selected={selected} clicked={clicked} name={Tabs.History} title="History"/>
+                <Tab selected={selected} clicked={clicked} name={Tabs.Send} title="Send"/>
+                <Tab selected={selected} clicked={clicked} name={Tabs.Receive} title="Receive"/>
+                <Tab selected={selected} clicked={clicked} name={Tabs.Addresses} title="Addresses"/>
+                <Tab selected={selected} clicked={clicked} name={Tabs.Coins} title="Coins"/>
             </div>
             <div className={tabs.body}>
                 {children}
