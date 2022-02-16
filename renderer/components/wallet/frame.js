@@ -8,26 +8,26 @@ export const Tabs = {
     Addresses: "addresses",
     Coins: "coins",
 }
+const Tab = ({selected, name, children}) => {
+    return (
+        <div className={selected === name ? [tabs.tab, tabs.selected].join(" ") : tabs.tab}>
+            {children}
+        </div>
+    )
+}
 
-const Frame = (props) => {
-    const Tab = (tabProps) => {
-        return (
-            <div className={props.selected === tabProps.name ? [tabs.tab, tabs.selected].join(" ") : tabs.tab}>
-                {tabProps.children}
-            </div>
-        )
-    }
+const Frame = ({selected, clicked, children}) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
-                <Tab name={Tabs.History}><a onClick={() => props.clicked(Tabs.History)}>History</a></Tab>
-                <Tab name={Tabs.Send}><a onClick={() => props.clicked(Tabs.Send)}>Send</a></Tab>
-                <Tab name={Tabs.Receive}><a onClick={() => props.clicked(Tabs.Receive)}>Receive</a></Tab>
-                <Tab name={Tabs.Addresses}><a onClick={() => props.clicked(Tabs.Addresses)}>Addresses</a></Tab>
-                <Tab name={Tabs.Coins}><a onClick={() => props.clicked(Tabs.Coins)}>Coins</a></Tab>
+                <Tab name={Tabs.History} selected={selected}><a onClick={() => clicked(Tabs.History)}>History</a></Tab>
+                <Tab name={Tabs.Send} selected={selected}><a onClick={() => clicked(Tabs.Send)}>Send</a></Tab>
+                <Tab name={Tabs.Receive} selected={selected}><a onClick={() => clicked(Tabs.Receive)}>Receive</a></Tab>
+                <Tab name={Tabs.Addresses} selected={selected}><a onClick={() => clicked(Tabs.Addresses)}>Addresses</a></Tab>
+                <Tab name={Tabs.Coins} selected={selected}><a onClick={() => clicked(Tabs.Coins)}>Coins</a></Tab>
             </div>
             <div className={tabs.body}>
-                {props.children}
+                {children}
             </div>
         </div>
     )
