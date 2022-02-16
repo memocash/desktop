@@ -8,7 +8,7 @@ const ConfirmSeed = ({onBack, onSeedPhraseConfirmed, seedPhrase}) => {
 
     const validateSeedPhrase = () => {
         const typedPhrase = seedPhraseInput.current.value.trim()
-        if (typedPhrase.includes(seedPhrase)) {
+        if (typedPhrase === seedPhrase) {
             onSeedPhraseConfirmed()
         } else {
             setIsWrongSeedPhrase(true)
