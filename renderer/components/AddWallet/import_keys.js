@@ -1,29 +1,41 @@
 import {useRef, useState} from "react"
-import {ECPair} from '@bitcoin-dot-com/bitcoincashjs2-lib'
+import {address, ECPair} from '@bitcoin-dot-com/bitcoincashjs2-lib'
 import styles from "../../styles/addWallet.module.css"
 
-
-const ImportKeys = ({onSetKeys, onBack}) => {
-    const [showError, setShowError] = useState(false)
+const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
+    const [error, setError] = useState("")
     const privateKeyList = useRef()
 
     const handleClickNext = () => {
-        const keyList = privateKeyList.current.value.split("\n")
-        for (let i = 0; i < keyList.length; i++) {
-            const wif = keyList[i]
+        const list = privateKeyList.current.value.split("\n")
+        let keyList = [], addressList = []
+        for (let i = 0; i < list.length; i++) {
+            const item = list[i]
             try {
-                const address = ECPair.fromWIF(wif).getAddress()
+                const address = ECPair.fromWIF(item).getAddress()
                 if (!address || !address.length) {
-                    setShowError(true)
+                    setError("ERROR: Invalid addresses or WIF(s) or none entered")
                     return
                 }
-            } catch (err) {
-                console.log(err)
-                setShowError(true)
-                return
+            } catch (err1) {
+                try {
+                    address.fromBase58Check(item)
+                } catch (err2) {
+                    console.log(err1)
+                    console.log(err2)
+                    setError("ERROR: Invalid addresses or WIF(s) or none entered")
+                    return
+                }
+                addressList.push(item)
+                continue
             }
+            keyList.push(item)
         }
-        onSetKeys(keyList)
+        if (keyList.length > 0 && addressList.length > 0) {
+            setError("ERROR: Cannot only have addresses or WIFs, not both")
+            return
+        }
+        onSetKeysAndAddresses(keyList, addressList)
     }
 
     return (
@@ -31,9 +43,9 @@ const ImportKeys = ({onSetKeys, onBack}) => {
             <div className={styles.box}>
                 <div><b>Import Bitcoin Keys</b></div>
                 <div className={styles.boxMain}>
-                    <p>Enter a list of Bitcoin private keys.</p>
-                    <textarea className={styles.bitcoinKeys} onChange={() => setShowError(false)} ref={privateKeyList} />
-                    {showError ? <p>ERROR: Invalid WIF(s) or no WIFs entered</p> : <p>&nbsp;</p>}
+                    <p>Enter a list of Bitcoin addresses (this will create a watch-only wallet) or private keys.</p>
+                    <textarea className={styles.bitcoinKeys} onChange={() => setError("")} ref={privateKeyList}/>
+                    {error.length ? <p>{error}</p> : <p>&nbsp;</p>}
                 </div>
             </div>
             <div className={styles.buttons}>

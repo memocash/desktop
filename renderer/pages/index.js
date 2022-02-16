@@ -28,6 +28,7 @@ const Index = () => {
     const [pane, setPane] = useState(Panes.Step1ChooseFile)
     const [seedPhrase, setSeedPhrase] = useState("")
     const [keyList, setKeyList] = useState([])
+    const [addressList, setAddressList] = useState([])
 
     const generateSeedPhrase = () => {
         const mnemonic = generateMnemonic()
@@ -59,8 +60,9 @@ const Index = () => {
         setPane(Panes.Step3SetSeed)
     }
 
-    const onSetKeys = (keys) => {
+    const onSetKeysAndAddresses = (keys, addresses) => {
         setKeyList(keys)
+        setAddressList(addresses)
         setPane(Panes.Step5SetPassword)
     }
 
@@ -113,7 +115,7 @@ const Index = () => {
     }
 
     const handlePasswordCreated = async (password) => {
-        await window.electron.createFile(filePath, seedPhrase, keyList, [], password)
+        await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
         router.push("/wallet")
     }
 
@@ -121,7 +123,7 @@ const Index = () => {
         <div className={styles.rootPage}>
             <div className={styles.content}>
                 <div className={styles.imageWrapper}>
-                    <img src="/memo-logo-large.png" width="100" />
+                    <img src="/memo-logo-large.png" width="100"/>
                 </div>
                 <div className={styles.main}>
                     {pane === Panes.Step1ChooseFile &&
@@ -139,7 +141,7 @@ const Index = () => {
                     {pane === Panes.Step3SetKeys &&
                     <ImportKeys
                         onBack={onBackFromAddSeed}
-                        onSetKeys={onSetKeys}
+                        onSetKeysAndAddresses={onSetKeysAndAddresses}
                     />}
                     {pane === Panes.Step3SetSeed &&
                     <AddSeed

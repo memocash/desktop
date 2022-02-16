@@ -29,12 +29,14 @@ const SelectType = ({onSelectStandard, onSelectImport, onBack}) => {
                     <p>What kind of wallet do you want to create?</p>
                     <div>
                         <p><label>
-                            <input type="radio" name="type" value={TypeOptions.Standard} onChange={changeWalletType}/>
+                            <input type="radio" name="type" value={TypeOptions.Standard} onChange={changeWalletType}
+                                   checked={isStandard}/>
                             Standard wallet
                         </label></p>
                         <p><label>
-                            <input type="radio" name="type" value={TypeOptions.Import} onChange={changeWalletType}/>
-                            Import Bitcoin private keys
+                            <input type="radio" name="type" value={TypeOptions.Import} onChange={changeWalletType}
+                                   checked={!isStandard}/>
+                            Import Bitcoin addresses or private keys
                         </label></p>
                     </div>
                 </div>
