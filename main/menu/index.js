@@ -6,6 +6,7 @@ const ShowMenu = (win, newWindow) => {
     const submenu = [
         {
             label: "New/Restore",
+            accelerator: "CmdOrCtrl+N",
             click: async () => {
                 newWindow()
             },
