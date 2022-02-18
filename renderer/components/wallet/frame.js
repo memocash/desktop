@@ -10,7 +10,7 @@ export const Tabs = {
 
 const Tab = ({selected, name, clicked, title}) => {
     return (
-        <div className={selected === name ? [tabs.tab, tabs.selected].join(" ") : tabs.tab}>
+        <div className={[tabs.tab, selected === name && tabs.selected].join(" ")}>
             <a onClick={() => clicked(name)}>{title}</a>
         </div>
     )

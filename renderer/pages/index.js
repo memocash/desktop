@@ -1,16 +1,12 @@
 import {useState} from "react"
 import {useRouter} from "next/router"
-import {generateMnemonic, mnemonicToSeedSync, validateMnemonic} from "bip39"
+import {generateMnemonic, validateMnemonic} from "bip39"
 import AddWalletHome from "../components/AddWallet"
 import AddSeed from "../components/AddWallet/addSeed"
 import ConfirmSeed from "../components/AddWallet/confirmSeed"
 import CreatePassword from "../components/AddWallet/createPassword"
 import SelectType from "../components/AddWallet/select_type"
-import CryptoJS from "crypto-js";
 import ImportKeys from "../components/AddWallet/import_keys";
-import {fromSeed} from "bip32";
-import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import GetAddresses from "../components/util/addresses";
 import styles from "../styles/addWallet.module.css"
 
 const Panes = {
