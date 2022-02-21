@@ -9,17 +9,17 @@ const Update = () => {
             return
         }
         const data = await loadOutputs(wallet.addresses)
-        AddressLoop:
-            for (let i = 0; i < data.addresses.length; i++) {
-                if (data.addresses[i].outputs == null) {
-                    console.log("null outputs for address: " + data.addresses[i].address)
-                    console.log(data.addresses[i])
-                    continue
-                }
-                for (let j = 0; j < data.addresses[i].outputs.length; j++) {
-                    console.log(data.addresses[i].outputs[j].tx)
-                }
+        console.log(data)
+        for (let i = 0; i < data.addresses.length; i++) {
+            if (data.addresses[i].outputs == null) {
+                console.log("null outputs for address: " + data.addresses[i].address)
+                console.log(data.addresses[i])
+                continue
             }
+            for (let j = 0; j < data.addresses[i].outputs.length; j++) {
+                console.log(data.addresses[i].outputs[j].tx)
+            }
+        }
     }, [])
 
     const loadOutputs = async (addresses) => {
