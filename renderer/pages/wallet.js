@@ -1,6 +1,6 @@
 import Frame, {Tabs} from "../components/wallet/frame";
 import Addresses from "../components/wallet/addresses";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import History from "../components/wallet/history";
 import Send from "../components/wallet/send";
 import Receive from "../components/wallet/receive";
