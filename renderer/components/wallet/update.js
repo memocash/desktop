@@ -1,6 +1,6 @@
 import {useEffect} from "react";
 
-const Update = () => {
+const Update = ({setConnected}) => {
     useEffect(async () => {
         window.electron.walletLoaded()
         let wallet = await window.electron.getWallet()
@@ -8,7 +8,15 @@ const Update = () => {
             console.log("ERROR: Addresses not loaded")
             return
         }
-        const data = await loadOutputs(wallet.addresses)
+        let data
+        try {
+            data = await loadOutputs(wallet.addresses)
+        } catch(e) {
+            setConnected(false)
+            console.log("Error connecting to index server")
+            console.log(e)
+            return
+        }
         console.log(data)
         let txs = []
         for (let i = 0; i < data.addresses.length; i++) {
@@ -24,6 +32,7 @@ const Update = () => {
         }
         console.log(txs)
         await window.electron.saveTransactions(txs)
+        setConnected(true)
     }, [])
 
     const loadOutputs = async (addresses) => {

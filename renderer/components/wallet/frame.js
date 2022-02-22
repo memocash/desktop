@@ -16,7 +16,7 @@ const Tab = ({selected, name, clicked, title}) => {
     )
 }
 
-const Frame = ({selected, clicked, children, connected=true}) => {
+const Frame = ({selected, clicked, children, connected}) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>

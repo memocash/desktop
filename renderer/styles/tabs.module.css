@@ -50,7 +50,7 @@
     display: flex;
     justify-content: space-between;
     height: 20px;
-    padding: 5px;
+    padding: 5px 2px;
 }
 
 .statusIcons {
@@ -68,9 +68,9 @@
 }
 
 .statusOkay {
-    background: radial-gradient(circle at 5px 5px, #0ae202, #333);
+    background: radial-gradient(circle at 5px 5px, #8ed526, #555);
 }
 
 .statusError {
-    background: radial-gradient(circle at 5px 5px, #f61313, #333);
+    background: radial-gradient(circle at 5px 5px, #f61313, #555);
 }
