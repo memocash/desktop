@@ -10,8 +10,8 @@
     "pack-app": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder"
   },
-  "author": "Jason Chavannes",
-  "license": "MIT",
+  "author": "Memo Technology, Inc.",
+  "license": "Apache License 2.0",
   "devDependencies": {
     "electron": "^13.6.3",
     "electron-builder": "^22.10.5",
