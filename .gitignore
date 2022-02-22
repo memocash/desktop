@@ -2,3 +2,5 @@
 /node_modules
 /renderer/.next
 .DS_Store
+/memo.db
+/.next/

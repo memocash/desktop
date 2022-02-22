@@ -1,3 +1,4 @@
+const database = require("better-sqlite3")
 const {app, BrowserWindow, ipcMain, dialog, screen, Menu} = require('electron')
 const homedir = require("os").homedir()
 const path = require('path')
@@ -138,6 +139,16 @@ app.whenReady().then(async () => {
 
     ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
         await CreateTxWindow(e.sender.id, {payTo, message, amount})
+    })
+
+    ipcMain.on("save-transactions", async (e, transactions) => {
+        const db = database("memo.db")
+        const create = db.prepare("CREATE TABLE IF NOT EXISTS txs (hash CHAR)")
+        create.run()
+        for (let i = 0; i < transactions.length; i++) {
+            const insert = db.prepare("INSERT INTO txs (hash) VALUES (?)")
+            insert.run(transactions[i].hash)
+        }
     })
 
     await CreateWindow()
