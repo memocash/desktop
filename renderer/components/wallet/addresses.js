@@ -28,6 +28,7 @@ const Addresses = () => {
         let data = await window.electron.graphQL(query, {
             addresses: addresses,
         })
+        console.log(data)
         return data.data.addresses
     }
 

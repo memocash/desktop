@@ -1,10 +1,10 @@
-const database = require("better-sqlite3")
 const {app, BrowserWindow, ipcMain, dialog, screen, Menu} = require('electron')
 const homedir = require("os").homedir()
 const path = require('path')
-const http = require('http')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
+const {GraphQL} = require("./client/graphql");
+const {Insert} = require("./data/sqlite");
 
 const wallets = {}
 const windows = {}
@@ -102,39 +102,7 @@ app.whenReady().then(async () => {
     })
 
     ipcMain.handle("graphql", async (e, {query, variables}) => {
-        const body = JSON.stringify({
-            query: query,
-            variables: variables,
-        })
-        return new Promise((resolve, reject) => {
-            const request = http.request("http://127.0.0.1:26770/graphql", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Content-Length": body.length,
-                },
-            }, (res) => {
-                let data = "";
-                res.on("data", d => {
-                    data += d
-                })
-                res.on("end", () => {
-                    try {
-                        const jsonData = JSON.parse(data)
-                        resolve(jsonData)
-                    } catch (e) {
-                        console.log("error parsing json response", e)
-                        reject(e)
-                    }
-                })
-            })
-            request.on("error", error => {
-                console.log("got error")
-                reject(error)
-            })
-            request.write(body)
-            request.end()
-        })
+        return GraphQL({query, variables})
     })
 
     ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
@@ -142,12 +110,8 @@ app.whenReady().then(async () => {
     })
 
     ipcMain.on("save-transactions", async (e, transactions) => {
-        const db = database("memo.db")
-        const create = db.prepare("CREATE TABLE IF NOT EXISTS txs (hash CHAR)")
-        create.run()
         for (let i = 0; i < transactions.length; i++) {
-            const insert = db.prepare("INSERT INTO txs (hash) VALUES (?)")
-            insert.run(transactions[i].hash)
+            await Insert("INSERT INTO txs (hash) VALUES (?)", [transactions[i].hash])
         }
     })
 
