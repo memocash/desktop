@@ -13,11 +13,24 @@ const GetDb = () => {
 }
 
 const Insert = async (query, variables) => {
+    if (variables === undefined) {
+        variables = []
+    }
     const insert = GetDb().prepare(query)
     await insert.run(...variables)
 }
 
+const Select = async (query, variables) => {
+    if (variables === undefined) {
+        variables = []
+    }
+    const select = GetDb().prepare(query)
+    const results = select.all(...variables)
+    return results
+}
+
 module.exports = {
     Insert,
+    Select,
     GetDb,
 }

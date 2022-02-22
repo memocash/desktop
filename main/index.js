@@ -4,7 +4,7 @@ const path = require('path')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
 const {GraphQL} = require("./client/graphql");
-const {Insert} = require("./data/sqlite");
+const {Insert, Select} = require("./data/sqlite");
 
 const wallets = {}
 const windows = {}
@@ -113,6 +113,10 @@ app.whenReady().then(async () => {
         for (let i = 0; i < transactions.length; i++) {
             await Insert("INSERT INTO txs (hash) VALUES (?)", [transactions[i].hash])
         }
+    })
+
+    ipcMain.handle("get-transactions", async (e) => {
+        return Select("SELECT * FROM txs")
     })
 
     await CreateWindow()
