@@ -1,5 +1,4 @@
 import tabs from '../../styles/tabs.module.css'
-import { IconCircle, IconX } from "../icons"
 
 export const Tabs = {
     History: "history",
@@ -17,7 +16,7 @@ const Tab = ({selected, name, clicked, title}) => {
     )
 }
 
-const Frame = ({selected, clicked, children}) => {
+const Frame = ({selected, clicked, children, connected=true}) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
@@ -32,11 +31,18 @@ const Frame = ({selected, clicked, children}) => {
             </div>
             <div className={tabs.statusBar}>
                 <div className={tabs.statusText}>
-                    Balance
+                    {connected ?
+                        <>Balance: 0 satoshis</>
+                        :
+                        <>Disconnected</>
+                    }
                 </div>
                 <div className={tabs.statusIcons}>
-                    <IconCircle />
-                    <IconX />
+                    {connected ?
+                        <div className={[tabs.statusIcon, tabs.statusOkay].join(" ")}/>
+                        :
+                        <div className={[tabs.statusIcon, tabs.statusError].join(" ")}/>
+                    }
                 </div>
             </div>
         </div>

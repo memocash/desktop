@@ -40,7 +40,7 @@
     background: #fff;
     border: 1px solid #999;
     border-radius: 0 5px 5px 5px;
-    height: calc(100% - 62px);
+    height: calc(100% - 57px);
     padding: 0 5px;
     overflow: auto;
 }
@@ -49,10 +49,28 @@
     align-items: center;
     display: flex;
     justify-content: space-between;
+    height: 20px;
     padding: 5px;
 }
 
 .statusIcons {
     align-items: center;
     display: flex;
+}
+
+.statusIcon {
+    display: block;
+    background: black;
+    border-radius: 100%;
+    height: 24px;
+    width: 24px;
+    margin: -2px 0;
+}
+
+.statusOkay {
+    background: radial-gradient(circle at 5px 5px, #0ae202, #333);
+}
+
+.statusError {
+    background: radial-gradient(circle at 10px 10px, #f61313, #333);
 }
