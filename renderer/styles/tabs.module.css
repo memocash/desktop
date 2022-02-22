@@ -40,7 +40,19 @@
     background: #fff;
     border: 1px solid #999;
     border-radius: 0 5px 5px 5px;
-    height: calc(100% - 32px);
+    height: calc(100% - 62px);
     padding: 0 5px;
     overflow: auto;
+}
+
+.statusBar {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+}
+
+.statusIcons {
+    align-items: center;
+    display: flex;
 }

@@ -1,4 +1,5 @@
 import tabs from '../../styles/tabs.module.css'
+import { IconCircle, IconX } from "../icons"
 
 export const Tabs = {
     History: "history",
@@ -28,6 +29,15 @@ const Frame = ({selected, clicked, children}) => {
             </div>
             <div className={tabs.body}>
                 {children}
+            </div>
+            <div className={tabs.statusBar}>
+                <div className={tabs.statusText}>
+                    Balance
+                </div>
+                <div className={tabs.statusIcons}>
+                    <IconCircle />
+                    <IconX />
+                </div>
             </div>
         </div>
     )
