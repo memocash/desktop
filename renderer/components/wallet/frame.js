@@ -34,7 +34,7 @@ const Frame = ({selected, clicked, children, connected}) => {
                     {connected ?
                         <>Balance: 0 satoshis</>
                         :
-                        <>Disconnected</>
+                        <>Not connected</>
                     }
                 </div>
                 <div className={tabs.statusIcons}>
