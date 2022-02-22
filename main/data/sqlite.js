@@ -1,10 +1,11 @@
 const database = require("better-sqlite3")
+const homedir = require('os').homedir()
 
 let _db
 
 const GetDb = () => {
     if (_db === undefined) {
-        _db = database("memo.db")
+        _db = database(homedir + "/.memo/memo.db")
         const create = _db.prepare("CREATE TABLE IF NOT EXISTS txs (hash CHAR)")
         create.run()
     }
