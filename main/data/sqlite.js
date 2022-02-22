@@ -6,7 +6,7 @@ let _db
 const GetDb = () => {
     if (_db === undefined) {
         _db = database(homedir + "/.memo/memo.db")
-        const create = _db.prepare("CREATE TABLE IF NOT EXISTS txs (hash CHAR)")
+        const create = _db.prepare("CREATE TABLE IF NOT EXISTS txs (hash CHAR UNIQUE)")
         create.run()
     }
     return _db

@@ -111,7 +111,7 @@ app.whenReady().then(async () => {
 
     ipcMain.on("save-transactions", async (e, transactions) => {
         for (let i = 0; i < transactions.length; i++) {
-            await Insert("INSERT INTO txs (hash) VALUES (?)", [transactions[i].hash])
+            await Insert("INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
         }
     })
 
