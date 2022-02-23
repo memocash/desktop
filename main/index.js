@@ -99,6 +99,8 @@ app.whenReady().then(async () => {
 
     ipcMain.on("wallet-loaded", (e) => {
         menus[e.sender.id] = menu.ShowMenu(windows[e.sender.id], CreateWindow)
+        const {filename} = wallets[e.sender.id]
+        windows[e.sender.id].title = "Memo - " + filename.replace(/^.*[\\\/]/, '')
     })
 
     ipcMain.handle("graphql", async (e, {query, variables}) => {
