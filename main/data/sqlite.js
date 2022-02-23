@@ -8,6 +8,11 @@ const Definitions = [
         hash CHAR,
         UNIQUE(hash)
     )`,
+    `tx_seens (
+        hash CHAR,
+        timestamp CHAR,
+        UNIQUE(hash)
+    )`,
     `inputs (
         hash CHAR,
         \`index\` INT,
@@ -21,7 +26,18 @@ const Definitions = [
         address CHAR,
         value INT,
         UNIQUE(hash, \`index\`)
-    )`
+    )`,
+    `blocks (
+        hash CHAR,
+        timestamp CHAR,
+        height INT,
+        UNIQUE(hash)
+    )`,
+    `block_txs (
+        block_hash CHAR,
+        tx_hash CHAR,
+        UNIQUE(block_hash, tx_hash)
+    )`,
 ]
 
 const GetDb = async () => {

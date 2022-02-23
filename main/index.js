@@ -4,7 +4,7 @@ const path = require('path')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
 const {GraphQL} = require("./client/graphql");
-const {Insert, Select} = require("./data/sqlite");
+const {SaveTransactions, GetTransactions} = require("./data/txs");
 
 const wallets = {}
 const windows = {}
@@ -110,30 +110,11 @@ app.whenReady().then(async () => {
     })
 
     ipcMain.on("save-transactions", async (e, transactions) => {
-        for (let i = 0; i < transactions.length; i++) {
-            await Insert("INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
-            for (let j = 0; j < transactions[i].inputs.length; j++) {
-                await Insert("INSERT OR IGNORE INTO inputs (hash, `index`, prev_hash, prev_index) VALUES (?, ?, ?, ?)", [
-                    transactions[i].hash, transactions[i].inputs[j].index,
-                    transactions[i].inputs[j].prev_hash, transactions[i].inputs[j].prev_index])
-            }
-            for (let j = 0; j < transactions[i].outputs.length; j++) {
-                await Insert("INSERT OR IGNORE INTO outputs (hash, `index`, address, value) VALUES (?, ?, ?, ?)", [
-                    transactions[i].hash, transactions[i].outputs[j].index,
-                    transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount])
-            }
-        }
+        await SaveTransactions(transactions)
     })
 
     ipcMain.handle("get-transactions", async (e, addresses) => {
-        const query = `
-            SELECT DISTINCT txs.*
-            FROM outputs
-            LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.\`index\`)
-            JOIN txs ON (outputs.hash = txs.hash OR inputs.hash = txs.hash)
-            WHERE outputs.address IN (?` + Array(addresses.length).join(", ?") + `)
-        `
-        return Select(query, addresses)
+        return GetTransactions(addresses)
     })
 
     await CreateWindow()

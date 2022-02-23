@@ -12,7 +12,7 @@ const Update = ({setConnected}) => {
         let data
         try {
             data = await loadOutputs(wallet.addresses)
-        } catch(e) {
+        } catch (e) {
             setConnected(false)
             console.log("Error connecting to index server")
             console.log(e)
@@ -47,6 +47,7 @@ const Update = ({setConnected}) => {
                 amount
                 tx {
                     hash
+                    seen
                     inputs {
                         index
                         prev_hash
@@ -58,6 +59,11 @@ const Update = ({setConnected}) => {
                         lock {
                             address
                         }
+                    }
+                    blocks {
+                        hash
+                        timestamp
+                        height
                     }
                 }
             }
