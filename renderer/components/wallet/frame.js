@@ -38,11 +38,7 @@ const Frame = ({selected, clicked, children, connected}) => {
                     }
                 </div>
                 <div className={tabs.statusIcons}>
-                    {connected ?
-                        <div className={[tabs.statusIcon, tabs.statusOkay].join(" ")}/>
-                        :
-                        <div className={[tabs.statusIcon, tabs.statusError].join(" ")}/>
-                    }
+                    <div className={[tabs.statusIcon, connected ? tabs.statusOkay : tabs.statusError].join(" ")}/>
                 </div>
             </div>
         </div>
