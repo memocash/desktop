@@ -1,9 +1,10 @@
 import {useEffect} from "react";
+import GetWallet from "../util/wallet";
 
 const Update = ({setConnected}) => {
     useEffect(async () => {
         window.electron.walletLoaded()
-        let wallet = await window.electron.getWallet()
+        let wallet = await GetWallet()
         if (!wallet.addresses || !wallet.addresses.length) {
             console.log("ERROR: Addresses not loaded")
             return

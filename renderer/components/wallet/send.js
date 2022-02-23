@@ -3,6 +3,7 @@ import {useRef} from "react";
 const {address} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
 import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
+import GetWallet from "../util/wallet";
 
 const Send = () => {
     const payToRef = useRef()
@@ -38,7 +39,7 @@ const Send = () => {
         }
     }
     `
-        const wallet = await window.electron.getWallet()
+        const wallet = await GetWallet()
         let data = await window.electron.graphQL(query, {
             address: wallet.addresses[0],
         })

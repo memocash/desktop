@@ -118,7 +118,7 @@ contextBridge.exposeInMainWorld('electron', {
     saveTransactions: async (transactions) => {
         await ipcRenderer.send("save-transactions", transactions)
     },
-    getTransactions: async () => {
-        return ipcRenderer.invoke("get-transactions")
+    getTransactions: async (addresses) => {
+        return ipcRenderer.invoke("get-transactions", addresses)
     },
 })

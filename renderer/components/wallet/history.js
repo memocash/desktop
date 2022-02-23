@@ -1,9 +1,11 @@
 import {useEffect, useState} from "react";
+import GetWallet from "../util/wallet";
 
 const History = () => {
     const [txs, setTxs] = useState([])
     useEffect(async () => {
-        setTxs(await window.electron.getTransactions())
+        let wallet = await GetWallet()
+        setTxs(await window.electron.getTransactions(wallet.addresses))
     }, [])
     return (
         <div>

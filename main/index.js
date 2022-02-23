@@ -125,8 +125,15 @@ app.whenReady().then(async () => {
         }
     })
 
-    ipcMain.handle("get-transactions", async (e) => {
-        return Select("SELECT * FROM txs")
+    ipcMain.handle("get-transactions", async (e, addresses) => {
+        const query = `
+            SELECT DISTINCT txs.*
+            FROM outputs
+            LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.\`index\`)
+            JOIN txs ON (outputs.hash = txs.hash OR inputs.hash = txs.hash)
+            WHERE outputs.address IN (?` + Array(addresses.length).join(", ?") + `)
+        `
+        return Select(query, addresses)
     })
 
     await CreateWindow()
