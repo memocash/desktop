@@ -15,23 +15,26 @@ const History = () => {
         }
         setTxs(txs)
     }, [])
+    const doubleClickTx = async (txHash) => {
+        await window.electron.openPreviewSend({txHash})
+    }
     return (
         <div className={styles.wrapper}>
             {!txs.length ?
                 <p>No transactions found</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <span>Hash</span>
                     <span>Timestamp</span>
+                    <span>Hash</span>
                     <span>Value</span>
                     <span>Balance</span>
                 </div>
             }
             {txs.map((tx, i) => {
                 return (
-                    <div className={styles.row} key={i}>
-                        <span>{ShortHash(tx.hash)}</span>
+                    <div className={styles.row} key={i} onDoubleClick={() => doubleClickTx(tx.hash)}>
                         <span>{tx.timestamp}</span>
+                        <span>{ShortHash(tx.hash)}</span>
                         <span className={styles.itemValue}>{tx.value.toLocaleString()}</span>
                         <span className={styles.itemValue}>{tx.balance.toLocaleString()}</span>
                     </div>

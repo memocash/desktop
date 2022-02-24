@@ -19,10 +19,15 @@
 
 .wrapper span {
     padding: 5px;
+    cursor: default;
 }
 
-.row:hover {
+.row:not(.rowTitle):hover span {
     background: #ccc;
+}
+
+.row:not(.rowTitle):active span {
+    background: #ddd;
 }
 
 .itemValue {
