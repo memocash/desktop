@@ -12,7 +12,7 @@ const History = () => {
             {!txs.length && <p>No transactions found</p>}
             {txs.map((tx, i) => {
                 return (
-                    <p key={i}>{i}: {tx.hash}</p>
+                    <p key={i}>{i}: {tx.hash} - {tx.timestamp} - {tx.value}</p>
                 )
             })}
         </div>
