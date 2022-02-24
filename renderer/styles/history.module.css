@@ -26,11 +26,11 @@
     background: #ccc;
 }
 
+.row.rowSelected span,
 .row:not(.rowTitle):active span {
     background: #ddd;
 }
 
 .itemValue {
-    font-family: monospace;
     text-align: right;
 }
