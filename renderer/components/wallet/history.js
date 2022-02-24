@@ -1,11 +1,12 @@
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
+import {useReferredState} from "../util/state";
 
 const History = () => {
-    const [txs, setTxs] = useState([])
-    const [selectedTxHash, setSelectedTxHash] = useState("")
+    const [txs, txsRef, setTxs] = useReferredState([])
+    const [selectedTxHash, selectedTxHashRef, setSelectedTxHash] = useReferredState("")
     useEffect(async () => {
         let wallet = await GetWallet()
         let txs = await window.electron.getTransactions(wallet.addresses)
@@ -15,33 +16,39 @@ const History = () => {
             txs[i].balance = balance
         }
         setTxs(txs)
-        document.addEventListener("keydown", (e) => {
-            setSelectedTxHash(selectedTxHash => {
-                if (!selectedTxHash || !selectedTxHash.length) {
-                    return
-                }
-                switch (e.key) {
-                    case "ArrowUp":
-                        for (let i = 1; i < txs.length; i++) {
-                            if (txs[i].hash === selectedTxHash) {
-                                selectedTxHash = txs[i - 1].hash
-                                break
-                            }
-                        }
-                        break
-                    case "ArrowDown":
-                        for (let i = 0; i < txs.length - 1; i++) {
-                            if (txs[i].hash === selectedTxHash) {
-                                selectedTxHash = txs[i + 1].hash
-                                break
-                            }
-                        }
-                        break
-                }
-                return selectedTxHash
-            })
-        }, false)
     }, [])
+    const keyDownHandler = (e) => {
+        let selectedTxHash = selectedTxHashRef.current
+        if (!selectedTxHash || !selectedTxHash.length) {
+            return
+        }
+        const txs = txsRef.current
+        switch (e.key) {
+            case "ArrowUp":
+                for (let i = 1; i < txs.length; i++) {
+                    if (txs[i].hash === selectedTxHash) {
+                        selectedTxHash = txs[i - 1].hash
+                        break
+                    }
+                }
+                break
+            case "ArrowDown":
+                for (let i = 0; i < txs.length - 1; i++) {
+                    if (txs[i].hash === selectedTxHash) {
+                        selectedTxHash = txs[i + 1].hash
+                        break
+                    }
+                }
+                break
+            case "Escape":
+                selectedTxHash = ""
+                break
+            default:
+                return selectedTxHash
+        }
+        e.preventDefault()
+        setSelectedTxHash(selectedTxHash)
+    }
     const doubleClickTx = async (txHash) => {
         await window.electron.openPreviewSend({txHash})
     }
@@ -53,9 +60,9 @@ const History = () => {
         setSelectedTxHash("")
     }
     return (
-        <div className={styles.wrapper} onClick={clickWrapper}>
+        <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}>
             {!txs.length ?
-                <p>No transactions found</p>
+                <p>No transactions</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
                     <span>Timestamp</span>
