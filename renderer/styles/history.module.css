@@ -7,6 +7,12 @@
 .wrapper .row {
     display: contents;
 }
+
+.wrapper .rowTitle span {
+    position: sticky;
+    top: 0;
+}
+
 .wrapper .rowTitle span {
     background: #eee;
 }
