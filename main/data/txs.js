@@ -36,7 +36,7 @@ const GetTransactions = async (addresses) => {
                  LEFT JOIN block_txs ON (block_txs.tx_hash = txs.hash)
                  LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash)
                  LEFT JOIN tx_seens ON (tx_seens.hash = txs.hash)
-        WHERE outputs.address IN (${"?" + Array(addresses.length).join(", ?")})
+        WHERE outputs.address IN (${Array(addresses.length).fill("?").join(", ")})
         GROUP BY txs.hash
         ORDER BY MIN(blocks.timestamp, tx_seens.timestamp) DESC
     `
