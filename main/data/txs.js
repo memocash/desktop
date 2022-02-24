@@ -26,20 +26,20 @@ const SaveTransactions = async (transactions) => {
 
 const GetTransactions = async (addresses) => {
     const query = `
-        SELECT DISTINCT
-                        txs.*,
-                        MIN(tx_seens.timestamp, blocks.timestamp) AS timestamp,
-                        SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) - SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value
+        SELECT DISTINCT txs.*,
+                        MIN(tx_seens.timestamp, blocks.timestamp)                           AS timestamp,
+                        SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) -
+                        SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value
         FROM outputs
                  LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.\`index\`)
                  JOIN txs ON (outputs.hash = txs.hash OR inputs.hash = txs.hash)
                  LEFT JOIN block_txs ON (block_txs.tx_hash = txs.hash)
                  LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash)
                  LEFT JOIN tx_seens ON (tx_seens.hash = txs.hash)
-        WHERE outputs.address IN (?` + Array(addresses.length).join(", ?") + `)
+        WHERE outputs.address IN (${"?" + Array(addresses.length).join(", ?")})
         GROUP BY txs.hash
-ORDER BY MIN(blocks.timestamp, tx_seens.timestamp) DESC
-        `
+        ORDER BY MIN(blocks.timestamp, tx_seens.timestamp) DESC
+    `
     return Select(query, addresses)
 }
 
