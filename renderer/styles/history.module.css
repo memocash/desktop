@@ -24,3 +24,8 @@
 .row:hover {
     background: #ccc;
 }
+
+.itemValue {
+    font-family: monospace;
+    text-align: right;
+}

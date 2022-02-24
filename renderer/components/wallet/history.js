@@ -32,8 +32,8 @@ const History = () => {
                     <div className={styles.row} key={i}>
                         <span>{ShortHash(tx.hash)}</span>
                         <span>{tx.timestamp}</span>
-                        <span>{tx.value}</span>
-                        <span>{tx.balance}</span>
+                        <span className={styles.itemValue}>{tx.value.toLocaleString()}</span>
+                        <span className={styles.itemValue}>{tx.balance.toLocaleString()}</span>
                     </div>
                 )
             })}
