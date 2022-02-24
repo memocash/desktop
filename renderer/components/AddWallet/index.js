@@ -94,11 +94,12 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     }
 
     const handleClickImport = async () => {
-        window.electron.listenFile((e, filePath) => {
-            walletInput.current.value = window.electron.getWalletShort(filePath)
-            loadFile(filePath)
-        })
-        window.electron.openFileDialog()
+        const filepath = await window.electron.openFileDialog()
+        if (!filepath.length) {
+            return
+        }
+        walletInput.current.value = window.electron.getWalletShort(filepath)
+        await loadFile(filepath)
     }
 
     const handleClickNext = () => {

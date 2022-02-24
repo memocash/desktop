@@ -27,9 +27,6 @@ const decryptWallet = (encryptedWallet, inputPassword) => {
 contextBridge.exposeInMainWorld('electron', {
     getPathForWallet,
     getWalletShort,
-    listenFile: (handler) => {
-        ipcRenderer.on("listenFile", handler)
-    },
     walletLoaded: () => {
         ipcRenderer.send("wallet-loaded")
     },
@@ -47,8 +44,8 @@ contextBridge.exposeInMainWorld('electron', {
     getWindowId: async () => {
         return await ipcRenderer.invoke("get-window-id")
     },
-    openFileDialog: () => {
-        ipcRenderer.send("open-file-dialog")
+    openFileDialog: async () => {
+        return await ipcRenderer.invoke("open-file-dialog")
     },
     showMessageDialog: (message) => {
         ipcRenderer.send("show-message-dialog", message)
