@@ -1,5 +1,7 @@
 import {useEffect, useState} from "react";
 import GetWallet from "../util/wallet";
+import styles from "../../styles/history.module.css";
+import ShortHash from "../util/txs";
 
 const History = () => {
     const [txs, setTxs] = useState([])
@@ -14,11 +16,25 @@ const History = () => {
         setTxs(txs)
     }, [])
     return (
-        <div>
-            {!txs.length && <p>No transactions found</p>}
+        <div className={styles.wrapper}>
+            {!txs.length ?
+                <p>No transactions found</p>
+                :
+                <div className={[styles.row, styles.rowTitle].join(" ")}>
+                    <span>Hash</span>
+                    <span>Timestamp</span>
+                    <span>Value</span>
+                    <span>Balance</span>
+                </div>
+            }
             {txs.map((tx, i) => {
                 return (
-                    <p key={i}>{i}: {tx.hash} - {tx.timestamp} - {tx.value} - {tx.balance}</p>
+                    <div className={styles.row} key={i}>
+                        <span>{ShortHash(tx.hash)}</span>
+                        <span>{tx.timestamp}</span>
+                        <span>{tx.value}</span>
+                        <span>{tx.balance}</span>
+                    </div>
                 )
             })}
         </div>

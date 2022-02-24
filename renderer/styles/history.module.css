@@ -1,0 +1,20 @@
+.wrapper {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(max-content, 1fr));
+}
+
+.wrapper .row {
+    display: contents;
+}
+.wrapper .rowTitle span {
+    background: #eee;
+}
+
+.wrapper span {
+    padding: 5px;
+}
+
+.row:hover {
+    background: #ccc;
+}
