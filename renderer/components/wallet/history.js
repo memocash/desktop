@@ -18,7 +18,7 @@ const History = () => {
         }
         setTxs(txs)
     }, [])
-    const keyDownHandler = (e) => {
+    const keyDownHandler = async (e) => {
         let selectedTxHash = selectedTxHashRef.current
         if (!selectedTxHash || !selectedTxHash.length) {
             return
@@ -43,6 +43,9 @@ const History = () => {
                 break
             case "Escape":
                 selectedTxHash = ""
+                break
+            case "Enter":
+                await window.electron.openPreviewSend({txHash: selectedTxHash})
                 break
             default:
                 return selectedTxHash
