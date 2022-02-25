@@ -1,4 +1,4 @@
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
@@ -7,6 +7,7 @@ import {useReferredState} from "../util/state";
 const History = () => {
     const [txs, txsRef, setTxs] = useReferredState([])
     const [selectedTxHash, selectedTxHashRef, setSelectedTxHash] = useReferredState("")
+    const historyDiv = useRef()
     useEffect(async () => {
         let wallet = await GetWallet()
         let txs = await window.electron.getTransactions(wallet.addresses)
@@ -47,6 +48,22 @@ const History = () => {
                 return selectedTxHash
         }
         e.preventDefault()
+        const cur = historyDiv.current
+        const clientHeight = cur.parentNode.clientHeight
+        const scrollTop = cur.parentNode.scrollTop
+        const hashPrefix = selectedTxHash.substr(0, 5)
+        for (let i = 1; i < cur.childNodes.length; i++) {
+            if (cur.childNodes[i].childNodes[1].innerText.substr(0, 5) === hashPrefix) {
+                const offsetTop = cur.childNodes[i].childNodes[0].offsetTop
+                if (offsetTop < scrollTop + 60) {
+                    cur.parentNode.scrollTop = offsetTop - 60
+                }
+                if (offsetTop > clientHeight + scrollTop) {
+                    cur.parentNode.scrollTop = offsetTop - clientHeight - 11
+                }
+                break
+            }
+        }
         setSelectedTxHash(selectedTxHash)
     }
     const doubleClickTx = async (txHash) => {
@@ -60,7 +77,8 @@ const History = () => {
         setSelectedTxHash("")
     }
     return (
-        <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}>
+        <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
+             ref={historyDiv}>
             {!txs.length ?
                 <p>No transactions</p>
                 :
