@@ -48,7 +48,7 @@ const History = () => {
                 await window.electron.openPreviewSend({txHash: selectedTxHash})
                 break
             default:
-                return selectedTxHash
+                return
         }
         e.preventDefault()
         const cur = historyDiv.current
@@ -79,6 +79,14 @@ const History = () => {
     const clickWrapper = () => {
         setSelectedTxHash("")
     }
+    const sortTimestamp = () => {
+        txsRef.current.sort((a, b) => (a.timestamp > b.timestamp) ? 1 : -1)
+        setTxs([...txsRef.current])
+    }
+    const sortHash = () => {
+        txsRef.current.sort((a, b) => (a.hash > b.hash) ? 1 : -1)
+        setTxs([...txsRef.current])
+    }
     return (
         <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
              ref={historyDiv}>
@@ -86,8 +94,8 @@ const History = () => {
                 <p>No transactions</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <span>Timestamp</span>
-                    <span>Hash</span>
+                    <span onClick={sortTimestamp}>Timestamp</span>
+                    <span onClick={sortHash}>Hash</span>
                     <span>Value</span>
                     <span>Balance</span>
                 </div>
