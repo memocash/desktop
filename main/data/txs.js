@@ -54,8 +54,7 @@ const GetTransaction = async (txHash) => {
         inputOutputsWhere.push("hash = ? AND `index` = ?")
         inputOutputsParams.push(inputs[i].prev_hash, inputs[i].prev_index)
     }
-    const query = "SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")"
-    const inputOutputs = await Select(query,
+    const inputOutputs = await Select("SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
         inputOutputsParams)
     for (let i = 0; i < inputs.length; i++) {
         for (let j = 0; j < inputOutputs.length; j++) {

@@ -5,9 +5,32 @@
 .input_output_box {
     background: #fff;
     border: 1px solid #999;
-    padding: 0 2px;
     font-size: 12px;
-    height: calc((100vh - 218px) / 2)
+    height: calc((100vh - 218px) / 2);
+    overflow-y: auto;
+    white-space: nowrap;
+}
+
+.input_output_box_grid {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+}
+
+.input_output_box_grid_output {
+    grid-template-columns: repeat(2, max-content);
+}
+
+.input_output_box p {
+    display: contents;
+    margin: 0;
+}
+
+.input_output_box span {
+    padding: 5px 20px 2px 5px;
+}
+
+.input_output_box a {
+    cursor: pointer;
 }
 
 .input_output_head {
@@ -17,4 +40,8 @@
 
 .input_output_box p {
     margin: 2px 0;
+}
+
+.input_output_box .spanRight {
+    text-align: right;
 }

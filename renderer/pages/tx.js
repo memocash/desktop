@@ -3,6 +3,7 @@ import {useEffect, useState} from "react";
 import Head from "next/head";
 import form from "../styles/form.module.css";
 import styleTx from "../styles/tx.module.css";
+import ShortHash from "../components/util/txs";
 
 const Tx = () => {
     const router = useRouter()
@@ -45,6 +46,9 @@ const Tx = () => {
         }
         setDate(date)
     }, [transactionId])
+    const clickTx = async (txHash) => {
+        await window.electron.openTransaction({txHash})
+    }
     return (
         <div>
             <Head>
@@ -64,45 +68,45 @@ const Tx = () => {
                     Fee: 0 satoshis (0 sat/byte)
                 </div>
                 <div>
-                    <div className={styleTx.input_output_head}>Inputs (1)</div>
+                    <div className={styleTx.input_output_head}>Inputs ({txInfo.inputs.length})</div>
                     <div className={styleTx.input_output_box}>
-                        {!txInfo.inputs.length && <p>
-                            0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9:0
-                            &nbsp;&nbsp;&nbsp;&nbsp;
-                            5,000,000,000
-                        </p>}
-                        {txInfo.inputs.map((input, i) => {
-                            return (
-                                <p key={i}>
-                                    {input.prev_hash}:{input.prev_index}
-                                    &nbsp;&nbsp;&nbsp;&nbsp;
-                                    {input.output &&
-                                    <>
-                                    {input.output.address} - {input.output.value}
-                                    </>
-                                    }
-                                </p>
-                            )
-                        })}
+                        <div className={styleTx.input_output_box_grid}>
+                            {!txInfo.inputs.length && <p>
+                                <span>0437cd...a597c9:0</span>
+                                <span>1MCgBDVXTwfEKYtu2PtPHBif5BpthvBrHJ</span>
+                                <span>5,000,000,000</span>
+                            </p>}
+                            {txInfo.inputs.map((input, i) => {
+                                return (
+                                    <p key={i}>
+                                    <span><a onClick={() => clickTx(input.prev_hash)} title={input.prev_hash}>
+                                        {ShortHash(input.prev_hash)}</a>:{input.prev_index}</span>
+                                        <span>{input.output && input.output.address}</span>
+                                        <span className={styleTx.spanRight}>
+                                            {input.output && input.output.value.toLocaleString()}</span>
+                                    </p>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
                 <div>
-                    <div className={styleTx.input_output_head}>Outputs (2)</div>
+                    <div className={styleTx.input_output_head}>Outputs ({txInfo.outputs.length})</div>
                     <div className={styleTx.input_output_box}>
-                        {!txInfo.outputs.length && <p>
-                            {inputPayTo}
-                            &nbsp;&nbsp;&nbsp;&nbsp;
-                            {inputAmount}
-                        </p>}
-                        {txInfo.outputs.map((output, i) => {
-                            return (
-                                <p key={i}>
-                                    {output.address}
-                                    &nbsp;&nbsp;&nbsp;&nbsp;
-                                    {output.value}
-                                </p>
-                            )
-                        })}
+                        <div className={[styleTx.input_output_box_grid, styleTx.input_output_box_grid_output].join(" ")}>
+                            {!txInfo.outputs.length && <p>
+                                <span>{inputPayTo}</span>
+                                <span>{inputAmount}</span>
+                            </p>}
+                            {txInfo.outputs.map((output, i) => {
+                                return (
+                                    <p key={i}>
+                                        <span>{output.address}</span>
+                                        <span className={styleTx.spanRight}>{output.value.toLocaleString()}</span>
+                                    </p>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
