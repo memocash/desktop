@@ -33,7 +33,6 @@ const Tx = () => {
             return
         }
         const tx = await window.electron.getTransaction(transactionId)
-        setTxInfo(tx)
         const wallet = await GetWallet()
         let amount = 0
         for (let i = 0; i < tx.inputs.length; i++) {
@@ -42,13 +41,16 @@ const Tx = () => {
             }
             if (wallet.addresses.indexOf(tx.inputs[i].output.address) > -1) {
                 amount -= tx.inputs[i].output.value
+                tx.inputs[i].highlight = true
             }
         }
         for (let i = 0; i < tx.outputs.length; i++) {
             if (wallet.addresses.indexOf(tx.outputs[i].address) > -1) {
                 amount += tx.outputs[i].value
+                tx.outputs[i].highlight = true
             }
         }
+        setTxInfo(tx)
         setInputAmount(amount)
         let date
         if (tx.seen) {
@@ -98,8 +100,8 @@ const Tx = () => {
                             </p>}
                             {txInfo.inputs.map((input, i) => {
                                 return (
-                                    <p key={i}>
-                                    <span><a onClick={() => clickTx(input.prev_hash)} title={input.prev_hash}>
+                                    <p key={i} className={input.highlight && styleTx.input_output_highlight}>
+                                        <span><a onClick={() => clickTx(input.prev_hash)} title={input.prev_hash}>
                                         {ShortHash(input.prev_hash)}</a>:{input.prev_index}</span>
                                         <span>{input.output && input.output.address}</span>
                                         <span className={styleTx.spanRight}>
@@ -120,7 +122,7 @@ const Tx = () => {
                             </p>}
                             {txInfo.outputs.map((output, i) => {
                                 return (
-                                    <p key={i}>
+                                    <p key={i} className={output.highlight && styleTx.input_output_highlight}>
                                         <span>{output.address}</span>
                                         <span className={styleTx.spanRight}>{output.value.toLocaleString()}</span>
                                     </p>

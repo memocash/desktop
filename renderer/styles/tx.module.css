@@ -26,7 +26,7 @@
 }
 
 .input_output_box span {
-    padding: 5px 20px 2px 5px;
+    padding: 3px 10px;
 }
 
 .input_output_box a {
@@ -40,6 +40,10 @@
 
 .input_output_box p {
     margin: 2px 0;
+}
+
+.input_output_box .input_output_highlight span {
+    background: #9ef18b;
 }
 
 .input_output_box .spanRight {
