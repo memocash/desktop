@@ -15,6 +15,7 @@ const Tx = () => {
     const [inputMessage, setInputMessage] = useState()
     const [inputAmount, setInputAmount] = useState()
     const [txInfo, setTxInfo] = useState({inputs: [], outputs: []})
+    const [size, setSize] = useState(0)
     useEffect(() => {
         if (!router || !router.query) {
             return
@@ -52,6 +53,7 @@ const Tx = () => {
         }
         setTxInfo(tx)
         setInputAmount(amount)
+        setSize(tx.raw.length)
         let date
         if (tx.seen) {
             date = tx.seen.timestamp
@@ -84,9 +86,9 @@ const Tx = () => {
                     <>Amount received: {inputAmount.toLocaleString()} satoshis<br/></>
                     }
                     {inputAmount < 0 &&
-                    <>Amount sent: {(-inputAmount).toLocaleString()} satoshis<br/></>
+                    <>Amount spent: {(-inputAmount).toLocaleString()} satoshis<br/></>
                     }
-                    Size: 275 bytes<br/>
+                    Size: {size.toLocaleString()} bytes<br/>
                     Fee: 0 satoshis (0 sat/byte)
                 </div>
                 <div>

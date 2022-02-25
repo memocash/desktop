@@ -5,6 +5,8 @@ const SaveTransactions = async (transactions) => {
         await Insert("INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
         await Insert("INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
             transactions[i].hash, transactions[i].seen])
+        await Insert("INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
+            transactions[i].hash, Buffer.from(transactions[i].raw, "hex")])
         for (let j = 0; j < transactions[i].inputs.length; j++) {
             await Insert("INSERT OR IGNORE INTO inputs (hash, `index`, prev_hash, prev_index) VALUES (?, ?, ?, ?)", [
                 transactions[i].hash, transactions[i].inputs[j].index,
@@ -69,6 +71,11 @@ const GetTransaction = async (txHash) => {
     if (seens && seens.length) {
         seen = seens[0]
     }
+    const raws = await Select("SELECT * FROM tx_raws WHERE hash = ?", [txHash])
+    let raw
+    if (raws && raws.length) {
+        raw = raws[0].raw
+    }
     let block
     try {
         const blockTxs = await Select("SELECT * FROM block_txs WHERE tx_hash = ?", [txHash])
@@ -78,7 +85,7 @@ const GetTransaction = async (txHash) => {
         block.confirmations = maxBlock[0].height - block.height
     } catch (e) {
     }
-    return {outputs, inputs, seen, block}
+    return {outputs, inputs, seen, block, raw}
 }
 
 module.exports = {

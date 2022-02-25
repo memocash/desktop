@@ -13,6 +13,11 @@ const Definitions = [
         timestamp CHAR,
         UNIQUE(hash)
     )`,
+    `tx_raws (
+        hash CHAR,
+        raw BLOB,
+        UNIQUE(hash)
+    )`,
     `inputs (
         hash CHAR,
         \`index\` INT,

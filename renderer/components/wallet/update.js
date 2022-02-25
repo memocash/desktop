@@ -45,6 +45,7 @@ const Update = ({setConnected}) => {
                 tx {
                     hash
                     seen
+                    raw
                     inputs {
                         index
                         prev_hash
