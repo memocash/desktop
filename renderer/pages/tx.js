@@ -7,6 +7,8 @@ import styleTx from "../styles/tx.module.css";
 const Tx = () => {
     const router = useRouter()
     const [transactionId, setTransactionId] = useState("Unknown")
+    const [status, setStatus] = useState("Unconfirmed")
+    const [date, setDate] = useState("2009-01-11 19:30")
     const [inputPayTo, setInputPayTo] = useState()
     const [inputMessage, setInputMessage] = useState()
     const [inputAmount, setInputAmount] = useState()
@@ -28,6 +30,17 @@ const Tx = () => {
     useEffect(async () => {
         const tx = await window.electron.getTransaction(transactionId)
         setTxInfo(tx)
+        let date
+        if (tx.seen) {
+            date = tx.seen.timestamp
+        }
+        if (tx.block) {
+            setStatus(tx.block.confirmations + " confirmations (Height: " + tx.block.height + ")")
+            if (!date || tx.block.timestamp < date) {
+                date = tx.block.timestamp
+            }
+        }
+        setDate(date)
     }, [transactionId])
     return (
         <div>
@@ -39,8 +52,8 @@ const Tx = () => {
                     <label>Transaction ID:</label><br/>
                     <input type="text" value={transactionId} className={form.input_wide} spellCheck="false" readOnly/>
                     <br/>
-                    Status: Unconfirmed<br/>
-                    Date: 2009-01-11 19:30<br/>
+                    Status: {status}<br/>
+                    Date: {date}<br/>
                     {inputMessage ? <>Message: {inputMessage}<br/></> : null}
                     Amount: {inputAmount} satoshis<br/>
                     Amount received: 5,000,000,000 satoshis<br/>
@@ -55,9 +68,9 @@ const Tx = () => {
                             &nbsp;&nbsp;&nbsp;&nbsp;
                             5,000,000,000
                         </p>}
-                        {txInfo.inputs.map((input) => {
+                        {txInfo.inputs.map((input, i) => {
                             return (
-                                <p>
+                                <p key={i}>
                                     {input.prev_hash}:{input.prev_index}
                                     &nbsp;&nbsp;&nbsp;&nbsp;
                                 </p>
@@ -73,9 +86,9 @@ const Tx = () => {
                             &nbsp;&nbsp;&nbsp;&nbsp;
                             {inputAmount}
                         </p>}
-                        {txInfo.outputs.map((output) => {
+                        {txInfo.outputs.map((output, i) => {
                             return (
-                                <p>
+                                <p key={i}>
                                     {output.address}
                                     &nbsp;&nbsp;&nbsp;&nbsp;
                                     {output.value}

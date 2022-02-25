@@ -18,20 +18,17 @@ const Update = ({setConnected}) => {
             console.log(e)
             return
         }
-        console.log(data)
         let txs = []
         for (let i = 0; i < data.addresses.length; i++) {
             if (data.addresses[i].outputs == null) {
-                console.log("null outputs for address: " + data.addresses[i].address)
+                console.log("ERROR: null outputs for address: " + data.addresses[i].address)
                 console.log(data.addresses[i])
                 continue
             }
             for (let j = 0; j < data.addresses[i].outputs.length; j++) {
-                console.log(data.addresses[i].outputs[j].tx)
                 txs.push(data.addresses[i].outputs[j].tx)
             }
         }
-        console.log(txs)
         await window.electron.saveTransactions(txs)
         setConnected(true)
     }, [])

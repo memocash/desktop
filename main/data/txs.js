@@ -25,32 +25,44 @@ const SaveTransactions = async (transactions) => {
 }
 
 const GetTransactions = async (addresses) => {
-    const query = `
-        SELECT DISTINCT txs.*,
-                        MIN(COALESCE(tx_seens.timestamp, blocks.timestamp),
-                            COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp,
-                        SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) -
-                        SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value
-        FROM outputs
-                 LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.\`index\`)
-                 JOIN txs ON (outputs.hash = txs.hash OR inputs.hash = txs.hash)
-                 LEFT JOIN block_txs ON (block_txs.tx_hash = txs.hash)
-                 LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash)
-                 LEFT JOIN tx_seens ON (tx_seens.hash = txs.hash)
-        WHERE outputs.address IN (${Array(addresses.length).fill("?").join(", ")})
-        GROUP BY txs.hash
-        ORDER BY MIN(COALESCE(tx_seens.timestamp, blocks.timestamp),
-            COALESCE(blocks.timestamp, tx_seens.timestamp)) DESC
-    `
+    const query = "" +
+        "SELECT " +
+        "   DISTINCT txs.*, " +
+        "   MIN(COALESCE(tx_seens.timestamp, blocks.timestamp)," +
+        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp, " +
+        "   SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) - " +
+        "   SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value " +
+        "FROM outputs " +
+        "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
+        "JOIN txs ON (outputs.hash = txs.hash OR inputs.hash = txs.hash) " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = txs.hash) " +
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "LEFT JOIN tx_seens ON (tx_seens.hash = txs.hash) " +
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "GROUP BY txs.hash " +
+        "ORDER BY MIN(COALESCE(tx_seens.timestamp, blocks.timestamp), " +
+        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) DESC"
     return Select(query, addresses)
 }
 
 const GetTransaction = async (txHash) => {
-    const outputsQuery = `SELECT * FROM outputs WHERE hash = ?`
-    const outputs = await Select(outputsQuery, [txHash])
-    const inputsQuery = `SELECT * FROM inputs WHERE hash = ?`
-    const inputs = await Select(inputsQuery, [txHash])
-    return {outputs, inputs}
+    const outputs = await Select("SELECT * FROM outputs WHERE hash = ?", [txHash])
+    const inputs = await Select("SELECT * FROM inputs WHERE hash = ?", [txHash])
+    const seens = await Select("SELECT * FROM tx_seens WHERE hash = ?", [txHash])
+    let seen
+    if (seens && seens.length) {
+        seen = seens[0]
+    }
+    let block
+    try {
+        const blockTxs = await Select("SELECT * FROM block_txs WHERE tx_hash = ?", [txHash])
+        const blocks = await Select("SELECT * FROM blocks WHERE hash = ?", [blockTxs[0].block_hash])
+        block = blocks[0]
+        const maxBlock = await Select("SELECT * FROM blocks ORDER BY height DESC LIMIT 1")
+        block.confirmations = maxBlock[0].height - block.height
+    } catch (e) {
+    }
+    return {outputs, inputs, seen, block}
 }
 
 module.exports = {
