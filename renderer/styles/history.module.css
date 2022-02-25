@@ -11,6 +11,13 @@
 .wrapper .rowTitle span {
     position: sticky;
     top: 0;
+    border-right: 1px solid #ccc;
+}
+
+.wrapper .rowTitle span:last-child {
+    position: sticky;
+    top: 0;
+    border-right: none;
 }
 
 .wrapper .rowTitle span {

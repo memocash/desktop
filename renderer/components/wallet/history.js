@@ -79,12 +79,8 @@ const History = () => {
     const clickWrapper = () => {
         setSelectedTxHash("")
     }
-    const sortTimestamp = () => {
-        txsRef.current.sort((a, b) => (a.timestamp > b.timestamp) ? 1 : -1)
-        setTxs([...txsRef.current])
-    }
-    const sortHash = () => {
-        txsRef.current.sort((a, b) => (a.hash > b.hash) ? 1 : -1)
+    const sortTxs = (field) => {
+        txsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
         setTxs([...txsRef.current])
     }
     return (
@@ -94,10 +90,10 @@ const History = () => {
                 <p>No transactions</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <span onClick={sortTimestamp}>Timestamp</span>
-                    <span onClick={sortHash}>Hash</span>
-                    <span>Value</span>
-                    <span>Balance</span>
+                    <span onClick={() => sortTxs("timestamp")}>Timestamp</span>
+                    <span onClick={() => sortTxs("hash")}>Hash</span>
+                    <span onClick={() => sortTxs("value")}>Value</span>
+                    <span onClick={() => sortTxs("balance")}>Balance</span>
                 </div>
             }
             {txs.map((tx, i) => {
