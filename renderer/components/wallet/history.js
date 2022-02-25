@@ -1,12 +1,34 @@
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
 import {useReferredState} from "../util/state";
 
+const Column = {
+    Timestamp: "timestamp",
+    Hash: "hash",
+    Value: "value",
+    Balance: "balance",
+}
+
+const TitleCol = ({title, col, sortCol, desc, sortTxs}) => {
+    return (
+        <span onClick={() => sortTxs(col)}>
+            {title} {col === sortCol &&
+        <>
+            {desc && <>&darr;</>}
+            {!desc && <>&uarr;</>}
+        </>
+        }
+        </span>
+    )
+}
+
 const History = () => {
     const [txs, txsRef, setTxs] = useReferredState([])
     const [selectedTxHash, selectedTxHashRef, setSelectedTxHash] = useReferredState("")
+    const [sortCol, setSortCol] = useState(Column.Timestamp)
+    const [sortDesc, setSortDesc] = useState(false)
     const historyDiv = useRef()
     useEffect(async () => {
         let wallet = await GetWallet()
@@ -80,8 +102,24 @@ const History = () => {
         setSelectedTxHash("")
     }
     const sortTxs = (field) => {
-        txsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
         setTxs([...txsRef.current])
+        setSortCol(col => {
+            setSortDesc(desc => {
+                if (col === field) {
+                    desc = !desc
+                } else {
+                    // Default false, except for hash column
+                    desc = field === Column.Hash
+                }
+                if (desc) {
+                    txsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
+                } else {
+                    txsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
+                }
+                return desc
+            })
+            return field
+        })
     }
     return (
         <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
@@ -90,10 +128,14 @@ const History = () => {
                 <p>No transactions</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <span onClick={() => sortTxs("timestamp")}>Timestamp</span>
-                    <span onClick={() => sortTxs("hash")}>Hash</span>
-                    <span onClick={() => sortTxs("value")}>Value</span>
-                    <span onClick={() => sortTxs("balance")}>Balance</span>
+                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                              col={Column.Timestamp} title={"Timestamp"}/>
+                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                              col={Column.Hash} title={"Hash"}/>
+                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                              col={Column.Value} title={"Value"}/>
+                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                              col={Column.Balance} title={"Balance"}/>
                 </div>
             }
             {txs.map((tx, i) => {

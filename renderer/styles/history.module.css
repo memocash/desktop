@@ -22,6 +22,8 @@
 
 .wrapper .rowTitle span {
     background: #eee;
+    padding: 5px;
+    cursor: default;
 }
 
 .wrapper span {
