@@ -45,7 +45,16 @@ const GetTransactions = async (addresses) => {
     return Select(query, addresses)
 }
 
+const GetTransaction = async (txHash) => {
+    const outputsQuery = `SELECT * FROM outputs WHERE hash = ?`
+    const outputs = await Select(outputsQuery, [txHash])
+    const inputsQuery = `SELECT * FROM inputs WHERE hash = ?`
+    const inputs = await Select(inputsQuery, [txHash])
+    return {outputs, inputs}
+}
+
 module.exports = {
     SaveTransactions,
     GetTransactions,
+    GetTransaction,
 }

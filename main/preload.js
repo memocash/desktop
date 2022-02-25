@@ -121,4 +121,7 @@ contextBridge.exposeInMainWorld('electron', {
     getTransactions: async (addresses) => {
         return ipcRenderer.invoke("get-transactions", addresses)
     },
+    getTransaction: async (txHash) => {
+        return ipcRenderer.invoke("get-transaction", txHash)
+    },
 })

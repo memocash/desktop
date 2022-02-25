@@ -10,6 +10,7 @@ const Tx = () => {
     const [inputPayTo, setInputPayTo] = useState()
     const [inputMessage, setInputMessage] = useState()
     const [inputAmount, setInputAmount] = useState()
+    const [txInfo, setTxInfo] = useState({inputs: [], outputs: []})
 
     useEffect(() => {
         if (!router || !router.query) {
@@ -24,6 +25,10 @@ const Tx = () => {
             setInputAmount(amount)
         }
     }, [router])
+    useEffect(async () => {
+        const tx = await window.electron.getTransaction(transactionId)
+        setTxInfo(tx)
+    }, [transactionId])
     return (
         <div>
             <Head>
@@ -45,21 +50,38 @@ const Tx = () => {
                 <div>
                     <div className={styleTx.input_output_head}>Inputs (1)</div>
                     <div className={styleTx.input_output_box}>
-                        <p>
+                        {!txInfo.inputs.length && <p>
                             0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9:0
                             &nbsp;&nbsp;&nbsp;&nbsp;
                             5,000,000,000
-                        </p>
+                        </p>}
+                        {txInfo.inputs.map((input) => {
+                            return (
+                                <p>
+                                    {input.prev_hash}:{input.prev_index}
+                                    &nbsp;&nbsp;&nbsp;&nbsp;
+                                </p>
+                            )
+                        })}
                     </div>
                 </div>
                 <div>
                     <div className={styleTx.input_output_head}>Outputs (2)</div>
                     <div className={styleTx.input_output_box}>
-                        <p>
+                        {!txInfo.outputs.length && <p>
                             {inputPayTo}
                             &nbsp;&nbsp;&nbsp;&nbsp;
                             {inputAmount}
-                        </p>
+                        </p>}
+                        {txInfo.outputs.map((output) => {
+                            return (
+                                <p>
+                                    {output.address}
+                                    &nbsp;&nbsp;&nbsp;&nbsp;
+                                    {output.value}
+                                </p>
+                            )
+                        })}
                     </div>
                 </div>
             </div>
