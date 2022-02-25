@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
@@ -27,8 +27,8 @@ const TitleCol = ({title, col, sortCol, desc, sortTxs}) => {
 const History = () => {
     const [txs, txsRef, setTxs] = useReferredState([])
     const [selectedTxHash, selectedTxHashRef, setSelectedTxHash] = useReferredState("")
-    const [sortCol, setSortCol] = useState(Column.Timestamp)
-    const [sortDesc, setSortDesc] = useState(false)
+    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
+    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const historyDiv = useRef()
     useEffect(async () => {
         let wallet = await GetWallet()
@@ -102,24 +102,21 @@ const History = () => {
         setSelectedTxHash("")
     }
     const sortTxs = (field) => {
+        let desc = sortDescRef.current
+        if (sortColRef.current === field) {
+            desc = !desc
+        } else {
+            // Default false, except for hash column
+            desc = field === Column.Hash
+        }
+        if (desc) {
+            txsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
+        } else {
+            txsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
+        }
         setTxs([...txsRef.current])
-        setSortCol(col => {
-            setSortDesc(desc => {
-                if (col === field) {
-                    desc = !desc
-                } else {
-                    // Default false, except for hash column
-                    desc = field === Column.Hash
-                }
-                if (desc) {
-                    txsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
-                } else {
-                    txsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
-                }
-                return desc
-            })
-            return field
-        })
+        setSortDesc(desc)
+        setSortCol(field)
     }
     return (
         <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
