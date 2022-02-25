@@ -2,11 +2,15 @@
     height: 155px;
 }
 
+.header p {
+    margin: 0 0 5px;
+}
+
 .input_output_box {
     background: #fff;
     border: 1px solid #999;
     font-size: 12px;
-    height: calc((100vh - 218px) / 2);
+    height: calc((100vh - 245px) / 2);
     overflow-y: auto;
     white-space: nowrap;
 }
@@ -48,4 +52,14 @@
 
 .input_output_box .spanRight {
     text-align: right;
+}
+
+.footer {
+    display: flex;
+    padding-top: 7px;
+    height: 23px;
+}
+
+.footerRight {
+    margin-left: auto;
 }

@@ -76,20 +76,22 @@ const Tx = () => {
             </Head>
             <div>
                 <div className={styleTx.header}>
-                    <label>Transaction ID:</label><br/>
-                    <input type="text" value={transactionId} className={form.input_wide} spellCheck="false" readOnly/>
-                    <br/>
-                    Status: {status}<br/>
-                    Date: {date}<br/>
-                    {inputMessage ? <>Message: {inputMessage}<br/></> : null}
+                    <p>
+                        <label>Transaction ID:</label><br/>
+                        <input type="text" value={transactionId} className={form.input_wide} spellCheck="false"
+                               readOnly/>
+                    </p>
+                    <p>Status: {status}</p>
+                    <p>Date: {date}</p>
+                    {inputMessage ? <p>Message: {inputMessage}</p> : null}
                     {inputAmount > 0 &&
-                    <>Amount received: {inputAmount.toLocaleString()} satoshis<br/></>
+                    <p>Amount received: {inputAmount.toLocaleString()} satoshis</p>
                     }
                     {inputAmount < 0 &&
-                    <>Amount spent: {(-inputAmount).toLocaleString()} satoshis<br/></>
+                    <p>Amount spent: {(-inputAmount).toLocaleString()} satoshis</p>
                     }
-                    Size: {size.toLocaleString()} bytes<br/>
-                    Fee: 0 satoshis (0 sat/byte)
+                    <p>Size: {size.toLocaleString()} bytes</p>
+                    <p>Fee: 0 satoshis (0 sat/byte)</p>
                 </div>
                 <div>
                     <div className={styleTx.input_output_head}>Inputs ({txInfo.inputs.length})</div>
@@ -132,6 +134,10 @@ const Tx = () => {
                             })}
                         </div>
                     </div>
+                </div>
+                <div className={styleTx.footer}>
+                    <span><input type="button" value="Copy"/></span>
+                    <span className={styleTx.footerRight}><input type="button" value="Close"/></span>
                 </div>
             </div>
         </div>
