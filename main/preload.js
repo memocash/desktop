@@ -112,6 +112,9 @@ contextBridge.exposeInMainWorld('electron', {
     openPreviewSend: async ({payTo, message, amount}) => {
         ipcRenderer.send("open-preview-send", {payTo, message, amount})
     },
+    openTransaction: async ({txHash}) => {
+        ipcRenderer.send("open-transaction", {txHash})
+    },
     saveTransactions: async (transactions) => {
         await ipcRenderer.send("save-transactions", transactions)
     },

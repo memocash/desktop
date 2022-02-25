@@ -92,7 +92,7 @@ const History = () => {
         setSelectedTxHash(selectedTxHash)
     }
     const doubleClickTx = async (txHash) => {
-        await window.electron.openPreviewSend({txHash})
+        await window.electron.openTransaction({txHash})
     }
     const clickRow = (e, txHash) => {
         e.stopPropagation()

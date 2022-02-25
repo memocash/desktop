@@ -40,7 +40,7 @@ const CreateWindow = async () => {
     windowNumber++
 }
 
-const CreateTxWindow = async (winId, {payTo, message, amount}) => {
+const CreateTxWindow = async (winId, {txHash, payTo, message, amount}) => {
     const win = new BrowserWindow({
         width: 650,
         height: 500,
@@ -58,7 +58,11 @@ const CreateTxWindow = async (winId, {payTo, message, amount}) => {
     }
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     txWindows[winId].push(win)
-    await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams({payTo, message, amount})).toString())
+    let params = {txHash}
+    if (!txHash || !txHash.length) {
+        params = {payTo, message, amount}
+    }
+    await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams(params)).toString())
 }
 
 app.whenReady().then(async () => {
@@ -110,6 +114,10 @@ app.whenReady().then(async () => {
 
     ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
         await CreateTxWindow(e.sender.id, {payTo, message, amount})
+    })
+
+    ipcMain.on("open-transaction", async (e, {txHash}) => {
+        await CreateTxWindow(e.sender.id, {txHash})
     })
 
     ipcMain.on("save-transactions", async (e, transactions) => {

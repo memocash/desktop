@@ -6,19 +6,23 @@ import styleTx from "../styles/tx.module.css";
 
 const Tx = () => {
     const router = useRouter()
-    const [transactionId, setTransactionId] = useState("f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16")
+    const [transactionId, setTransactionId] = useState("Unknown")
     const [inputPayTo, setInputPayTo] = useState()
     const [inputMessage, setInputMessage] = useState()
     const [inputAmount, setInputAmount] = useState()
 
     useEffect(() => {
-        if (!router || !router.query || !router.query.payTo || !router.query.amount) {
+        if (!router || !router.query) {
             return
         }
-        const {payTo, message, amount} = router.query
-        setInputPayTo(payTo)
-        setInputMessage(message)
-        setInputAmount(amount)
+        const {txHash, payTo, message, amount} = router.query
+        if (txHash && txHash.length) {
+            setTransactionId(txHash)
+        } else if (payTo && amount) {
+            setInputPayTo(payTo)
+            setInputMessage(message)
+            setInputAmount(amount)
+        }
     }, [router])
     return (
         <div>
