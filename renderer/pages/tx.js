@@ -6,7 +6,7 @@ import styleTx from "../styles/tx.module.css";
 
 const Tx = () => {
     const router = useRouter()
-    const [transactionId, setTransactionId] = useState("Unknown")
+    const [transactionId, setTransactionId] = useState("")
     const [status, setStatus] = useState("Unconfirmed")
     const [date, setDate] = useState("2009-01-11 19:30")
     const [inputPayTo, setInputPayTo] = useState()
@@ -28,6 +28,9 @@ const Tx = () => {
         }
     }, [router])
     useEffect(async () => {
+        if (!transactionId.length) {
+            return
+        }
         const tx = await window.electron.getTransaction(transactionId)
         setTxInfo(tx)
         let date
@@ -73,6 +76,11 @@ const Tx = () => {
                                 <p key={i}>
                                     {input.prev_hash}:{input.prev_index}
                                     &nbsp;&nbsp;&nbsp;&nbsp;
+                                    {input.output &&
+                                    <>
+                                    {input.output.address} - {input.output.value}
+                                    </>
+                                    }
                                 </p>
                             )
                         })}

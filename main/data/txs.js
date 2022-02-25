@@ -48,6 +48,23 @@ const GetTransactions = async (addresses) => {
 const GetTransaction = async (txHash) => {
     const outputs = await Select("SELECT * FROM outputs WHERE hash = ?", [txHash])
     const inputs = await Select("SELECT * FROM inputs WHERE hash = ?", [txHash])
+    let inputOutputsWhere = []
+    let inputOutputsParams = []
+    for (let i = 0; i < inputs.length; i++) {
+        inputOutputsWhere.push("hash = ? AND `index` = ?")
+        inputOutputsParams.push(inputs[i].prev_hash, inputs[i].prev_index)
+    }
+    const query = "SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")"
+    const inputOutputs = await Select(query,
+        inputOutputsParams)
+    for (let i = 0; i < inputs.length; i++) {
+        for (let j = 0; j < inputOutputs.length; j++) {
+            if (inputOutputs[j].hash === inputs[i].prev_hash && inputOutputs[j].index === inputs[i].prev_index) {
+                inputs[i].output = inputOutputs[j]
+                break
+            }
+        }
+    }
     const seens = await Select("SELECT * FROM tx_seens WHERE hash = ?", [txHash])
     let seen
     if (seens && seens.length) {
