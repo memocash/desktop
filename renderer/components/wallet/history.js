@@ -67,7 +67,7 @@ const History = () => {
                 selectedTxHash = ""
                 break
             case "Enter":
-                await window.electron.openPreviewSend({txHash: selectedTxHash})
+                await window.electron.openTransaction({txHash: selectedTxHash})
                 break
             default:
                 return
