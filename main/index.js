@@ -58,6 +58,7 @@ const CreateTxWindow = async (winId, {txHash, payTo, message, amount}) => {
     }
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     txWindows[winId].push(win)
+    wallets[win.webContents.id] = wallets[winId]
     let params = {txHash}
     if (!txHash || !txHash.length) {
         params = {payTo, message, amount}

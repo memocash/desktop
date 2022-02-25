@@ -11,12 +11,12 @@
     white-space: nowrap;
 }
 
-.input_output_box_grid {
+.input_output_grid {
     display: grid;
     grid-template-columns: repeat(3, max-content);
 }
 
-.input_output_box_grid_output {
+.input_output_grid_output {
     grid-template-columns: repeat(2, max-content);
 }
 

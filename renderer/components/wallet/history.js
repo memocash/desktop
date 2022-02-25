@@ -31,7 +31,7 @@ const History = () => {
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const historyDiv = useRef()
     useEffect(async () => {
-        let wallet = await GetWallet()
+        const wallet = await GetWallet()
         let txs = await window.electron.getTransactions(wallet.addresses)
         let balance = 0
         for (let i = txs.length - 1; i >= 0; i--) {

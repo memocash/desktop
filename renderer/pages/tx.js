@@ -4,6 +4,7 @@ import Head from "next/head";
 import form from "../styles/form.module.css";
 import styleTx from "../styles/tx.module.css";
 import ShortHash from "../components/util/txs";
+import GetWallet from "../components/util/wallet";
 
 const Tx = () => {
     const router = useRouter()
@@ -14,7 +15,6 @@ const Tx = () => {
     const [inputMessage, setInputMessage] = useState()
     const [inputAmount, setInputAmount] = useState()
     const [txInfo, setTxInfo] = useState({inputs: [], outputs: []})
-
     useEffect(() => {
         if (!router || !router.query) {
             return
@@ -34,6 +34,22 @@ const Tx = () => {
         }
         const tx = await window.electron.getTransaction(transactionId)
         setTxInfo(tx)
+        const wallet = await GetWallet()
+        let amount = 0
+        for (let i = 0; i < tx.inputs.length; i++) {
+            if (!tx.inputs[i].output) {
+                continue
+            }
+            if (wallet.addresses.indexOf(tx.inputs[i].output.address) > -1) {
+                amount -= tx.inputs[i].output.value
+            }
+        }
+        for (let i = 0; i < tx.outputs.length; i++) {
+            if (wallet.addresses.indexOf(tx.outputs[i].address) > -1) {
+                amount += tx.outputs[i].value
+            }
+        }
+        setInputAmount(amount)
         let date
         if (tx.seen) {
             date = tx.seen.timestamp
@@ -62,15 +78,19 @@ const Tx = () => {
                     Status: {status}<br/>
                     Date: {date}<br/>
                     {inputMessage ? <>Message: {inputMessage}<br/></> : null}
-                    Amount: {inputAmount} satoshis<br/>
-                    Amount received: 5,000,000,000 satoshis<br/>
+                    {inputAmount > 0 &&
+                    <>Amount received: {inputAmount.toLocaleString()} satoshis<br/></>
+                    }
+                    {inputAmount < 0 &&
+                    <>Amount sent: {(-inputAmount).toLocaleString()} satoshis<br/></>
+                    }
                     Size: 275 bytes<br/>
                     Fee: 0 satoshis (0 sat/byte)
                 </div>
                 <div>
                     <div className={styleTx.input_output_head}>Inputs ({txInfo.inputs.length})</div>
                     <div className={styleTx.input_output_box}>
-                        <div className={styleTx.input_output_box_grid}>
+                        <div className={styleTx.input_output_grid}>
                             {!txInfo.inputs.length && <p>
                                 <span>0437cd...a597c9:0</span>
                                 <span>1MCgBDVXTwfEKYtu2PtPHBif5BpthvBrHJ</span>
@@ -93,7 +113,7 @@ const Tx = () => {
                 <div>
                     <div className={styleTx.input_output_head}>Outputs ({txInfo.outputs.length})</div>
                     <div className={styleTx.input_output_box}>
-                        <div className={[styleTx.input_output_box_grid, styleTx.input_output_box_grid_output].join(" ")}>
+                        <div className={[styleTx.input_output_grid, styleTx.input_output_grid_output].join(" ")}>
                             {!txInfo.outputs.length && <p>
                                 <span>{inputPayTo}</span>
                                 <span>{inputAmount}</span>
