@@ -155,9 +155,9 @@ const Tx = () => {
                     </div>
                 </div>
                 <div className={styleTx.footer}>
-                    <span><input type="button" value="Copy" onClick={clickCopyRaw}/></span>
+                    <span><button onClick={clickCopyRaw}>Copy</button></span>
                     <span className={styleTx.footerRight}>
-                        <input type="button" value="Close" onClick={clickClose}/></span>
+                        <button onClick={clickClose}>Close</button></span>
                 </div>
             </div>
         </div>
