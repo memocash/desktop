@@ -5,6 +5,7 @@ import form from "../styles/form.module.css";
 import styleTx from "../styles/tx.module.css";
 import ShortHash from "../components/util/txs";
 import GetWallet from "../components/util/wallet";
+import {useReferredState} from "../components/util/state";
 
 const Tx = () => {
     const router = useRouter()
@@ -14,7 +15,7 @@ const Tx = () => {
     const [inputPayTo, setInputPayTo] = useState()
     const [inputMessage, setInputMessage] = useState()
     const [inputAmount, setInputAmount] = useState()
-    const [txInfo, setTxInfo] = useState({inputs: [], outputs: []})
+    const [txInfo, txInfoRef, setTxInfo] = useReferredState({inputs: [], outputs: []})
     const [size, setSize] = useState(0)
     useEffect(() => {
         if (!router || !router.query) {
@@ -68,6 +69,12 @@ const Tx = () => {
     }, [transactionId])
     const clickTx = async (txHash) => {
         await window.electron.openTransaction({txHash})
+    }
+    const clickCopyRaw = () => {
+        navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
+    }
+    const clickClose = () => {
+        window.electron.closeWindow()
     }
     return (
         <div>
@@ -136,8 +143,9 @@ const Tx = () => {
                     </div>
                 </div>
                 <div className={styleTx.footer}>
-                    <span><input type="button" value="Copy"/></span>
-                    <span className={styleTx.footerRight}><input type="button" value="Close"/></span>
+                    <span><input type="button" value="Copy" onClick={clickCopyRaw}/></span>
+                    <span className={styleTx.footerRight}>
+                        <input type="button" value="Close" onClick={clickClose}/></span>
                 </div>
             </div>
         </div>

@@ -58,6 +58,7 @@ const CreateTxWindow = async (winId, {txHash, payTo, message, amount}) => {
     }
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     txWindows[winId].push(win)
+    windows[win.webContents.id] = win
     wallets[win.webContents.id] = wallets[winId]
     let params = {txHash}
     if (!txHash || !txHash.length) {
@@ -115,6 +116,10 @@ app.whenReady().then(async () => {
 
     ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
         await CreateTxWindow(e.sender.id, {payTo, message, amount})
+    })
+
+    ipcMain.on("close-window", (e) => {
+        windows[e.sender.id].close()
     })
 
     ipcMain.on("open-transaction", async (e, {txHash}) => {
