@@ -17,6 +17,8 @@ const Tx = () => {
     const [inputAmount, setInputAmount] = useState()
     const [txInfo, txInfoRef, setTxInfo] = useReferredState({inputs: [], outputs: []})
     const [size, setSize] = useState(0)
+    const [fee, setFee] = useState(0)
+    const [feeRate, setFeeRate] = useState(0)
     useEffect(() => {
         if (!router || !router.query) {
             return
@@ -37,6 +39,7 @@ const Tx = () => {
         const tx = await window.electron.getTransaction(transactionId)
         const wallet = await GetWallet()
         let amount = 0
+        let fee = 0
         for (let i = 0; i < tx.inputs.length; i++) {
             if (!tx.inputs[i].output) {
                 continue
@@ -45,16 +48,21 @@ const Tx = () => {
                 amount -= tx.inputs[i].output.value
                 tx.inputs[i].highlight = true
             }
+            fee += tx.inputs[i].output.value
         }
         for (let i = 0; i < tx.outputs.length; i++) {
             if (wallet.addresses.indexOf(tx.outputs[i].address) > -1) {
                 amount += tx.outputs[i].value
                 tx.outputs[i].highlight = true
             }
+            fee -= tx.outputs[i].value
         }
         setTxInfo(tx)
         setInputAmount(amount)
         setSize(tx.raw.length)
+        setFee(fee)
+        const feeRate = fee/size
+        setFeeRate(feeRate)
         let date
         if (tx.seen) {
             date = tx.seen.timestamp
@@ -98,7 +106,7 @@ const Tx = () => {
                     <p>Amount spent: {(-inputAmount).toLocaleString()} satoshis</p>
                     }
                     <p>Size: {size.toLocaleString()} bytes</p>
-                    <p>Fee: 0 satoshis (0 sat/byte)</p>
+                    <p>Fee: {fee} satoshis ({feeRate} sat/byte)</p>
                 </div>
                 <div>
                     <div className={styleTx.input_output_head}>Inputs ({txInfo.inputs.length})</div>
