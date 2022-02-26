@@ -40,8 +40,10 @@ const Tx = () => {
         const wallet = await GetWallet()
         let amount = 0
         let fee = 0
+        let missingInputs = false
         for (let i = 0; i < tx.inputs.length; i++) {
             if (!tx.inputs[i].output) {
+                missingInputs = true
                 continue
             }
             if (wallet.addresses.indexOf(tx.inputs[i].output.address) > -1) {
@@ -60,9 +62,11 @@ const Tx = () => {
         setTxInfo(tx)
         setInputAmount(amount)
         setSize(tx.raw.length)
-        setFee(fee)
-        const feeRate = fee/size
-        setFeeRate(feeRate)
+        if (!missingInputs) {
+            setFee(fee)
+            const feeRate = fee / tx.raw.length
+            setFeeRate(feeRate.toFixed(4))
+        }
         let date
         if (tx.seen) {
             date = tx.seen.timestamp
