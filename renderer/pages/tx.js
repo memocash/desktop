@@ -1,5 +1,5 @@
 import {useRouter} from "next/router";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import Head from "next/head";
 import form from "../styles/form.module.css";
 import styleTx from "../styles/tx.module.css";
@@ -9,7 +9,7 @@ import {useReferredState} from "../components/util/state";
 
 const Tx = () => {
     const router = useRouter()
-    const [transactionId, setTransactionId] = useState("")
+    const [transactionId, transactionIdRef, setTransactionId] = useReferredState("")
     const [status, setStatus] = useState("Unconfirmed")
     const [date, setDate] = useState("2009-01-11 19:30")
     const [inputPayTo, setInputPayTo] = useState()
@@ -19,6 +19,7 @@ const Tx = () => {
     const [size, setSize] = useState(0)
     const [fee, setFee] = useState(0)
     const [feeRate, setFeeRate] = useState(0)
+    const transactionIdEleRef = useRef()
     useEffect(() => {
         if (!router || !router.query) {
             return
@@ -26,6 +27,7 @@ const Tx = () => {
         const {txHash, payTo, message, amount} = router.query
         if (txHash && txHash.length) {
             setTransactionId(txHash)
+            transactionIdEleRef.current.value = txHash
         } else if (payTo && amount) {
             setInputPayTo(payTo)
             setInputMessage(message)
@@ -88,6 +90,13 @@ const Tx = () => {
     const clickClose = () => {
         window.electron.closeWindow()
     }
+    const transactionIdChange = () => {
+        console.log(transactionIdEleRef.current.value)
+        if (transactionIdRef.current.length > 0 && transactionIdEleRef.current.value.length === 64 &&
+            transactionIdRef.current !== transactionIdEleRef.current.value) {
+            setTransactionId(transactionIdEleRef.current.value)
+        }
+    }
     return (
         <div>
             <Head>
@@ -97,8 +106,8 @@ const Tx = () => {
                 <div className={styleTx.header}>
                     <p>
                         <label>Transaction ID:</label><br/>
-                        <input type="text" value={transactionId} className={form.input_wide} spellCheck="false"
-                               readOnly/>
+                        <input type="text" className={form.input_wide} spellCheck="false"
+                               onChange={transactionIdChange} ref={transactionIdEleRef}/>
                     </p>
                     <p>Status: {status}</p>
                     <p>Date: {date}</p>
