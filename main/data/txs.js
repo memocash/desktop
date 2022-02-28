@@ -47,6 +47,18 @@ const GetTransactions = async (addresses) => {
     return Select(query, addresses)
 }
 
+const GetRecentAddressTransactions = async (addresses) => {
+    const query = "" +
+        "SELECT " +
+        "   outputs.address, " +
+        "   MAX(blocks.height) AS height " +
+        "FROM outputs " +
+        "JOIN block_txs ON (block_txs.tx_hash = outputs.hash) " +
+        "JOIN blocks on (blocks.hash = block_txs.block_hash) " +
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    return Select(query, addresses)
+}
+
 const GetTransaction = async (txHash) => {
     const outputs = await Select("SELECT * FROM outputs WHERE hash = ?", [txHash])
     const inputs = await Select("SELECT * FROM inputs WHERE hash = ?", [txHash])
@@ -92,4 +104,5 @@ module.exports = {
     SaveTransactions,
     GetTransactions,
     GetTransaction,
+    GetRecentAddressTransactions,
 }

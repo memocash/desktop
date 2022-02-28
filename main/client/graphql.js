@@ -6,7 +6,7 @@ const GraphQL = async ({query, variables}) => {
         variables: variables,
     })
     return new Promise((resolve, reject) => {
-        const request = http.request("http://127.0.0.1:26771/graphql", {
+        const request = http.request("http://127.0.0.1:26770/graphql", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
