@@ -13,7 +13,7 @@
   "author": "Memo Technology, Inc.",
   "license": "Apache License 2.0",
   "devDependencies": {
-    "electron": "^13.6.3",
+    "electron": "^17.1.0",
     "electron-builder": "^22.10.5",
     "electron-packager": "^15.4.0",
     "electron-rebuild": "^3.2.7",

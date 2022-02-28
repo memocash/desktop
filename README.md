@@ -8,7 +8,7 @@ cd desktop
 
 ### Use version of node matching electron
 ```bash
-nvm install 14.16.0
+nvm install 16.13.0
 ```
 
 ### Install dependencies
