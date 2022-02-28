@@ -41,9 +41,9 @@ const Update = ({setConnected}) => {
                         maxHash = data[name].outputs[j].tx.hash
                         maxHashIndex = data[name].outputs[j].index
                     }
-                    if (data[name].outputs[j].tx.block && (maxHeight === undefined ||
-                        data[name].outputs[j].tx.block.height > maxHeight)) {
-                        maxHeight = data[name].outputs[j].tx.block.height
+                    if (data[name].outputs[j].tx.blocks && (maxHeight === undefined ||
+                        data[name].outputs[j].tx.blocks[0].height > maxHeight)) {
+                        maxHeight = data[name].outputs[j].tx.blocks[0].height
                     }
                 }
                 for (let i = 0; i < addresses.length; i++) {
@@ -58,10 +58,12 @@ const Update = ({setConnected}) => {
                     addresses[i].hash = maxHash
                     addresses[i].index = maxHashIndex
                     addresses[i].height = maxHeight
+                    console.log("looping address: " + addresses[i].address + ", height: " + addresses[i].height,
+                        ", hashIndex: " + addresses[i].hash + ":" + addresses[i].index)
                 }
             }
+            await window.electron.saveTransactions(txs)
         }
-        await window.electron.saveTransactions(txs)
         setConnected(true)
     }, [])
     const loadOutputs = async ({addresses}) => {
