@@ -20,6 +20,11 @@ const GraphQL = async ({query, variables}) => {
             res.on("end", () => {
                 try {
                     const jsonData = JSON.parse(data)
+                    if (jsonData.errors && jsonData.errors.length) {
+                        console.log("error with graphql response")
+                        console.log(jsonData.errors)
+                        reject(jsonData.errors)
+                    }
                     resolve(jsonData)
                 } catch (e) {
                     console.log("error parsing json response", e)

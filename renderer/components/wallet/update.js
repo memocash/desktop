@@ -9,36 +9,77 @@ const Update = ({setConnected}) => {
             console.log("ERROR: Addresses not loaded")
             return
         }
-        let data
-        try {
-            data = await loadOutputs(wallet.addresses)
-        } catch (e) {
-            setConnected(false)
-            console.log("Error connecting to index server")
-            console.log(e)
-            return
-        }
-        let txs = []
-        for (let i = 0; i < data.addresses.length; i++) {
-            if (data.addresses[i].outputs == null) {
-                console.log("ERROR: null outputs for address: " + data.addresses[i].address)
-                console.log(data.addresses[i])
-                continue
+        let addresses = new Array(wallet.addresses.length)
+        for (let i = 0; i < wallet.addresses.length; i++) {
+            addresses[i] = {
+                address: wallet.addresses[i],
+                hash: "", index: 0, height: 0,
             }
-            for (let j = 0; j < data.addresses[i].outputs.length; j++) {
-                txs.push(data.addresses[i].outputs[j].tx)
+        }
+        for (let i = 0; i < 5 && addresses.length; i++) {
+            let data
+            try {
+                data = await loadOutputs({addresses})
+                console.log(data)
+            } catch (e) {
+                setConnected(false)
+                console.log("Error connecting to index server")
+                console.log(e)
+                return
+            }
+            let txs = []
+            for (let name in data) {
+                if (data[name].outputs == null) {
+                    console.log("ERROR: null outputs for address: " + data[name].address)
+                    console.log(data[name])
+                    continue
+                }
+                let maxHash, maxHashIndex, maxHeight
+                for (let j = 0; j < data[name].outputs.length; j++) {
+                    txs.push(data[name].outputs[j].tx)
+                    if (maxHash === undefined || data[name].outputs[j].tx.hash > maxHash) {
+                        maxHash = data[name].outputs[j].tx.hash
+                        maxHashIndex = data[name].outputs[j].index
+                    }
+                    if (data[name].outputs[j].tx.block && (maxHeight === undefined ||
+                        data[name].outputs[j].tx.block.height > maxHeight)) {
+                        maxHeight = data[name].outputs[j].tx.block.height
+                    }
+                }
+                for (let i = 0; i < addresses.length; i++) {
+                    if (data[name].address !== addresses[i].address) {
+                        continue
+                    }
+                    if (data[name].outputs.length < 1000) {
+                        addresses.splice(i, 1)
+                        i--
+                        continue
+                    }
+                    addresses[i].hash = maxHash
+                    addresses[i].index = maxHashIndex
+                    addresses[i].height = maxHeight
+                }
             }
         }
         await window.electron.saveTransactions(txs)
         setConnected(true)
     }, [])
-
-    const loadOutputs = async (addresses) => {
-        const query = `
-    query ($addresses: [String!]) {
-        addresses(addresses: $addresses) {
+    const loadOutputs = async ({addresses}) => {
+        let variables = {}
+        let paramsStrings = []
+        let subQueries = []
+        for (let i = 0; i < addresses.length; i++) {
+            paramsStrings.push(`$address${i}: String!, $start${i}: HashIndex, $height${i}: Int`)
+            variables["address" + i] = addresses[i].address
+            variables["start" + i] = JSON.stringify({
+                hash: addresses[i].hash,
+                index: addresses[i].index,
+            })
+            variables["height" + i] = addresses[i].height
+            subQueries.push(`
+        address${i}: address(address: $address${i}) {
             address
-            outputs {
+            outputs(start: $start${i}, height: $height${i}) {
                 hash
                 index
                 amount
@@ -66,11 +107,14 @@ const Update = ({setConnected}) => {
                 }
             }
         }
+        `)
+        }
+        const query = `
+    query (${paramsStrings.join(", ")}) {
+        ${subQueries.join("\n")}
     }
     `
-        let data = await window.electron.graphQL(query, {
-            addresses: addresses,
-        })
+        let data = await window.electron.graphQL(query, variables)
         return data.data
     }
     return (
