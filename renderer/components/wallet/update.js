@@ -9,11 +9,18 @@ const Update = ({setConnected}) => {
             console.log("ERROR: Addresses not loaded")
             return
         }
+        const recentAddresses = await window.electron.getRecentAddressTransactions(wallet.addresses)
         let addresses = new Array(wallet.addresses.length)
         for (let i = 0; i < wallet.addresses.length; i++) {
             addresses[i] = {
                 address: wallet.addresses[i],
                 hash: "", index: 0, height: 0,
+            }
+            for (let j = 0; j < recentAddresses.length; j++) {
+                if (!recentAddresses[j].address === wallet.addresses[i]) {
+                    continue
+                }
+                addresses[i].height = recentAddresses[j].height
             }
         }
         for (let i = 0; i < 100 && addresses.length; i++) {

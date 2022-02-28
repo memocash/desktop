@@ -4,7 +4,7 @@ const path = require('path')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
 const {GraphQL} = require("./client/graphql");
-const {SaveTransactions, GetTransactions, GetTransaction} = require("./data/txs");
+const {SaveTransactions, GetTransactions, GetTransaction, GetRecentAddressTransactions} = require("./data/txs");
 
 const wallets = {}
 const windows = {}
@@ -136,6 +136,10 @@ app.whenReady().then(async () => {
 
     ipcMain.handle("get-transaction", async (e, txHash) => {
         return GetTransaction(txHash)
+    })
+
+    ipcMain.handle("get-recent-addresses", async (e, addresses) => {
+        return GetRecentAddressTransactions(addresses)
     })
 
     await CreateWindow()
