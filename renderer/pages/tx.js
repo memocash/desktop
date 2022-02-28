@@ -68,6 +68,9 @@ const Tx = () => {
             setFee(fee)
             const feeRate = fee / tx.raw.length
             setFeeRate(feeRate.toFixed(4))
+        } else {
+            setFee(0)
+            setFeeRate(0)
         }
         let date
         if (tx.seen) {
