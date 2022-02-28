@@ -16,7 +16,7 @@ const Update = ({setConnected}) => {
                 hash: "", index: 0, height: 0,
             }
         }
-        for (let i = 0; i < 5 && addresses.length; i++) {
+        for (let i = 0; i < 100 && addresses.length; i++) {
             let data
             try {
                 data = await loadOutputs({addresses})
@@ -37,13 +37,16 @@ const Update = ({setConnected}) => {
                 let maxHash, maxHashIndex, maxHeight
                 for (let j = 0; j < data[name].outputs.length; j++) {
                     txs.push(data[name].outputs[j].tx)
-                    if (maxHash === undefined || data[name].outputs[j].tx.hash > maxHash) {
-                        maxHash = data[name].outputs[j].tx.hash
-                        maxHashIndex = data[name].outputs[j].index
-                    }
                     if (data[name].outputs[j].tx.blocks && (maxHeight === undefined ||
-                        data[name].outputs[j].tx.blocks[0].height > maxHeight)) {
-                        maxHeight = data[name].outputs[j].tx.blocks[0].height
+                        data[name].outputs[j].tx.blocks[0].height >= maxHeight)) {
+                        if (maxHeight === undefined || data[name].outputs[j].tx.blocks[0].height > maxHeight) {
+                            maxHeight = data[name].outputs[j].tx.blocks[0].height
+                            maxHash = undefined
+                        }
+                        if (maxHash === undefined || data[name].outputs[j].tx.hash > maxHash) {
+                            maxHash = data[name].outputs[j].tx.hash
+                            maxHashIndex = data[name].outputs[j].index
+                        }
                     }
                 }
                 for (let i = 0; i < addresses.length; i++) {
