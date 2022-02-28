@@ -5,7 +5,7 @@ const prepareNext = require('electron-next')
 const menu = require("./menu")
 const {GraphQL} = require("./client/graphql");
 const {SaveTransactions, GetTransactions, GetTransaction} = require("./data/txs");
-const GetCoins = require("./data/outputs");
+const {GetCoins} = require("./data/outputs");
 
 const wallets = {}
 const windows = {}

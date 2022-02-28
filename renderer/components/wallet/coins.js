@@ -5,6 +5,7 @@ const Coins = () => {
     useEffect(async () => {
         const wallet = await GetWallet()
         const coins = await window.electron.getCoins(wallet.addresses)
+        console.log(coins)
     }, [])
     return (
         <div>
