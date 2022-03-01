@@ -1,8 +1,8 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
-import TitleCol, {KeyDownHandler} from "./snippets/title-col";
+import {TitleCol} from "./snippets/title-col";
 import {useReferredState} from "../util/state";
 
 const Column = {
