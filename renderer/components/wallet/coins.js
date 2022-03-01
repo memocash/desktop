@@ -26,8 +26,8 @@ const Coins = () => {
                 return (
                     <div key={i} className={[styles.row].join(" ")}>
                         <span>{coin.address}</span>
-                        <span>{coin.value}</span>
-                        <span>{coin.height}</span>
+                        <span className={styles.itemValue}>{coin.value.toLocaleString()}</span>
+                        <span className={styles.itemValue}>{coin.height.toLocaleString()}</span>
                         <span title={coin.hash + ":" + coin.index}>{ShortHash(coin.hash)}:{coin.index}</span>
                     </div>
                 )
