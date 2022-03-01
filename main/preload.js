@@ -130,6 +130,12 @@ contextBridge.exposeInMainWorld('electron', {
     getCoins: async (addresses) => {
         return ipcRenderer.invoke("get-coins", addresses)
     },
+    setWindowStorage: (key, value) => {
+        ipcRenderer.send("set-window-storage", key, value)
+    },
+    getWindowStorage: (key) => {
+        return ipcRenderer.invoke("get-window-storage", key)
+    },
     closeWindow: () => {
         ipcRenderer.send("close-window")
     },

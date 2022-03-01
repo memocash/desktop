@@ -11,6 +11,7 @@ const wallets = {}
 const windows = {}
 const menus = {}
 const txWindows = {}
+const storage = {}
 let windowNumber = 0
 
 const CreateWindow = async () => {
@@ -70,13 +71,11 @@ const CreateTxWindow = async (winId, {txHash, payTo, message, amount}) => {
 
 app.whenReady().then(async () => {
     await prepareNext('./renderer')
-
     app.on("browser-window-focus", (e, win) => {
         if (process.platform === "darwin") {
             Menu.setApplicationMenu(menus[win.webContents.id])
         }
     })
-
     ipcMain.handle("open-file-dialog", async (e) => {
         const win = windows[e.sender.id]
         const {canceled, filePaths} = await dialog.showOpenDialog(win, {defaultPath: homedir + "/.memo/wallets"})
@@ -85,67 +84,64 @@ app.whenReady().then(async () => {
         }
         return filePaths[0]
     })
-
     ipcMain.on("show-message-dialog", (e, message) => {
         dialog.showMessageBoxSync(windows[e.sender.id], {
             title: "Memo",
             message: message,
         })
     })
-
     ipcMain.on("store-wallet", (e, wallet, filename, password) => {
         wallets[e.sender.id] = {wallet, filename, password}
     })
-
     ipcMain.handle("get-wallet", async (e) => {
         return wallets[e.sender.id]
     })
-
     ipcMain.handle("get-window-id", async (e) => {
         return e.sender.id
     })
-
     ipcMain.on("wallet-loaded", (e) => {
         menus[e.sender.id] = menu.ShowMenu(windows[e.sender.id], CreateWindow)
         const walletName = path.parse(wallets[e.sender.id].filename).name
         windows[e.sender.id].title = "Memo - " + walletName
     })
-
     ipcMain.handle("graphql", async (e, {query, variables}) => {
         return GraphQL({query, variables})
     })
-
     ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
         await CreateTxWindow(e.sender.id, {payTo, message, amount})
     })
-
     ipcMain.on("close-window", (e) => {
         windows[e.sender.id].close()
     })
-
     ipcMain.on("open-transaction", async (e, {txHash}) => {
         await CreateTxWindow(e.sender.id, {txHash})
     })
-
     ipcMain.on("save-transactions", async (e, transactions) => {
         await SaveTransactions(transactions)
     })
-
     ipcMain.handle("get-transactions", async (e, addresses) => {
         return GetTransactions(addresses)
     })
-
     ipcMain.handle("get-transaction", async (e, txHash) => {
         return GetTransaction(txHash)
     })
-
     ipcMain.handle("get-coins", async (e, addresses) => {
         return GetCoins(addresses)
     })
-
     ipcMain.handle("get-recent-addresses", async (e, addresses) => {
         return GetRecentAddressTransactions(addresses)
     })
-
+    ipcMain.on("set-window-storage", (e, key, value) => {
+        if (storage[e.sender.id] === undefined) {
+            storage[e.sender.id] = {}
+        }
+        storage[e.sender.id][key] = value
+    })
+    ipcMain.handle("get-window-storage", (e, key) => {
+        if (storage[e.sender.id] === undefined) {
+            return undefined
+        }
+        return storage[e.sender.id][key]
+    })
     await CreateWindow()
 })
