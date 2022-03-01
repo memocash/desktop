@@ -3,25 +3,13 @@ import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
 import {useReferredState} from "../util/state";
+import {TitleCol} from "./snippets/title-col";
 
 const Column = {
     Timestamp: "timestamp",
     Hash: "hash",
     Value: "value",
     Balance: "balance",
-}
-
-const TitleCol = ({title, col, sortCol, desc, sortTxs}) => {
-    return (
-        <span onClick={() => sortTxs(col)}>
-            {title} {col === sortCol &&
-        <>
-            {desc && <>&darr;</>}
-            {!desc && <>&uarr;</>}
-        </>
-        }
-        </span>
-    )
 }
 
 const History = () => {
@@ -125,13 +113,13 @@ const History = () => {
                 <p>No transactions</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                               col={Column.Timestamp} title={"Timestamp"}/>
-                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                               col={Column.Hash} title={"Hash"}/>
-                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                               col={Column.Value} title={"Value"}/>
-                    <TitleCol sortTxs={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                               col={Column.Balance} title={"Balance"}/>
                 </div>
             }
