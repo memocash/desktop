@@ -1,4 +1,5 @@
 import tabs from '../../styles/tabs.module.css'
+import {StatusBar} from './snippets/status-bar'
 
 export const Tabs = {
     History: "history",
@@ -29,18 +30,7 @@ const Frame = ({selected, clicked, children, connected}) => {
             <div className={tabs.body}>
                 {children}
             </div>
-            <div className={tabs.statusBar}>
-                <div className={tabs.statusText}>
-                    {connected ?
-                        <>Balance: 0 satoshis (0 txs, 0 utxos)</>
-                        :
-                        <>Not connected</>
-                    }
-                </div>
-                <div className={tabs.statusIcons}>
-                    <div className={[tabs.statusIcon, connected ? tabs.statusOkay : tabs.statusError].join(" ")}/>
-                </div>
-            </div>
+            <StatusBar connected={connected}/>
         </div>
     )
 }

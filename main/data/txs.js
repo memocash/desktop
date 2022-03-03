@@ -47,6 +47,18 @@ const GetTransactions = async (addresses) => {
     return Select(query, addresses)
 }
 
+const GetWalletInfo = async (addresses) => {
+    const query = "" +
+        "SELECT " +
+        "   COUNT(DISTINCT (outputs.hash || outputs.`index`)) AS tx_count, " +
+        "   SUM(CASE WHEN inputs.hash IS NULL THEN 1 ELSE 0 END) AS utxo_count, " +
+        "   SUM(CASE WHEN inputs.hash IS NULL THEN outputs.value ELSE 0 END) AS balance " +
+        "FROM outputs " +
+        "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    return Select(query, addresses)
+}
+
 const GetRecentAddressTransactions = async (addresses) => {
     const query = "" +
         "SELECT " +
@@ -105,4 +117,5 @@ module.exports = {
     GetTransactions,
     GetTransaction,
     GetRecentAddressTransactions,
+    GetWalletInfo,
 }
