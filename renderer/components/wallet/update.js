@@ -55,6 +55,14 @@ const Update = ({setConnected}) => {
                             maxHashIndex = data[name].outputs[j].index
                         }
                     }
+                    for (let h = 0; h < data[name].outputs[j].tx.outputs.length; h++) {
+                        if (!data[name].outputs[j].tx.outputs[h].spends) {
+                            continue
+                        }
+                        for (let k = 0; k < data[name].outputs[j].tx.outputs[h].spends.length; k++) {
+                            txs.push(data[name].outputs[j].tx.outputs[h].spends[k].tx)
+                        }
+                    }
                 }
                 for (let i = 0; i < addresses.length; i++) {
                     if (data[name].address !== addresses[i].address) {
@@ -109,6 +117,30 @@ const Update = ({setConnected}) => {
                         amount
                         lock {
                             address
+                        }
+                        spends {
+                            tx {
+                                hash
+                                seen
+                                raw
+                                inputs {
+                                    index
+                                    prev_hash
+                                    prev_index
+                                }
+                                outputs {
+                                    index
+                                    amount
+                                    lock {
+                                        address
+                                    }
+                                }
+                                blocks {
+                                    hash
+                                    timestamp
+                                    height
+                                }
+                            }
                         }
                     }
                     blocks {
