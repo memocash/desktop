@@ -32,7 +32,7 @@ const Frame = ({selected, clicked, children, connected}) => {
             <div className={tabs.statusBar}>
                 <div className={tabs.statusText}>
                     {connected ?
-                        <>Balance: 0 satoshis</>
+                        <>Balance: 0 satoshis (0 txs, 0 utxos)</>
                         :
                         <>Not connected</>
                     }
