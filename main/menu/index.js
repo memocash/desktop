@@ -33,7 +33,12 @@ const ShowMenu = (win, newWindow) => {
         submenu: [
             {label: "Information"},
             {type: "separator"},
-            {label: "Seed"},
+            {
+                label: "Seed",
+                click: () => {
+                    win.webContents.send("display-seed")
+                },
+            },
         ]
     }, {
         label: "View",

@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react"
+import Modal from "../modal";
 import tabs from '../../styles/tabs.module.css'
 import {StatusBar} from './snippets/status-bar'
 
@@ -18,6 +20,12 @@ const Tab = ({selected, name, clicked, title}) => {
 }
 
 const Frame = ({selected, clicked, children, connected}) => {
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
+    useEffect(() => {
+        electron.listenDisplaySeed(() => setIsModalOpen(true))
+    }, [])
+
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
@@ -31,6 +39,9 @@ const Frame = ({selected, clicked, children, connected}) => {
                 {children}
             </div>
             <StatusBar connected={connected}/>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                My modal!
+            </Modal>
         </div>
     )
 }

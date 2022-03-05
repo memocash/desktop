@@ -142,4 +142,7 @@ contextBridge.exposeInMainWorld('electron', {
     closeWindow: () => {
         ipcRenderer.send("close-window")
     },
+    listenDisplaySeed: (handler) => {
+        ipcRenderer.on("display-seed", handler)
+    },
 })
