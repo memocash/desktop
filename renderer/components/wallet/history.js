@@ -1,4 +1,4 @@
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
@@ -13,6 +13,7 @@ const Column = {
 }
 
 const History = () => {
+    const [loaded, setLoaded] = useState(false)
     const [txs, txsRef, setTxs] = useReferredState([])
     const [selectedTxHash, selectedTxHashRef, setSelectedTxHash] = useReferredState("")
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
@@ -27,6 +28,7 @@ const History = () => {
             txs[i].balance = balance
         }
         setTxs(txs)
+        setLoaded(true)
     }, [])
     const keyDownHandler = async (e) => {
         let selectedTxHash = selectedTxHashRef.current
@@ -110,7 +112,7 @@ const History = () => {
         <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
              ref={historyDiv}>
             {!txs.length ?
-                <p>No transactions</p>
+                <p className={styles.message}>{loaded ? <>No transactions</> : <>Loading...</>}</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
                     <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}

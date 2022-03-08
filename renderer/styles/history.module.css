@@ -5,6 +5,11 @@
     outline: none;
 }
 
+.wrapper .message {
+    padding: 5px;
+    margin: 0;
+}
+
 .wrapper .row {
     display: contents;
 }

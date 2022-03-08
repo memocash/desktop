@@ -1,4 +1,4 @@
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
@@ -13,6 +13,7 @@ const Column = {
 }
 
 const Coins = () => {
+    const [loaded, setLoaded] = useState(false)
     const [coins, coinsRef, setCoins] = useReferredState([])
     const [selectedOutput, selectedOutputRef, setSelectedOutput] = useReferredState("")
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Address)
@@ -22,6 +23,7 @@ const Coins = () => {
         const wallet = await GetWallet()
         const coins = await window.electron.getCoins(wallet.addresses)
         setCoins(coins)
+        setLoaded(true)
     }, [])
     const sortCoins = (field) => {
         let desc = sortDescRef.current
@@ -104,7 +106,7 @@ const Coins = () => {
     return (
         <div className={styles.wrapper} onKeyDown={keyDownHandler} ref={coinsDiv}>
             {!coins.length ?
-                <p>No coins</p>
+                <p className={styles.message}>{loaded ? <>No coins</> : <>Loading...</>}</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
                     <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
