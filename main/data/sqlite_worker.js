@@ -7,7 +7,6 @@ if (isMainThread) {
 }
 
 parentPort.on("message", ({action, queryId, query, variables}) => {
-    console.log("Received worker message: " + action + ", queryId: " + queryId)
     switch (action) {
         case "INSERT":
             Insert({queryId, query, variables})
@@ -28,7 +27,6 @@ const Insert = async ({queryId, query, variables}) => {
         const db = await GetDb()
         const insert = db.prepare(query)
         const result = await insert.run(...variables)
-        console.log("Sending Insert response: " + queryId)
         parentPort.postMessage({queryId, result});
     } catch (e) {
         throw new Error(queryId + ": " + e)
@@ -43,7 +41,6 @@ const Select = async ({queryId, query, variables}) => {
         const db = await GetDb()
         const select = db.prepare(query)
         const result = await select.all(...variables)
-        console.log("Sending Select response: " + queryId)
         parentPort.postMessage({queryId, result});
     } catch (e) {
         throw new Error(queryId + ": " + e)
