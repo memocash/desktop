@@ -2,7 +2,6 @@ import {useRef, useState} from "react"
 import Modal from "./index"
 
 const DisplaySeedModal = ({
-    isOpen,
     onClose
 }) => {
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
@@ -36,7 +35,6 @@ const DisplaySeedModal = ({
 
     return (
         <Modal
-            isOpen={isOpen}
             onClose={onClose}
         >
             {!showSeed &&
