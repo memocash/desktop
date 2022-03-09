@@ -12,9 +12,8 @@ worker.on("message", ({queryId, result}) => {
 })
 
 worker.on("error", (error) => {
-    console.log(error)
     for (let queryId in queries) {
-        if (error.indexOf(queryId) !== -1) {
+        if (error.toString().indexOf(queryId) !== -1) {
             queries[queryId].reject(error)
             return
         }

@@ -51,8 +51,8 @@ const GetWalletInfo = async (addresses) => {
     const query = "" +
         "SELECT " +
         "   COUNT(DISTINCT (outputs.hash || outputs.`index`)) AS output_count, " +
-        "   SUM(CASE WHEN inputs.hash IS NULL THEN 1 ELSE 0 END) AS utxo_count, " +
-        "   SUM(CASE WHEN inputs.hash IS NULL THEN outputs.value ELSE 0 END) AS balance " +
+        "   IFNULL(SUM(CASE WHEN inputs.hash IS NULL THEN 1 ELSE 0 END), 0) AS utxo_count, " +
+        "   IFNULL(SUM(CASE WHEN inputs.hash IS NULL THEN outputs.value ELSE 0 END), 0) AS balance " +
         "FROM outputs " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
