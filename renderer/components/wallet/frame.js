@@ -39,7 +39,7 @@ const Frame = ({selected, clicked, children, connected}) => {
                 {children}
             </div>
             <StatusBar connected={connected}/>
-            <DisplaySeedModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            {isModalOpen && <DisplaySeedModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />}
         </div>
     )
 }

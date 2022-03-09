@@ -34,17 +34,10 @@ const DisplaySeedModal = ({
         }
     }
 
-    const handleClose = () => {
-        setSeedPhrase("")
-        setShowSeed(false)
-        setHasEnteredWrongPassword(false)
-        onClose()
-    }
-
     return (
         <Modal
             isOpen={isOpen}
-            onClose={handleClose}
+            onClose={onClose}
         >
             {!showSeed &&
                 <div>
@@ -59,7 +52,7 @@ const DisplaySeedModal = ({
                         <p>Incorrect password</p>
                     }
                     <p>
-                        <button onClick={handleClose}>Cancel</button>
+                        <button onClick={onClose}>Cancel</button>
                         <button onClick={handleCheckPassword}>OK</button>
                     </p>
                 </div>
@@ -69,7 +62,7 @@ const DisplaySeedModal = ({
                     <p>Your wallet seed phrase is:</p>
                     <textarea value={seedPhrase} readOnly />
                     <p>
-                        <button onClick={handleClose}>Close</button>
+                        <button onClick={onClose}>Close</button>
                     </p>
                 </div>
             }
