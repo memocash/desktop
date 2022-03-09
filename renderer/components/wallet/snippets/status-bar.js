@@ -15,7 +15,7 @@ const StatusBar = ({connected}) => {
             <div>
                 {connected && <>
                     Balance: {info.balance.toLocaleString()} satoshis
-                    ({info.tx_count.toLocaleString()} txs, {info.utxo_count.toLocaleString()} utxos)
+                    ({info.output_count.toLocaleString()} outputs, {info.utxo_count.toLocaleString()} utxos)
                 </>}
                 {!connected && <>Not connected</>}
             </div>

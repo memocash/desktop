@@ -50,7 +50,7 @@ const GetTransactions = async (addresses) => {
 const GetWalletInfo = async (addresses) => {
     const query = "" +
         "SELECT " +
-        "   COUNT(DISTINCT (outputs.hash || outputs.`index`)) AS tx_count, " +
+        "   COUNT(DISTINCT (outputs.hash || outputs.`index`)) AS output_count, " +
         "   SUM(CASE WHEN inputs.hash IS NULL THEN 1 ELSE 0 END) AS utxo_count, " +
         "   SUM(CASE WHEN inputs.hash IS NULL THEN outputs.value ELSE 0 END) AS balance " +
         "FROM outputs " +
