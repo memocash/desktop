@@ -103,6 +103,10 @@ contextBridge.exposeInMainWorld('electron', {
         const {wallet} = await ipcRenderer.invoke("get-wallet")
         return wallet
     },
+    getPassword: async () => {
+        const { password } = await ipcRenderer.invoke("get-wallet")
+        return password
+    },
     listenAddedWallet: (handler) => {
         ipcRenderer.on("added-wallet", handler)
     },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import Modal from "../modal";
+import DisplaySeedModal from "../modal/displaySeed";
 import tabs from '../../styles/tabs.module.css'
 import {StatusBar} from './snippets/status-bar'
 
@@ -39,9 +39,7 @@ const Frame = ({selected, clicked, children, connected}) => {
                 {children}
             </div>
             <StatusBar connected={connected}/>
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                My modal!
-            </Modal>
+            <DisplaySeedModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
     )
 }
