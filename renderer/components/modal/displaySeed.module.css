@@ -1,0 +1,44 @@
+.root {
+    max-width: 350px;
+}
+
+.root input[type="password"] {
+    margin-left: 8px;
+}
+
+.root label {
+    align-items: center;
+    display: inline-flex;
+}
+
+.buttons {
+    align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.buttons button {
+    margin-left: 20px;
+}
+
+.flex {
+    align-items: center;
+    display: flex;
+}
+
+.flex > * {
+    flex-basis: 50%;
+}
+
+.seedPhrase {
+    box-sizing: border-box;
+    height: 4em;
+    min-width: 350px;
+    resize: none;
+    width: 100%;
+}
+
+.text {
+    margin-bottom: 20px;
+}

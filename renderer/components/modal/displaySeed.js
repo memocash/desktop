@@ -1,5 +1,6 @@
 import {useRef, useState} from "react"
 import Modal from "./index"
+import styles from "./displaySeed.module.css"
 
 const DisplaySeedModal = ({
     onClose
@@ -37,33 +38,54 @@ const DisplaySeedModal = ({
         <Modal
             onClose={onClose}
         >
-            {!showSeed &&
-                <div>
-                    <p>Enter your password</p>
-                    <p>
-                        <label>Password:
-                            <input autoFocus ref={passwordInputRef} onChange={handlePasswordChange}
-                               onKeyDown={handlePasswordKeyDown} type="password"/>
-                        </label>
-                    </p>
-                    {hasEnteredWrongPassword &&
-                        <p>Incorrect password</p>
-                    }
-                    <p>
-                        <button onClick={onClose}>Cancel</button>
-                        <button onClick={handleCheckPassword}>OK</button>
-                    </p>
-                </div>
-            }
-            {showSeed &&
-                <div>
-                    <p>Your wallet seed phrase is:</p>
-                    <textarea value={seedPhrase} readOnly />
-                    <p>
-                        <button onClick={onClose}>Close</button>
-                    </p>
-                </div>
-            }
+            <div className={styles.root}>
+                {!showSeed &&
+                    <div>
+                        <div className={styles.text}>Enter your password</div>
+                        <div>
+                            <label>Password:
+                                <input autoFocus ref={passwordInputRef} onChange={handlePasswordChange}
+                                   onKeyDown={handlePasswordKeyDown} type="password"/>
+                            </label>
+                        </div>
+                        {hasEnteredWrongPassword ?
+                            <p>Incorrect password</p> :
+                            <p>&nbsp;</p>
+                        }
+                        <div className={styles.buttons}>
+                            <button onClick={onClose}>Cancel</button>
+                            <button onClick={handleCheckPassword}>OK</button>
+                        </div>
+                    </div>
+                }
+                {showSeed &&
+                    <div>
+                        <div className={styles.text}>Your wallet seed phrase is:</div>
+                        <textarea className={styles.seedPhrase} value={seedPhrase} readOnly />
+                        <p className={styles.flex}>
+                            <div>Seed format:</div>
+                            <div><strong>BIP39</strong></div>
+                        </p>
+                        <p className={styles.flex}>
+                            <div>Wallet derivation path:</div>
+                            <div>m/44'/145'/0'</div>
+                        </p>
+                        <p>
+                            Please save these 12 words on paper (order is important). Additionally, save the derivation path as well.
+                            This seed will allow you to recover your wallet in case of computer failure.
+                        </p>
+                        <div><strong>WARNING:</strong></div>
+                        <ul>
+                            <li>Never disclose your seed.</li>
+                            <li>Never type it on a website.</li>
+                            <li>Do not store it electronically.</li>
+                        </ul>
+                        <div className={styles.buttons}>
+                            <button onClick={onClose}>Close</button>
+                        </div>
+                    </div>
+                }
+            </div>
         </Modal>
     )
 }
