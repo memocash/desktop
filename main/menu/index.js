@@ -2,7 +2,7 @@ const {Menu} = require("electron");
 
 const isMac = process.platform === "darwin"
 
-const ShowMenu = (win, newWindow) => {
+const ShowMenu = (win, newWindow, wallet) => {
     const submenu = [
         {
             label: "New/Restore",
@@ -38,6 +38,7 @@ const ShowMenu = (win, newWindow) => {
                 click: () => {
                     win.webContents.send("display-seed")
                 },
+                enabled: !!wallet.seed,
             },
         ]
     }, {

@@ -101,7 +101,7 @@ app.whenReady().then(async () => {
         return e.sender.id
     })
     ipcMain.on("wallet-loaded", (e) => {
-        menus[e.sender.id] = menu.ShowMenu(windows[e.sender.id], CreateWindow)
+        menus[e.sender.id] = menu.ShowMenu(windows[e.sender.id], CreateWindow, wallets[e.sender.id].wallet)
         const walletName = path.parse(wallets[e.sender.id].filename).name
         windows[e.sender.id].title = "Memo - " + walletName
     })
