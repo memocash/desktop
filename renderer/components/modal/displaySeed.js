@@ -70,7 +70,7 @@ const DisplaySeedModal = ({
                             <div>Wallet derivation path:</div>
                             <div>m/44'/145'/0'</div>
                         </p>
-                        <p>
+                        <p className={styles.message}>
                             Please save these 12 words on paper (order is important). Additionally, save the derivation path as well.
                             This seed will allow you to recover your wallet in case of computer failure.
                         </p>

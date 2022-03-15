@@ -31,6 +31,10 @@
     flex-basis: 50%;
 }
 
+.message {
+    margin: 20px 0;
+}
+
 .seedPhrase {
     box-sizing: border-box;
     height: 4em;
@@ -40,5 +44,5 @@
 }
 
 .text {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
