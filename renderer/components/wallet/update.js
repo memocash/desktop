@@ -81,6 +81,7 @@ const Update = ({setConnected}) => {
                 }
             }
             await window.electron.saveTransactions(txs)
+            await window.electron.generateHistory(wallet.addresses)
         }
         setConnected(true)
     }, [])

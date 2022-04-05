@@ -100,4 +100,11 @@ const Definitions = [
         tx_hash CHAR,
         UNIQUE(block_hash, tx_hash)
     )`,
+    `history (
+        address CHAR,
+        hash CHAR,
+        value INT,
+        timestamp CHAR,
+        UNIQUE(address, hash)
+    )`,
 ]

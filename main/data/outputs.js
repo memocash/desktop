@@ -1,4 +1,5 @@
 const {Select} = require("./sqlite");
+
 const GetCoins = (addresses) => {
     const query = "" +
         "SELECT " +

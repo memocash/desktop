@@ -47,6 +47,29 @@ const GetTransactions = async (addresses) => {
     return Select(query, addresses)
 }
 
+const GenerateHistory = async (addresses) => {
+    await Insert("" +
+        "INSERT OR REPLACE INTO history (address, hash, timestamp, value) " +
+        "SELECT " +
+        "   outputs.address, " +
+        "   txs.hash AS hash, " +
+        "   MIN(COALESCE(tx_seens.timestamp, blocks.timestamp)," +
+        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp, " +
+        "   SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) - " +
+        "   SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value " +
+        "FROM outputs " +
+        "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
+        "JOIN txs ON (outputs.hash = txs.hash OR inputs.hash = txs.hash) " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = txs.hash) " +
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "LEFT JOIN tx_seens ON (tx_seens.hash = txs.hash) " +
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "GROUP BY outputs.address, txs.hash " +
+        "ORDER BY MIN(COALESCE(tx_seens.timestamp, blocks.timestamp), " +
+        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) DESC" +
+        "", addresses)
+}
+
 const GetWalletInfo = async (addresses) => {
     const query = "" +
         "SELECT " +
@@ -118,4 +141,5 @@ module.exports = {
     GetTransaction,
     GetRecentAddressTransactions,
     GetWalletInfo,
+    GenerateHistory,
 }
