@@ -120,10 +120,10 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.send("open-transaction", {txHash})
     },
     saveTransactions: async (transactions) => {
-        await ipcRenderer.send("save-transactions", transactions)
+        await ipcRenderer.invoke("save-transactions", transactions)
     },
     generateHistory: async (addresses) => {
-        await ipcRenderer.send("generate-history", addresses)
+        await ipcRenderer.invoke("generate-history", addresses)
     },
     getTransactions: async (addresses) => {
         return ipcRenderer.invoke("get-transactions", addresses)

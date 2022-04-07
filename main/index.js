@@ -119,10 +119,10 @@ app.whenReady().then(async () => {
     ipcMain.on("open-transaction", async (e, {txHash}) => {
         await CreateTxWindow(e.sender.id, {txHash})
     })
-    ipcMain.on("save-transactions", async (e, transactions) => {
+    ipcMain.handle("save-transactions", async (e, transactions) => {
         await SaveTransactions(transactions)
     })
-    ipcMain.on("generate-history", async (e, addresses) => {
+    ipcMain.handle("generate-history", async (e, addresses) => {
         await GenerateHistory(addresses)
     })
     ipcMain.handle("get-transactions", async (e, addresses) => {
