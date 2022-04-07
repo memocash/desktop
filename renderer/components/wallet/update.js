@@ -1,7 +1,7 @@
 import {useEffect} from "react";
 import GetWallet from "../util/wallet";
 
-const Update = ({setConnected}) => {
+const Update = ({setConnected, setLastUpdate}) => {
     useEffect(async () => {
         window.electron.walletLoaded()
         let wallet = await GetWallet()
@@ -82,6 +82,9 @@ const Update = ({setConnected}) => {
             }
             await window.electron.saveTransactions(txs)
             await window.electron.generateHistory(wallet.addresses)
+            if (typeof setLastUpdate === "function") {
+                setLastUpdate((new Date()).toISOString())
+            }
         }
         setConnected(true)
     }, [])

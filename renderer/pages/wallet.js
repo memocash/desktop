@@ -28,6 +28,7 @@ const Page = ({tab, page, shown, children}) => {
 
 const WalletLoaded = () => {
     const [tab, setTab] = useState("")
+    const [lastUpdate, setLastUpdate] = useState("")
     const [connected, setConnected] = useState(false)
     const shownRef = useRef([])
     useEffect(async () => {
@@ -45,13 +46,13 @@ const WalletLoaded = () => {
     return (
         <>
             <Frame selected={tab} clicked={handleClicked} connected={connected}>
-                <Page tab={tab} page={Tabs.History} shown={shownRef}><History/></Page>
+                <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses/></Page>
-                <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins/></Page>
+                <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>
             </Frame>
-            <Update setConnected={setConnected}/>
+            <Update setConnected={setConnected} setLastUpdate={setLastUpdate}/>
         </>
     )
 }

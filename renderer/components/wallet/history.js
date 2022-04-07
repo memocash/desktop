@@ -12,7 +12,7 @@ const Column = {
     Balance: "balance",
 }
 
-const History = () => {
+const History = ({lastUpdate}) => {
     const [loaded, setLoaded] = useState(false)
     const [txs, txsRef, setTxs] = useReferredState([])
     const [selectedTxHash, selectedTxHashRef, setSelectedTxHash] = useReferredState("")
@@ -29,7 +29,7 @@ const History = () => {
         }
         setTxs(txs)
         setLoaded(true)
-    }, [])
+    }, [lastUpdate])
     const keyDownHandler = async (e) => {
         let selectedTxHash = selectedTxHashRef.current
         if (!selectedTxHash || !selectedTxHash.length) {

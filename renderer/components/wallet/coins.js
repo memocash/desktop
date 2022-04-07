@@ -14,17 +14,14 @@ const Column = {
 
 const UnconfirmedValue = "Unconfirmed"
 
-const Coins = () => {
-    const [loaded, loadedRef, setLoaded] = useReferredState(false)
+const Coins = ({lastUpdate}) => {
+    const [loaded, setLoaded] = useState(false)
     const [coins, coinsRef, setCoins] = useReferredState([])
     const [selectedOutput, selectedOutputRef, setSelectedOutput] = useReferredState("")
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Height)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const coinsDiv = useRef()
     useEffect(async () => {
-        if (loadedRef.current) {
-            return
-        }
         const wallet = await GetWallet()
         const coins = await window.electron.getCoins(wallet.addresses)
         for (let i = 0; i < coins.length; i++) {
@@ -34,20 +31,20 @@ const Coins = () => {
         }
         setCoins(coins)
         setLoaded(true)
-        sortCoins(sortCol)
-    }, [])
+        sortCoins()
+    }, [lastUpdate])
     const sortCoins = (field) => {
         let desc = sortDescRef.current
-        if (sortColRef.current === field) {
+        if (!field.length) {
+            // If no field set, use current values
+            field = sortColRef.current
+        } else if (sortColRef.current === field) {
             desc = !desc
         } else {
             // Default false, except for hash column
             desc = field === Column.Output
         }
-        let ret = -1
-        if (desc) {
-            ret = 1
-        }
+        const ret = desc ? 1 : -1
         coinsRef.current.sort((a, b) => {
             if (a[field] === b[field]) {
                 return 0
