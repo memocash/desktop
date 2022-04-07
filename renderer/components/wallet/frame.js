@@ -19,7 +19,7 @@ const Tab = ({selected, name, clicked, title}) => {
     )
 }
 
-const Frame = ({selected, clicked, children, connected}) => {
+const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
     const [isModalOpen, setIsModalOpen] = useState(false)
 
     useEffect(() => {
@@ -38,7 +38,7 @@ const Frame = ({selected, clicked, children, connected}) => {
             <div className={tabs.body}>
                 {children}
             </div>
-            <StatusBar connected={connected}/>
+            <StatusBar connected={connected} lastUpdate={lastUpdate}/>
             {isModalOpen && <DisplaySeedModal onClose={() => setIsModalOpen(false)} />}
         </div>
     )

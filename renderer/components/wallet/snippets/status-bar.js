@@ -1,7 +1,7 @@
 const tabs = require("../../../styles/tabs.module.css");
 const {useEffect, useState} = require("react");
 
-const StatusBar = ({connected}) => {
+const StatusBar = ({connected, lastUpdate}) => {
     const [info, setInfo] = useState({})
     useEffect(async () => {
         const wallet = await window.electron.getWallet()
@@ -9,7 +9,7 @@ const StatusBar = ({connected}) => {
         if (info.length) {
             setInfo(info[0])
         }
-    }, [])
+    }, [lastUpdate])
     return (
         <div className={tabs.statusBar}>
             <div>

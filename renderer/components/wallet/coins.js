@@ -19,7 +19,7 @@ const Coins = ({lastUpdate}) => {
     const [coins, coinsRef, setCoins] = useReferredState([])
     const [selectedOutput, selectedOutputRef, setSelectedOutput] = useReferredState("")
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Height)
-    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
+    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const coinsDiv = useRef()
     useEffect(async () => {
         const wallet = await GetWallet()
@@ -35,7 +35,7 @@ const Coins = ({lastUpdate}) => {
     }, [lastUpdate])
     const sortCoins = (field) => {
         let desc = sortDescRef.current
-        if (!field.length) {
+        if (!field || !field.length) {
             // If no field set, use current values
             field = sortColRef.current
         } else if (sortColRef.current === field) {

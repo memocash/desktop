@@ -20,7 +20,7 @@ const Update = ({setConnected, setLastUpdate}) => {
                 if (!recentAddresses[j].address === wallet.addresses[i]) {
                     continue
                 }
-                addresses[i].height = recentAddresses[j].height - 1
+                addresses[i].height = recentAddresses[j].height
             }
         }
         for (let i = 0; i < 100 && addresses.length; i++) {
@@ -95,10 +95,10 @@ const Update = ({setConnected, setLastUpdate}) => {
         for (let i = 0; i < addresses.length; i++) {
             paramsStrings.push(`$address${i}: String!, $start${i}: HashIndex, $height${i}: Int`)
             variables["address" + i] = addresses[i].address
-            variables["start" + i] = JSON.stringify({
+            variables["start" + i] = addresses[i].hash.length ? JSON.stringify({
                 hash: addresses[i].hash,
                 index: addresses[i].index,
-            })
+            }) : null
             variables["height" + i] = addresses[i].height
             subQueries.push(`
         address${i}: address(address: $address${i}) {
