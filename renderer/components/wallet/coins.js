@@ -9,21 +9,32 @@ const Column = {
     Address: "address",
     Value: "value",
     Height: "height",
-    Output: "output",
+    Output: "hash",
 }
 
+const UnconfirmedValue = "Unconfirmed"
+
 const Coins = () => {
-    const [loaded, setLoaded] = useState(false)
+    const [loaded, loadedRef, setLoaded] = useReferredState(false)
     const [coins, coinsRef, setCoins] = useReferredState([])
     const [selectedOutput, selectedOutputRef, setSelectedOutput] = useReferredState("")
-    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Address)
-    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
+    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Height)
+    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const coinsDiv = useRef()
     useEffect(async () => {
+        if (loadedRef.current) {
+            return
+        }
         const wallet = await GetWallet()
         const coins = await window.electron.getCoins(wallet.addresses)
+        for (let i = 0; i < coins.length; i++) {
+            if (!coins[i].height) {
+                coins[i].height = UnconfirmedValue
+            }
+        }
         setCoins(coins)
         setLoaded(true)
+        sortCoins(sortCol)
     }, [])
     const sortCoins = (field) => {
         let desc = sortDescRef.current
@@ -33,11 +44,20 @@ const Coins = () => {
             // Default false, except for hash column
             desc = field === Column.Output
         }
+        let ret = -1
         if (desc) {
-            coinsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
-        } else {
-            coinsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
+            ret = 1
         }
+        coinsRef.current.sort((a, b) => {
+            if (a[field] === b[field]) {
+                return 0
+            } else if (a[field] === UnconfirmedValue) {
+                return ret
+            } else if (b[field] === UnconfirmedValue) {
+                return -ret
+            }
+            return a[field] > b[field] ? ret : -ret
+        })
         setCoins([...coinsRef.current])
         setSortDesc(desc)
         setSortCol(field)

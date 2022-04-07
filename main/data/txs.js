@@ -1,6 +1,9 @@
 const {Insert, Select} = require("./sqlite")
 
 const SaveTransactions = async (transactions) => {
+    if (!transactions || !transactions.length) {
+        return
+    }
     for (let i = 0; i < transactions.length; i++) {
         await Insert("INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
         await Insert("INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
@@ -17,6 +20,9 @@ const SaveTransactions = async (transactions) => {
                 transactions[i].hash, transactions[i].outputs[j].index,
                 transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount])
         }
+        if (!transactions[i].blocks) {
+            continue
+        }
         for (let j = 0; j < transactions[i].blocks.length; j++) {
             await Insert("INSERT OR IGNORE INTO blocks (hash, timestamp, height) VALUES (?, ?, ?)", [
                 transactions[i].blocks[j].hash, transactions[i].blocks[j].timestamp, transactions[i].blocks[j].height])
@@ -29,21 +35,13 @@ const SaveTransactions = async (transactions) => {
 const GetTransactions = async (addresses) => {
     const query = "" +
         "SELECT " +
-        "   DISTINCT txs.*, " +
-        "   MIN(COALESCE(tx_seens.timestamp, blocks.timestamp)," +
-        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp, " +
-        "   SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) - " +
-        "   SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value " +
-        "FROM outputs " +
-        "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
-        "JOIN txs ON (outputs.hash = txs.hash OR inputs.hash = txs.hash) " +
-        "LEFT JOIN block_txs ON (block_txs.tx_hash = txs.hash) " +
-        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
-        "LEFT JOIN tx_seens ON (tx_seens.hash = txs.hash) " +
-        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "GROUP BY txs.hash " +
-        "ORDER BY MIN(COALESCE(tx_seens.timestamp, blocks.timestamp), " +
-        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) DESC"
+        "   hash, " +
+        "   timestamp, " +
+        "   SUM(value) AS value " +
+        "FROM history " +
+        "WHERE address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "GROUP BY hash " +
+        "ORDER BY timestamp DESC"
     return Select(query, addresses)
 }
 
@@ -90,7 +88,8 @@ const GetRecentAddressTransactions = async (addresses) => {
         "FROM outputs " +
         "JOIN block_txs ON (block_txs.tx_hash = outputs.hash) " +
         "JOIN blocks on (blocks.hash = block_txs.block_hash) " +
-        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "GROUP BY outputs.address "
     return Select(query, addresses)
 }
 
