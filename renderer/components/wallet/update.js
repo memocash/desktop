@@ -81,10 +81,11 @@ const Update = ({setConnected, setLastUpdate}) => {
                 }
             }
             await window.electron.saveTransactions(txs)
-            await window.electron.generateHistory(wallet.addresses)
-            if (typeof setLastUpdate === "function") {
-                setLastUpdate((new Date()).toISOString())
-            }
+        }
+        await window.electron.generateHistory(wallet.addresses)
+        if (typeof setLastUpdate === "function") {
+            console.log("setting new last update: " + (new Date()).toISOString())
+            setLastUpdate((new Date()).toISOString())
         }
         setConnected(true)
     }, [])
