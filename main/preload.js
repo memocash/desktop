@@ -3,6 +3,7 @@ const fs = require("fs/promises")
 const path = require("path")
 const homedir = require('os').homedir()
 const CryptoJS = require("crypto-js")
+const {GetId} = require("../common/util/id");
 
 const getPathForWallet = wallet => {
     wallet = wallet.trim()
@@ -104,7 +105,7 @@ contextBridge.exposeInMainWorld('electron', {
         return wallet
     },
     getPassword: async () => {
-        const { password } = await ipcRenderer.invoke("get-wallet")
+        const {password} = await ipcRenderer.invoke("get-wallet")
         return password
     },
     listenAddedWallet: (handler) => {
@@ -133,6 +134,11 @@ contextBridge.exposeInMainWorld('electron', {
     },
     getTransaction: async (txHash) => {
         return ipcRenderer.invoke("get-transaction", txHash)
+    },
+    listenNewTxs: (query, variables, handler) => {
+        const id = GetId()
+        ipcRenderer.on("graphql-data-" + id, handler)
+        ipcRenderer.send("graphql-subscribe", {id, query, variables})
     },
     getWalletInfo: async (addresses) => {
         return ipcRenderer.invoke("get-wallet-info", addresses)

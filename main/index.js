@@ -3,7 +3,7 @@ const homedir = require("os").homedir()
 const path = require('path')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
-const {GraphQL} = require("./client/graphql");
+const {GraphQL, Subscribe} = require("./client/graphql");
 const {
     SaveTransactions, GetTransactions, GetTransaction, GetRecentAddressTransactions,
     GetWalletInfo, GenerateHistory
@@ -109,6 +109,12 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("graphql", async (e, {query, variables}) => {
         return GraphQL({query, variables})
+    })
+    ipcMain.on("graphql-subscribe", (e, {id, query, variables}) => {
+        const callback = (data) => {
+            e.sender.send("graphql-data-" + id, data)
+        }
+        Subscribe({query, variables, callback})
     })
     ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
         await CreateTxWindow(e.sender.id, {payTo, message, amount})

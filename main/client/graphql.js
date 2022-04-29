@@ -1,4 +1,20 @@
 const http = require("http")
+const WebSocket = require('ws');
+
+const Subscribe = async ({query, variables, callback}) => {
+    const body = JSON.stringify({
+        query: query,
+        variables: variables,
+    })
+    let socket = new WebSocket("ws://127.0.0.1:26770/graphql")
+    socket.onmessage = (ev) => {
+        console.log(ev.data)
+        callback(ev.data)
+    }
+    socket.onopen = () => {
+        socket.send(body)
+    }
+}
 
 const GraphQL = async ({query, variables}) => {
     const body = JSON.stringify({
@@ -44,4 +60,5 @@ const GraphQL = async ({query, variables}) => {
 
 module.exports = {
     GraphQL: GraphQL,
+    Subscribe: Subscribe,
 }

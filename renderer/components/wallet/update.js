@@ -88,6 +88,18 @@ const Update = ({setConnected, setLastUpdate}) => {
             setLastUpdate((new Date()).toISOString())
         }
         setConnected(true)
+        const query = `
+        subscription($address: String!) {
+            address: address(address: $address) {
+                hash
+                seen
+                raw
+            }
+        }
+        `
+        window.electron.listenNewTxs(query, [wallet.addresses[0]], (tx) => {
+            console.log(tx)
+        })
     }, [])
     const loadOutputs = async ({addresses}) => {
         let variables = {}

@@ -1,5 +1,6 @@
 const {Worker} = require("worker_threads");
 const path = require("path")
+const {GetId} = require("../../common/util/id");
 const worker = new Worker(path.resolve(__dirname, "sqlite_worker.js"));
 
 let queries = {}
@@ -23,7 +24,7 @@ worker.on("error", (error) => {
 
 const Insert = async (query, variables) => {
     return new Promise((resolve, reject) => {
-        const queryId = "INSERT_" + GetQueryId()
+        const queryId = "INSERT_" + GetId()
         queries[queryId] = {resolve, reject}
         worker.postMessage({action: "INSERT", queryId, query, variables})
     })
@@ -31,14 +32,10 @@ const Insert = async (query, variables) => {
 
 const Select = async (query, variables) => {
     return new Promise((resolve, reject) => {
-        const queryId = "SELECT_" + GetQueryId()
+        const queryId = "SELECT_" + GetId()
         queries[queryId] = {resolve, reject}
         worker.postMessage({action: "SELECT", queryId, query, variables})
     })
-}
-
-const GetQueryId = () => {
-    return Date.now() + "_" + Math.floor(Math.random() * 1e6)
 }
 
 module.exports = {
