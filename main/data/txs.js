@@ -88,6 +88,7 @@ const GetRecentAddressTransactions = async (addresses) => {
         "FROM outputs " +
         "JOIN block_txs ON (block_txs.tx_hash = outputs.hash) " +
         "JOIN blocks on (blocks.hash = block_txs.block_hash) " +
+        "JOIN history ON (history.address = outputs.address) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "GROUP BY outputs.address "
     return Select(query, addresses)

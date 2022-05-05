@@ -1,8 +1,10 @@
 const http = require("http")
 const WebSocket = require('ws');
 
+const Host = "127.0.0.1:26770"
+
 const Subscribe = async ({query, variables, callback}) => {
-    let socket = new WebSocket("ws://127.0.0.1:26770/graphql")
+    let socket = new WebSocket("ws://" + Host + "/graphql")
     socket.onmessage = (ev) => {
         const data = JSON.parse(ev.data)
         switch (data.type) {
@@ -44,7 +46,7 @@ const GraphQL = async ({query, variables}) => {
         variables: variables,
     })
     return new Promise((resolve, reject) => {
-        const request = http.request("http://127.0.0.1:26770/graphql", {
+        const request = http.request("http://" + Host + "/graphql", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
