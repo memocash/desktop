@@ -2,7 +2,7 @@ const http = require("http")
 const WebSocket = require('ws');
 
 const Subscribe = async ({query, variables, callback}) => {
-    let socket = new WebSocket("ws://127.0.0.1:26770/graphql", "graphql-ws")
+    let socket = new WebSocket("ws://127.0.0.1:26770/graphql")
     socket.onmessage = (ev) => {
         const data = JSON.parse(ev.data)
         switch (data.type) {
@@ -20,7 +20,7 @@ const Subscribe = async ({query, variables, callback}) => {
                 break
             default:
                 console.log(data)
-                callback(data)
+                callback(data.payload.data)
         }
     }
     socket.onopen = () => {

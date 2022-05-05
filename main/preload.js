@@ -137,7 +137,9 @@ contextBridge.exposeInMainWorld('electron', {
     },
     listenNewTxs: (query, variables, handler) => {
         const id = GetId()
-        ipcRenderer.on("graphql-data-" + id, handler)
+        ipcRenderer.on("graphql-data-" + id, (evt, data) => {
+            handler(data)
+        })
         ipcRenderer.send("graphql-subscribe", {id, query, variables})
     },
     getWalletInfo: async (addresses) => {
