@@ -5,7 +5,6 @@ const Subscribe = async ({query, variables, callback}) => {
     let socket = new WebSocket("ws://127.0.0.1:26770/graphql", "graphql-ws")
     socket.onmessage = (ev) => {
         const data = JSON.parse(ev.data)
-        console.log(data)
         switch (data.type) {
             case "connection_ack":
                 socket.send(JSON.stringify({
@@ -17,8 +16,11 @@ const Subscribe = async ({query, variables, callback}) => {
                     },
                 }))
                 break
+            case "ka":
+                break
             default:
-                callback(ev.data)
+                console.log(data)
+                callback(data)
         }
     }
     socket.onopen = () => {
