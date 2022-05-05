@@ -90,14 +90,14 @@ const Update = ({setConnected, setLastUpdate}) => {
         setConnected(true)
         const query = `
         subscription($address: String!) {
-            address: address(address: $address) {
+            address(address: $address) {
                 hash
                 seen
                 raw
             }
         }
         `
-        window.electron.listenNewTxs(query, [wallet.addresses[0]], (tx) => {
+        window.electron.listenNewTxs(query, {address: wallet.addresses[0]}, (tx) => {
             console.log(tx)
         })
     }, [])

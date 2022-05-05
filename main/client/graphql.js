@@ -2,17 +2,37 @@ const http = require("http")
 const WebSocket = require('ws');
 
 const Subscribe = async ({query, variables, callback}) => {
-    const body = JSON.stringify({
-        query: query,
-        variables: variables,
-    })
-    let socket = new WebSocket("ws://127.0.0.1:26770/graphql")
+    let socket = new WebSocket("ws://127.0.0.1:26770/graphql", "graphql-ws")
     socket.onmessage = (ev) => {
-        console.log(ev.data)
-        callback(ev.data)
+        const data = JSON.parse(ev.data)
+        console.log(data)
+        switch (data.type) {
+            case "connection_ack":
+                socket.send(JSON.stringify({
+                    id: "1",
+                    type: "start",
+                    payload: {
+                        query: query,
+                        variables: variables,
+                    },
+                }))
+                break
+            default:
+                callback(ev.data)
+        }
     }
     socket.onopen = () => {
-        socket.send(body)
+        socket.send(JSON.stringify({
+            type: "connection_init",
+        }))
+    }
+    socket.onerror = (err) => {
+        console.log("GraphQL subscribe error!")
+        console.log(err)
+    }
+    socket.onclose = (ev) => {
+        console.log("GraphQL subscribe close!")
+        console.log(ev)
     }
 }
 
