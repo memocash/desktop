@@ -5,6 +5,10 @@
     outline: none;
 }
 
+.wrapper5 {
+    grid-template-columns: 30px repeat(4, minmax(max-content, 1fr));
+}
+
 .wrapper .message {
     padding: 5px;
     margin: 0;

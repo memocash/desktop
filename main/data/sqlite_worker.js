@@ -104,6 +104,7 @@ const Definitions = [
         address CHAR,
         hash CHAR,
         value INT,
+        height INT,
         timestamp CHAR,
         UNIQUE(address, hash)
     )`,

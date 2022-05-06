@@ -6,6 +6,7 @@ import {useReferredState} from "../util/state";
 import {TitleCol} from "./snippets/title-col";
 
 const Column = {
+    Confirms: "confirms",
     Timestamp: "timestamp",
     Hash: "hash",
     Value: "value",
@@ -109,12 +110,14 @@ const History = ({lastUpdate}) => {
         setSortCol(field)
     }
     return (
-        <div className={styles.wrapper} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
+        <div className={[styles.wrapper, styles.wrapper5].join(" ")} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
              ref={historyDiv}>
             {!txs.length ?
                 <p className={styles.message}>{loaded ? <>No transactions</> : <>Loading...</>}</p>
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                              col={Column.Confirms} title={""}/>
                     <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                               col={Column.Timestamp} title={"Timestamp"}/>
                     <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
@@ -129,6 +132,7 @@ const History = ({lastUpdate}) => {
                 return (
                     <div key={i} className={[styles.row, selectedTxHash === tx.hash && styles.rowSelected].join(" ")}
                          onClick={(e) => clickRow(e, tx.hash)} onDoubleClick={() => doubleClickTx(tx.hash)}>
+                        <span>{tx.confirms > 0 ? <>&#10004;</> : <>&#9935;</>}</span>
                         <span>{tx.timestamp.replace(/\.\d+/, "")}</span>
                         <span>{ShortHash(tx.hash)}</span>
                         <span className={styles.itemValue}>{tx.value.toLocaleString()}</span>

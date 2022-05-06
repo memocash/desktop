@@ -37,6 +37,8 @@ const GetTransactions = async (addresses) => {
         "SELECT " +
         "   hash, " +
         "   timestamp, " +
+        "   height, " +
+        "   COALESCE((SELECT MAX(height) FROM blocks) - height, 0) AS confirms, " +
         "   SUM(value) AS value " +
         "FROM history " +
         "WHERE address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
@@ -47,12 +49,13 @@ const GetTransactions = async (addresses) => {
 
 const GenerateHistory = async (addresses) => {
     await Insert("" +
-        "INSERT OR REPLACE INTO history (address, hash, timestamp, value) " +
+        "INSERT OR REPLACE INTO history (address, hash, timestamp, height, value) " +
         "SELECT " +
         "   outputs.address, " +
         "   txs.hash AS hash, " +
         "   MIN(COALESCE(tx_seens.timestamp, blocks.timestamp)," +
         "   COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp, " +
+        "   MIN(blocks.height) AS height, " +
         "   SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) - " +
         "   SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value " +
         "FROM outputs " +
