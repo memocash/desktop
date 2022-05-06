@@ -20,9 +20,11 @@ const Subscribe = async ({query, variables, callback}) => {
                 break
             case "ka":
                 break
+            case "data":
+                callback(data.payload.data)
+                break
             default:
                 console.log(data)
-                callback(data.payload.data)
         }
     }
     socket.onopen = () => {
