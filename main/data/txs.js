@@ -32,6 +32,14 @@ const SaveTransactions = async (transactions) => {
     }
 }
 
+const SaveBlock = async (block) => {
+    if (!block) {
+        return
+    }
+    await Insert("INSERT OR IGNORE INTO blocks (hash, timestamp, height) VALUES (?, ?, ?)", [
+        block.hash, block.timestamp, block.height])
+}
+
 const GetTransactions = async (addresses) => {
     const query = "" +
         "SELECT " +
@@ -140,6 +148,7 @@ const GetTransaction = async (txHash) => {
 
 module.exports = {
     SaveTransactions,
+    SaveBlock,
     GetTransactions,
     GetTransaction,
     GetRecentAddressTransactions,

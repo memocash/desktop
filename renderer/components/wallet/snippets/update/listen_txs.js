@@ -1,4 +1,4 @@
-const ListenNewTxs = async ({wallet, setLastUpdate}) => {
+const ListenNewTxs = ({wallet, setLastUpdate}) => {
     const query = `
         subscription($address: String!) {
             address(address: $address) {

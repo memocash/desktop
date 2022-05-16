@@ -1,6 +1,6 @@
 import {useEffect} from "react";
 import GetWallet from "../util/wallet";
-import {UpdateHistory, ListenNewTxs} from "./snippets/update";
+import {UpdateHistory, ListenNewTxs, ListenBlocks, RecentBlock} from "./snippets/update";
 
 const Update = ({setConnected, setLastUpdate}) => {
     useEffect(async () => {
@@ -10,8 +10,10 @@ const Update = ({setConnected, setLastUpdate}) => {
             console.log("ERROR: Addresses not loaded")
             return
         }
+        await RecentBlock()
         await UpdateHistory({wallet, setConnected, setLastUpdate})
-        await ListenNewTxs({wallet, setLastUpdate})
+        ListenNewTxs({wallet, setLastUpdate})
+        ListenBlocks({setLastUpdate})
     }, [])
     return (<></>)
 }

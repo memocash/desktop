@@ -123,6 +123,9 @@ contextBridge.exposeInMainWorld('electron', {
     saveTransactions: async (transactions) => {
         await ipcRenderer.invoke("save-transactions", transactions)
     },
+    saveBlock: async (block) => {
+        await ipcRenderer.invoke("save-block", block)
+    },
     generateHistory: async (addresses) => {
         await ipcRenderer.invoke("generate-history", addresses)
     },

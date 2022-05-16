@@ -6,7 +6,7 @@ const menu = require("./menu")
 const {GraphQL, Subscribe} = require("./client/graphql");
 const {
     SaveTransactions, GetTransactions, GetTransaction, GetRecentAddressTransactions,
-    GetWalletInfo, GenerateHistory
+    GetWalletInfo, GenerateHistory, SaveBlock
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
 
@@ -127,6 +127,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("save-transactions", async (e, transactions) => {
         await SaveTransactions(transactions)
+    })
+    ipcMain.handle("save-block", async (e, block) => {
+        await SaveBlock(block)
     })
     ipcMain.handle("generate-history", async (e, addresses) => {
         await GenerateHistory(addresses)
