@@ -46,7 +46,7 @@ const GetTransactions = async (addresses) => {
         "   hash, " +
         "   timestamp, " +
         "   height, " +
-        "   COALESCE((SELECT MAX(height) FROM blocks) - height, 0) AS confirms, " +
+        "   COALESCE((SELECT MAX(height)+1 FROM blocks) - height, 0) AS confirms, " +
         "   SUM(value) AS value " +
         "FROM history " +
         "WHERE address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +

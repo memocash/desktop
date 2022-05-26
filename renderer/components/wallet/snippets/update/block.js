@@ -1,4 +1,4 @@
-const ListenBlocks = ({setLastUpdate}) => {
+const ListenBlocks = ({addresses, setLastUpdate}) => {
     const query = `
         subscription() {
             blocks() {
@@ -9,7 +9,8 @@ const ListenBlocks = ({setLastUpdate}) => {
         }
         `
     window.electron.listenNewTxs(query, {}, async (block) => {
-        await window.electron.saveBlock(block)
+        await window.electron.saveBlock(block.blocks)
+        await window.electron.generateHistory(addresses)
         if (typeof setLastUpdate === "function") {
             console.log("setting new last update new block: " + (new Date()).toISOString())
             setLastUpdate((new Date()).toISOString())

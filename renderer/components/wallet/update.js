@@ -13,7 +13,7 @@ const Update = ({setConnected, setLastUpdate}) => {
         await RecentBlock()
         await UpdateHistory({wallet, setConnected, setLastUpdate})
         ListenNewTxs({wallet, setLastUpdate})
-        ListenBlocks({setLastUpdate})
+        ListenBlocks({addresses: wallet.addresses, setLastUpdate})
     }, [])
     return (<></>)
 }
