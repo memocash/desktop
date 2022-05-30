@@ -117,7 +117,7 @@ const History = ({lastUpdate}) => {
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
                     <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
-                              col={Column.Confirms} title={""}/>
+                              col={Column.Confirms} title={<>&#10004;</>}/>
                     <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                               col={Column.Timestamp} title={"Timestamp"}/>
                     <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
