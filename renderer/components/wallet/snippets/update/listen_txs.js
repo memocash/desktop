@@ -25,7 +25,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
             }
         }
         `
-    window.electron.listenNewTxs(query, {address: wallet.addresses[0]}, async (tx) => {
+    const handler = async (tx) => {
         console.log(tx)
         await window.electron.saveTransactions([tx.address])
         await window.electron.generateHistory(wallet.addresses)
@@ -33,7 +33,8 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
             console.log("setting new last update: " + (new Date()).toISOString())
             setLastUpdate((new Date()).toISOString())
         }
-    })
+    }
+    window.electron.listenNewTxs({query, variables: {address: wallet.addresses[0]}, handler})
 }
 
 export default ListenNewTxs
