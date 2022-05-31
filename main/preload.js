@@ -138,11 +138,16 @@ contextBridge.exposeInMainWorld('electron', {
     getTransaction: async (txHash) => {
         return ipcRenderer.invoke("get-transaction", txHash)
     },
-    listenNewTxs: (query, variables, handler) => {
+    listenNewTxs: (query, variables, handler, errorHandler) => {
         const id = GetId()
         ipcRenderer.on("graphql-data-" + id, (evt, data) => {
             handler(data)
         })
+        if (typeof errorHandler == "function") {
+            ipcRenderer.on("graphql-error-" + id, (evt, data) => {
+                errorHandler(data)
+            })
+        }
         ipcRenderer.send("graphql-subscribe", {id, query, variables})
     },
     getWalletInfo: async (addresses) => {

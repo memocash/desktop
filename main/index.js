@@ -114,7 +114,10 @@ app.whenReady().then(async () => {
         const callback = (data) => {
             e.sender.send("graphql-data-" + id, data)
         }
-        Subscribe({query, variables, callback})
+        const onclose = (data) => {
+            e.sender.send("graphql-error-" + id, data)
+        }
+        Subscribe({query, variables, callback, onclose})
     })
     ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
         await CreateTxWindow(e.sender.id, {payTo, message, amount})

@@ -1,4 +1,4 @@
-const ListenBlocks = ({addresses, setLastUpdate}) => {
+const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
     const query = `
         subscription() {
             blocks() {
@@ -8,6 +8,7 @@ const ListenBlocks = ({addresses, setLastUpdate}) => {
             }
         }
         `
+    setConnected(true)
     window.electron.listenNewTxs(query, {}, async (block) => {
         await window.electron.saveBlock(block.blocks)
         await window.electron.generateHistory(addresses)
@@ -15,6 +16,12 @@ const ListenBlocks = ({addresses, setLastUpdate}) => {
             console.log("setting new last update new block: " + (new Date()).toISOString())
             setLastUpdate((new Date()).toISOString())
         }
+    }, () => {
+        setConnected(false)
+        console.log("GraphQL block subscribe close, reconnecting in 2 seconds!")
+        setTimeout(() => {
+            ListenBlocks({addresses, setLastUpdate, setConnected})
+        }, 2000)
     })
 }
 
