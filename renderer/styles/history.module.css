@@ -5,6 +5,10 @@
     outline: none;
 }
 
+.wrapper3 {
+    grid-template-columns: 32px repeat(2, minmax(max-content, 1fr));
+}
+
 .wrapper5 {
     grid-template-columns: 32px repeat(4, minmax(max-content, 1fr));
 }
