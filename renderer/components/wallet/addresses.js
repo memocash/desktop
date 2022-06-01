@@ -127,8 +127,7 @@ const Addresses = () => {
                 {addresses.map((address, i) => {
                     return (
                         <div key={i} onClick={(e) => clickRow(e, address.address)}
-                             className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}
-                             onDoubleClick={() => doubleClickAddress(address.address)}>
+                             className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}>
                             <span>{address.index}</span>
                             <span>{address.address}</span>
                             <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
