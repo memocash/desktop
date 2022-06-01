@@ -112,7 +112,14 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.on("added-wallet", handler)
     },
     graphQL: async (query, variables) => {
-        return await ipcRenderer.invoke("graphql", {query, variables})
+        // TODO: Move try/catch to each individual caller, not here
+        let response
+        try {
+            response = await ipcRenderer.invoke("graphql", {query, variables})
+        } catch(e) {
+            console.log(e)
+        }
+        return response
     },
     openPreviewSend: async ({payTo, message, amount}) => {
         ipcRenderer.send("open-preview-send", {payTo, message, amount})
