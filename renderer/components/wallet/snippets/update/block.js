@@ -1,3 +1,5 @@
+import {Status} from "../../../util/connect"
+
 const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
     const query = `
         subscription() {
@@ -17,10 +19,10 @@ const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
         }
     }
     const onopen = () => {
-        setConnected(true)
+        setConnected(Status.Connected)
     }
     const onclose = () => {
-        setConnected(false)
+        setConnected(Status.Disconnected)
         console.log("GraphQL block subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             ListenBlocks({addresses, setLastUpdate, setConnected})

@@ -6,6 +6,7 @@ import Send from "../components/wallet/send";
 import Receive from "../components/wallet/receive";
 import Coins from "../components/wallet/coins";
 import Update from "../components/wallet/update";
+import {Status} from "../components/util/connect"
 
 const StorageKeyWalletTab = "wallet-tab"
 
@@ -29,7 +30,7 @@ const Page = ({tab, page, shown, children}) => {
 const WalletLoaded = () => {
     const [tab, setTab] = useState("")
     const [lastUpdate, setLastUpdate] = useState("")
-    const [connected, setConnected] = useState(false)
+    const [connected, setConnected] = useState(Status.NotConnected)
     const shownRef = useRef([])
     useEffect(async () => {
         const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.History

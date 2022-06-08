@@ -70,6 +70,10 @@
     background: radial-gradient(circle at 5px 5px, #8ed526, #555);
 }
 
+.statusConnecting {
+    background: radial-gradient(circle at 5px 5px, #fff431, #555);
+}
+
 .statusError {
     background: radial-gradient(circle at 5px 5px, #f61313, #555);
 }

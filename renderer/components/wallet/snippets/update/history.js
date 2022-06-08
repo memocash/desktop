@@ -1,3 +1,5 @@
+import {Status} from "../../../util/connect"
+
 const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
     const recentAddresses = await window.electron.getRecentAddressTransactions(wallet.addresses)
     let addresses = new Array(wallet.addresses.length)
@@ -19,7 +21,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
             data = await loadOutputs({addresses})
             console.log(data)
         } catch (e) {
-            setConnected(false)
+            setConnected(Status.Disconnected)
             console.log("Error connecting to index server")
             console.log(e)
             return
@@ -77,7 +79,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
         console.log("setting new last update: " + (new Date()).toISOString())
         setLastUpdate((new Date()).toISOString())
     }
-    setConnected(true)
+    setConnected(Status.Connected)
 }
 const loadOutputs = async ({addresses}) => {
     let variables = {}
