@@ -73,7 +73,6 @@ const GraphQL = async ({query, variables}) => {
             })
         })
         request.on("error", error => {
-            console.log("graphql query error")
             reject(error)
         })
         request.write(body)

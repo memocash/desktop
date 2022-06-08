@@ -39,8 +39,12 @@ const RecentBlock = async () => {
             }
         }
         `
-    let data = await window.electron.graphQL(query, {})
-    await window.electron.saveBlock(data.data.block_newest)
+    try {
+        let data = await window.electron.graphQL(query, {})
+        await window.electron.saveBlock(data.data.block_newest)
+    } catch (e) {
+        console.log(e)
+    }
 }
 
 export {

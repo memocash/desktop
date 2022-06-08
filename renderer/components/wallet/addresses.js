@@ -19,11 +19,15 @@ const Addresses = () => {
     useEffect(async () => {
         window.electron.walletLoaded()
         const wallet = await GetWallet()
-        const balances = await loadBalance(wallet.addresses)
-        for (let i = 0; i < balances.length; i++) {
-            balances[i].index = i
+        try {
+            const balances = await loadBalance(wallet.addresses)
+            for (let i = 0; i < balances.length; i++) {
+                balances[i].index = i
+            }
+            setAddresses(balances)
+        } catch (e) {
+            console.log(e)
         }
-        setAddresses(balances)
     }, [])
 
     const loadBalance = async (addresses) => {
@@ -38,7 +42,6 @@ const Addresses = () => {
         let data = await window.electron.graphQL(query, {
             addresses: addresses,
         })
-        console.log(data)
         return data.data.addresses
     }
     const keyDownHandler = async (e) => {

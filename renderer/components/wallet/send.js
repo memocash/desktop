@@ -40,10 +40,14 @@ const Send = () => {
     }
     `
         const wallet = await GetWallet()
-        let data = await window.electron.graphQL(query, {
-            address: wallet.addresses[0],
-        })
-        console.log(data.data.address.utxos)
+        try {
+            let data = await window.electron.graphQL(query, {
+                address: wallet.addresses[0],
+            })
+            console.log(data.data.address.utxos)
+        } catch (e) {
+            console.log(e)
+        }
         await window.electron.openPreviewSend({payTo, message, amount})
     }
     return (
