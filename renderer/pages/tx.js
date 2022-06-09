@@ -22,7 +22,7 @@ const Tx = () => {
         if (!router || !router.query) {
             return
         }
-        const {txHash, payTo, amount, inputs} = router.query
+        const {txHash, payTo, amount, inputs, changeAddress, change} = router.query
         if (txHash && txHash.length) {
             setTransactionId(txHash)
             transactionIdEleRef.current.value = txHash
@@ -34,6 +34,9 @@ const Tx = () => {
                 outputs: [{
                     address: payTo,
                     value: amount,
+                }, {
+                    address: changeAddress,
+                    value: change,
                 }],
             }
             const wallet = await GetWallet()

@@ -45,7 +45,7 @@ const CreateWindow = async () => {
     windowNumber++
 }
 
-const CreateTxWindow = async (winId, {txHash, payTo, message, amount, inputs}) => {
+const CreateTxWindow = async (winId, {txHash, payTo, message, amount, inputs, changeAddress, change}) => {
     const win = new BrowserWindow({
         width: 650,
         height: 500,
@@ -67,7 +67,7 @@ const CreateTxWindow = async (winId, {txHash, payTo, message, amount, inputs}) =
     wallets[win.webContents.id] = wallets[winId]
     let params = {txHash}
     if (!txHash || !txHash.length) {
-        params = {payTo, message, amount, inputs}
+        params = {payTo, message, amount, inputs, changeAddress, change}
     }
     await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams(params)).toString())
 }
@@ -122,8 +122,8 @@ app.whenReady().then(async () => {
         }
         Subscribe({query, variables, callback, onopen, onclose})
     })
-    ipcMain.on("open-preview-send", async (e, {payTo, message, amount, inputs}) => {
-        await CreateTxWindow(e.sender.id, {payTo, message, amount, inputs})
+    ipcMain.on("open-preview-send", async (e, {payTo, message, amount, inputs, changeAddress, change}) => {
+        await CreateTxWindow(e.sender.id, {payTo, message, amount, inputs, changeAddress, change})
     })
     ipcMain.on("close-window", (e) => {
         windows[e.sender.id].close()

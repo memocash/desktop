@@ -6,14 +6,14 @@ import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
 
 const Send = () => {
-    const payToRef = useRef()
-    const messageRef = useRef()
-    const amountRef = useRef()
+    const payToRef = useRef("")
+    const messageRef = useRef("")
+    const amountRef = useRef(0)
     const formSubmit = async (e) => {
         e.preventDefault()
         const payTo = payToRef.current.value
         const message = messageRef.current.value
-        const amount = amountRef.current.value
+        const amount = parseInt(amountRef.current.value)
         try {
             address.fromBase58Check(payTo)
         } catch (err) {
@@ -30,11 +30,20 @@ const Send = () => {
         }
         const wallet = await GetWallet()
         const utxos = await window.electron.getUtxos(wallet.addresses)
+        let requiredInput = amount + bitcoin.Fee.Base + bitcoin.Fee.OutputP2PKH * 2
+        let totalInput = 0
         let inputs = []
         for (let i = 0; i < utxos.length; i++) {
             inputs.push([utxos[i].hash, utxos[i].index, utxos[i].value, utxos[i].address].join(":"))
+            requiredInput += bitcoin.Fee.InputP2PKH
+            totalInput += parseInt(utxos[i].value)
+            if (totalInput > requiredInput + bitcoin.DustLimit) {
+                break
+            }
         }
-        await window.electron.openPreviewSend({payTo, message, amount, inputs})
+        const changeAddress = wallet.addresses[0]
+        const change = totalInput - requiredInput
+        await window.electron.openPreviewSend({payTo, message, amount, inputs, changeAddress, change})
     }
     return (
         <form onSubmit={formSubmit}>
