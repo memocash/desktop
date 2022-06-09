@@ -29,7 +29,10 @@ const Send = () => {
             return
         }
         const wallet = await GetWallet()
-        const utxos = await window.electron.getUtxos(wallet.addresses)
+        let utxos = await window.electron.getUtxos(wallet.addresses)
+        utxos.sort((a, b) => {
+            return b.value - a.value
+        })
         let requiredInput = amount + bitcoin.Fee.Base + bitcoin.Fee.OutputP2PKH * 2
         let totalInput = 0
         let inputs = []
