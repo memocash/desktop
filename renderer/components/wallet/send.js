@@ -34,8 +34,6 @@ const Send = () => {
         for (let i = 0; i < utxos.length; i++) {
             inputs.push([utxos[i].hash, utxos[i].index, utxos[i].value, utxos[i].address].join(":"))
         }
-        // TODO: Convert inputs to string that can be passed in URL params (include, prev_hash, prev_index, value, address)
-        //   Perhaps hash:index-value-address - which can be parsed out in tx window
         await window.electron.openPreviewSend({payTo, message, amount, inputs})
     }
     return (
