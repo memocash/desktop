@@ -28,27 +28,15 @@ const Send = () => {
             window.electron.showMessageDialog("Amount must be above dust limit (546)")
             return
         }
-        const query = `
-    query ($address: String!) {
-        address(address: $address) {
-            utxos {
-                hash
-                index
-                amount
-            }
-        }
-    }
-    `
         const wallet = await GetWallet()
-        try {
-            let data = await window.electron.graphQL(query, {
-                address: wallet.addresses[0],
-            })
-            console.log(data.data.address.utxos)
-        } catch (e) {
-            console.log(e)
+        const utxos = await window.electron.getUtxos(wallet.addresses)
+        let inputs = []
+        for (let i = 0; i < utxos.length; i++) {
+            inputs.push([utxos[i].hash, utxos[i].index, utxos[i].value, utxos[i].address].join(":"))
         }
-        await window.electron.openPreviewSend({payTo, message, amount})
+        // TODO: Convert inputs to string that can be passed in URL params (include, prev_hash, prev_index, value, address)
+        //   Perhaps hash:index-value-address - which can be parsed out in tx window
+        await window.electron.openPreviewSend({payTo, message, amount, inputs})
     }
     return (
         <form onSubmit={formSubmit}>

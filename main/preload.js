@@ -114,8 +114,8 @@ contextBridge.exposeInMainWorld('electron', {
     graphQL: async (query, variables) => {
         return await ipcRenderer.invoke("graphql", {query, variables})
     },
-    openPreviewSend: async ({payTo, message, amount}) => {
-        ipcRenderer.send("open-preview-send", {payTo, message, amount})
+    openPreviewSend: async ({payTo, message, amount, inputs}) => {
+        ipcRenderer.send("open-preview-send", {payTo, message, amount, inputs})
     },
     openTransaction: async ({txHash}) => {
         ipcRenderer.send("open-transaction", {txHash})
@@ -131,6 +131,9 @@ contextBridge.exposeInMainWorld('electron', {
     },
     getTransactions: async (addresses) => {
         return ipcRenderer.invoke("get-transactions", addresses)
+    },
+    getUtxos: async (addresses) => {
+        return ipcRenderer.invoke("get-utxos", addresses)
     },
     getRecentAddressTransactions: async (addresses) => {
         return ipcRenderer.invoke("get-recent-addresses", addresses)

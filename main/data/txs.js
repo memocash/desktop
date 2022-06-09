@@ -146,6 +146,15 @@ const GetTransaction = async (txHash) => {
     return {outputs, inputs, seen, block, raw}
 }
 
+const GetUtxos = async (addresses) => {
+    const query = "" +
+        "SELECT outputs.* FROM outputs " +
+        "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "AND inputs.hash IS NULL"
+    return Select(query, addresses)
+}
+
 module.exports = {
     SaveTransactions,
     SaveBlock,
@@ -154,4 +163,5 @@ module.exports = {
     GetRecentAddressTransactions,
     GetWalletInfo,
     GenerateHistory,
+    GetUtxos,
 }

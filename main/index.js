@@ -6,7 +6,7 @@ const menu = require("./menu")
 const {GraphQL, Subscribe} = require("./client/graphql");
 const {
     SaveTransactions, GetTransactions, GetTransaction, GetRecentAddressTransactions,
-    GetWalletInfo, GenerateHistory, SaveBlock
+    GetWalletInfo, GenerateHistory, SaveBlock, GetUtxos
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
 
@@ -45,7 +45,7 @@ const CreateWindow = async () => {
     windowNumber++
 }
 
-const CreateTxWindow = async (winId, {txHash, payTo, message, amount}) => {
+const CreateTxWindow = async (winId, {txHash, payTo, message, amount, inputs}) => {
     const win = new BrowserWindow({
         width: 650,
         height: 500,
@@ -67,7 +67,7 @@ const CreateTxWindow = async (winId, {txHash, payTo, message, amount}) => {
     wallets[win.webContents.id] = wallets[winId]
     let params = {txHash}
     if (!txHash || !txHash.length) {
-        params = {payTo, message, amount}
+        params = {payTo, message, amount, inputs}
     }
     await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams(params)).toString())
 }
@@ -122,8 +122,8 @@ app.whenReady().then(async () => {
         }
         Subscribe({query, variables, callback, onopen, onclose})
     })
-    ipcMain.on("open-preview-send", async (e, {payTo, message, amount}) => {
-        await CreateTxWindow(e.sender.id, {payTo, message, amount})
+    ipcMain.on("open-preview-send", async (e, {payTo, message, amount, inputs}) => {
+        await CreateTxWindow(e.sender.id, {payTo, message, amount, inputs})
     })
     ipcMain.on("close-window", (e) => {
         windows[e.sender.id].close()
@@ -142,6 +142,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("get-transactions", async (e, addresses) => {
         return GetTransactions(addresses)
+    })
+    ipcMain.handle("get-utxos", async (e, addresses) => {
+        return GetUtxos(addresses)
     })
     ipcMain.handle("get-transaction", async (e, txHash) => {
         return GetTransaction(txHash)

@@ -12,26 +12,52 @@ const Tx = () => {
     const [transactionId, transactionIdRef, setTransactionId] = useReferredState("")
     const [status, setStatus] = useState("Unconfirmed")
     const [date, setDate] = useState("2009-01-11 19:30")
-    const [inputPayTo, setInputPayTo] = useState()
-    const [inputMessage, setInputMessage] = useState()
     const [inputAmount, setInputAmount] = useState()
     const [txInfo, txInfoRef, setTxInfo] = useReferredState({inputs: [], outputs: []})
     const [size, setSize] = useState(0)
     const [fee, setFee] = useState(0)
     const [feeRate, setFeeRate] = useState(0)
     const transactionIdEleRef = useRef()
-    useEffect(() => {
+    useEffect(async () => {
         if (!router || !router.query) {
             return
         }
-        const {txHash, payTo, message, amount} = router.query
+        const {txHash, payTo, amount, inputs} = router.query
         if (txHash && txHash.length) {
             setTransactionId(txHash)
             transactionIdEleRef.current.value = txHash
         } else if (payTo && amount) {
-            setInputPayTo(payTo)
-            setInputMessage(message)
             setInputAmount(amount)
+            const inputStrings = inputs.split(",")
+            let tx = {
+                inputs: [],
+                outputs: [{
+                    address: payTo,
+                    value: amount,
+                }],
+            }
+            const wallet = await GetWallet()
+            const isHighlight = (address) => {
+                for (let i = 0; i < wallet.addresses.length; i++) {
+                    if (address === wallet.addresses[i]) {
+                        return true
+                    }
+                }
+                return false
+            }
+            for (let i = 0; i < inputStrings.length; i++) {
+                const inputValues = inputStrings[i].split(":")
+                tx.inputs.push({
+                    prev_hash: inputValues[0],
+                    prev_index: parseInt(inputValues[1]),
+                    highlight: isHighlight(inputValues[3]),
+                    output: {
+                        value: parseInt(inputValues[2]),
+                        address: inputValues[3],
+                    },
+                })
+            }
+            setTxInfo(tx)
         }
     }, [router])
     useEffect(async () => {
@@ -114,7 +140,6 @@ const Tx = () => {
                     </p>
                     <p>Status: {status}</p>
                     <p>Date: {date}</p>
-                    {inputMessage ? <p>Message: {inputMessage}</p> : null}
                     {inputAmount > 0 &&
                     <p>Amount received: {inputAmount.toLocaleString()} satoshis</p>
                     }
@@ -151,10 +176,6 @@ const Tx = () => {
                     <div className={styleTx.input_output_head}>Outputs ({txInfo.outputs.length})</div>
                     <div className={styleTx.input_output_box}>
                         <div className={[styleTx.input_output_grid, styleTx.input_output_grid_output].join(" ")}>
-                            {!txInfo.outputs.length && <p>
-                                <span>{inputPayTo}</span>
-                                <span>{inputAmount}</span>
-                            </p>}
                             {txInfo.outputs.map((output, i) => {
                                 return (
                                     <p key={i} className={output.highlight && styleTx.input_output_highlight}>

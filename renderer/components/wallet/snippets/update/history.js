@@ -12,7 +12,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
             if (!recentAddresses[j].address === wallet.addresses[i]) {
                 continue
             }
-            addresses[i].height = recentAddresses[j].height
+            addresses[i].height = recentAddresses[j].height - 1
         }
     }
     for (let i = 0; i < 100 && addresses.length; i++) {
