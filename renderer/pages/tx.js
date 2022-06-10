@@ -6,12 +6,14 @@ import styleTx from "../styles/tx.module.css";
 import ShortHash from "../components/util/txs";
 import GetWallet from "../components/util/wallet";
 import {useReferredState} from "../components/util/state";
+import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
 const Tx = () => {
     const router = useRouter()
     const [transactionId, transactionIdRef, setTransactionId] = useReferredState("")
     const [status, setStatus] = useState("Unconfirmed")
-    const [date, setDate] = useState("2009-01-11 19:30")
+    const [date, setDate] = useState("-")
+    const [signed, signedRef, setSigned] = useReferredState(false)
     const [inputAmount, setInputAmount] = useState()
     const [txInfo, txInfoRef, setTxInfo] = useReferredState({inputs: [], outputs: []})
     const [size, setSize] = useState(0)
@@ -24,6 +26,7 @@ const Tx = () => {
         }
         const {txHash, payTo, amount, inputs, changeAddress, change} = router.query
         if (txHash && txHash.length) {
+            setSigned(true)
             setTransactionId(txHash)
             transactionIdEleRef.current.value = txHash
         } else if (payTo && amount) {
@@ -36,12 +39,15 @@ const Tx = () => {
                     value: amountInt,
                 }],
             }
+            let txb = new bitcoin.TransactionBuilder()
+            txb.addOutput(payTo, amountInt)
             const changeInt = parseInt(change)
             if (changeInt !== 0) {
                 tx.outputs.push({
                     address: changeAddress,
                     value: changeInt,
                 })
+                txb.addOutput(changeAddress, changeInt)
             }
             let fee = -amountInt - change
             const wallet = await GetWallet()
@@ -56,9 +62,10 @@ const Tx = () => {
             for (let i = 0; i < inputStrings.length; i++) {
                 const inputValues = inputStrings[i].split(":")
                 const valueInt = parseInt(inputValues[2])
+                const prevIndex = parseInt(inputValues[1])
                 tx.inputs.push({
                     prev_hash: inputValues[0],
-                    prev_index: parseInt(inputValues[1]),
+                    prev_index: prevIndex,
                     highlight: isHighlight(inputValues[3]),
                     output: {
                         value: valueInt,
@@ -66,13 +73,21 @@ const Tx = () => {
                     },
                 })
                 fee += valueInt
+                const outputScript = bitcoin.address.toOutputScript(inputValues[3])
+                txb.addInput(Buffer.from(inputValues[0], 'hex').reverse(), prevIndex,
+                    bitcoin.Transaction.DEFAULT_SEQUENCE, outputScript)
             }
+            const txBuild = txb.__build(true)
+            const buf = txBuild.toBuffer()
+            tx.raw = buf
+            setSize(buf.length)
             setTxInfo(tx)
             setFee(fee)
+            transactionIdEleRef.current.value = txBuild.getId()
         }
     }, [router])
     useEffect(async () => {
-        if (!transactionId.length) {
+        if (!transactionId.length || !signedRef.current) {
             return
         }
         const tx = await window.electron.getTransaction(transactionId)
@@ -120,6 +135,7 @@ const Tx = () => {
             }
         }
         setDate(date)
+        setSigned(true)
     }, [transactionId])
     const clickTx = async (txHash) => {
         await window.electron.openTransaction({txHash})
@@ -131,7 +147,6 @@ const Tx = () => {
         window.electron.closeWindow()
     }
     const transactionIdChange = () => {
-        console.log(transactionIdEleRef.current.value)
         if (transactionIdRef.current.length > 0 && transactionIdEleRef.current.value.length === 64 &&
             transactionIdRef.current !== transactionIdEleRef.current.value) {
             setTransactionId(transactionIdEleRef.current.value)
@@ -157,7 +172,7 @@ const Tx = () => {
                     {inputAmount < 0 &&
                     <p>Amount spent: {(-inputAmount).toLocaleString()} satoshis</p>
                     }
-                    <p>Size: {size.toLocaleString()} bytes</p>
+                    <p>Size: {size.toLocaleString()} bytes ({signed ? "Signed" : "Unsigned"})</p>
                     <p>Fee: {fee} satoshis ({feeRate} sat/byte)</p>
                 </div>
                 <div>

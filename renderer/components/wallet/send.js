@@ -1,6 +1,5 @@
 import {useEffect, useRef} from "react";
-
-const {address} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
+import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
