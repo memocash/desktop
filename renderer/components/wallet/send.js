@@ -1,16 +1,17 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useRef} from "react";
 
 const {address} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
 import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
+import {useReferredState} from "../util/state";
 
 const Send = () => {
     const payToRef = useRef("")
     const messageRef = useRef("")
     const amountRef = useRef(0)
     const utxosRef = useRef([])
-    const [maxValue, setMaxValue] = useState(0)
+    const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
     useEffect(async () => {
         const wallet = await GetWallet()
         utxosRef.current.value = await window.electron.getUtxos(wallet.addresses)
@@ -21,7 +22,7 @@ const Send = () => {
         for (let i = 0; i < utxosRef.current.value.length; i++) {
             totalUtxoValue += utxosRef.current.value[i].value - bitcoin.Fee.InputP2PKH
         }
-        setMaxValue(totalUtxoValue)
+        setMaxValue(Math.max(0, totalUtxoValue))
     }, [])
     const onAmountChange = (e) => {
         let {value, min, max} = e.target;
@@ -35,6 +36,10 @@ const Send = () => {
     }
     const formSubmit = async (e) => {
         e.preventDefault()
+        if (maxValueRef.current < bitcoin.DustLimit) {
+            window.electron.showMessageDialog("Not enough value in wallet to create a transaction")
+            return
+        }
         const payTo = payToRef.current.value
         const message = messageRef.current.value
         const amount = parseInt(amountRef.current.value)
@@ -87,7 +92,7 @@ const Send = () => {
                 <label>
                     <span className={form.span}>Amount (sats):</span>
                     <input className={form.input_small} ref={amountRef} type="number" max={maxValue}
-                           min={bitcoin.DustLimit} onChange={onAmountChange}/>
+                           min={maxValue === 0 ? 0 : bitcoin.DustLimit} onChange={onAmountChange}/>
                     <input type="button" value={"Max"} onClick={onClickMax}/>
                 </label>
             </p>
