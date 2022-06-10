@@ -33,11 +33,15 @@ const Tx = () => {
                 inputs: [],
                 outputs: [{
                     address: payTo,
-                    value: amount,
-                }, {
-                    address: changeAddress,
-                    value: change,
+                    value: parseInt(amount),
                 }],
+            }
+            const changeInt = parseInt(change)
+            if (changeInt !== 0) {
+                tx.outputs.push({
+                    address: changeAddress,
+                    value: changeInt,
+                })
             }
             const wallet = await GetWallet()
             const isHighlight = (address) => {

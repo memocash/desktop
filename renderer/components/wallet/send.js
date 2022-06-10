@@ -1,4 +1,4 @@
-import {useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 
 const {address} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
 import form from "../../styles/form.module.css"
@@ -9,6 +9,30 @@ const Send = () => {
     const payToRef = useRef("")
     const messageRef = useRef("")
     const amountRef = useRef(0)
+    const utxosRef = useRef([])
+    const [maxValue, setMaxValue] = useState(0)
+    useEffect(async () => {
+        const wallet = await GetWallet()
+        utxosRef.current.value = await window.electron.getUtxos(wallet.addresses)
+        utxosRef.current.value.sort((a, b) => {
+            return b.value - a.value
+        })
+        let totalUtxoValue = -bitcoin.Fee.Base - bitcoin.Fee.OutputP2PKH
+        for (let i = 0; i < utxosRef.current.value.length; i++) {
+            totalUtxoValue += utxosRef.current.value[i].value - bitcoin.Fee.InputP2PKH
+        }
+        setMaxValue(totalUtxoValue)
+    }, [])
+    const onAmountChange = (e) => {
+        let {value, min, max} = e.target;
+        if (!value) {
+            return
+        }
+        e.target.value = Math.max(Number(min), Math.min(Number(max), Number(value)));
+    }
+    const onClickMax = () => {
+        amountRef.current.value = amountRef.current.max
+    }
     const formSubmit = async (e) => {
         e.preventDefault()
         const payTo = payToRef.current.value
@@ -29,23 +53,20 @@ const Send = () => {
             return
         }
         const wallet = await GetWallet()
-        let utxos = await window.electron.getUtxos(wallet.addresses)
-        utxos.sort((a, b) => {
-            return b.value - a.value
-        })
-        let requiredInput = amount + bitcoin.Fee.Base + bitcoin.Fee.OutputP2PKH * 2
+        let requiredInput = amount + bitcoin.Fee.Base + bitcoin.Fee.OutputP2PKH
         let totalInput = 0
         let inputs = []
-        for (let i = 0; i < utxos.length; i++) {
-            inputs.push([utxos[i].hash, utxos[i].index, utxos[i].value, utxos[i].address].join(":"))
+        for (let i = 0; i < utxosRef.current.value.length; i++) {
+            const utxo = utxosRef.current.value[i]
+            inputs.push([utxo.hash, utxo.index, utxo.value, utxo.address].join(":"))
             requiredInput += bitcoin.Fee.InputP2PKH
-            totalInput += parseInt(utxos[i].value)
-            if (totalInput > requiredInput + bitcoin.DustLimit) {
+            totalInput += parseInt(utxo.value)
+            if (totalInput === requiredInput || totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.DustLimit) {
                 break
             }
         }
         const changeAddress = wallet.addresses[0]
-        const change = totalInput - requiredInput
+        const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
         await window.electron.openPreviewSend({payTo, message, amount, inputs, changeAddress, change})
     }
     return (
@@ -65,7 +86,9 @@ const Send = () => {
             <p>
                 <label>
                     <span className={form.span}>Amount (sats):</span>
-                    <input className={form.input_small} ref={amountRef} type="text"/>
+                    <input className={form.input_small} ref={amountRef} type="number" max={maxValue}
+                           min={bitcoin.DustLimit} onChange={onAmountChange}/>
+                    <input type="button" value={"Max"} onClick={onClickMax}/>
                 </label>
             </p>
             <p>
