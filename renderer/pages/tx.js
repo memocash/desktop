@@ -6,7 +6,9 @@ import styleTx from "../styles/tx.module.css";
 import ShortHash from "../components/util/txs";
 import GetWallet from "../components/util/wallet";
 import {useReferredState} from "../components/util/state";
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {mnemonicToSeedSync} from "bip39";
+import {fromSeed} from "bip32";
 
 const Tx = () => {
     const router = useRouter()
@@ -17,7 +19,7 @@ const Tx = () => {
     const [inputAmount, setInputAmount] = useState()
     const [txInfo, txInfoRef, setTxInfo] = useReferredState({inputs: [], outputs: []})
     const [size, setSize] = useState(0)
-    const [fee, setFee] = useState(0)
+    const [fee, feeRef, setFee] = useReferredState(0)
     const [feeRate, setFeeRate] = useState(0)
     const transactionIdEleRef = useRef()
     useEffect(async () => {
@@ -143,6 +145,40 @@ const Tx = () => {
     const clickCopyRaw = () => {
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
+    const clickSign = async () => {
+        const tx = bitcoin.Transaction.fromBuffer(txInfoRef.current.raw)
+        const txb = bitcoin.TransactionBuilder.fromTransaction(tx)
+        const wallet = await GetWallet()
+        if (!wallet.seed) {
+            window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
+            return
+        }
+        const seed = mnemonicToSeedSync(wallet.seed)
+        const node = fromSeed(seed)
+        for (let i = 0; i < txInfoRef.current.inputs.length; i++) {
+            const input = txInfoRef.current.inputs[i]
+            const address = input.output.address
+            for (let a = 0; a < wallet.addresses.length; a++) {
+                if (address === wallet.addresses[a]) {
+                    const child = node.derivePath("m/44'/0'/0'/0/" + i)
+                    const key = ECPair.fromWIF(child.toWIF())
+                    txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
+                    break
+                }
+            }
+        }
+        const txBuild = txb.build()
+        const buf = txBuild.toBuffer()
+        txInfoRef.current.raw = buf
+        const size = buf.length
+        setSize(size)
+        setTxInfo(txInfoRef.current)
+        transactionIdEleRef.current.value = txBuild.getId()
+        const feeRate = feeRef.current / size
+        setFeeRate(feeRate.toFixed(4))
+        setTransactionId(txBuild.getId())
+        setSigned(true)
+    }
     const clickClose = () => {
         window.electron.closeWindow()
     }
@@ -215,6 +251,7 @@ const Tx = () => {
                 </div>
                 <div className={styleTx.footer}>
                     <span><button onClick={clickCopyRaw}>Copy</button></span>
+                    &nbsp;{!signed && <span><button onClick={clickSign}>Sign</button></span>}
                     <span className={styleTx.footerRight}>
                         <button onClick={clickClose}>Close</button></span>
                 </div>
