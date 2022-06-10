@@ -92,7 +92,7 @@ const Send = () => {
                 <label>
                     <span className={form.span}>Amount (sats):</span>
                     <input className={form.input_small} ref={amountRef} type="number" max={maxValue}
-                           min={maxValue === 0 ? 0 : bitcoin.DustLimit} onChange={onAmountChange}/>
+                           min={0} onChange={onAmountChange}/>
                     <input type="button" value={"Max"} onClick={onClickMax}/>
                 </label>
             </p>

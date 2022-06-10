@@ -27,13 +27,13 @@ const Tx = () => {
             setTransactionId(txHash)
             transactionIdEleRef.current.value = txHash
         } else if (payTo && amount) {
-            setInputAmount(amount)
             const inputStrings = inputs.split(",")
+            const amountInt = parseInt(amount)
             let tx = {
                 inputs: [],
                 outputs: [{
                     address: payTo,
-                    value: parseInt(amount),
+                    value: amountInt,
                 }],
             }
             const changeInt = parseInt(change)
@@ -43,6 +43,7 @@ const Tx = () => {
                     value: changeInt,
                 })
             }
+            let fee = -amountInt - change
             const wallet = await GetWallet()
             const isHighlight = (address) => {
                 for (let i = 0; i < wallet.addresses.length; i++) {
@@ -54,17 +55,20 @@ const Tx = () => {
             }
             for (let i = 0; i < inputStrings.length; i++) {
                 const inputValues = inputStrings[i].split(":")
+                const valueInt = parseInt(inputValues[2])
                 tx.inputs.push({
                     prev_hash: inputValues[0],
                     prev_index: parseInt(inputValues[1]),
                     highlight: isHighlight(inputValues[3]),
                     output: {
-                        value: parseInt(inputValues[2]),
+                        value: valueInt,
                         address: inputValues[3],
                     },
                 })
+                fee += valueInt
             }
             setTxInfo(tx)
+            setFee(fee)
         }
     }, [router])
     useEffect(async () => {
