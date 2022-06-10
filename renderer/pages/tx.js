@@ -176,7 +176,6 @@ const Tx = () => {
         transactionIdEleRef.current.value = txBuild.getId()
         const feeRate = feeRef.current / size
         setFeeRate(feeRate.toFixed(4))
-        setTransactionId(txBuild.getId())
         setSigned(true)
     }
     const clickClose = () => {
