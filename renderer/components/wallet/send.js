@@ -17,12 +17,15 @@ const Send = () => {
         utxosRef.current.value.sort((a, b) => {
             return b.value - a.value
         })
+        calcAndSetMaxValue()
+    }, [])
+    const calcAndSetMaxValue = () => {
         let totalUtxoValue = -bitcoin.Fee.Base - bitcoin.Fee.OutputP2PKH
         for (let i = 0; i < utxosRef.current.value.length; i++) {
             totalUtxoValue += utxosRef.current.value[i].value - bitcoin.Fee.InputP2PKH
         }
         setMaxValue(Math.max(0, totalUtxoValue))
-    }, [])
+    }
     const onAmountChange = (e) => {
         let {value, min, max} = e.target;
         if (!value) {
@@ -31,7 +34,8 @@ const Send = () => {
         e.target.value = Math.max(Number(min), Math.min(Number(max), Number(value)));
     }
     const onClickMax = () => {
-        amountRef.current.value = amountRef.current.max
+        calcAndSetMaxValue()
+        amountRef.current.value = maxValueRef.current
     }
     const formSubmit = async (e) => {
         e.preventDefault()
