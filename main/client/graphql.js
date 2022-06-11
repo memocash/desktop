@@ -67,7 +67,6 @@ const GraphQL = async ({query, variables}) => {
                     }
                     resolve(jsonData)
                 } catch (e) {
-                    console.log("error parsing json response", e)
                     reject(e)
                 }
             })

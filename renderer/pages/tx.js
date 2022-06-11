@@ -178,6 +178,15 @@ const Tx = () => {
         setFeeRate(feeRate.toFixed(4))
         setSigned(true)
     }
+    const clickBroadcast = async () => {
+        const query = `
+    mutation ($raw: String!) {
+        broadcast(raw: $raw)
+    }
+    `
+        await window.electron.graphQL(query, {raw: txInfoRef.current.raw.toString("hex")})
+        console.log("Broadcast successful")
+    }
     const clickClose = () => {
         window.electron.closeWindow()
     }
@@ -250,7 +259,9 @@ const Tx = () => {
                 </div>
                 <div className={styleTx.footer}>
                     <span><button onClick={clickCopyRaw}>Copy</button></span>
-                    &nbsp;{!signed && <span><button onClick={clickSign}>Sign</button></span>}
+                    &nbsp;
+                    {!signed && <span><button onClick={clickSign}>Sign</button></span>}
+                    {signed && <span><button onClick={clickBroadcast}>Broadcast</button></span>}
                     <span className={styleTx.footerRight}>
                         <button onClick={clickClose}>Close</button></span>
                 </div>
