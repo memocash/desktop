@@ -146,26 +146,43 @@ const Tx = () => {
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
     const clickSign = async () => {
-        const tx = bitcoin.Transaction.fromBuffer(txInfoRef.current.raw)
-        const txb = bitcoin.TransactionBuilder.fromTransaction(tx)
         const wallet = await GetWallet()
-        if (!wallet.seed) {
+        if (!wallet.seed && !wallet.keys && !wallet.keys.length) {
             window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
             return
         }
-        const seed = mnemonicToSeedSync(wallet.seed)
-        const node = fromSeed(seed)
-        for (let i = 0; i < txInfoRef.current.inputs.length; i++) {
-            const input = txInfoRef.current.inputs[i]
-            const address = input.output.address
-            for (let a = 0; a < wallet.addresses.length; a++) {
-                if (address === wallet.addresses[a]) {
-                    const child = node.derivePath("m/44'/0'/0'/0/" + i)
-                    const key = ECPair.fromWIF(child.toWIF())
-                    txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
-                    break
+        let getKey
+        if (wallet.seed) {
+            const seed = mnemonicToSeedSync(wallet.seed)
+            const node = fromSeed(seed)
+            getKey = (address) => {
+                for (let i = 0; i < wallet.addresses.length; i++) {
+                    if (address === wallet.addresses[i]) {
+                        const child = node.derivePath("m/44'/0'/0'/0/" + i)
+                        return ECPair.fromWIF(child.toWIF())
+                    }
                 }
             }
+        } else {
+            getKey = (address) => {
+                for (let i = 0; i < wallet.keys.length; i++) {
+                    const key = ECPair.fromWIF(wallet.keys[i])
+                    if (address === key.getAddress()) {
+                        return key
+                    }
+                }
+            }
+        }
+        const tx = bitcoin.Transaction.fromBuffer(txInfoRef.current.raw)
+        const txb = bitcoin.TransactionBuilder.fromTransaction(tx)
+        for (let i = 0; i < txInfoRef.current.inputs.length; i++) {
+            const input = txInfoRef.current.inputs[i]
+            const key = getKey(input.output.address)
+            if (key === undefined) {
+                console.log("Unable to find key for input address: " + input.output.address)
+                return
+            }
+            txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
         }
         const txBuild = txb.build()
         const buf = txBuild.toBuffer()
