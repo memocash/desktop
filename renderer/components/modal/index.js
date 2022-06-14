@@ -1,17 +1,7 @@
-import styles from "./index.module.css"
+import SeedModal from "./seed"
+import KeyModal from "./key"
 
-const Modal = ({
-    children,
-    onClose
-}) => {
-    
-    return (
-        <div className={styles.root} onClick={onClose}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                {children}
-            </div>
-        </div>
-    )
+export {
+    SeedModal,
+    KeyModal,
 }
-
-export default Modal

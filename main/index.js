@@ -9,6 +9,7 @@ const {
     GetWalletInfo, GenerateHistory, SaveBlock, GetUtxos
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
+const {Modals} = require("../common/util/modals");
 
 const wallets = {}
 const windows = {}
@@ -171,9 +172,15 @@ app.whenReady().then(async () => {
         return storage[e.sender.id][key]
     })
     ipcMain.handle("right-click-menu", (e) => {
+        const win = windows[e.sender.id]
         const menu = new Menu()
-        menu.append(new MenuItem({label: "Private Key"}))
-        menu.popup({window: windows[e.sender.id]})
+        menu.append(new MenuItem({
+            label: "Private Key",
+            click: () => {
+                win.webContents.send("display-modal", Modals.Key)
+            },
+        }))
+        menu.popup({window: win})
     })
     await CreateWindow()
 })

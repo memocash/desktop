@@ -1,12 +1,11 @@
-import {useEffect, useRef, useState} from "react"
-import Modal from "./index"
-import styles from "./displaySeed.module.css"
+import {useEffect, useState} from "react"
+import Modal from "./modal"
+import styles from "./seed.module.css"
+import Password from "./password";
 
-const DisplaySeedModal = ({onClose}) => {
-    const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
+const SeedModal = ({onClose}) => {
     const [showSeed, setShowSeed] = useState(false)
     const [seedPhrase, setSeedPhrase] = useState("")
-    const passwordInputRef = useRef()
     useEffect(async () => {
         const {seed} = await window.electron.getWallet()
         setSeedPhrase(seed)
@@ -15,51 +14,14 @@ const DisplaySeedModal = ({onClose}) => {
             setShowSeed(true)
         }
     }, [])
-    const handleCheckPassword = async () => {
-        const enteredPassword = passwordInputRef.current.value
-        const storedPassword = await electron.getPassword()
-        if (enteredPassword === storedPassword) {
-            setShowSeed(true)
-        } else {
-            setHasEnteredWrongPassword(true)
-        }
+    const onCorrectPassword = () => {
+        setShowSeed(true)
     }
-
-    const handlePasswordChange = () => {
-        if (hasEnteredWrongPassword) {
-            setHasEnteredWrongPassword(false)
-        }
-    }
-
-    const handlePasswordKeyDown = async (e) => {
-        if (e.keyCode === 13) {
-            await handleCheckPassword()
-        }
-    }
-
     return (
-        <Modal
-            onClose={onClose}
-        >
+        <Modal onClose={onClose}>
             <div className={styles.root}>
                 {!showSeed ?
-                    <div>
-                        <div className={styles.text}>Enter your password</div>
-                        <div>
-                            <label>Password:
-                                <input autoFocus ref={passwordInputRef} onChange={handlePasswordChange}
-                                       onKeyDown={handlePasswordKeyDown} type="password"/>
-                            </label>
-                        </div>
-                        {hasEnteredWrongPassword ?
-                            <p>Incorrect password</p> :
-                            <p>&nbsp;</p>
-                        }
-                        <div className={styles.buttons}>
-                            <button onClick={onClose}>Cancel</button>
-                            <button onClick={handleCheckPassword}>OK</button>
-                        </div>
-                    </div>
+                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword}/>
                     :
                     <div>
                         <div className={styles.text}>Your wallet seed phrase is:</div>
@@ -93,4 +55,4 @@ const DisplaySeedModal = ({onClose}) => {
     )
 }
 
-export default DisplaySeedModal
+export default SeedModal

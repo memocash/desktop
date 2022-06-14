@@ -1,4 +1,5 @@
 const {Menu} = require("electron");
+const {Modals} = require("../../common/util/modals");
 
 const isMac = process.platform === "darwin"
 
@@ -36,7 +37,7 @@ const ShowMenu = (win, newWindow, wallet) => {
             {
                 label: "Seed",
                 click: () => {
-                    win.webContents.send("display-seed")
+                    win.webContents.send("display-modal", Modals.Seed)
                 },
                 enabled: !!wallet.seed,
             },
