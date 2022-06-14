@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, dialog, screen, Menu} = require('electron')
+const {app, BrowserWindow, ipcMain, dialog, screen, Menu, MenuItem} = require('electron')
 const homedir = require("os").homedir()
 const path = require('path')
 const prepareNext = require('electron-next')
@@ -169,6 +169,11 @@ app.whenReady().then(async () => {
             return undefined
         }
         return storage[e.sender.id][key]
+    })
+    ipcMain.handle("right-click-menu", (e) => {
+        const menu = new Menu()
+        menu.append(new MenuItem({label: "Private Key"}))
+        menu.popup({window: windows[e.sender.id]})
     })
     await CreateWindow()
 })

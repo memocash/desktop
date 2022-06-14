@@ -12,11 +12,15 @@ const Column = {
 
 const Addresses = () => {
     const [addresses, addressesRef, setAddresses] = useReferredState([])
-    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Index)
+    const [sortCol, setSortCol] = useState(Column.Index)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [selectedAddress, selectedAddressRef, setSelectedAddress] = useReferredState("")
     const addressesDiv = useRef()
     useEffect(async () => {
+        addressesDiv.current.addEventListener("contextmenu", (e) => {
+            e.preventDefault()
+            window.electron.rightClickMenu()
+        })
         window.electron.walletLoaded()
         const wallet = await GetWallet()
         try {

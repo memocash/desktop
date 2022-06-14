@@ -176,4 +176,7 @@ contextBridge.exposeInMainWorld('electron', {
     listenDisplaySeed: (handler) => {
         ipcRenderer.on("display-seed", handler)
     },
+    rightClickMenu: () => {
+        return ipcRenderer.invoke("right-click-menu")
+    },
 })
