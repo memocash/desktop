@@ -43,15 +43,6 @@ const Tx = () => {
             }
             let txb = new bitcoin.TransactionBuilder()
             txb.addOutput(payTo, amountInt)
-            const changeInt = parseInt(change)
-            if (changeInt !== 0) {
-                tx.outputs.push({
-                    address: changeAddress,
-                    value: changeInt,
-                })
-                txb.addOutput(changeAddress, changeInt)
-            }
-            let fee = -amountInt - change
             const wallet = await GetWallet()
             const isHighlight = (address) => {
                 for (let i = 0; i < wallet.addresses.length; i++) {
@@ -61,6 +52,16 @@ const Tx = () => {
                 }
                 return false
             }
+            const changeInt = parseInt(change)
+            if (changeInt !== 0) {
+                tx.outputs.push({
+                    address: changeAddress,
+                    value: changeInt,
+                    highlight: isHighlight(changeAddress),
+                })
+                txb.addOutput(changeAddress, changeInt)
+            }
+            let fee = -amountInt - change
             for (let i = 0; i < inputStrings.length; i++) {
                 const inputValues = inputStrings[i].split(":")
                 const valueInt = parseInt(inputValues[2])
