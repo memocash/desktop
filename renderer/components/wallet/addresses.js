@@ -10,7 +10,7 @@ const Column = {
     Balance: "balance",
 }
 
-const Addresses = () => {
+const Addresses = ({lastUpdate}) => {
     const [addresses, addressesRef, setAddresses] = useReferredState([])
     const [sortCol, setSortCol] = useState(Column.Index)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
@@ -22,6 +22,8 @@ const Addresses = () => {
             window.electron.rightClickMenu()
         })
         window.electron.walletLoaded()
+    }, [])
+    useEffect(async () => {
         const wallet = await GetWallet()
         try {
             const balances = await loadBalance(wallet.addresses)
@@ -32,7 +34,7 @@ const Addresses = () => {
         } catch (e) {
             console.log(e)
         }
-    }, [])
+    }, [lastUpdate])
 
     const loadBalance = async (addresses) => {
         const query = `

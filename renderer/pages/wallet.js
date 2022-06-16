@@ -48,9 +48,9 @@ const WalletLoaded = () => {
         <>
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
-                <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send/></Page>
+                <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
-                <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses/></Page>
+                <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>
             </Frame>
             <Update setConnected={setConnected} setLastUpdate={setLastUpdate}/>

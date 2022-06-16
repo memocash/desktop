@@ -5,7 +5,7 @@ import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
 
-const Send = () => {
+const Send = ({lastUpdate}) => {
     const payToRef = useRef("")
     const messageRef = useRef("")
     const amountRef = useRef(0)
@@ -18,7 +18,7 @@ const Send = () => {
             return b.value - a.value
         })
         calcAndSetMaxValue()
-    }, [])
+    }, [lastUpdate])
     const calcAndSetMaxValue = () => {
         let totalUtxoValue = -bitcoin.Fee.Base - bitcoin.Fee.OutputP2PKH
         for (let i = 0; i < utxosRef.current.value.length; i++) {
