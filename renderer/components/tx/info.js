@@ -8,6 +8,9 @@ import {useReferredState} from "../util/state";
 import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
+import styles from "../modal/seed.module.css";
+import Password from "../modal/password";
+import Modal from "../modal/modal";
 
 const Info = () => {
     const router = useRouter()
@@ -21,6 +24,7 @@ const Info = () => {
     const [fee, feeRef, setFee] = useReferredState(0)
     const [feeRate, setFeeRate] = useState(0)
     const transactionIdEleRef = useRef()
+    const [showPasswordForSign, setShowPasswordForSign] = useState(false)
     useEffect(async () => {
         if (!router || !router.query) {
             return
@@ -146,6 +150,18 @@ const Info = () => {
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
     const clickSign = async () => {
+        const storedPassword = await window.electron.getPassword()
+        if (!storedPassword || !storedPassword.length) {
+            await onCorrectPassword()
+        } else {
+            setShowPasswordForSign(true)
+        }
+    }
+    const onClose = () => {
+        setShowPasswordForSign(false)
+    }
+    const onCorrectPassword = async () => {
+        setShowPasswordForSign(false)
         const wallet = await GetWallet()
         if (!wallet.seed && !wallet.keys && !wallet.keys.length) {
             window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
@@ -278,6 +294,11 @@ const Info = () => {
                 <span className={styleTx.footerRight}>
                         <button onClick={clickClose}>Close</button></span>
             </div>
+            {showPasswordForSign && <Modal onClose={onClose}>
+                <div className={styles.root}>
+                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword}/>
+                </div>
+            </Modal>}
         </div>
     )
 }
