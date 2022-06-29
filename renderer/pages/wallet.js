@@ -1,11 +1,6 @@
 import Frame, {Tabs} from "../components/wallet/frame";
-import Addresses from "../components/wallet/addresses";
+import {Addresses, History, Send, Receive, Coins, Update, Contacts} from "../components/wallet";
 import {useEffect, useRef, useState} from "react";
-import History from "../components/wallet/history";
-import Send from "../components/wallet/send";
-import Receive from "../components/wallet/receive";
-import Coins from "../components/wallet/coins";
-import Update from "../components/wallet/update";
 import {Status} from "../components/util/connect"
 
 const StorageKeyWalletTab = "wallet-tab"
@@ -33,7 +28,7 @@ const WalletLoaded = () => {
     const [connected, setConnected] = useState(Status.NotConnected)
     const shownRef = useRef([])
     useEffect(async () => {
-        const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.History
+        const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.Contacts
         setTab(tab)
         shownRef.current.push(tab)
     }, [])
@@ -47,6 +42,7 @@ const WalletLoaded = () => {
     return (
         <>
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
+                <Page tab={tab} page={Tabs.Contacts} shown={shownRef}><Contacts/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
