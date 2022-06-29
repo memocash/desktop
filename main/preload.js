@@ -126,6 +126,9 @@ contextBridge.exposeInMainWorld('electron', {
     saveBlock: async (block) => {
         await ipcRenderer.invoke("save-block", block)
     },
+    saveMemoProfiles: async (profiles) => {
+        await ipcRenderer.invoke("save-memo-profiles", profiles)
+    },
     generateHistory: async (addresses) => {
         await ipcRenderer.invoke("generate-history", addresses)
     },

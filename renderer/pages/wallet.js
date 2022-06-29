@@ -42,7 +42,7 @@ const WalletLoaded = () => {
     return (
         <>
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
-                <Page tab={tab} page={Tabs.Contacts} shown={shownRef}><Contacts/></Page>
+                <Page tab={tab} page={Tabs.Contacts} shown={shownRef}><Contacts lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>

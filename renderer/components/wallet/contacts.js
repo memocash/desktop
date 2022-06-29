@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import GetWallet from "../util/wallet";
 
-const Contacts = () => {
+const Contacts = ({lastUpdate}) => {
     const [profileInfo, setProfileInfo] = useState({
         Name: "memo",
         Profile: "Verification: https://twitter.com/memobch/status/992033652765700097",
@@ -13,7 +13,7 @@ const Contacts = () => {
             console.log(profileInfo)
             setProfileInfo(profileInfo)
         }
-    }, [])
+    }, [lastUpdate])
     return (
         <div>
             <p>

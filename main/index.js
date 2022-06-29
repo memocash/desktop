@@ -10,7 +10,7 @@ const {
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
 const {Modals} = require("../common/util/modals");
-const {GetProfileInfo} = require("./data/memo");
+const {GetProfileInfo, SaveMemoProfiles} = require("./data/memo");
 
 const wallets = {}
 const windows = {}
@@ -138,6 +138,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("save-block", async (e, block) => {
         await SaveBlock(block)
+    })
+    ipcMain.handle("save-memo-profiles", async (e, profiles) => {
+        await SaveMemoProfiles(profiles)
     })
     ipcMain.handle("generate-history", async (e, addresses) => {
         await GenerateHistory(addresses)

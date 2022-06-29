@@ -15,6 +15,16 @@ const GetProfileInfo = async (addresses) => {
     return results[0]
 }
 
+const SaveMemoProfiles = async (profiles) => {
+    const query = "" +
+        "INSERT OR REPLACE INTO profiles " +
+        "   (address, name, profile, image) " +
+        "VALUES (" + Array(profiles.length).fill("(?, ?, ?, ?)").join(", ") + ")"
+    const values = profiles.map(profile => [profile.address, profile.name, profile.profile, profile.image]).flat()
+    await Select(query, values)
+}
+
 module.exports = {
     GetProfileInfo,
+    SaveMemoProfiles,
 }
