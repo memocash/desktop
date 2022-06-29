@@ -10,6 +10,7 @@ const {
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
 const {Modals} = require("../common/util/modals");
+const {GetProfileInfo} = require("./data/memo");
 
 const wallets = {}
 const windows = {}
@@ -181,6 +182,9 @@ app.whenReady().then(async () => {
             },
         }))
         menu.popup({window: win})
+    })
+    ipcMain.handle("get-profile-info", async (e, addresses) => {
+        return GetProfileInfo(addresses)
     })
     await CreateWindow()
 })

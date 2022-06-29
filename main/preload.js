@@ -179,4 +179,7 @@ contextBridge.exposeInMainWorld('electron', {
     rightClickMenu: () => {
         return ipcRenderer.invoke("right-click-menu")
     },
+    getProfileInfo: (addresses) => {
+        return ipcRenderer.invoke("get-profile-info", addresses)
+    },
 })

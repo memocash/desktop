@@ -108,4 +108,11 @@ const Definitions = [
         timestamp CHAR,
         UNIQUE(address, hash)
     )`,
+    `profiles (
+        address CHAR,
+        name CHAR,
+        profile CHAR,
+        image BLOB,
+        UNIQUE(address)
+    )`,
 ]
