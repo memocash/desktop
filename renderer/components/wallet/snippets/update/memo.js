@@ -2,7 +2,9 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
     const query = `
     query ($addresses: [String!]) {
         profiles(addresses: $addresses) {
-            address
+            lock {
+                address
+            }
             name
             profile
             image

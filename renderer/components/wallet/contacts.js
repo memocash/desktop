@@ -3,8 +3,8 @@ import GetWallet from "../util/wallet";
 
 const Contacts = ({lastUpdate}) => {
     const [profileInfo, setProfileInfo] = useState({
-        Name: "memo",
-        Profile: "Verification: https://twitter.com/memobch/status/992033652765700097",
+        mame: "memo",
+        profile: "Verification: https://twitter.com/memobch/status/992033652765700097",
     })
     useEffect(async () => {
         const wallet = await GetWallet()
@@ -17,10 +17,10 @@ const Contacts = ({lastUpdate}) => {
     return (
         <div>
             <p>
-                Name: <b>{profileInfo.Name}</b>
+                Name: <b>{profileInfo.name}</b>
             </p>
             <p>
-                Profile: <b>{profileInfo.Profile}</b>
+                Profile: <b>{profileInfo.profile}</b>
             </p>
         </div>
     )
