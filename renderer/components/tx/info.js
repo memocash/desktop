@@ -29,23 +29,19 @@ const Info = () => {
         if (!router || !router.query) {
             return
         }
-        const {txHash, payTo, amount, inputs, changeAddress, change} = router.query
+        const {txHash, inputs, outputs} = router.query
         if (txHash && txHash.length) {
             setSigned(true)
             setTransactionId(txHash)
             transactionIdEleRef.current.value = txHash
-        } else if (payTo && amount) {
+        } else if (inputs && inputs.length && outputs && outputs.length) {
             const inputStrings = inputs.split(",")
-            const amountInt = parseInt(amount)
+            const outputStrings = outputs.split(",")
             let tx = {
                 inputs: [],
-                outputs: [{
-                    address: payTo,
-                    value: amountInt,
-                }],
+                outputs: [],
             }
             let txb = new bitcoin.TransactionBuilder()
-            txb.addOutput(payTo, amountInt)
             const wallet = await GetWallet()
             const isHighlight = (address) => {
                 for (let i = 0; i < wallet.addresses.length; i++) {
@@ -55,33 +51,42 @@ const Info = () => {
                 }
                 return false
             }
-            const changeInt = parseInt(change)
-            if (changeInt !== 0) {
-                tx.outputs.push({
-                    address: changeAddress,
-                    value: changeInt,
-                    highlight: isHighlight(changeAddress),
-                })
-                txb.addOutput(changeAddress, changeInt)
-            }
-            let fee = -amountInt - change
+            let fee = 0
             for (let i = 0; i < inputStrings.length; i++) {
-                const inputValues = inputStrings[i].split(":")
-                const valueInt = parseInt(inputValues[2])
-                const prevIndex = parseInt(inputValues[1])
+                const [inputPrevHash, inputPrevIndex, inputValue, inputAddress] = inputStrings[i].split(":")
+                const valueInt = parseInt(inputValue)
+                const prevIndex = parseInt(inputPrevIndex)
                 tx.inputs.push({
-                    prev_hash: inputValues[0],
+                    prev_hash: inputPrevHash,
                     prev_index: prevIndex,
-                    highlight: isHighlight(inputValues[3]),
+                    highlight: isHighlight(inputAddress),
                     output: {
                         value: valueInt,
-                        address: inputValues[3],
+                        address: inputAddress,
                     },
                 })
                 fee += valueInt
-                const outputScript = bitcoin.address.toOutputScript(inputValues[3])
-                txb.addInput(Buffer.from(inputValues[0], 'hex').reverse(), prevIndex,
+                const outputScript = bitcoin.address.toOutputScript(inputAddress)
+                txb.addInput(Buffer.from(inputPrevHash, 'hex').reverse(), prevIndex,
                     bitcoin.Transaction.DEFAULT_SEQUENCE, outputScript)
+            }
+            for (let i = 0; i < outputStrings.length; i++) {
+                const [outputScript, outputValue] = outputStrings[i].split(":")
+                const scriptBuffer = Buffer.from(outputScript, "hex")
+                const valueInt = parseInt(outputValue)
+                let outputAddress
+                try {
+                    outputAddress = bitcoin.address.fromOutputScript(scriptBuffer)
+                } catch (e) {
+                    outputAddress = "unknown: nonstandard"
+                }
+                tx.outputs.push({
+                    address: outputAddress,
+                    value: valueInt,
+                    highlight: isHighlight(outputAddress),
+                })
+                txb.addOutput(scriptBuffer, valueInt)
+                fee -= valueInt
             }
             const txBuild = txb.__build(true)
             const buf = txBuild.toBuffer()
@@ -163,7 +168,7 @@ const Info = () => {
     const onCorrectPassword = async () => {
         setShowPasswordForSign(false)
         const wallet = await GetWallet()
-        if (!wallet.seed && !wallet.keys && !wallet.keys.length) {
+        if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
             window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
             return
         }

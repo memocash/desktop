@@ -73,9 +73,13 @@ const Send = ({lastUpdate}) => {
                 break
             }
         }
-        const changeAddress = wallet.addresses[0]
         const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
-        await window.electron.openPreviewSend({payTo, message, amount, inputs, changeAddress, change})
+        let outputs = [address.toOutputScript(payTo).toString("hex") + ":" + amount]
+        if (change > 0) {
+            const changeAddress = wallet.addresses[0]
+            outputs.push(address.toOutputScript(changeAddress).toString("hex") + ":" + change)
+        }
+        await window.electron.openPreviewSend({inputs, outputs})
     }
     return (
         <form onSubmit={formSubmit}>
