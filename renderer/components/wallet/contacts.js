@@ -46,7 +46,7 @@ const Contacts = ({lastUpdate}) => {
         const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
         const nameOpReturnOutput = script.compile([opcodes.OP_RETURN, Buffer.from("6d01", "hex"), Buffer.from(name)])
         let outputs = [
-            nameOpReturnOutput + ":0",
+            nameOpReturnOutput.toString("hex") + ":0",
             address.toOutputScript(changeAddress).toString("hex") + ":" + change,
         ]
         await window.electron.openPreviewSend({inputs, outputs})

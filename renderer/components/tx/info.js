@@ -264,7 +264,7 @@ const Info = () => {
                         </p>}
                         {txInfo.inputs.map((input, i) => {
                             return (
-                                <p key={i} className={input.highlight && styleTx.input_output_highlight}>
+                                <p key={i} className={input.highlight ? styleTx.input_output_highlight : null}>
                                         <span><a onClick={() => clickTx(input.prev_hash)} title={input.prev_hash}>
                                         {ShortHash(input.prev_hash)}</a>:{input.prev_index}</span>
                                     <span>{input.output && input.output.address}</span>
@@ -282,7 +282,7 @@ const Info = () => {
                     <div className={[styleTx.input_output_grid, styleTx.input_output_grid_output].join(" ")}>
                         {txInfo.outputs.map((output, i) => {
                             return (
-                                <p key={i} className={output.highlight && styleTx.input_output_highlight}>
+                                <p key={i} className={output.highlight ? styleTx.input_output_highlight : null}>
                                     <span>{output.address}</span>
                                     <span className={styleTx.spanRight}>{output.value.toLocaleString()}</span>
                                 </p>
