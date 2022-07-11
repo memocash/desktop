@@ -3,6 +3,7 @@ let Fee = {
     InputP2PKH: 148,
     OutputP2PKH: 34,
     OutputFeeOpReturn: 20,
+    OutputValueSize: 9, // 8 + 1
 }
 
 const Utf8ByteLength = (str) => {

@@ -2,13 +2,14 @@ import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import form from "../../styles/form.module.css";
 import bitcoin from "../util/bitcoin";
-import {address, script, opcodes} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {CreateTransaction} from "./snippets/create_tx";
 
 const Contacts = ({lastUpdate}) => {
     const setNameRef = useRef("")
     const [profileInfo, setProfileInfo] = useState({
-        mame: "memo",
-        profile: "Verification: https://twitter.com/memobch/status/992033652765700097",
+        mame: "Not set",
+        profile: "Not set",
     })
     const utxosRef = useRef([])
     useEffect(async () => {
@@ -29,32 +30,14 @@ const Contacts = ({lastUpdate}) => {
             window.electron.showMessageDialog("Name length is too long (max: " + bitcoin.MaxOpReturn + ")")
             return
         }
-        const wallet = await GetWallet()
-        let requiredInput = bitcoin.Fee.Base + bitcoin.Fee.OutputFeeOpReturn + bitcoin.Utf8ByteLength(name)
-        let totalInput = 0
-        let inputs = []
-        for (let i = 0; i < utxosRef.current.value.length; i++) {
-            const utxo = utxosRef.current.value[i]
-            inputs.push([utxo.hash, utxo.index, utxo.value, utxo.address].join(":"))
-            requiredInput += bitcoin.Fee.InputP2PKH
-            totalInput += parseInt(utxo.value)
-            if (totalInput === requiredInput || totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.DustLimit) {
-                break
-            }
-        }
-        const changeAddress = wallet.addresses[0]
-        const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
         const nameOpReturnOutput = script.compile([opcodes.OP_RETURN, Buffer.from("6d01", "hex"), Buffer.from(name)])
-        let outputs = [
-            nameOpReturnOutput.toString("hex") + ":0",
-            address.toOutputScript(changeAddress).toString("hex") + ":" + change,
-        ]
+        const wallet = await GetWallet()
         const recentSetName = await window.electron.getRecentSetName(wallet.addresses)
         let beatHash
         if (recentSetName && !recentSetName.block_hash) {
             beatHash = recentSetName.tx_hash
         }
-        await window.electron.openPreviewSend({inputs, outputs, beatHash})
+        await CreateTransaction(wallet, utxosRef.current.value, nameOpReturnOutput, 0, beatHash)
     }
     return (
         <div>

@@ -4,6 +4,7 @@ import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
+import {CreateTransaction} from "./snippets/create_tx";
 
 const Send = ({lastUpdate}) => {
     const payToRef = useRef("")
@@ -61,25 +62,8 @@ const Send = ({lastUpdate}) => {
             return
         }
         const wallet = await GetWallet()
-        let requiredInput = amount + bitcoin.Fee.Base + bitcoin.Fee.OutputP2PKH
-        let totalInput = 0
-        let inputs = []
-        for (let i = 0; i < utxosRef.current.value.length; i++) {
-            const utxo = utxosRef.current.value[i]
-            inputs.push([utxo.hash, utxo.index, utxo.value, utxo.address].join(":"))
-            requiredInput += bitcoin.Fee.InputP2PKH
-            totalInput += parseInt(utxo.value)
-            if (totalInput === requiredInput || totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.DustLimit) {
-                break
-            }
-        }
-        const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
-        let outputs = [address.toOutputScript(payTo).toString("hex") + ":" + amount]
-        if (change > 0) {
-            const changeAddress = wallet.addresses[0]
-            outputs.push(address.toOutputScript(changeAddress).toString("hex") + ":" + change)
-        }
-        await window.electron.openPreviewSend({inputs, outputs})
+        const outputScript = address.toOutputScript(payTo)
+        await CreateTransaction(wallet, utxosRef.current.value, outputScript, amount)
     }
     return (
         <form onSubmit={formSubmit}>
