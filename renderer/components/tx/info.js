@@ -215,7 +215,7 @@ const Info = () => {
                 break
             }
             const txHash = txBuild.getId()
-            if (txHash > beatHashRef.current) {
+            if (txHash < beatHashRef.current) {
                 break
             }
             tx.locktime = lockTime
