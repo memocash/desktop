@@ -57,9 +57,12 @@ const SaveMemoProfiles = async (profiles) => {
 
 const GetRecentSetName = async (addresses) => {
     const query = "" +
-        "SELECT profile_names.* " +
+        "SELECT " +
+        "   profile_names.*, " +
+        "   block_txs.block_hash AS block_hash " +
         "FROM profiles " +
         "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = profile_names.tx_hash) " +
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const results = await Select(query, addresses)
     if (!results || !results.length) {

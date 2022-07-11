@@ -51,7 +51,7 @@ const Contacts = ({lastUpdate}) => {
         ]
         const recentSetName = await window.electron.getRecentSetName(wallet.addresses)
         let beatHash
-        if (recentSetName) {
+        if (recentSetName && !recentSetName.block_hash) {
             beatHash = recentSetName.tx_hash
         }
         await window.electron.openPreviewSend({inputs, outputs, beatHash})
