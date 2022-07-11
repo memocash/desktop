@@ -112,7 +112,25 @@ const Definitions = [
         address CHAR,
         name CHAR,
         profile CHAR,
-        image BLOB,
+        pic CHAR,
         UNIQUE(address)
+    )`,
+    `profile_names (
+        address CHAR,
+        name CHAR,
+        tx_hash CHAR,
+        UNIQUE(tx_hash)
+    )`,
+    `profile_texts (
+        address CHAR,
+        profile CHAR,
+        tx_hash CHAR,
+        UNIQUE(tx_hash)
+    )`,
+    `profile_pics (
+        address CHAR,
+        pic CHAR,
+        tx_hash CHAR,
+        UNIQUE(tx_hash)
     )`,
 ]

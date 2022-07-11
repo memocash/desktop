@@ -10,7 +10,7 @@ const {
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
 const {Modals} = require("../common/util/modals");
-const {GetProfileInfo, SaveMemoProfiles} = require("./data/memo");
+const {GetProfileInfo, SaveMemoProfiles, GetRecentSetName} = require("./data/memo");
 
 const wallets = {}
 const windows = {}
@@ -47,7 +47,7 @@ const CreateWindow = async () => {
     windowNumber++
 }
 
-const CreateTxWindow = async (winId, {txHash, inputs, outputs}) => {
+const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     const win = new BrowserWindow({
         width: 650,
         height: 500,
@@ -69,7 +69,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs}) => {
     wallets[win.webContents.id] = wallets[winId]
     let params = {txHash}
     if (!txHash || !txHash.length) {
-        params = {inputs, outputs}
+        params = {inputs, outputs, beatHash}
     }
     await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams(params)).toString())
 }
@@ -124,8 +124,8 @@ app.whenReady().then(async () => {
         }
         Subscribe({query, variables, callback, onopen, onclose})
     })
-    ipcMain.on("open-preview-send", async (e, {inputs, outputs}) => {
-        await CreateTxWindow(e.sender.id, {inputs, outputs})
+    ipcMain.on("open-preview-send", async (e, {inputs, outputs, beatHash}) => {
+        await CreateTxWindow(e.sender.id, {inputs, outputs, beatHash})
     })
     ipcMain.on("close-window", (e) => {
         windows[e.sender.id].close()
@@ -188,6 +188,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("get-profile-info", async (e, addresses) => {
         return GetProfileInfo(addresses)
+    })
+    ipcMain.handle("get-recent-set-name", async (e, addresses) => {
+        return GetRecentSetName(addresses)
     })
     await CreateWindow()
 })

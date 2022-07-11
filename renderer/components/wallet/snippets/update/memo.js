@@ -5,9 +5,18 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
             lock {
                 address
             }
-            name
-            profile
-            image
+            name {
+                name
+                tx_hash
+            }
+            profile {
+                text
+                tx_hash
+            }
+            pic {
+                pic
+                tx_hash
+            }
         }
     }
     `

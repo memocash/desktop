@@ -25,11 +25,12 @@ const Info = () => {
     const [feeRate, setFeeRate] = useState(0)
     const transactionIdEleRef = useRef()
     const [showPasswordForSign, setShowPasswordForSign] = useState(false)
+    const [_, beatHashRef, setBeatHash] = useReferredState("")
     useEffect(async () => {
         if (!router || !router.query) {
             return
         }
-        const {txHash, inputs, outputs} = router.query
+        const {txHash, inputs, outputs, beatHash} = router.query
         if (txHash && txHash.length) {
             setSigned(true)
             setTransactionId(txHash)
@@ -95,6 +96,7 @@ const Info = () => {
             setTxInfo(tx)
             setFee(fee)
             transactionIdEleRef.current.value = txBuild.getId()
+            setBeatHash(beatHash)
         }
     }, [router])
     useEffect(async () => {
@@ -195,17 +197,29 @@ const Info = () => {
             }
         }
         const tx = bitcoin.Transaction.fromBuffer(txInfoRef.current.raw)
-        const txb = bitcoin.TransactionBuilder.fromTransaction(tx)
-        for (let i = 0; i < txInfoRef.current.inputs.length; i++) {
-            const input = txInfoRef.current.inputs[i]
-            const key = getKey(input.output.address)
-            if (key === undefined) {
-                console.log("Unable to find key for input address: " + input.output.address)
-                return
+        let txb
+        let txBuild
+        for (let lockTime = 5e8; lockTime < 5e8+100; lockTime++) {
+            txb = bitcoin.TransactionBuilder.fromTransaction(tx)
+            for (let i = 0; i < txInfoRef.current.inputs.length; i++) {
+                const input = txInfoRef.current.inputs[i]
+                const key = getKey(input.output.address)
+                if (key === undefined) {
+                    console.log("Unable to find key for input address: " + input.output.address)
+                    return
+                }
+                txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
             }
-            txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
+            txBuild = txb.build()
+            if (!beatHashRef.current) {
+                break
+            }
+            const txHash = txBuild.getId()
+            if (txHash > beatHashRef.current) {
+                break
+            }
+            tx.locktime = lockTime
         }
-        const txBuild = txb.build()
         const buf = txBuild.toBuffer()
         txInfoRef.current.raw = buf
         const size = buf.length

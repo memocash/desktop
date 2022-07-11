@@ -49,7 +49,12 @@ const Contacts = ({lastUpdate}) => {
             nameOpReturnOutput.toString("hex") + ":0",
             address.toOutputScript(changeAddress).toString("hex") + ":" + change,
         ]
-        await window.electron.openPreviewSend({inputs, outputs})
+        const recentSetName = await window.electron.getRecentSetName(wallet.addresses)
+        let beatHash
+        if (recentSetName) {
+            beatHash = recentSetName.tx_hash
+        }
+        await window.electron.openPreviewSend({inputs, outputs, beatHash})
     }
     return (
         <div>
