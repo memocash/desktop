@@ -188,4 +188,10 @@ contextBridge.exposeInMainWorld('electron', {
     getRecentSetName: (addresses) => {
         return ipcRenderer.invoke("get-recent-set-name", addresses)
     },
+    getRecentSetProfile: (addresses) => {
+        return ipcRenderer.invoke("get-recent-set-profile", addresses)
+    },
+    getRecentSetPic: (addresses) => {
+        return ipcRenderer.invoke("get-recent-set-pic", addresses)
+    },
 })

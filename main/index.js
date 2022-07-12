@@ -10,7 +10,7 @@ const {
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
 const {Modals} = require("../common/util/modals");
-const {GetProfileInfo, SaveMemoProfiles, GetRecentSetName} = require("./data/memo");
+const {GetProfileInfo, SaveMemoProfiles, GetRecentSetName, GetRecentSetProfile, GetRecentSetPic} = require("./data/memo");
 
 const wallets = {}
 const windows = {}
@@ -191,6 +191,12 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("get-recent-set-name", async (e, addresses) => {
         return GetRecentSetName(addresses)
+    })
+    ipcMain.handle("get-recent-set-profile", async (e, addresses) => {
+        return GetRecentSetProfile(addresses)
+    })
+    ipcMain.handle("get-recent-set-pic", async (e, addresses) => {
+        return GetRecentSetPic(addresses)
     })
     await CreateWindow()
 })

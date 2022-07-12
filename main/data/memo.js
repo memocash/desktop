@@ -62,7 +62,39 @@ const GetRecentSetName = async (addresses) => {
         "   block_txs.block_hash AS block_hash " +
         "FROM profiles " +
         "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
-        "LEFT JOIN block_txs ON (block_txs.tx_hash = profile_names.tx_hash) " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.name) " +
+        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    const results = await Select(query, addresses)
+    if (!results || !results.length) {
+        return undefined
+    }
+    return results[0]
+}
+
+const GetRecentSetProfile = async (addresses) => {
+    const query = "" +
+        "SELECT " +
+        "   profile_texts.*, " +
+        "   block_txs.block_hash AS block_hash " +
+        "FROM profiles " +
+        "LEFT JOIN profile_texts ON (profile_texts.tx_hash = profiles.profile) " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.profile) " +
+        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    const results = await Select(query, addresses)
+    if (!results || !results.length) {
+        return undefined
+    }
+    return results[0]
+}
+
+const GetRecentSetPic = async (addresses) => {
+    const query = "" +
+        "SELECT " +
+        "   profile_pics.*, " +
+        "   block_txs.block_hash AS block_hash " +
+        "FROM profiles " +
+        "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.pic) " +
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const results = await Select(query, addresses)
     if (!results || !results.length) {
@@ -75,4 +107,6 @@ module.exports = {
     GetProfileInfo,
     SaveMemoProfiles,
     GetRecentSetName,
+    GetRecentSetProfile,
+    GetRecentSetPic,
 }

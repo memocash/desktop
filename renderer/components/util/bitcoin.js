@@ -1,9 +1,18 @@
-let Fee = {
+const Fee = {
     Base: 10,
     InputP2PKH: 148,
     OutputP2PKH: 34,
     OutputFeeOpReturn: 20,
     OutputValueSize: 9, // 8 + 1
+}
+
+const Prefix = {
+    SetName: "6d01",
+    PostMemo: "6d02",
+    ReplyMemo: "6d03",
+    LikeMemo: "6d04",
+    SetProfile: "6d05",
+    SetPic: "6d0a",
 }
 
 const Utf8ByteLength = (str) => {
@@ -26,4 +35,5 @@ export default {
     MaxOpReturn: 100000,
     Fee: Fee,
     Utf8ByteLength: Utf8ByteLength,
+    Prefix: Prefix,
 }
