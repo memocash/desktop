@@ -1,5 +1,4 @@
 const {app, BrowserWindow, ipcMain, dialog, screen, Menu, MenuItem} = require('electron')
-const homedir = require("os").homedir()
 const path = require('path')
 const prepareNext = require('electron-next')
 const menu = require("./menu")
@@ -9,8 +8,11 @@ const {
     GetWalletInfo, GenerateHistory, SaveBlock, GetUtxos
 } = require("./data/txs");
 const {GetCoins} = require("./data/outputs");
-const {Modals} = require("../common/util/modals");
-const {GetProfileInfo, SaveMemoProfiles, GetRecentSetName, GetRecentSetProfile, GetRecentSetPic} = require("./data/memo");
+const {Dir, Modals} = require("../common/util")
+const {
+    GetProfileInfo, SaveMemoProfiles, GetRecentSetName, GetRecentSetProfile,
+    GetRecentSetPic
+} = require("./data/memo");
 
 const wallets = {}
 const windows = {}
@@ -83,7 +85,7 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("open-file-dialog", async (e) => {
         const win = windows[e.sender.id]
-        const {canceled, filePaths} = await dialog.showOpenDialog(win, {defaultPath: homedir + "/.memo/wallets"})
+        const {canceled, filePaths} = await dialog.showOpenDialog(win, {defaultPath: Dir.DefaultPath})
         if (canceled) {
             return ""
         }

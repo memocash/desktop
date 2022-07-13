@@ -1,21 +1,21 @@
 const {ipcRenderer, clipboard, contextBridge} = require('electron')
 const fs = require("fs/promises")
 const path = require("path")
-const homedir = require('os').homedir()
 const CryptoJS = require("crypto-js")
 const {GetId} = require("../common/util/id");
+const {Dir} = require("../common/util");
 
 const getPathForWallet = wallet => {
     wallet = wallet.trim()
-    if (!wallet.startsWith("/")) {
-        wallet = homedir + "/.memo/wallets/" + wallet
+    if (!Dir.IsFullPath(wallet)) {
+        wallet = Dir.DefaultPath + path.sep + wallet
     }
     return wallet
 }
 
 const getWalletShort = wallet => {
-    if (wallet.startsWith(homedir + "/.memo/wallets/")) {
-        return wallet.slice((homedir + "/.memo/wallets/").length)
+    if (Dir.IsFullPath(Dir.DefaultPath + path.sep)) {
+        return wallet.slice((Dir.DefaultPath + path.sep).length)
     }
     return wallet
 }
@@ -25,6 +25,18 @@ const decryptWallet = (encryptedWallet, inputPassword) => {
     return bytes.toString(CryptoJS.enc.Utf8)
 }
 
+const fileExists = async (path) => {
+    return new Promise((resolve, reject) => {
+        fs.stat(path, (err) => {
+            if (err === null) {
+                resolve(true)
+            } else {
+                resolve(false)
+            }
+        })
+    })
+}
+
 contextBridge.exposeInMainWorld('electron', {
     getPathForWallet,
     getWalletShort,
@@ -32,7 +44,10 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.send("wallet-loaded")
     },
     getExistingWalletFiles: async () => {
-        const files = await fs.readdir(homedir + "/.memo/wallets")
+        if (!await fileExists(Dir.DefaultPath)) {
+            await fs.mkdir(Dir.DefaultPath, {recursive: true})
+        }
+        const files = await fs.readdir(Dir.DefaultPath)
         return files.map(file => {
             return path.parse(file).name
         })
@@ -73,8 +88,8 @@ contextBridge.exposeInMainWorld('electron', {
         await ipcRenderer.send("store-wallet", wallet, filename, password)
     },
     createFile: async (walletName, seedPhrase, keyList, addressList, password) => {
-        if (!walletName.startsWith("/")) {
-            await fs.mkdir(homedir + "/.memo/wallets", {recursive: true})
+        if (!Dir.IsFullPath(walletName)) {
+            await fs.mkdir(Dir.DefaultPath, {recursive: true})
         }
         const filename = getPathForWallet(walletName)
         let wallet = JSON.stringify({
