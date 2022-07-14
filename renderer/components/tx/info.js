@@ -199,7 +199,7 @@ const Info = () => {
         const tx = bitcoin.Transaction.fromBuffer(txInfoRef.current.raw)
         let txb
         let txBuild
-        for (let lockTime = 5e8; lockTime < 5e8+100; lockTime++) {
+        for (let lockTime = 5e8; lockTime < 5e8+2^12; lockTime++) {
             txb = bitcoin.TransactionBuilder.fromTransaction(tx)
             for (let i = 0; i < txInfoRef.current.inputs.length; i++) {
                 const input = txInfoRef.current.inputs[i]
