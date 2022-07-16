@@ -22,3 +22,7 @@
     grid-template-columns: max-content max-content;
     grid-gap: 10px;
 }
+
+.img {
+    max-width: 200px;
+}

@@ -101,7 +101,8 @@ const Contacts = ({lastUpdate}) => {
             </p>
             <p>
                 Pic: <b>{profileInfo.pic}</b>
-                {picData && <img src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`} />}
+                <br/>
+                {picData && <img className={form.img} src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`} />}
             </p>
             <form onSubmit={formSetNameSubmit}>
                 <label>
