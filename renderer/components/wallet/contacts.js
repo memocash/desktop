@@ -10,7 +10,7 @@ const Contacts = ({lastUpdate}) => {
     const setProfileRef = useRef("")
     const setPicRef = useRef("")
     const [profileInfo, setProfileInfo] = useState({
-        mame: "Not set",
+        name: "Not set",
         profile: "Not set",
         pic: "Not set",
     })
