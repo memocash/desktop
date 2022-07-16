@@ -11,6 +11,6 @@ const TitleCol = ({title, col, sortCol, desc, sortFunc}) => {
     )
 }
 
-module.exports = {
+export {
     TitleCol,
 }

@@ -41,6 +41,6 @@ const StatusBar = ({connected, lastUpdate}) => {
 
 }
 
-module.exports = {
+export {
     StatusBar,
 }

@@ -18,8 +18,10 @@ const CreateTransaction = async (wallet, utxos, outputScript, outputValue, beatH
     const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
     let outputs = [
         outputScript.toString("hex") + ":" + outputValue.toString(),
-        address.toOutputScript(changeAddress).toString("hex") + ":" + change,
     ]
+    if (change > 0) {
+        outputs.push(address.toOutputScript(changeAddress).toString("hex") + ":" + change)
+    }
     await window.electron.openPreviewSend({inputs, outputs, beatHash})
 }
 
