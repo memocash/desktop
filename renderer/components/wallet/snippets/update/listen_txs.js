@@ -30,7 +30,6 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
         await window.electron.saveTransactions([tx.address])
         await window.electron.generateHistory(wallet.addresses)
         if (typeof setLastUpdate === "function") {
-            console.log("setting new last update: " + (new Date()).toISOString())
             setLastUpdate((new Date()).toISOString())
         }
     }

@@ -14,7 +14,6 @@ const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
         await window.electron.saveBlock(block.blocks)
         await window.electron.generateHistory(addresses)
         if (typeof setLastUpdate === "function") {
-            console.log("setting new last update new block: " + (new Date()).toISOString())
             setLastUpdate((new Date()).toISOString())
         }
     }
