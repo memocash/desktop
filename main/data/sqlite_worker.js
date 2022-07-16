@@ -133,4 +133,9 @@ const Definitions = [
         tx_hash CHAR,
         UNIQUE(tx_hash)
     )`,
+    `images (
+        url CHAR,
+        data BLOB,
+        UNIQUE(url)
+    )`,
 ]

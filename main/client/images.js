@@ -1,16 +1,20 @@
-const AttachImagesToProfiles = async (profiles) => {
+const {GetPicExists, SavePic} = require("../data/memo");
+const SaveImagesFromProfiles = async (profiles) => {
     for (let i = 0; i < profiles.length; i++) {
         const profile = profiles[i]
         if (!profile.pic) {
             continue
         }
-        // TODO: Only get picture if not in DB already
+        const picExists = await GetPicExists(profile.pic.pic)
+        if (picExists) {
+            continue
+        }
         const response = await fetch(profile.pic.pic)
         profile.pic.data = Buffer.from(await (await response.blob()).arrayBuffer())
-        console.log(profile.pic.data.toString("base64"))
+        await SavePic(profile.pic.pic, profile.pic.data)
     }
 }
 
 module.exports = {
-    AttachImagesToProfiles,
+    SaveImagesFromProfiles: SaveImagesFromProfiles,
 }

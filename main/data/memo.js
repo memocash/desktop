@@ -103,10 +103,40 @@ const GetRecentSetPic = async (addresses) => {
     return results[0]
 }
 
+const GetPicsExist = async (urls) => {
+    const query = "" +
+        "SELECT " +
+        "   urls " +
+        "FROM images " +
+        "WHERE urls IN (" + Array(urls.length).fill("?").join(", ") + ") "
+    return await Select(query, urls)
+}
+
+const GetPicExists = async (url) => {
+    const query = "" +
+        "SELECT " +
+        "   url " +
+        "FROM images " +
+        "WHERE url = ?"
+    const results = await Select(query, [url])
+    return results && results.length
+}
+
+const SavePic = async (url, data) => {
+    const query = "" +
+        "INSERT OR REPLACE " +
+        "INTO images (url, data) " +
+        "VALUES (?, ?)"
+    await Insert(query, [url, data])
+}
+
 module.exports = {
     GetProfileInfo,
     SaveMemoProfiles,
     GetRecentSetName,
     GetRecentSetProfile,
     GetRecentSetPic,
+    GetPicsExist,
+    GetPicExists,
+    SavePic,
 }

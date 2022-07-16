@@ -13,7 +13,7 @@ const {
     GetProfileInfo, SaveMemoProfiles, GetRecentSetName, GetRecentSetProfile,
     GetRecentSetPic
 } = require("./data/memo");
-const {AttachImagesToProfiles} = require("./client/images");
+const {SaveImagesFromProfiles} = require("./client/images");
 
 const wallets = {}
 const windows = {}
@@ -143,7 +143,7 @@ app.whenReady().then(async () => {
         await SaveBlock(block)
     })
     ipcMain.handle("save-memo-profiles", async (e, profiles) => {
-        await AttachImagesToProfiles(profiles)
+        await SaveImagesFromProfiles(profiles)
         await SaveMemoProfiles(profiles)
     })
     ipcMain.handle("generate-history", async (e, addresses) => {
