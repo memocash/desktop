@@ -122,6 +122,19 @@ const GetPicExists = async (url) => {
     return results && results.length
 }
 
+const GetPic = async (url) => {
+    const query = "" +
+        "SELECT " +
+        "   data " +
+        "FROM images " +
+        "WHERE url = ?"
+    const results = await Select(query, [url])
+    if (!results || !results.length) {
+        return undefined
+    }
+    return results[0].data
+}
+
 const SavePic = async (url, data) => {
     const query = "" +
         "INSERT OR REPLACE " +
@@ -139,4 +152,5 @@ module.exports = {
     GetPicsExist,
     GetPicExists,
     SavePic,
+    GetPic,
 }

@@ -9,6 +9,7 @@ const Contacts = ({lastUpdate}) => {
     const setNameRef = useRef("")
     const setProfileRef = useRef("")
     const setPicRef = useRef("")
+    const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
         name: "Not set",
         profile: "Not set",
@@ -20,6 +21,10 @@ const Contacts = ({lastUpdate}) => {
         const profileInfo = await window.electron.getProfileInfo(wallet.addresses)
         if (profileInfo !== undefined) {
             setProfileInfo(profileInfo)
+            if (profileInfo.pic !== undefined) {
+                const picData = await window.electron.getPic(profileInfo.pic)
+                setPicData(picData)
+            }
         }
         utxosRef.current.value = await window.electron.getUtxos(wallet.addresses)
         utxosRef.current.value.sort((a, b) => {
@@ -96,6 +101,7 @@ const Contacts = ({lastUpdate}) => {
             </p>
             <p>
                 Pic: <b>{profileInfo.pic}</b>
+                {picData && <img src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`} />}
             </p>
             <form onSubmit={formSetNameSubmit}>
                 <label>

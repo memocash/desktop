@@ -11,7 +11,7 @@ const {GetCoins} = require("./data/outputs");
 const {Dir, Modals} = require("../common/util")
 const {
     GetProfileInfo, SaveMemoProfiles, GetRecentSetName, GetRecentSetProfile,
-    GetRecentSetPic
+    GetRecentSetPic, GetPic
 } = require("./data/memo");
 const {SaveImagesFromProfiles} = require("./client/images");
 
@@ -145,6 +145,9 @@ app.whenReady().then(async () => {
     ipcMain.handle("save-memo-profiles", async (e, profiles) => {
         await SaveImagesFromProfiles(profiles)
         await SaveMemoProfiles(profiles)
+    })
+    ipcMain.handle("get-pic", async (e, url) => {
+        return await GetPic(url)
     })
     ipcMain.handle("generate-history", async (e, addresses) => {
         await GenerateHistory(addresses)

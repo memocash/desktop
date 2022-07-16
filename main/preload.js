@@ -209,4 +209,7 @@ contextBridge.exposeInMainWorld('electron', {
     getRecentSetPic: (addresses) => {
         return ipcRenderer.invoke("get-recent-set-pic", addresses)
     },
+    getPic: (url) => {
+        return ipcRenderer.invoke("get-pic", url)
+    },
 })
