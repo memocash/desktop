@@ -5,7 +5,7 @@ import profile from "../../styles/profile.module.css";
 import bitcoin from "../util/bitcoin";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {CreateTransaction} from "./snippets/create_tx";
-import {BsPencil} from "react-icons/all";
+import {BsPencil} from "react-icons/bs";
 
 const Contacts = ({lastUpdate}) => {
     const setNameRef = useRef("")
@@ -103,11 +103,11 @@ const Contacts = ({lastUpdate}) => {
         <div>
             <div className={profile.header}>
                 <div className={profile.pic}>
-                    {picData && <>
-                        <img className={form.img}
+                    {picData ?
+                        <img className={profile.img}
                              src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
-                        <a className={profile.editLink} onClick={clickEditName}><BsPencil/></a>
-                    </>}
+                        : <div className={profile.img}>Pic not set</div>}
+                    <a className={profile.editLink} onClick={clickEditName}><BsPencil/></a>
                 </div>
                 <div>
                     <h2>
@@ -120,6 +120,7 @@ const Contacts = ({lastUpdate}) => {
                     </p>
                 </div>
             </div>
+            {/*
             <form onSubmit={formSetNameSubmit}>
                 <label>
                     <span className={form.span}>Set name:</span>
@@ -141,6 +142,7 @@ const Contacts = ({lastUpdate}) => {
                 </label>
                 <input type="submit" value="Set"/>
             </form>
+            */}
         </div>
     )
 }
