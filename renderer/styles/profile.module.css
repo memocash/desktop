@@ -4,13 +4,24 @@
     grid-template-columns: repeat(2, max-content);
 }
 
-.header div:first-child {
-    margin-right: 10px;
-}
-
 .pic img {
     border: 1px solid #555;
-    margin: 5px;
+    margin: 5px 0 0 5px;
     border-radius: 2px;
 }
 
+.editLink {
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-block;
+    margin-left: 5px;
+    visibility: hidden;
+}
+
+:hover > .editLink {
+    visibility: visible;
+}
+
+.pic .editLink {
+    margin-bottom: 10px;
+}

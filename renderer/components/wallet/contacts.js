@@ -5,6 +5,7 @@ import profile from "../../styles/profile.module.css";
 import bitcoin from "../util/bitcoin";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {CreateTransaction} from "./snippets/create_tx";
+import {BsPencil} from "react-icons/all";
 
 const Contacts = ({lastUpdate}) => {
     const setNameRef = useRef("")
@@ -12,9 +13,9 @@ const Contacts = ({lastUpdate}) => {
     const setPicRef = useRef("")
     const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
-        name: "Not set",
-        profile: "Not set",
-        pic: "Not set",
+        name: "",
+        profile: "",
+        pic: "",
     })
     const utxosRef = useRef([])
     useEffect(async () => {
@@ -92,20 +93,30 @@ const Contacts = ({lastUpdate}) => {
         }
         await CreateTransaction(wallet, utxosRef.current.value, picOpReturnOutput, 0, beatHash)
     }
+    const clickEditName = () => {
+
+    }
+    const clickEditProfile = () => {
+
+    }
     return (
         <div>
             <div className={profile.header}>
                 <div className={profile.pic}>
-                    {picData &&
-                    <img className={form.img} src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
-                    }
+                    {picData && <>
+                        <img className={form.img}
+                             src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
+                        <a className={profile.editLink} onClick={clickEditName}><BsPencil/></a>
+                    </>}
                 </div>
                 <div>
                     <h2>
-                        {profileInfo.name}
+                        {profileInfo.name ? profileInfo.name : "Name not set"}
+                        <a className={profile.editLink} onClick={clickEditName}><BsPencil/></a>
                     </h2>
                     <p>
-                        {profileInfo.profile}
+                        {profileInfo.profile ? profileInfo.profile : "Profile not set"}
+                        <a className={profile.editLink} onClick={clickEditProfile}><BsPencil/></a>
                     </p>
                 </div>
             </div>
