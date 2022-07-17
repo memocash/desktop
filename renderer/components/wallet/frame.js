@@ -10,7 +10,7 @@ export const Tabs = {
     Receive: "receive",
     Addresses: "addresses",
     Coins: "coins",
-    Contacts: "contacts",
+    Memo: "memo",
 }
 
 const Tab = ({selected, name, clicked, title}) => {
@@ -29,7 +29,7 @@ const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
-                <Tab selected={selected} clicked={clicked} name={Tabs.Contacts} title="Memo"/>
+                <Tab selected={selected} clicked={clicked} name={Tabs.Memo} title="Memo"/>
                 <Tab selected={selected} clicked={clicked} name={Tabs.History} title="History"/>
                 <Tab selected={selected} clicked={clicked} name={Tabs.Send} title="Send"/>
                 {/*<Tab selected={selected} clicked={clicked} name={Tabs.Receive} title="Receive"/>*/}

@@ -4,7 +4,7 @@ import Send from "./send";
 import Receive from "./receive";
 import Coins from "./coins";
 import Update from "./update";
-import Contacts from "./contacts";
+import Memo from "./memo";
 
 export {
     Addresses,
@@ -13,5 +13,5 @@ export {
     Receive,
     Coins,
     Update,
-    Contacts,
+    Memo,
 }

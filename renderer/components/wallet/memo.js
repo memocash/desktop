@@ -7,7 +7,7 @@ import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {CreateTransaction} from "./snippets/create_tx";
 import {BsPencil} from "react-icons/bs";
 
-const Contacts = ({lastUpdate}) => {
+const Memo = ({lastUpdate}) => {
     const setNameRef = useRef("")
     const setProfileRef = useRef("")
     const setPicRef = useRef("")
@@ -147,4 +147,4 @@ const Contacts = ({lastUpdate}) => {
     )
 }
 
-export default Contacts
+export default Memo
