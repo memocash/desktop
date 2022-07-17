@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import form from "../../styles/form.module.css";
+import profile from "../../styles/profile.module.css";
 import bitcoin from "../util/bitcoin";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {CreateTransaction} from "./snippets/create_tx";
@@ -93,17 +94,21 @@ const Contacts = ({lastUpdate}) => {
     }
     return (
         <div>
-            <p>
-                Name: <b>{profileInfo.name}</b>
-            </p>
-            <p>
-                Profile: <b>{profileInfo.profile}</b>
-            </p>
-            <p>
-                Pic: <b>{profileInfo.pic}</b>
-                <br/>
-                {picData && <img className={form.img} src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`} />}
-            </p>
+            <div className={profile.header}>
+                <div className={profile.pic}>
+                    {picData &&
+                    <img className={form.img} src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
+                    }
+                </div>
+                <div>
+                    <h2>
+                        {profileInfo.name}
+                    </h2>
+                    <p>
+                        {profileInfo.profile}
+                    </p>
+                </div>
+            </div>
             <form onSubmit={formSetNameSubmit}>
                 <label>
                     <span className={form.span}>Set name:</span>

@@ -1,0 +1,16 @@
+.header {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, max-content);
+}
+
+.header div:first-child {
+    margin-right: 10px;
+}
+
+.pic img {
+    border: 1px solid #555;
+    margin: 5px;
+    border-radius: 2px;
+}
+
