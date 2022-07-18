@@ -1,6 +1,7 @@
 import {useEffect} from "react";
 import GetWallet from "../util/wallet";
 import {UpdateHistory, ListenNewTxs, ListenBlocks, RecentBlock, UpdateMemoHistory} from "./snippets/update";
+import ListenNewMemos from "./snippets/update/listen_memo";
 
 const Update = ({setConnected, setLastUpdate}) => {
     useEffect(async () => {
@@ -14,6 +15,7 @@ const Update = ({setConnected, setLastUpdate}) => {
         await UpdateHistory({wallet, setConnected, setLastUpdate})
         await UpdateMemoHistory({wallet, setLastUpdate})
         ListenNewTxs({wallet, setLastUpdate})
+        ListenNewMemos({wallet, setLastUpdate})
         ListenBlocks({addresses: wallet.addresses, setLastUpdate, setConnected})
     }, [])
     return (<></>)

@@ -35,18 +35,10 @@ const Memo = ({lastUpdate}) => {
             return b.value - a.value
         })
     }, [lastUpdate])
-    const clickEditName = () => {
-        setModal(Modals.SetName)
-    }
-    const clickEditProfile = () => {
-        setModal(Modals.SetProfile)
-    }
-    const clickEditPic = () => {
-        setModal(Modals.SetPic)
-    }
-    const onClose = () => {
-        setModal(Modals.None)
-    }
+    const clickEditName = () => setModal(Modals.SetName)
+    const clickEditProfile = () => setModal(Modals.SetProfile)
+    const clickEditPic = () => setModal(Modals.SetPic)
+    const onClose = () => setModal(Modals.None)
     return (
         <div>
             <div className={profile.header}>

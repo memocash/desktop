@@ -10,9 +10,9 @@
 
 .pic .img {
     border: 1px solid #555;
-    margin: 5px 0 0 5px;
+    margin: 10px 0 0 10px;
     border-radius: 2px;
-    max-width: 200px;
+    max-width: 100px;
 }
 
 .pic div.img {
