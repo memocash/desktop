@@ -117,13 +117,13 @@ app.whenReady().then(async () => {
     })
     ipcMain.on("graphql-subscribe", (e, {id, query, variables}) => {
         const onopen = (data) => {
-            e.sender.send("graphql-open-" + id, data)
+            !e.sender.isDestroyed() && e.sender.send("graphql-open-" + id, data)
         }
         const callback = (data) => {
-            e.sender.send("graphql-data-" + id, data)
+            !e.sender.isDestroyed() && e.sender.send("graphql-data-" + id, data)
         }
         const onclose = (data) => {
-            e.sender.send("graphql-close-" + id, data)
+            !e.sender.isDestroyed() && e.sender.send("graphql-close-" + id, data)
         }
         Subscribe({query, variables, callback, onopen, onclose})
     })
