@@ -17,6 +17,16 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                 pic
                 tx_hash
             }
+            following {
+                follow_lock {
+                    address
+                }
+            }
+            followers {
+                lock {
+                    address
+                }
+            }
         }
     }
     `
