@@ -138,4 +138,11 @@ const Definitions = [
         data BLOB,
         UNIQUE(url)
     )`,
+    `memo_follow (
+        address CHAR,
+        follow_address CHAR,
+        unfollow INT,
+        tx_hash CHAR,
+        UNIQUE(tx_hash)
+    )`,
 ]

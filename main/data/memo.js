@@ -21,7 +21,7 @@ const GetProfileInfo = async (addresses) => {
 const SaveMemoProfiles = async (profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
-        let {lock, name, profile, pic} = profiles[i]
+        let {lock, name, profile, pic, following, followers} = profiles[i]
         if (!lock || !lock.address || !name) {
             continue
         }
@@ -37,6 +37,16 @@ const SaveMemoProfiles = async (profiles) => {
         if (pic) {
             await Insert("INSERT OR IGNORE INTO profile_pics (address, pic, tx_hash) VALUES (?, ?, ?)", [
                 lock.address, pic.pic, pic.tx_hash])
+        }
+        if (following) {
+            await Insert("INSERT OR IGNORE INTO memo_follow (address, follow_address, unfollow, tx_hash) " +
+                "VALUES " + Array(following.length).fill("(?, ?, ?, ?)").join(", "), following.map(follow => [
+                lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
+        }
+        if (followers) {
+            await Insert("INSERT OR IGNORE INTO memo_follow (address, follow_address, unfollow, tx_hash) " +
+                "VALUES " + Array(followers.length).fill("(?, ?, ?, ?)").join(", "), followers.map(follow => [
+                follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
         }
     }
     if (!saveProfiles.length) {

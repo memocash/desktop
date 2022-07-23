@@ -18,11 +18,15 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                 tx_hash
             }
             following {
+                tx_hash
+                unfollow
                 follow_lock {
                     address
                 }
             }
             followers {
+                tx_hash
+                unfollow
                 lock {
                     address
                 }
