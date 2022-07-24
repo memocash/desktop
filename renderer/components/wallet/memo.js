@@ -3,7 +3,6 @@ import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
 import {BsPencil} from "react-icons/bs";
 import {SetName, SetPic, SetProfile} from "./memo/index";
-import styles from "../../styles/history.module.css";
 
 const Modals = {
     None: "none",
@@ -65,12 +64,18 @@ const Memo = ({lastUpdate}) => {
                 </div>
             </div>
             <div className={profile.followers}>
-                <div>Address</div><div>Tx Hash</div><div>Follow</div>
+                <div className={profile.row}>
+                    <div>Address</div>
+                    <div>Tx Hash</div>
+                    <div>Follow</div>
+                </div>
                 {following.map((follow, i) => {
                     return (
-                        <>
-                            <div>{follow.follow_address}</div><div>{follow.tx_hash}</div><div>{follow.unfollow ? "No" : "Yes"}</div>
-                        </>
+                        <div className={profile.row} key={i}>
+                            <div>{follow.follow_address}</div>
+                            <div>{follow.tx_hash}</div>
+                            <div>{follow.unfollow ? "No" : "Yes"}</div>
+                        </div>
                     )
                 })}
             </div>

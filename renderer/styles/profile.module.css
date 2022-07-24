@@ -42,6 +42,15 @@
     width: 100%;
     grid-template-columns: repeat(3, max-content);
 }
+
+.followers .row {
+    display: contents;
+}
+
+.followers .row:first-of-type {
+    font-weight: bold;
+}
+
 .followers div {
     padding: 0 5px;
 }

@@ -22,6 +22,14 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                 unfollow
                 follow_lock {
                     address
+                    profile {
+                        name {
+                            name
+                        }
+                        pic {
+                            pic
+                        }
+                    }
                 }
             }
             followers {
@@ -29,6 +37,14 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                 unfollow
                 lock {
                     address
+                    profile {
+                        name {
+                            name
+                        }
+                        pic {
+                            pic
+                        }
+                    }
                 }
             }
         }
