@@ -65,6 +65,7 @@ const Memo = ({lastUpdate}) => {
             </div>
             <div className={profile.followers}>
                 <div className={profile.row}>
+                    <div>Name</div>
                     <div>Address</div>
                     <div>Tx Hash</div>
                     <div>Follow</div>
@@ -72,6 +73,12 @@ const Memo = ({lastUpdate}) => {
                 {following.map((follow, i) => {
                     return (
                         <div className={profile.row} key={i}>
+                            <div>
+                                {follow.pic &&
+                                <img alt={"Profile image"} className={profile.img}
+                                     src={`data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}`}/>}
+                                {follow.name}
+                            </div>
                             <div>{follow.follow_address}</div>
                             <div>{follow.tx_hash}</div>
                             <div>{follow.unfollow ? "No" : "Yes"}</div>

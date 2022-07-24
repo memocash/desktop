@@ -40,11 +40,15 @@
 .followers {
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(3, max-content);
+    grid-template-columns: repeat(4, max-content);
 }
 
 .followers .row {
     display: contents;
+}
+
+.followers .img {
+    max-width: 50px;
 }
 
 .followers .row:first-of-type {

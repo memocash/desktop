@@ -144,7 +144,9 @@ app.whenReady().then(async () => {
         await SaveBlock(block)
     })
     ipcMain.handle("save-memo-profiles", async (e, profiles) => {
-        await SaveImagesFromProfiles(profiles)
+        await SaveImagesFromProfiles(profiles
+            .concat(profiles.map(profile => profile.following.map(follow => follow.follow_lock.profile)).flat())
+            .concat(profiles.map(profile => profile.followers.map(follow => follow.lock.profile))).flat())
         await SaveMemoProfiles(profiles)
     })
     ipcMain.handle("get-pic", async (e, url) => {
