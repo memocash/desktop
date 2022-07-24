@@ -36,3 +36,12 @@
 .pic .editLink {
     margin-bottom: 10px;
 }
+
+.followers {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, max-content);
+}
+.followers div {
+    padding: 0 5px;
+}

@@ -3,6 +3,7 @@ import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
 import {BsPencil} from "react-icons/bs";
 import {SetName, SetPic, SetProfile} from "./memo/index";
+import styles from "../../styles/history.module.css";
 
 const Modals = {
     None: "none",
@@ -19,6 +20,7 @@ const Memo = ({lastUpdate}) => {
         profile: "",
         pic: "",
     })
+    const [following, setFollowing] = useState([])
     const utxosRef = useRef([])
     useEffect(async () => {
         const wallet = await GetWallet()
@@ -34,6 +36,8 @@ const Memo = ({lastUpdate}) => {
         utxosRef.current.value.sort((a, b) => {
             return b.value - a.value
         })
+        const following = await window.electron.getFollowing(wallet.addresses)
+        setFollowing(following)
     }, [lastUpdate])
     const clickEditName = () => setModal(Modals.SetName)
     const clickEditProfile = () => setModal(Modals.SetProfile)
@@ -59,6 +63,16 @@ const Memo = ({lastUpdate}) => {
                         <a className={profile.editLink} onClick={clickEditProfile}><BsPencil/></a>
                     </p>
                 </div>
+            </div>
+            <div className={profile.followers}>
+                <div>Address</div><div>Tx Hash</div><div>Follow</div>
+                {following.map((follow, i) => {
+                    return (
+                        <>
+                            <div>{follow.follow_address}</div><div>{follow.tx_hash}</div><div>{follow.unfollow ? "No" : "Yes"}</div>
+                        </>
+                    )
+                })}
             </div>
             {modal === Modals.SetName && <SetName onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.SetProfile && <SetProfile onClose={onClose} utxosRef={utxosRef}/>}

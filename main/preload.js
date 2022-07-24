@@ -212,4 +212,7 @@ contextBridge.exposeInMainWorld('electron', {
     getPic: (url) => {
         return ipcRenderer.invoke("get-pic", url)
     },
+    getFollowing: (addresses) => {
+        return ipcRenderer.invoke("get-following", addresses)
+    },
 })
