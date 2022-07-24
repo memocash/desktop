@@ -42,11 +42,21 @@ const SaveMemoProfiles = async (profiles) => {
             await Insert("INSERT OR IGNORE INTO memo_follow (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(following.length).fill("(?, ?, ?, ?)").join(", "), following.map(follow => [
                 lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
+            const followingProfiles = following.map(follow => {
+                follow.follow_lock.profile.lock = {address: follow.follow_lock.address}
+                return follow.follow_lock.profile
+            })
+            await SaveMemoProfiles(followingProfiles)
         }
         if (followers) {
             await Insert("INSERT OR IGNORE INTO memo_follow (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(followers.length).fill("(?, ?, ?, ?)").join(", "), followers.map(follow => [
                 follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
+            const followersProfiles = followers.map(follow => {
+                follow.lock.profile.lock = {address: follow.lock.address}
+                return follow.lock.profile
+            })
+            await SaveMemoProfiles(followersProfiles)
         }
     }
     if (!saveProfiles.length) {

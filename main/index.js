@@ -7,7 +7,7 @@ const {
     SaveTransactions, GetTransactions, GetTransaction, GetRecentAddressTransactions,
     GetWalletInfo, GenerateHistory, SaveBlock, GetUtxos
 } = require("./data/txs");
-const {GetCoins} = require("./data/outputs");
+const {GetCoins} = require("./data/tables");
 const {Dir, Modals} = require("../common/util")
 const {
     GetProfileInfo, SaveMemoProfiles, GetRecentSetName, GetRecentSetProfile,

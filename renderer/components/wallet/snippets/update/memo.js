@@ -25,9 +25,11 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                     profile {
                         name {
                             name
+                            tx_hash
                         }
                         pic {
                             pic
+                            tx_hash
                         }
                     }
                 }
@@ -40,9 +42,11 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                     profile {
                         name {
                             name
+                            tx_hash
                         }
                         pic {
                             pic
+                            tx_hash
                         }
                     }
                 }
