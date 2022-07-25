@@ -47,7 +47,7 @@ const Memo = ({lastUpdate}) => {
         await window.electron.openTransaction({txHash})
     }
     return (
-        <div>
+        <div className={profile.wrapper}>
             <div className={profile.header}>
                 <div className={profile.pic}>
                     {picData ?
@@ -69,6 +69,7 @@ const Memo = ({lastUpdate}) => {
             </div>
             <div className={profile.followers}>
                 <div className={profile.row}>
+                    <div>Pic</div>
                     <div>Name</div>
                     <div>Address</div>
                     <div>Tx Hash</div>
@@ -79,12 +80,18 @@ const Memo = ({lastUpdate}) => {
                         <div className={profile.row} key={i}>
                             <div>
                                 {follow.pic &&
-                                <img alt={"Profile image"} className={profile.img}
-                                     src={`data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}`}/>}
+                                <div className={profile.imgWrapper}>
+                                    <img alt={"Profile image"} className={profile.img}
+                                         src={`data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}`}/>
+                                </div>}
+                            </div>
+                            <div>
                                 {follow.name}
                             </div>
                             <div>{follow.follow_address}</div>
-                            <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>{ShortHash(follow.tx_hash)}</a></div>
+                            <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
+                                {ShortHash(follow.tx_hash)}
+                            </a></div>
                             <div>{follow.unfollow ? "No" : "Yes"}</div>
                         </div>
                     )
