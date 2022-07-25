@@ -58,3 +58,7 @@
 .followers div {
     padding: 0 5px;
 }
+
+.txLink {
+    cursor: pointer;
+}

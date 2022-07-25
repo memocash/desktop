@@ -3,6 +3,7 @@ import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
 import {BsPencil} from "react-icons/bs";
 import {SetName, SetPic, SetProfile} from "./memo/index";
+import ShortHash from "../util/txs";
 
 const Modals = {
     None: "none",
@@ -42,6 +43,9 @@ const Memo = ({lastUpdate}) => {
     const clickEditProfile = () => setModal(Modals.SetProfile)
     const clickEditPic = () => setModal(Modals.SetPic)
     const onClose = () => setModal(Modals.None)
+    const clickTxLink = async (txHash) => {
+        await window.electron.openTransaction({txHash})
+    }
     return (
         <div>
             <div className={profile.header}>
@@ -80,7 +84,7 @@ const Memo = ({lastUpdate}) => {
                                 {follow.name}
                             </div>
                             <div>{follow.follow_address}</div>
-                            <div>{follow.tx_hash}</div>
+                            <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>{ShortHash(follow.tx_hash)}</a></div>
                             <div>{follow.unfollow ? "No" : "Yes"}</div>
                         </div>
                     )
