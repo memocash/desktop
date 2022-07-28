@@ -22,7 +22,7 @@ const SaveMemoProfiles = async (profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
         let {lock, name, profile, pic, following, followers} = profiles[i]
-        if (!lock || !lock.address || !name) {
+        if (!lock || !lock.address || (!name && !profile && !pic)) {
             continue
         }
         saveProfiles.push({lock, name, profile, pic})
