@@ -48,7 +48,7 @@
     border-top: 1px solid #ccc;
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(4, minmax(max-content, 1fr));
+    grid-template-columns: repeat(3, minmax(max-content, 1fr));
     outline: none;
 }
 

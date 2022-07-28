@@ -138,7 +138,7 @@ const Definitions = [
         data BLOB,
         UNIQUE(url)
     )`,
-    `memo_follow (
+    `memo_follows (
         address CHAR,
         follow_address CHAR,
         unfollow INT,

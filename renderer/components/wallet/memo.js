@@ -73,7 +73,6 @@ const Memo = ({lastUpdate}) => {
                     <div>Name</div>
                     <div>Address</div>
                     <div>Tx Hash</div>
-                    <div>Follow</div>
                 </div>
                 {following.map((follow, i) => {
                     return (
@@ -91,7 +90,6 @@ const Memo = ({lastUpdate}) => {
                             <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
                                 {ShortHash(follow.tx_hash)}
                             </a></div>
-                            <div>{follow.unfollow ? "No" : "Yes"}</div>
                         </div>
                     )
                 })}
