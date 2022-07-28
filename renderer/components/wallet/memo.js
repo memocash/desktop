@@ -4,12 +4,14 @@ import profile from "../../styles/profile.module.css";
 import {BsPencil} from "react-icons/bs";
 import {SetName, SetPic, SetProfile} from "./memo/index";
 import ShortHash from "../util/txs";
+import Profile from "./memo/profile";
 
 const Modals = {
     None: "none",
     SetName: "set-name",
     SetProfile: "set-profile",
     SetPic: "set-pic",
+    Profile: "profile",
 }
 
 const Memo = ({lastUpdate}) => {
@@ -77,7 +79,7 @@ const Memo = ({lastUpdate}) => {
                 {following.map((follow, i) => {
                     return (
                         <div className={profile.row} key={i}>
-                            <div className={profile.imgWrapper}>
+                            <div className={profile.imgWrapper} onClick={() => setModal(Modals.Profile)}>
                                 {follow.pic ?
                                     <img alt={"Profile image"} className={profile.img}
                                          src={`data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}`}/>
@@ -97,6 +99,7 @@ const Memo = ({lastUpdate}) => {
             {modal === Modals.SetName && <SetName onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.SetProfile && <SetProfile onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.SetPic && <SetPic onClose={onClose} utxosRef={utxosRef}/>}
+            {modal === Modals.Profile && <Profile onClose={onClose}/>}
         </div>
     )
 }

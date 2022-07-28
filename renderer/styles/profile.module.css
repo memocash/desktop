@@ -75,6 +75,7 @@
 
 .followers .row > div.imgWrapper {
     padding: 0 5px;
+    cursor: pointer;
 }
 
 .followers .row:first-of-type > div {
