@@ -16,6 +16,7 @@ const Modals = {
 
 const Memo = ({lastUpdate}) => {
     const [modal, setModal] = useState(Modals.None)
+    const [profileAddress, setProfileAddress] = useState("")
     const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
         name: "",
@@ -48,6 +49,10 @@ const Memo = ({lastUpdate}) => {
     const clickTxLink = async (txHash) => {
         await window.electron.openTransaction({txHash})
     }
+    const setProfile = (address) => {
+        setProfileAddress(address)
+        setModal(Modals.Profile)
+    }
     return (
         <div className={profile.wrapper}>
             <div className={profile.header}>
@@ -79,7 +84,7 @@ const Memo = ({lastUpdate}) => {
                 {following.map((follow, i) => {
                     return (
                         <div className={profile.row} key={i}>
-                            <div className={profile.imgWrapper} onClick={() => setModal(Modals.Profile)}>
+                            <div className={profile.imgWrapper} onClick={() => setProfile(follow.follow_address)}>
                                 {follow.pic ?
                                     <img alt={"Profile image"} className={profile.img}
                                          src={`data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}`}/>
@@ -99,7 +104,7 @@ const Memo = ({lastUpdate}) => {
             {modal === Modals.SetName && <SetName onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.SetProfile && <SetProfile onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.SetPic && <SetPic onClose={onClose} utxosRef={utxosRef}/>}
-            {modal === Modals.Profile && <Profile onClose={onClose}/>}
+            {modal === Modals.Profile && <Profile onClose={onClose} address={profileAddress}/>}
         </div>
     )
 }
