@@ -17,6 +17,40 @@ const ListenNewMemos = ({wallet, setLastUpdate}) => {
                     pic
                     tx_hash
                 }
+                following {
+                    tx_hash
+                    unfollow
+                    follow_lock {
+                        address
+                        profile {
+                            name {
+                                name
+                                tx_hash
+                            }
+                            pic {
+                                pic
+                                tx_hash
+                            }
+                        }
+                    }
+                }
+                followers {
+                    tx_hash
+                    unfollow
+                    lock {
+                        address
+                        profile {
+                            name {
+                                name
+                                tx_hash
+                            }
+                            pic {
+                                pic
+                                tx_hash
+                            }
+                        }
+                    }
+                }
             }
         }
         `

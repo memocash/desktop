@@ -79,6 +79,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
     }
     setConnected(Status.Connected)
 }
+
 const loadOutputs = async ({addresses}) => {
     let variables = {}
     let paramsStrings = []
