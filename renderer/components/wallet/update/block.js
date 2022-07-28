@@ -1,4 +1,4 @@
-import {Status} from "../../../util/connect"
+import {Status} from "../../util/connect"
 
 const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
     const query = `

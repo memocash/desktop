@@ -1,4 +1,4 @@
-import {Status} from "../../../util/connect"
+import {Status} from "../../util/connect"
 
 const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
     const recentAddresses = await window.electron.getRecentAddressTransactions(wallet.addresses)

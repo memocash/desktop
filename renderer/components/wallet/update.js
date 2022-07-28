@@ -1,7 +1,7 @@
 import {useEffect} from "react";
 import GetWallet from "../util/wallet";
-import {UpdateHistory, ListenNewTxs, ListenBlocks, RecentBlock, UpdateMemoHistory} from "./snippets/update";
-import ListenNewMemos from "./snippets/update/listen_memo";
+import {UpdateHistory, ListenNewTxs, ListenBlocks, RecentBlock, UpdateMemoHistory} from "./update/index.js";
+import ListenNewMemos from "./update/listen_memo";
 
 const Update = ({setConnected, setLastUpdate}) => {
     useEffect(async () => {
