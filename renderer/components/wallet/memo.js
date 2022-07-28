@@ -49,27 +49,27 @@ const Memo = ({lastUpdate}) => {
     return (
         <div className={profile.wrapper}>
             <div className={profile.header}>
-                <div className={profile.pic}>
+                <div className={profile.pic} onClick={clickEditPic}>
                     {picData ?
                         <img alt={"Profile image"} className={profile.img}
                              src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
-                        : <div className={profile.img}>Pic not set</div>}
-                    <a className={profile.editLink} onClick={clickEditPic}><BsPencil/></a>
+                        : <img alt={"Profile image"} className={profile.img}
+                               src={"/default-profile.jpg"}/>}
+                    <a className={profile.editLink}><BsPencil/></a>
                 </div>
                 <div>
-                    <h2>
+                    <h2 onClick={clickEditName}>
                         {profileInfo.name ? profileInfo.name : "Name not set"}
-                        <a className={profile.editLink} onClick={clickEditName}><BsPencil/></a>
+                        <a className={profile.editLink}><BsPencil/></a>
                     </h2>
-                    <p>
+                    <p onClick={clickEditProfile}>
                         {profileInfo.profile ? profileInfo.profile : "Profile not set"}
-                        <a className={profile.editLink} onClick={clickEditProfile}><BsPencil/></a>
+                        <a className={profile.editLink}><BsPencil/></a>
                     </p>
                 </div>
             </div>
             <div className={profile.followers}>
                 <div className={profile.row}>
-                    <div>Pic</div>
                     <div>Name</div>
                     <div>Address</div>
                     <div>Tx Hash</div>
@@ -78,15 +78,14 @@ const Memo = ({lastUpdate}) => {
                 {following.map((follow, i) => {
                     return (
                         <div className={profile.row} key={i}>
-                            <div>
-                                {follow.pic &&
-                                <div className={profile.imgWrapper}>
+                            <div className={profile.imgWrapper}>
+                                {follow.pic ?
                                     <img alt={"Profile image"} className={profile.img}
                                          src={`data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}`}/>
-                                </div>}
-                            </div>
-                            <div>
-                                {follow.name}
+                                    :
+                                    <img alt={"Profile image"} className={profile.img}
+                                         src={"/default-profile.jpg"}/>}
+                                <span>{follow.name}</span>
                             </div>
                             <div>{follow.follow_address}</div>
                             <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>

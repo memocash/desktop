@@ -8,15 +8,21 @@
     grid-template-columns: repeat(2, max-content);
 }
 
+.header h2,
+.header p {
+    cursor: pointer;
+}
+
 .pic {
-    margin-right: 5px;
+    vertical-align: bottom;
+    padding: 10px 5px 10px 10px;
+    cursor: pointer;
 }
 
 .pic .img {
     object-fit: cover;
     border: 1px solid #555;
-    margin: 10px 0 10px 10px;
-    border-radius: 5px;
+    border-radius: 3px;
     width: 75px;
     height: 75px;
 }
@@ -27,7 +33,6 @@
 }
 
 .editLink {
-    cursor: pointer;
     font-size: 14px;
     display: inline-block;
     margin-left: 5px;
@@ -39,15 +44,11 @@
     visibility: visible;
 }
 
-.pic .editLink {
-    margin-bottom: 10px;
-}
-
 .followers {
     border-top: 1px solid #ccc;
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(5, minmax(max-content, 1fr));
+    grid-template-columns: repeat(4, minmax(max-content, 1fr));
     outline: none;
 }
 
@@ -55,13 +56,24 @@
     display: contents;
 }
 
+.followers .imgWrapper span {
+    display: inline-block;
+    vertical-align: top;
+    padding-top: 8px;
+    margin-left: 5px;
+}
+
 .followers .img {
-    width: 50px;
-    height: 50px;
-    border-radius: 3px;
+    width: 30px;
+    height: 30px;
+    border-radius: 2px;
 }
 
 .followers .row > div {
+    padding: 8px 5px 0;
+}
+
+.followers .row > div.imgWrapper {
     padding: 0 5px;
 }
 
