@@ -36,7 +36,10 @@ const SetName = ({onClose, utxosRef}) => {
                         <span>Set pic:</span>
                         <input ref={setPicRef} type="text"/>
                     </label>
-                    <input type="submit" value="Set"/>
+                    <div className={seed.buttons}>
+                        <input type="submit" value="Set"/>
+                        <button onClick={onClose}>Cancel</button>
+                    </div>
                 </form>
             </div>
         </Modal>

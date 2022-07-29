@@ -9,6 +9,7 @@ const Profile = ({onClose, address}) => {
                 <p>
                     Address: {address}
                 </p>
+                <button onClick={onClose}>Close</button>
             </div>
         </Modal>
     )
