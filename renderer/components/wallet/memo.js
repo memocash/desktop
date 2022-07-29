@@ -79,6 +79,8 @@ const Memo = ({lastUpdate, setAddress, address}) => {
                                                   lastUpdate={lastUpdate} setModal={setModal}/>}
             {modal === Modals.Following && <Following onClose={onClose} address={profileAddress} setModal={setModal}
                                                       setProfile={setProfile}/>}
+            {modal === Modals.Followers && <Following onClose={onClose} address={profileAddress} setModal={setModal}
+                                                      setProfile={setProfile} showFollowers={true}/>}
         </div>
     )
 }

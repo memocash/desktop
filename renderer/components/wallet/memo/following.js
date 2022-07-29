@@ -5,7 +5,7 @@ import {useEffect, useState} from "react";
 import FollowList from "./follow-list";
 import seed from "../../modal/seed.module.css";
 
-const Following = ({onClose, address, setModal, setProfile}) => {
+const Following = ({onClose, address, setModal, setProfile, showFollowers=false}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -38,7 +38,7 @@ const Following = ({onClose, address, setModal, setProfile}) => {
                     </h2>
                         <button onClick={() => setModal(Modals.Profile)}>Back to Profile</button>
                     </p>
-                    <FollowList addresses={[address]} setProfile={setProfile}/>
+                    <FollowList addresses={[address]} setProfile={setProfile} showFollowers={showFollowers}/>
                 </div>
             </div>
             <div className={seed.buttons}>

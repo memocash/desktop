@@ -69,7 +69,8 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                     <p>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                         {isFollowing ? "Unfollow" : "Follow"}</button>}
-                        <button onClick={() => setModal(Modals.Following)}>View Following</button>
+                        <button onClick={() => setModal(Modals.Following)}>Following</button>
+                        <button onClick={() => setModal(Modals.Followers)}>Followers</button>
                     </p>
                 </div>
             </div>

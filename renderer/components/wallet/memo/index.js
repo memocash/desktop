@@ -10,6 +10,7 @@ const Modals = {
     SetPic: "set-pic",
     Profile: "profile",
     Following: "following",
+    Followers: "followers",
 }
 
 export {
