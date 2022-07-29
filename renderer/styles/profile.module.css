@@ -28,6 +28,7 @@
 
 .header_modal {
     background: #fff;
+    border-radius: 5px;
     padding: 0 5px;
 }
 
@@ -61,7 +62,11 @@
 }
 
 .header_modal .info button {
-    margin-right: 15px;
+    margin-right: 10px;
+}
+
+.header_modal .followers {
+    margin-bottom: 10px;
 }
 
 .pic {
@@ -114,18 +119,26 @@
     margin-left: 5px;
 }
 
+.followers .address {
+    cursor: pointer;
+}
+
 .followers .img {
     width: 30px;
     height: 30px;
     border-radius: 2px;
 }
 
+.followers .row:hover > div {
+    background: #ccc;
+}
+
 .followers .row > div {
-    padding: 8px 5px 0;
+    padding: 13px 5px 0;
 }
 
 .followers .row > div.imgWrapper {
-    padding: 0 5px;
+    padding: 5px 5px 2px;
     cursor: pointer;
 }
 

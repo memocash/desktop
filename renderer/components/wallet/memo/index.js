@@ -11,6 +11,7 @@ const Modals = {
     Profile: "profile",
     Following: "following",
     Followers: "followers",
+    Posts: "posts",
 }
 
 export {

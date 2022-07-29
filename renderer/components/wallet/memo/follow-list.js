@@ -36,7 +36,8 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                                      src={"/default-profile.jpg"}/>}
                             <span>{follow.name}</span>
                         </div>
-                        <div>{showFollowers ? follow.address : follow.follow_address}}</div>
+                        <div className={profile.address} onClick={() => setProfile(showFollowers ? follow.address : follow.follow_address)}>
+                            {showFollowers ? follow.address : follow.follow_address}}</div>
                         <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
                             {ShortHash(follow.tx_hash)}
                         </a></div>
