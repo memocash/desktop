@@ -15,6 +15,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate}) => {
     })
     const [isFollowing, setIsFollowing] = useState(false)
     const [picData, setPicData] = useState(undefined)
+    const [isSelf, setIsSelf] = useState(true)
     useEffect(async () => {
         const profileInfo = await window.electron.getProfileInfo([address])
         if (profileInfo === undefined) {
@@ -26,6 +27,13 @@ const Profile = ({onClose, address, utxosRef, lastUpdate}) => {
             setPicData(picData)
         }
         const wallet = await GetWallet()
+        setIsSelf(false)
+        for (const walletAddress of wallet.addresses) {
+            if (walletAddress === address) {
+                setIsSelf(true)
+                break
+            }
+        }
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
     }, [address, lastUpdate])
@@ -57,10 +65,10 @@ const Profile = ({onClose, address, utxosRef, lastUpdate}) => {
                     <h2>{profileInfo.name ? profileInfo.name : "Name not set"}</h2>
                     <p>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</p>
                     <p>Address: {address}</p>
-                    <p>
+                    {!isSelf && <p>
                         <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>
-                    </p>
+                    </p>}
                 </div>
             </div>
             <div className={seed.buttons}>
