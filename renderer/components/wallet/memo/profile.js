@@ -23,7 +23,7 @@ const Profile = ({onClose, address}) => {
     }, [address])
     return (
         <Modal onClose={onClose}>
-            <div className={profile.header}>
+            <div className={profile.header_modal}>
                 <div className={profile.pic}>
                     {picData ?
                         <img alt={"Profile image"} className={profile.img}
@@ -31,7 +31,7 @@ const Profile = ({onClose, address}) => {
                         : <img alt={"Profile image"} className={profile.img}
                                src={"/default-profile.jpg"}/>}
                 </div>
-                <div>
+                <div className={profile.info}>
                     <h2>{profileInfo.name ? profileInfo.name : "Name not set"}</h2>
                     <p>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</p>
                     <p>Address: {address}</p>

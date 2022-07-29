@@ -13,6 +13,16 @@
     cursor: pointer;
 }
 
+.header_modal .pic {
+    display: inline-block;
+}
+
+.header_modal .info {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 0 5px;
+}
+
 .pic {
     vertical-align: bottom;
     padding: 10px 5px 10px 10px;
