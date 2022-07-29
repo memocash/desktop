@@ -6,8 +6,9 @@ import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import bitcoin from "../../util/bitcoin";
 import GetWallet from "../../util/wallet";
 import {CreateTransaction} from "../snippets/create_tx";
+import {Modals} from "./index";
 
-const Profile = ({onClose, address, utxosRef, lastUpdate}) => {
+const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -65,10 +66,11 @@ const Profile = ({onClose, address, utxosRef, lastUpdate}) => {
                     <h2>{profileInfo.name ? profileInfo.name : "Name not set"}</h2>
                     <p>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</p>
                     <p>Address: {address}</p>
-                    {!isSelf && <p>
-                        <button onClick={() => clickFollow(address, isFollowing)}>
-                            {isFollowing ? "Unfollow" : "Follow"}</button>
-                    </p>}
+                    <p>
+                        {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
+                        {isFollowing ? "Unfollow" : "Follow"}</button>}
+                        <button onClick={() => setModal(Modals.Following)}>View Following</button>
+                    </p>
                 </div>
             </div>
             <div className={seed.buttons}>

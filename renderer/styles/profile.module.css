@@ -6,6 +6,7 @@
     display: grid;
     width: 100%;
     grid-template-columns: repeat(2, max-content);
+    background: #f9f9f9;
 }
 
 .header h2,
@@ -23,8 +24,20 @@
     padding: 0 5px;
 }
 
+.header_modal .info h2 {
+    margin-top: 10px;
+}
+
+.header_modal .info a {
+    cursor: pointer;
+    color: blue;
+}
+.header_modal .info button {
+    margin-right:15px;
+}
+
 .pic {
-    vertical-align: bottom;
+    vertical-align: top;
     padding: 10px 5px 6px 10px;
     cursor: pointer;
 }

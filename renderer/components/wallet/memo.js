@@ -2,17 +2,9 @@ import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
 import {BsPencil} from "react-icons/bs";
-import {SetName, SetPic, SetProfile} from "./memo/index";
+import {Modals, Following, SetName, SetPic, SetProfile} from "./memo/index";
 import ShortHash from "../util/txs";
 import Profile from "./memo/profile";
-
-const Modals = {
-    None: "none",
-    SetName: "set-name",
-    SetProfile: "set-profile",
-    SetPic: "set-pic",
-    Profile: "profile",
-}
 
 const Memo = ({lastUpdate, setAddress, address}) => {
     const [modal, setModal] = useState(Modals.None)
@@ -113,7 +105,8 @@ const Memo = ({lastUpdate, setAddress, address}) => {
             {modal === Modals.SetProfile && <SetProfile onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.SetPic && <SetPic onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.Profile && <Profile onClose={onClose} utxosRef={utxosRef} address={profileAddress}
-                                                  lastUpdate={lastUpdate}/>}
+                                                  lastUpdate={lastUpdate} setModal={setModal}/>}
+            {modal === Modals.Following && <Following onClose={onClose} address={profileAddress} setModal={setModal}/>}
         </div>
     )
 }
