@@ -30,7 +30,7 @@
 }
 
 .header_modal .info h2 {
-    margin-top: 10px;
+    margin: 10px 0 10px;
 }
 
 .header_modal .info h2 img {
@@ -128,4 +128,10 @@
 
 .txLink {
     cursor: pointer;
+}
+
+.followers .noFollowers {
+    padding: 10px;
+    text-align: center;
+    grid-column: span 3;
 }

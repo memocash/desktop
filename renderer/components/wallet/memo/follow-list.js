@@ -37,6 +37,7 @@ const FollowList = ({addresses, setProfile}) => {
                     </div>
                 )
             })}
+            {!following || following.length === 0 && <div className={profile.noFollowers}>Not following anyone</div>}
         </div>
     )
 }

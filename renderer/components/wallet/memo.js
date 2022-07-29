@@ -77,7 +77,8 @@ const Memo = ({lastUpdate, setAddress, address}) => {
             {modal === Modals.SetPic && <SetPic onClose={onClose} utxosRef={utxosRef}/>}
             {modal === Modals.Profile && <Profile onClose={onClose} utxosRef={utxosRef} address={profileAddress}
                                                   lastUpdate={lastUpdate} setModal={setModal}/>}
-            {modal === Modals.Following && <Following onClose={onClose} address={profileAddress} setModal={setModal}/>}
+            {modal === Modals.Following && <Following onClose={onClose} address={profileAddress} setModal={setModal}
+                                                      setProfile={setProfile}/>}
         </div>
     )
 }

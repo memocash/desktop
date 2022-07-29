@@ -2,10 +2,10 @@ import Modal from "../../modal/modal";
 import {Modals} from "./index";
 import profile from "../../../styles/profile.module.css";
 import {useEffect, useState} from "react";
-import ShortHash from "../../util/txs";
 import FollowList from "./follow-list";
+import seed from "../../modal/seed.module.css";
 
-const Following = ({onClose, address, setModal}) => {
+const Following = ({onClose, address, setModal, setProfile}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -27,6 +27,7 @@ const Following = ({onClose, address, setModal}) => {
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>
                 <div className={profile.info}>
+                    <p>
                     <h2>
                         {picData ?
                             <img alt={"Profile image"} className={profile.img}
@@ -35,12 +36,13 @@ const Following = ({onClose, address, setModal}) => {
                                    src={"/default-profile.jpg"}/>}
                         <span>{profileInfo.name ? profileInfo.name : address} following</span>
                     </h2>
-                    <p>
                         <button onClick={() => setModal(Modals.Profile)}>Back to Profile</button>
-                        <button onClick={() => setModal(Modals.None)}>Close</button>
                     </p>
+                    <FollowList addresses={[address]} setProfile={setProfile}/>
                 </div>
-                <FollowList addresses={[address]}/>
+            </div>
+            <div className={seed.buttons}>
+                <button onClick={() => setModal(Modals.None)}>Close</button>
             </div>
         </Modal>
     )
