@@ -14,7 +14,7 @@ const Modals = {
     Profile: "profile",
 }
 
-const Memo = ({lastUpdate}) => {
+const Memo = ({lastUpdate, setAddress, address}) => {
     const [modal, setModal] = useState(Modals.None)
     const [profileAddress, setProfileAddress] = useState("")
     const [picData, setPicData] = useState(undefined)
@@ -42,10 +42,18 @@ const Memo = ({lastUpdate}) => {
         const following = await window.electron.getFollowing(wallet.addresses)
         setFollowing(following)
     }, [lastUpdate])
+    useEffect(() => {
+        if (address && address.length) {
+            setProfile(address)
+        }
+    }, [address])
     const clickEditName = () => setModal(Modals.SetName)
     const clickEditProfile = () => setModal(Modals.SetProfile)
     const clickEditPic = () => setModal(Modals.SetPic)
-    const onClose = () => setModal(Modals.None)
+    const onClose = () => {
+        setModal(Modals.None)
+        setAddress("")
+    }
     const clickTxLink = async (txHash) => {
         await window.electron.openTransaction({txHash})
     }

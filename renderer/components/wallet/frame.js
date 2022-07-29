@@ -3,6 +3,7 @@ import {KeyModal, SeedModal} from "../modal";
 import tabs from '../../styles/tabs.module.css'
 import {StatusBar} from './snippets/status-bar'
 import {Modals} from "../../../common/util/modals"
+import ProfileModal from "../modal/profile";
 
 export const Tabs = {
     History: "history",
@@ -21,7 +22,7 @@ const Tab = ({selected, name, clicked, title}) => {
     )
 }
 
-const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
+const Frame = ({selected, clicked, children, connected, lastUpdate, viewProfile}) => {
     const [modal, setModal] = useState(Modals.None)
     useEffect(() => {
         window.electron.listenDisplayModal((e, modal) => setModal(modal))
@@ -42,6 +43,7 @@ const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
             <StatusBar connected={connected} lastUpdate={lastUpdate}/>
             {(modal === Modals.Seed) && <SeedModal onClose={() => setModal(false)}/>}
             {(modal === Modals.Key) && <KeyModal onClose={() => setModal(false)}/>}
+            {(modal === Modals.Profile) && <ProfileModal onClose={() => setModal(false)} viewProfile={viewProfile}/>}
         </div>
     )
 }

@@ -26,6 +26,7 @@ const WalletLoaded = () => {
     const [tab, setTab] = useState("")
     const [lastUpdate, setLastUpdate] = useState("")
     const [connected, setConnected] = useState(Status.NotConnected)
+    const [profileAddress, setProfileAddress] = useState("")
     const shownRef = useRef([])
     useEffect(async () => {
         const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.Memo
@@ -39,10 +40,16 @@ const WalletLoaded = () => {
             shownRef.current.push(tab)
         }
     }
+    const viewProfile = async (address) => {
+        setTab(Tabs.Memo)
+        setProfileAddress(address)
+    }
     return (
         <>
-            <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
-                <Page tab={tab} page={Tabs.Memo} shown={shownRef}><Memo lastUpdate={lastUpdate}/></Page>
+            <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}
+                   viewProfile={viewProfile}>
+                <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
+                    <Memo lastUpdate={lastUpdate} address={profileAddress} setAddress={setProfileAddress}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>

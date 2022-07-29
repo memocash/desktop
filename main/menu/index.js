@@ -45,6 +45,12 @@ const ShowMenu = (win, newWindow, wallet) => {
     }, {
         label: "View",
         submenu: [
+            {
+                label: "Profile",
+                click: () => {
+                    win.webContents.send("display-modal", Modals.Profile)
+                }
+            },
             {label: "Show Addresses"},
             {label: "Show Coins"},
         ]
