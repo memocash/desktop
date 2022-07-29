@@ -7,12 +7,13 @@ import bitcoin from "../../util/bitcoin";
 import GetWallet from "../../util/wallet";
 import {CreateTransaction} from "../snippets/create_tx";
 
-const Profile = ({onClose, address, utxosRef}) => {
+const Profile = ({onClose, address, utxosRef, lastUpdate}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
         pic: "",
     })
+    const [isFollowing, setIsFollowing] = useState(false)
     const [picData, setPicData] = useState(undefined)
     useEffect(async () => {
         const profileInfo = await window.electron.getProfileInfo([address])
@@ -24,11 +25,14 @@ const Profile = ({onClose, address, utxosRef}) => {
             const picData = await window.electron.getPic(profileInfo.pic)
             setPicData(picData)
         }
-    }, [address])
-    const clickFollow = async (address) => {
+        const wallet = await GetWallet()
+        const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
+        setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
+    }, [address, lastUpdate])
+    const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
             opcodes.OP_RETURN,
-            Buffer.from(bitcoin.Prefix.Follow, "hex"),
+            Buffer.from(unfollow ? bitcoin.Prefix.Unfollow : bitcoin.Prefix.Follow, "hex"),
             Buffer.from(bitcoin.GetPkHashFromAddress(address), "hex"),
         ])
         const wallet = await GetWallet()
@@ -54,7 +58,8 @@ const Profile = ({onClose, address, utxosRef}) => {
                     <p>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</p>
                     <p>Address: {address}</p>
                     <p>
-                        <button onClick={() => clickFollow(address)}>Follow</button>
+                        <button onClick={() => clickFollow(address, isFollowing)}>
+                            {isFollowing ? "Unfollow" : "Follow"}</button>
                     </p>
                 </div>
             </div>
