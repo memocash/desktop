@@ -14,6 +14,11 @@
     cursor: pointer;
 }
 
+.header_modal {
+    background: #fff;
+    padding: 0 5px;
+}
+
 .header_modal .pic {
     display: inline-block;
 }
@@ -26,6 +31,20 @@
 
 .header_modal .info h2 {
     margin-top: 10px;
+}
+
+.header_modal .info h2 img {
+    object-fit: cover;
+    border: 1px solid #555;
+    border-radius: 3px;
+    width: 30px;
+    height: 30px;
+}
+.header_modal .info h2 span {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 7px;
+    margin-left: 10px;
 }
 
 .header_modal .info a {
