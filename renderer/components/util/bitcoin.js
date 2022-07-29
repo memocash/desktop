@@ -1,3 +1,5 @@
+import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+
 const Fee = {
     Base: 10,
     InputP2PKH: 148,
@@ -12,6 +14,8 @@ const Prefix = {
     ReplyMemo: "6d03",
     LikeMemo: "6d04",
     SetProfile: "6d05",
+    Follow: "6d06",
+    Unfollow: "6d07",
     SetPic: "6d0a",
 }
 
@@ -28,12 +32,18 @@ const Utf8ByteLength = (str) => {
         if (code >= 0xDC00 && code <= 0xDFFF) i--; //trail surrogate
     }
     return parseInt(s);
-};
+}
+
+const GetPkHashFromAddress = (addressString) => {
+    const address = bitcoin.address.fromBase58Check(addressString)
+    return address.hash
+}
 
 export default {
     DustLimit: 546,
     MaxOpReturn: 100000,
     Fee: Fee,
     Utf8ByteLength: Utf8ByteLength,
+    GetPkHashFromAddress,
     Prefix: Prefix,
 }

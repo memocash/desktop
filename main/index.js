@@ -15,6 +15,7 @@ const {
 } = require("./data/memo");
 const {SaveImagesFromProfiles} = require("./client/images");
 const {GetFollowing} = require("./data/tables");
+const {GetRecentFollow} = require("./data/tables/memo_follow");
 
 const wallets = {}
 const windows = {}
@@ -207,6 +208,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("get-recent-set-pic", async (e, addresses) => {
         return GetRecentSetPic(addresses)
+    })
+    ipcMain.handle("get-recent-follow", async (e, addresses, address) => {
+        return GetRecentFollow(addresses, address)
     })
     ipcMain.handle("get-following", async (e, addresses) => {
         return GetFollowing(addresses)

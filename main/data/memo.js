@@ -83,7 +83,10 @@ const GetRecentSetName = async (addresses) => {
         "FROM profiles " +
         "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.name) " +
-        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_names.tx_hash ASC " +
+        "LIMIT 1"
     const results = await Select(query, addresses)
     if (!results || !results.length) {
         return undefined
@@ -99,7 +102,10 @@ const GetRecentSetProfile = async (addresses) => {
         "FROM profiles " +
         "LEFT JOIN profile_texts ON (profile_texts.tx_hash = profiles.profile) " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.profile) " +
-        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_texts.tx_hash ASC " +
+        "LIMIT 1"
     const results = await Select(query, addresses)
     if (!results || !results.length) {
         return undefined
@@ -115,7 +121,10 @@ const GetRecentSetPic = async (addresses) => {
         "FROM profiles " +
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.pic) " +
-        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_pics.tx_hash ASC " +
+        "LIMIT 1"
     const results = await Select(query, addresses)
     if (!results || !results.length) {
         return undefined

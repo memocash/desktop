@@ -29,6 +29,27 @@ const GetFollowing = async (addresses) => {
     return await Select(query, addresses)
 }
 
+const GetRecentFollow = async (addresses, address) => {
+    const query = "" +
+        "SELECT " +
+        "   memo_follows.*, " +
+        "   block_txs.block_hash AS block_hash " +
+        "FROM memo_follows " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_follows.tx_hash) " +
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "WHERE memo_follows.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "AND memo_follows.follow_address = ? " +
+        "ORDER BY COALESCE(blocks.height, 1000000) DESC, memo_follows.tx_hash ASC " +
+        "LIMIT 1"
+    addresses.push(address)
+    const results = await Select(query, addresses)
+    if (!results || !results.length) {
+        return undefined
+    }
+    return results[0]
+}
+
 module.exports = {
     GetFollowing,
+    GetRecentFollow,
 }
