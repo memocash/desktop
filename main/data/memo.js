@@ -3,6 +3,7 @@ const {Select, Insert} = require("./sqlite");
 const GetProfileInfo = async (addresses) => {
     const query = "" +
         "SELECT " +
+        "   profiles.address, " +
         "   profile_names.name AS name, " +
         "   profile_texts.profile AS profile, " +
         "   profile_pics.pic AS pic " +

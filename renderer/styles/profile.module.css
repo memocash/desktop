@@ -2,6 +2,10 @@
     height: 100%;
 }
 
+.wrapper button {
+    cursor: pointer;
+}
+
 .header {
     display: grid;
     width: 100%;
@@ -12,6 +16,14 @@
 .header h2,
 .header p {
     cursor: pointer;
+}
+
+.header h2 {
+    margin: 10px 0 0;
+}
+
+.header p {
+    margin: 5px 0 10px;
 }
 
 .header_modal {
@@ -40,6 +52,7 @@
     width: 30px;
     height: 30px;
 }
+
 .header_modal .info h2 span {
     display: inline-block;
     vertical-align: top;
@@ -47,12 +60,8 @@
     margin-left: 10px;
 }
 
-.header_modal .info a {
-    cursor: pointer;
-    color: blue;
-}
 .header_modal .info button {
-    margin-right:15px;
+    margin-right: 15px;
 }
 
 .pic {

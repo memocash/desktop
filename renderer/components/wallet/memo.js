@@ -11,6 +11,7 @@ const Memo = ({lastUpdate, setAddress, address}) => {
     const [profileAddress, setProfileAddress] = useState("")
     const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
+        address: "",
         name: "",
         profile: "",
         pic: "",
@@ -69,6 +70,7 @@ const Memo = ({lastUpdate, setAddress, address}) => {
                         {profileInfo.profile ? profileInfo.profile : "Profile not set"}
                         <a className={profile.editLink}><BsPencil/></a>
                     </p>
+                    <p><button onClick={() => setProfile(profileInfo.address)}>Profile</button></p>
                 </div>
             </div>
             <FollowList addresses={walletAddresses} setProfile={setProfile}/>
