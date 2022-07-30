@@ -76,6 +76,8 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                         <button onClick={() => setModal(Modals.Followers)}>Followers</button>
                     </p>
                 </div>
+            </div>
+            <div className={profile.posts}>
                 {posts.map((post, i) => {
                     return (
                         <div key={i} className={profile.post}>

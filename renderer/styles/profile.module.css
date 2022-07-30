@@ -73,6 +73,14 @@
     margin-bottom: 10px;
 }
 
+.posts {
+    height: calc(100vh - 285px);
+    overflow: scroll;
+    background: #fff;
+    border-radius: 0 0 5px 5px;
+    padding: 10px;
+}
+
 .pic {
     vertical-align: top;
     padding: 10px 5px 6px 10px;
