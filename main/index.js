@@ -7,7 +7,7 @@ const {
     SaveTransactions, GetTransactions, GetTransaction, GetRecentAddressTransactions,
     GetWalletInfo, GenerateHistory, SaveBlock, GetUtxos
 } = require("./data/txs");
-const {GetCoins} = require("./data/tables");
+const {GetCoins, GetPosts} = require("./data/tables");
 const {Dir, Modals} = require("../common/util")
 const {
     GetProfileInfo, SaveMemoProfiles, GetRecentSetName, GetRecentSetProfile,
@@ -217,6 +217,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle("get-followers", async (e, addresses) => {
         return GetFollowers(addresses)
+    })
+    ipcMain.handle("get-posts", async (e, addresses) => {
+        return GetPosts(addresses)
     })
     await CreateWindow()
 })

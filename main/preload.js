@@ -221,4 +221,7 @@ contextBridge.exposeInMainWorld('electron', {
     getFollowers: (addresses) => {
         return ipcRenderer.invoke("get-followers", addresses)
     },
+    getPosts: (addresses) => {
+        return ipcRenderer.invoke("get-posts", addresses)
+    },
 })

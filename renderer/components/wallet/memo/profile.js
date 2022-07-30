@@ -14,6 +14,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
         profile: "",
         pic: "",
     })
+    const [posts, setPosts] = useState([])
     const [isFollowing, setIsFollowing] = useState(false)
     const [picData, setPicData] = useState(undefined)
     const [isSelf, setIsSelf] = useState(true)
@@ -37,6 +38,8 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
         }
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
+        const posts = await window.electron.getPosts([address])
+        setPosts(posts)
     }, [address, lastUpdate])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
@@ -68,10 +71,18 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                     <p>Address: {address}</p>
                     <p>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
-                        {isFollowing ? "Unfollow" : "Follow"}</button>}
+                            {isFollowing ? "Unfollow" : "Follow"}</button>}
                         <button onClick={() => setModal(Modals.Following)}>Following</button>
                         <button onClick={() => setModal(Modals.Followers)}>Followers</button>
                     </p>
+                    {posts.map((post, i) => {
+                        return (
+                            <div key={i} className={profile.post}>
+                                <p>{post.address}</p>
+                                <p>{post.text}</p>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
             <div className={seed.buttons}>
