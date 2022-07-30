@@ -145,4 +145,10 @@ const Definitions = [
         tx_hash CHAR,
         UNIQUE(tx_hash)
     )`,
+    `memo_posts (
+        address CHAR,
+        text CHAR,
+        tx_hash CHAR,
+        UNIQUE(tx_hash)
+    )`,
 ]

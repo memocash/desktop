@@ -17,6 +17,18 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                 pic
                 tx_hash
             }
+            posts {
+                tx_hash
+                text
+                tx {
+                    hash
+                    blocks {
+                        hash
+                        timestamp
+                        height
+                    }
+                }
+            }
             following {
                 tx_hash
                 unfollow

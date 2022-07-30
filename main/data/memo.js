@@ -22,7 +22,7 @@ const GetProfileInfo = async (addresses) => {
 const SaveMemoProfiles = async (profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
-        let {lock, name, profile, pic, following, followers} = profiles[i]
+        let {lock, name, profile, pic, following, followers, posts} = profiles[i]
         if (!lock || !lock.address || (!name && !profile && !pic)) {
             continue
         }
@@ -58,6 +58,11 @@ const SaveMemoProfiles = async (profiles) => {
                 return follow.lock.profile
             })
             await SaveMemoProfiles(followersProfiles)
+        }
+        if (posts) {
+            await Insert("INSERT OR IGNORE INTO memo_posts (address, text, tx_hash) " +
+                "VALUES " + Array(posts.length).fill("(?, ?, ?)").join(", "), posts.map(post => [
+                lock.address, post.text, post.tx_hash]).flat())
         }
     }
     if (!saveProfiles.length) {
