@@ -75,16 +75,20 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                         <button onClick={() => setModal(Modals.Following)}>Following</button>
                         <button onClick={() => setModal(Modals.Followers)}>Followers</button>
                     </p>
-                    {posts.map((post, i) => {
-                        return (
-                            <div key={i} className={profile.post}>
-                                <p>{post.timestamp}</p>
-                                <p>{post.address}</p>
-                                <p>{post.text}</p>
-                            </div>
-                        )
-                    })}
                 </div>
+                {posts.map((post, i) => {
+                    return (
+                        <div key={i} className={profile.post}>
+                            <p>{post.timestamp}</p>
+                            <p>{post.name}</p>
+                            <p>{post.pic &&
+                            <img alt="Pic" className={profile.img} src={`data:image/png;base64,${Buffer.from(post.pic).toString("base64")}`}/>}
+                            </p>
+                            <p>{post.address}</p>
+                            <p>{post.text}</p>
+                        </div>
+                    )
+                })}
             </div>
             <div className={seed.buttons}>
                 <button onClick={onClose}>Close</button>

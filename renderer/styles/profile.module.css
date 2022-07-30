@@ -157,3 +157,8 @@
     text-align: center;
     grid-column: span 3;
 }
+
+.post img {
+    width: 30px;
+    height: 30px;
+}
