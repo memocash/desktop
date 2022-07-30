@@ -67,7 +67,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                 </div>
                 <div className={profile.info}>
                     <h2>{profileInfo.name ? profileInfo.name : "Name not set"}</h2>
-                    <p>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</p>
+                    <p className={profile.text}>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</p>
                     <p>Address: {address}</p>
                     <p>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
@@ -82,7 +82,8 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                             <p>{post.timestamp}</p>
                             <p>{post.name}</p>
                             <p>{post.pic &&
-                            <img alt="Pic" className={profile.img} src={`data:image/png;base64,${Buffer.from(post.pic).toString("base64")}`}/>}
+                            <img alt="Pic" className={profile.img}
+                                 src={`data:image/png;base64,${Buffer.from(post.pic).toString("base64")}`}/>}
                             </p>
                             <p>{post.address}</p>
                             <p>{post.text}</p>

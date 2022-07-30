@@ -66,7 +66,7 @@ const Memo = ({lastUpdate, setAddress, address}) => {
                         {profileInfo.name ? profileInfo.name : "Name not set"}
                         <a className={profile.editLink}><BsPencil/></a>
                     </h2>
-                    <p onClick={clickEditProfile}>
+                    <p className={profile.text} onClick={clickEditProfile}>
                         {profileInfo.profile ? profileInfo.profile : "Profile not set"}
                         <a className={profile.editLink}><BsPencil/></a>
                     </p>

@@ -61,6 +61,10 @@
     margin-left: 10px;
 }
 
+.text {
+    white-space: pre-line;
+}
+
 .header_modal .info button {
     margin-right: 10px;
 }
@@ -104,6 +108,8 @@
     border-top: 1px solid #ccc;
     display: grid;
     width: 100%;
+    height: calc(100% - 113px);
+    overflow: scroll;
     grid-template-columns: repeat(3, minmax(max-content, 1fr));
     outline: none;
 }

@@ -108,19 +108,21 @@ const GetRecentAddressTransactions = async (addresses) => {
 const GetTransaction = async (txHash) => {
     const outputs = await Select("SELECT * FROM outputs WHERE hash = ?", [txHash])
     const inputs = await Select("SELECT * FROM inputs WHERE hash = ?", [txHash])
-    let inputOutputsWhere = []
-    let inputOutputsParams = []
-    for (let i = 0; i < inputs.length; i++) {
-        inputOutputsWhere.push("hash = ? AND `index` = ?")
-        inputOutputsParams.push(inputs[i].prev_hash, inputs[i].prev_index)
-    }
-    const inputOutputs = await Select("SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
-        inputOutputsParams)
-    for (let i = 0; i < inputs.length; i++) {
-        for (let j = 0; j < inputOutputs.length; j++) {
-            if (inputOutputs[j].hash === inputs[i].prev_hash && inputOutputs[j].index === inputs[i].prev_index) {
-                inputs[i].output = inputOutputs[j]
-                break
+    if (inputs.length > 0) {
+        let inputOutputsWhere = []
+        let inputOutputsParams = []
+        for (let i = 0; i < inputs.length; i++) {
+            inputOutputsWhere.push("hash = ? AND `index` = ?")
+            inputOutputsParams.push(inputs[i].prev_hash, inputs[i].prev_index)
+        }
+        const inputOutputs = await Select("SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
+            inputOutputsParams)
+        for (let i = 0; i < inputs.length; i++) {
+            for (let j = 0; j < inputOutputs.length; j++) {
+                if (inputOutputs[j].hash === inputs[i].prev_hash && inputOutputs[j].index === inputs[i].prev_index) {
+                    inputs[i].output = inputOutputs[j]
+                    break
+                }
             }
         }
     }

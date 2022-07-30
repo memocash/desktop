@@ -21,7 +21,7 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
             <div className={profile.row}>
                 <div>Name</div>
                 <div>Address</div>
-                <div>Tx Hash</div>
+                <div>Transaction</div>
             </div>
             {follows.map((follow, i) => {
                 return (

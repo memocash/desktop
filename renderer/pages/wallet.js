@@ -7,7 +7,7 @@ const StorageKeyWalletTab = "wallet-tab"
 
 const Page = ({tab, page, shown, children}) => {
     const includePage = tab === page || shown.current.includes(page)
-    const style = {height: "calc(100% - 32px)"}
+    const style = {height: "100%"}
     if (includePage && tab !== page) {
         style.display = "none"
     }
