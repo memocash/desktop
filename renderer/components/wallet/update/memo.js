@@ -22,6 +22,20 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
                 text
                 tx {
                     hash
+                    seen
+                    raw
+                    inputs {
+                        index
+                        prev_hash
+                        prev_index
+                    }
+                    outputs {
+                        index
+                        amount
+                        lock {
+                            address
+                        }
+                    }
                     blocks {
                         hash
                         timestamp

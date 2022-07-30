@@ -78,6 +78,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                     {posts.map((post, i) => {
                         return (
                             <div key={i} className={profile.post}>
+                                <p>{post.timestamp}</p>
                                 <p>{post.address}</p>
                                 <p>{post.text}</p>
                             </div>

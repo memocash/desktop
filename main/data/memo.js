@@ -1,4 +1,5 @@
 const {Select, Insert} = require("./sqlite");
+const {SaveTransactions} = require("./txs");
 
 const GetProfileInfo = async (addresses) => {
     const query = "" +
@@ -63,6 +64,9 @@ const SaveMemoProfiles = async (profiles) => {
             await Insert("INSERT OR IGNORE INTO memo_posts (address, text, tx_hash) " +
                 "VALUES " + Array(posts.length).fill("(?, ?, ?)").join(", "), posts.map(post => [
                 lock.address, post.text, post.tx_hash]).flat())
+            await SaveTransactions(posts.map(post => {
+                return post.tx
+            }))
         }
     }
     if (!saveProfiles.length) {
