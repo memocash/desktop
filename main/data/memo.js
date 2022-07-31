@@ -40,7 +40,7 @@ const SaveMemoProfiles = async (profiles) => {
             await Insert("INSERT OR IGNORE INTO profile_pics (address, pic, tx_hash) VALUES (?, ?, ?)", [
                 lock.address, pic.pic, pic.tx_hash])
         }
-        if (following) {
+        if (following && following.length) {
             await Insert("INSERT OR IGNORE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(following.length).fill("(?, ?, ?, ?)").join(", "), following.map(follow => [
                 lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
@@ -50,7 +50,7 @@ const SaveMemoProfiles = async (profiles) => {
             })
             await SaveMemoProfiles(followingProfiles)
         }
-        if (followers) {
+        if (followers && followers.length) {
             await Insert("INSERT OR IGNORE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(followers.length).fill("(?, ?, ?, ?)").join(", "), followers.map(follow => [
                 follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
@@ -60,7 +60,7 @@ const SaveMemoProfiles = async (profiles) => {
             })
             await SaveMemoProfiles(followersProfiles)
         }
-        if (posts) {
+        if (posts && posts.length) {
             await Insert("INSERT OR IGNORE INTO memo_posts (address, text, tx_hash) " +
                 "VALUES " + Array(posts.length).fill("(?, ?, ?)").join(", "), posts.map(post => [
                 lock.address, post.text, post.tx_hash]).flat())
