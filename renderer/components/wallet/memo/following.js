@@ -38,8 +38,10 @@ const Following = ({onClose, address, setModal, setProfile, showFollowers=false}
                     </h2>
                         <button onClick={() => setModal(Modals.Profile)}>Back to Profile</button>
                     </p>
-                    <FollowList addresses={[address]} setProfile={setProfile} showFollowers={showFollowers}/>
                 </div>
+            </div>
+            <div className={profile.body_modal}>
+                <FollowList addresses={[address]} setProfile={setProfile} showFollowers={showFollowers}/>
             </div>
             <div className={seed.buttons}>
                 <button onClick={() => setModal(Modals.None)}>Close</button>

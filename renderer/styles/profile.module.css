@@ -28,7 +28,7 @@
 
 .header_modal {
     background: #fff;
-    border-radius: 5px;
+    border-radius: 5px 5px 0 0;
     padding: 0 5px;
 }
 
@@ -74,8 +74,8 @@
 }
 
 .posts {
-    height: calc(100vh - 285px);
-    overflow: scroll;
+    max-height: calc(100vh - 285px);
+    overflow: auto;
     background: #fff;
     border-radius: 0 0 5px 5px;
     padding: 10px;
@@ -112,13 +112,21 @@
     visibility: visible;
 }
 
+.body_modal {
+    max-height: calc(100vh - 235px);
+    background: #fff;
+    border-radius: 0 0 5px 5px;
+    padding: 10px;
+    overflow: auto;
+}
+
 .followers {
     border-top: 1px solid #ccc;
     display: grid;
-    width: 100%;
-    height: calc(100% - 113px);
-    overflow: scroll;
-    grid-template-columns: repeat(3, minmax(max-content, 1fr));
+    max-width: 100%;
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    grid-template-columns: repeat(3, 1fr);
     outline: none;
 }
 
@@ -126,11 +134,17 @@
     display: contents;
 }
 
+.followers .imgWrapper img {
+    margin: -10px 5px -10px 0;
+}
+
 .followers .imgWrapper span {
     display: inline-block;
     vertical-align: top;
     padding-top: 8px;
-    margin-left: 5px;
+    margin-bottom: 5px;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 .followers .address {
