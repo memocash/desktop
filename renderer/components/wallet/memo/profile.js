@@ -7,6 +7,7 @@ import bitcoin from "../../util/bitcoin";
 import GetWallet from "../../util/wallet";
 import {CreateTransaction} from "../snippets/create_tx";
 import {Modals} from "./index";
+import {UpdateMemoHistory} from "../update/index.js";
 
 const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -14,6 +15,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
         profile: "",
         pic: "",
     })
+    const [lastProfileUpdate, setLastProfileUpdate] = useState(false)
     const [posts, setPosts] = useState([])
     const [isFollowing, setIsFollowing] = useState(false)
     const [picData, setPicData] = useState(undefined)
@@ -38,9 +40,10 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
         }
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
+        await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
         const posts = await window.electron.getPosts([address])
         setPosts(posts)
-    }, [address, lastUpdate])
+    }, [address, lastUpdate, lastProfileUpdate])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
             opcodes.OP_RETURN,

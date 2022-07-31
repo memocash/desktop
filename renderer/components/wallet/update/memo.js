@@ -1,4 +1,4 @@
-const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
+const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
     const query = `
     query ($addresses: [String!]) {
         profiles(addresses: $addresses) {
@@ -89,7 +89,7 @@ const UpdateMemoHistory = async ({wallet, setLastUpdate}) => {
     }
     `
     let data = await window.electron.graphQL(query, {
-        addresses: wallet.addresses,
+        addresses: addresses,
     })
     await window.electron.saveMemoProfiles(data.data.profiles)
     setLastUpdate((new Date()).toISOString())
