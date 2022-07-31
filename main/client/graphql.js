@@ -1,7 +1,7 @@
 const http = require("http")
 const WebSocket = require('ws');
 
-const Host = "127.0.0.1:26770"
+const Host = "127.0.0.1:26771"
 
 const Subscribe = async ({query, variables, callback, onopen, onclose}) => {
     let socket = new WebSocket("ws://" + Host + "/graphql")

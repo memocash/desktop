@@ -124,10 +124,14 @@
     border-top: 1px solid #ccc;
     display: grid;
     max-width: 100%;
-    max-height: calc(100vh - 240px);
+    max-height: calc(100vh - 180px);
     overflow-y: auto;
     grid-template-columns: repeat(3, 1fr);
     outline: none;
+}
+
+.body_modal .followers {
+    max-height: calc(100vh - 240px);
 }
 
 .followers .row {
@@ -135,14 +139,14 @@
 }
 
 .followers .imgWrapper img {
-    margin: -10px 5px -10px 0;
+    margin: -7px 5px -12px 0;
 }
 
 .followers .imgWrapper span {
     display: inline-block;
     vertical-align: top;
-    padding-top: 8px;
-    margin-bottom: 5px;
+    padding-top: 5px;
+    margin-bottom: 10px;
     word-wrap: break-word;
     word-break: break-all;
 }
@@ -162,7 +166,7 @@
 }
 
 .followers .row > div {
-    padding: 13px 5px 0;
+    padding: 13px 5px 3px;
 }
 
 .followers .row > div.imgWrapper {
