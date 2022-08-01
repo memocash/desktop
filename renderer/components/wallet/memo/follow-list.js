@@ -1,9 +1,20 @@
 import profile from "../../../styles/profile.module.css";
 import ShortHash from "../../util/txs";
 import {useEffect, useState} from "react";
+import {TitleCol} from "../snippets/title-col";
+import {useReferredState} from "../../util/state";
+
+const Column = {
+    Name: "name",
+    Address: "address",
+    Transaction: "tx_hash",
+    Timestamp: "timestamp",
+}
 
 const FollowList = ({addresses, setProfile, showFollowers = false}) => {
-    const [follows, setFollows] = useState([])
+    const [sortCol, setSortCol] = useState(Column.Timestamp)
+    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
+    const [follows, followsRef, setFollows] = useReferredState([])
     useEffect(async () => {
         if (showFollowers) {
             const followers = await window.electron.getFollowers(addresses)
@@ -16,12 +27,28 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
     const clickTxLink = async (txHash) => {
         await window.electron.openTransaction({txHash})
     }
+    const sortTxs = (field) => {
+        let desc = !sortDescRef.current
+        if (desc) {
+            followsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
+        } else {
+            followsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
+        }
+        setFollows([...followsRef.current])
+        setSortDesc(desc)
+        setSortCol(field)
+    }
     return (
         <div className={profile.followers}>
             <div className={profile.row}>
-                <div>Name</div>
-                <div>Address</div>
-                <div>Transaction</div>
+                <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                          col={Column.Name} title={"Name"}/>
+                <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                          col={Column.Address} title={"Address"}/>
+                <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                          col={Column.Transaction} title={"Transaction"}/>
+                <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                          col={Column.Timestamp} title={"Timestamp"}/>
             </div>
             {follows.map((follow, i) => {
                 return (
@@ -45,6 +72,7 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                         <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
                             {ShortHash(follow.tx_hash)}
                         </a></div>
+                        <div>{follow.timestamp}</div>
                     </div>
                 )
             })}

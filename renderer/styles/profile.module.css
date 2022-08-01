@@ -126,7 +126,7 @@
     max-width: 100%;
     max-height: calc(100vh - 180px);
     overflow-y: auto;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     outline: none;
 }
 
@@ -161,10 +161,12 @@
     border-radius: 2px;
 }
 
+.followers .row:hover > span,
 .followers .row:hover > div {
     background: #ccc;
 }
 
+.followers .row > span,
 .followers .row > div {
     padding: 13px 5px 3px;
 }
@@ -174,10 +176,12 @@
     cursor: pointer;
 }
 
+.followers .row:first-of-type > span,
 .followers .row:first-of-type > div {
     background: #eee;
     padding: 3px 5px;
     border-right: 1px solid #ccc;
+    cursor: pointer;
 }
 
 .txLink {
