@@ -139,20 +139,16 @@
 }
 
 .followers .imgWrapper img {
-    margin: -7px 5px -12px 0;
-}
-
-.followers .imgWrapper span {
-    display: inline-block;
-    vertical-align: top;
-    padding-top: 5px;
-    margin-bottom: 10px;
-    word-wrap: break-word;
-    word-break: break-all;
+    position: absolute;
+    display: block;
+    top: 3px;
+    left: 3px;
 }
 
 .followers .address {
     cursor: pointer;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .followers .img {
@@ -168,12 +164,16 @@
 
 .followers .row > span,
 .followers .row > div {
-    padding: 13px 5px 3px;
+    padding: 5px;
 }
 
 .followers .row > div.imgWrapper {
-    padding: 5px 5px 2px;
+    padding: 5px 5px 5px 40px;
+    min-height: 26px;
     cursor: pointer;
+    position: relative;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .followers .row:first-of-type > span,
