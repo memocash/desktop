@@ -12,7 +12,7 @@ const Column = {
 }
 
 const FollowList = ({addresses, setProfile, showFollowers = false}) => {
-    const [sortCol, setSortCol] = useState(Column.Timestamp)
+    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
     useEffect(async () => {
@@ -28,7 +28,12 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
         await window.electron.openTransaction({txHash})
     }
     const sortTxs = (field) => {
-        let desc = !sortDescRef.current
+        let desc = sortDescRef.current
+        if (sortColRef.current === field) {
+            desc = !desc
+        } else {
+            desc = true
+        }
         if (desc) {
             followsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
         } else {
