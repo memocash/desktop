@@ -34,7 +34,9 @@ const Following = ({onClose, address, setModal, setProfile, showFollowers=false}
                                  src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
                             : <img alt={"Profile image"} className={profile.img}
                                    src={"/default-profile.jpg"}/>}
-                        <span>{profileInfo.name ? profileInfo.name : address} following</span>
+                        <span>{profileInfo.name ? profileInfo.name : address}
+                            {showFollowers ? "followers" : "following"}
+                        </span>
                     </h2>
                         <button onClick={() => setModal(Modals.Profile)}>Back to Profile</button>
                     </p>

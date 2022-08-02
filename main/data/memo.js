@@ -49,6 +49,9 @@ const SaveMemoProfiles = async (profiles) => {
                 return follow.follow_lock.profile
             })
             await SaveMemoProfiles(followingProfiles)
+            await SaveTransactions(following.map(follow => {
+                return follow.tx
+            }))
         }
         if (followers && followers.length) {
             await Insert("INSERT OR IGNORE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
@@ -59,6 +62,9 @@ const SaveMemoProfiles = async (profiles) => {
                 return follow.lock.profile
             })
             await SaveMemoProfiles(followersProfiles)
+            await SaveTransactions(followers.map(follow => {
+                return follow.tx
+            }))
         }
         if (posts && posts.length) {
             await Insert("INSERT OR IGNORE INTO memo_posts (address, text, tx_hash) " +

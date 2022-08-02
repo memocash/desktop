@@ -1,87 +1,73 @@
 const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
+    const txQuery = `
+    tx {
+        hash
+        seen
+        raw
+        inputs {
+            index
+            prev_hash
+            prev_index
+        }
+        outputs {
+            index
+            amount
+            lock {
+                address
+            }
+        }
+        blocks {
+            hash
+            timestamp
+            height
+        }
+    }
+    `
+    const profileFields = `
+    name {
+        name
+        tx_hash
+    }
+    profile {
+        text
+        tx_hash
+    }
+    pic {
+        pic
+        tx_hash
+    }
+    `
     const query = `
     query ($addresses: [String!]) {
         profiles(addresses: $addresses) {
             lock {
                 address
             }
-            name {
-                name
-                tx_hash
-            }
-            profile {
-                text
-                tx_hash
-            }
-            pic {
-                pic
-                tx_hash
-            }
+            ${profileFields}
             posts {
                 tx_hash
                 text
-                tx {
-                    hash
-                    seen
-                    raw
-                    inputs {
-                        index
-                        prev_hash
-                        prev_index
-                    }
-                    outputs {
-                        index
-                        amount
-                        lock {
-                            address
-                        }
-                    }
-                    blocks {
-                        hash
-                        timestamp
-                        height
-                    }
-                }
+                ${txQuery}
             }
             following {
                 tx_hash
                 unfollow
+                ${txQuery}
                 follow_lock {
                     address
                     profile {
-                        name {
-                            name
-                            tx_hash
-                        }
-                        profile {
-                            text
-                            tx_hash
-                        }
-                        pic {
-                            pic
-                            tx_hash
-                        }
+                        ${profileFields}
                     }
                 }
             }
             followers {
                 tx_hash
                 unfollow
+                ${txQuery}
                 lock {
                     address
                     profile {
-                        name {
-                            name
-                            tx_hash
-                        }
-                        profile {
-                            text
-                            tx_hash
-                        }
-                        pic {
-                            pic
-                            tx_hash
-                        }
+                        ${profileFields}
                     }
                 }
             }
