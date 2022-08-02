@@ -34,10 +34,14 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
         } else {
             desc = true
         }
+        let sortField = field
+        if (field === Column.Address && !showFollowers) {
+            sortField = "follow_address"
+        }
         if (desc) {
-            followsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
+            followsRef.current.sort((a, b) => (a[sortField] > b[sortField]) ? 1 : -1)
         } else {
-            followsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
+            followsRef.current.sort((a, b) => (a[sortField] < b[sortField]) ? 1 : -1)
         }
         setFollows([...followsRef.current])
         setSortDesc(desc)
@@ -70,7 +74,7 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                         </div>
                         <div className={profile.address}
                              onClick={() => setProfile(showFollowers ? follow.address : follow.follow_address)}>
-                            {showFollowers ? follow.address : follow.follow_address}}
+                            {showFollowers ? follow.address : follow.follow_address}
                         </div>
                         <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
                             {ShortHash(follow.tx_hash)}
