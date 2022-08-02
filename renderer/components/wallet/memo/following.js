@@ -35,7 +35,7 @@ const Following = ({onClose, address, setModal, setProfile, showFollowers=false}
                             : <img alt={"Profile image"} className={profile.img}
                                    src={"/default-profile.jpg"}/>}
                         <span>{profileInfo.name ? profileInfo.name : address}
-                            {showFollowers ? "followers" : "following"}
+                            {showFollowers ? " followers" : " following"}
                         </span>
                     </h2>
                         <button onClick={() => setModal(Modals.Profile)}>Back to Profile</button>

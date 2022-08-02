@@ -11,7 +11,7 @@ const SetName = ({onClose, utxosRef}) => {
     const formSetNameSubmit = async (e) => {
         e.preventDefault()
         const name = setNameRef.current.value
-        if (name && name.length > bitcoin.MaxOpReturn) {
+        if (name && Buffer.from(name).length > bitcoin.MaxOpReturn) {
             window.electron.showMessageDialog("Name length is too long (max: " + bitcoin.MaxOpReturn + ")")
             return
         }

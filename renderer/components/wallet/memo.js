@@ -2,7 +2,7 @@ import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
 import {BsPencil} from "react-icons/bs";
-import {Modals, Following, SetName, SetPic, SetProfile} from "./memo/index";
+import {Following, Modals, SetName, SetPic, SetProfile} from "./memo/index";
 import Profile from "./memo/profile";
 import FollowList from "./memo/follow-list";
 
@@ -54,11 +54,9 @@ const Memo = ({lastUpdate, setAddress, address}) => {
         <div className={profile.wrapper}>
             <div className={profile.header}>
                 <div className={profile.pic} onClick={clickEditPic}>
-                    {picData ?
-                        <img alt={"Profile image"} className={profile.img}
-                             src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
-                        : <img alt={"Profile image"} className={profile.img}
-                               src={"/default-profile.jpg"}/>}
+                    <img alt={"Profile image"} className={profile.img} src={picData ?
+                        `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
+                        "/default-profile.jpg"}/>
                     <a className={profile.editLink}><BsPencil/></a>
                 </div>
                 <div>
@@ -70,7 +68,9 @@ const Memo = ({lastUpdate, setAddress, address}) => {
                         {profileInfo.profile ? profileInfo.profile : "Profile not set"}
                         <a className={profile.editLink}><BsPencil/></a>
                     </p>
-                    <p><button onClick={() => setProfile(profileInfo.address)}>Profile</button></p>
+                    <p>
+                        <button onClick={() => setProfile(profileInfo.address)}>Profile</button>
+                    </p>
                 </div>
             </div>
             <FollowList addresses={walletAddresses} setProfile={setProfile}/>
