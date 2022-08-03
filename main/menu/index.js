@@ -1,5 +1,5 @@
 const {Menu} = require("electron");
-const {Modals} = require("../common/util");
+const {Modals, Listeners} = require("../common/util");
 
 const isMac = process.platform === "darwin"
 
@@ -37,7 +37,7 @@ const ShowMenu = (win, newWindow, wallet) => {
             {
                 label: "Seed",
                 click: () => {
-                    win.webContents.send("display-modal", Modals.Seed)
+                    win.webContents.send(Listeners.DisplayModal, Modals.Seed)
                 },
                 enabled: !!wallet.seed,
             },
@@ -48,7 +48,7 @@ const ShowMenu = (win, newWindow, wallet) => {
             {
                 label: "Profile",
                 click: () => {
-                    win.webContents.send("display-modal", Modals.Profile)
+                    win.webContents.send(Listeners.DisplayModal, Modals.Profile)
                 }
             },
             {label: "Show Addresses"},

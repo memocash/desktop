@@ -35,6 +35,14 @@ const Handlers = {
     GetRecentAddresses: "get-recent-addresses",
 }
 
+const Listeners = {
+    DisplayModal: "display-modal",
+    GraphQLClosePrefix: "graphql-close-",
+    GraphQLDataPrefix: "graphql-data-",
+    GraphQLOpenPrefix: "graphql-open-",
+}
+
 module.exports = {
     Handlers: Handlers,
+    Listeners: Listeners,
 }

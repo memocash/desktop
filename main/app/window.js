@@ -14,7 +14,7 @@ const GetStorage = (winId) => storage[winId]
 const GetWallet = (winId) => wallets[winId]
 const GetWindow = (winId) => windows[winId]
 const SetMenu = (winId, menu) => menus[winId] = menu
-const SetStorage = (winId, storage) => storage[winId] = storage
+const SetStorage = (winId, data) => storage[winId] = data
 const SetWallet = (winId, wallet) => wallets[winId] = wallet
 
 const CreateWindow = async () => {
@@ -35,7 +35,7 @@ const CreateWindow = async () => {
         title: "Memo",
         webPreferences: {
             nodeIntegration: false,
-            preload: path.join(__dirname, "../preload.js")
+            preload: path.join(__dirname, "../preload/index.js")
         },
         icon: path.join(__dirname, "assets/memo-logo-small.icns"),
     })
@@ -54,7 +54,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         title: "Transaction",
         webPreferences: {
             nodeIntegration: false,
-            preload: path.join(__dirname, "../preload.js"),
+            preload: path.join(__dirname, "../preload/index.js"),
         },
         icon: path.join(__dirname, "assets/memo-logo-small.icns"),
     })

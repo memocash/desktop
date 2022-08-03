@@ -1,5 +1,5 @@
 const {ipcMain, Menu, MenuItem, app, dialog} = require("electron");
-const {Dir, Handlers, Modals} = require("../../common/util");
+const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
 const {GetMenu, GetStorage, SetStorage, GetWindow} = require("../window");
 
 const WindowHandlers = () => {
@@ -23,7 +23,7 @@ const WindowHandlers = () => {
         menu.append(new MenuItem({
             label: "Private Key",
             click: () => {
-                win.webContents.send("display-modal", Modals.Key)
+                win.webContents.send(Listeners.DisplayModal, Modals.Key)
             },
         }))
         menu.popup({window: win})
