@@ -20,6 +20,7 @@ const {
     GetMenu, GetStorage, GetWindow, GetWallet, SetMenu, SetStorage, SetWallet,
     CreateTxWindow, CreateWindow
 } = require("./app/window");
+const {SetupProfileHandlers} = require("./app/profile");
 
 app.whenReady().then(async () => {
     await prepareNext('./renderer')
@@ -141,29 +142,6 @@ app.whenReady().then(async () => {
         }))
         menu.popup({window: win})
     })
-    ipcMain.handle("get-profile-info", async (e, addresses) => {
-        return GetProfileInfo(addresses)
-    })
-    ipcMain.handle("get-recent-set-name", async (e, addresses) => {
-        return GetRecentSetName(addresses)
-    })
-    ipcMain.handle("get-recent-set-profile", async (e, addresses) => {
-        return GetRecentSetProfile(addresses)
-    })
-    ipcMain.handle("get-recent-set-pic", async (e, addresses) => {
-        return GetRecentSetPic(addresses)
-    })
-    ipcMain.handle("get-recent-follow", async (e, addresses, address) => {
-        return GetRecentFollow(addresses, address)
-    })
-    ipcMain.handle("get-following", async (e, addresses) => {
-        return GetFollowing(addresses)
-    })
-    ipcMain.handle("get-followers", async (e, addresses) => {
-        return GetFollowers(addresses)
-    })
-    ipcMain.handle("get-posts", async (e, addresses) => {
-        return GetPosts(addresses)
-    })
+    SetupProfileHandlers()
     await CreateWindow()
 })

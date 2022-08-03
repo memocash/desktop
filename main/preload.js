@@ -4,6 +4,7 @@ const path = require("path")
 const CryptoJS = require("crypto-js")
 const {GetId} = require("../common/util/id");
 const {Dir} = require("../common/util");
+const {Handlers} = require("../common/util/handlers");
 
 const getPathForWallet = wallet => {
     wallet = wallet.trim()
@@ -198,30 +199,30 @@ contextBridge.exposeInMainWorld('electron', {
         return ipcRenderer.invoke("right-click-menu")
     },
     getProfileInfo: (addresses) => {
-        return ipcRenderer.invoke("get-profile-info", addresses)
+        return ipcRenderer.invoke(Handlers.GetProfileInfo, addresses)
     },
     getRecentSetName: (addresses) => {
-        return ipcRenderer.invoke("get-recent-set-name", addresses)
+        return ipcRenderer.invoke(Handlers.GetRecentSetName, addresses)
     },
     getRecentSetProfile: (addresses) => {
-        return ipcRenderer.invoke("get-recent-set-profile", addresses)
+        return ipcRenderer.invoke(Handlers.GetRecentSetProfile, addresses)
     },
     getRecentSetPic: (addresses) => {
-        return ipcRenderer.invoke("get-recent-set-pic", addresses)
+        return ipcRenderer.invoke(Handlers.GetRecentSetPic, addresses)
     },
     getRecentFollow: (addresses, address) => {
-        return ipcRenderer.invoke("get-recent-follow", addresses, address)
+        return ipcRenderer.invoke(Handlers.GetRecentFollow, addresses, address)
     },
     getPic: (url) => {
         return ipcRenderer.invoke("get-pic", url)
     },
     getFollowing: (addresses) => {
-        return ipcRenderer.invoke("get-following", addresses)
+        return ipcRenderer.invoke(Handlers.GetFollowing, addresses)
     },
     getFollowers: (addresses) => {
-        return ipcRenderer.invoke("get-followers", addresses)
+        return ipcRenderer.invoke(Handlers.GetFollowers, addresses)
     },
     getPosts: (addresses) => {
-        return ipcRenderer.invoke("get-posts", addresses)
+        return ipcRenderer.invoke(Handlers.GetPosts, addresses)
     },
 })
