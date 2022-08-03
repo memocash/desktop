@@ -3,6 +3,8 @@ const {Dir, Handlers, Modals} = require("../../common/util");
 const {GetMenu, GetStorage, SetStorage, GetWindow} = require("../window");
 
 const WindowHandlers = () => {
+    ipcMain.handle(Handlers.GetWindowId, async (e) => e.sender.id)
+    ipcMain.on(Handlers.CloseWindow, (e) => GetWindow(e.sender.id).close())
     ipcMain.on(Handlers.SetWindowStorage, (e, key, value) => {
         if (GetStorage(e.sender.id) === undefined) {
             SetStorage(e.sender.id, {})
@@ -44,12 +46,6 @@ const WindowHandlers = () => {
             title: "Memo",
             message: message,
         })
-    })
-    ipcMain.handle(Handlers.GetWindowId, async (e) => {
-        return e.sender.id
-    })
-    ipcMain.on(Handlers.CloseWindow, (e) => {
-        GetWindow(e.sender.id).close()
     })
 }
 

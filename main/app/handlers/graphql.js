@@ -3,9 +3,7 @@ const {GraphQL, Subscribe} = require("../../client/graphql");
 const {Handlers} = require("../../common/util");
 
 const GraphQLHandlers = () => {
-    ipcMain.handle(Handlers.GraphQL, async (e, {query, variables}) => {
-        return GraphQL({query, variables})
-    })
+    ipcMain.handle(Handlers.GraphQL, async (e, {query, variables}) => GraphQL({query, variables}))
     ipcMain.on(Handlers.GraphQLSubscribe, (e, {id, query, variables}) => {
         const onopen = (data) => {
             !e.sender.isDestroyed() && e.sender.send("graphql-open-" + id, data)

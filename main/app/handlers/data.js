@@ -9,12 +9,15 @@ const {
 } = require("../../data/txs");
 
 const DataHandlers = () => {
-    ipcMain.handle(Handlers.SaveTransactions, async (e, transactions) => {
-        await SaveTransactions(transactions)
-    })
-    ipcMain.handle(Handlers.SaveBlock, async (e, block) => {
-        await SaveBlock(block)
-    })
+    ipcMain.handle(Handlers.SaveTransactions, async (e, transactions) => await SaveTransactions(transactions))
+    ipcMain.handle(Handlers.SaveBlock, async (e, block) => await SaveBlock(block))
+    ipcMain.handle(Handlers.GetPic, async (e, url) => await GetPic(url))
+    ipcMain.handle(Handlers.GenerateHistory, async (e, addresses) => await GenerateHistory(addresses))
+    ipcMain.handle(Handlers.GetTransaction, async (e, txHash) => GetTransaction(txHash))
+    ipcMain.handle(Handlers.GetTransactions, async (e, addresses) => GetTransactions(addresses))
+    ipcMain.handle(Handlers.GetUtxos, async (e, addresses) => GetUtxos(addresses))
+    ipcMain.handle(Handlers.GetCoins, async (e, addresses) => GetCoins(addresses))
+    ipcMain.handle(Handlers.GetRecentAddresses, async (e, addresses) => GetRecentAddressTransactions(addresses))
     ipcMain.handle(Handlers.SaveMemoProfiles, async (e, profiles) => {
         await SaveImagesFromProfiles(profiles
             .concat(profiles.map(profile => profile.following ?
@@ -22,27 +25,6 @@ const DataHandlers = () => {
             .concat(profiles.map(profile => profile.followers ?
                 profile.followers.map(follow => follow.lock.profile) : []).flat()))
         await SaveMemoProfiles(profiles)
-    })
-    ipcMain.handle(Handlers.GetPic, async (e, url) => {
-        return await GetPic(url)
-    })
-    ipcMain.handle(Handlers.GenerateHistory, async (e, addresses) => {
-        await GenerateHistory(addresses)
-    })
-    ipcMain.handle(Handlers.GetTransaction, async (e, txHash) => {
-        return GetTransaction(txHash)
-    })
-    ipcMain.handle(Handlers.GetTransactions, async (e, addresses) => {
-        return GetTransactions(addresses)
-    })
-    ipcMain.handle(Handlers.GetUtxos, async (e, addresses) => {
-        return GetUtxos(addresses)
-    })
-    ipcMain.handle(Handlers.GetCoins, async (e, addresses) => {
-        return GetCoins(addresses)
-    })
-    ipcMain.handle(Handlers.GetRecentAddresses, async (e, addresses) => {
-        return GetRecentAddressTransactions(addresses)
     })
 }
 
