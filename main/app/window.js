@@ -1,4 +1,4 @@
-const {BrowserWindow, screen} = require("electron");
+const {BrowserWindow, screen, shell} = require("electron");
 const path = require("path");
 const menu = require("../menu");
 
@@ -39,6 +39,10 @@ const CreateWindow = async () => {
         },
         icon: path.join(__dirname, "assets/memo-logo-small.icns"),
     })
+    win.webContents.setWindowOpenHandler(({url}) => {
+        shell.openExternal(url);
+        return {action: "deny"}
+    });
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     windows[win.webContents.id] = win
     await win.loadURL("http://localhost:8000")

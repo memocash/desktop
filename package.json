@@ -31,6 +31,7 @@
     "electron-is-dev": "^2.0.0",
     "electron-next": "^3.1.5",
     "react-icons": "^4.4.0",
+    "react-linkify": "^1.0.0-alpha",
     "ws": "^8.5.0"
   }
 }

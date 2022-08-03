@@ -1,13 +1,14 @@
+import {useEffect, useState} from "react";
+import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import profile from "../../../styles/profile.module.css";
 import Modal from "../../modal/modal";
 import seed from "../../modal/seed.module.css";
-import {useEffect, useState} from "react";
-import profile from "../../../styles/profile.module.css";
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import bitcoin from "../../util/bitcoin";
 import GetWallet from "../../util/wallet";
+import {UpdateMemoHistory} from "../update/index.js";
 import {CreateTransaction} from "../snippets/create_tx";
 import {Modals} from "./index";
-import {UpdateMemoHistory} from "../update/index.js";
+import Links from "../snippets/links";
 
 const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -70,7 +71,9 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                 </div>
                 <div className={profile.info}>
                     <h2>{profileInfo.name ? profileInfo.name : "Name not set"}</h2>
-                    <p className={profile.text}>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</p>
+                    <p className={profile.text}>
+                        <Links>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</Links>
+                    </p>
                     <p>Address: {address}</p>
                     <p>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
@@ -91,7 +94,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                                  src={`data:image/png;base64,${Buffer.from(post.pic).toString("base64")}`}/>}
                             </p>
                             <p>{post.address}</p>
-                            <p>{post.text}</p>
+                            <p><Links>{post.text}</Links></p>
                         </div>
                     )
                 })}
