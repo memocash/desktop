@@ -16,7 +16,9 @@ const GetPosts = async (addresses) => {
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "WHERE memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "GROUP BY memo_posts.tx_hash "
+        "GROUP BY memo_posts.tx_hash " +
+        "ORDER BY timestamp DESC " +
+        "LIMIT 100 "
     return await Select(query, addresses)
 }
 

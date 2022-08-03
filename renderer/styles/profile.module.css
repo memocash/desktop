@@ -40,6 +40,7 @@
     display: inline-block;
     margin-left: 10px;
     padding: 0 5px;
+    max-width: calc(100% - 112px);
 }
 
 .header_modal .info h2 {
@@ -192,6 +193,11 @@
     padding: 10px;
     text-align: center;
     grid-column: span 3;
+}
+
+.post p {
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .post img {
