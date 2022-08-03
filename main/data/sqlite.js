@@ -1,6 +1,6 @@
 const {Worker} = require("worker_threads");
 const path = require("path")
-const {GetId} = require("../../common/util/id");
+const {GetId} = require("../common/util");
 const worker = new Worker(path.resolve(__dirname, "sqlite_worker.js"));
 
 let queries = {}

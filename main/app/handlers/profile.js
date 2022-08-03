@@ -1,10 +1,9 @@
 const {ipcMain} = require("electron");
-const {GetProfileInfo, GetRecentSetName, GetRecentSetProfile, GetRecentSetPic} = require("../data/memo");
-const {GetRecentFollow, GetFollowers} = require("../data/tables/memo_follow");
-const {GetFollowing, GetPosts} = require("../data/tables");
-const {Handlers} = require("../../common/util/handlers");
+const {GetProfileInfo, GetRecentSetName, GetRecentSetProfile, GetRecentSetPic} = require("../../data/memo");
+const {GetRecentFollow, GetFollowers, GetFollowing, GetPosts} = require("../../data/tables");
+const {Handlers} = require("../../common/util");
 
-const SetupProfileHandlers = () => {
+const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetProfileInfo, async (e, addresses) => {
         return GetProfileInfo(addresses)
     })
@@ -32,5 +31,5 @@ const SetupProfileHandlers = () => {
 }
 
 module.exports = {
-    SetupProfileHandlers: SetupProfileHandlers,
+    ProfileHandlers: ProfileHandlers,
 }

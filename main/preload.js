@@ -2,9 +2,7 @@ const {ipcRenderer, clipboard, contextBridge} = require('electron')
 const fs = require("fs/promises")
 const path = require("path")
 const CryptoJS = require("crypto-js")
-const {GetId} = require("../common/util/id");
-const {Dir} = require("../common/util");
-const {Handlers} = require("../common/util/handlers");
+const {Dir, Handlers, GetId} = require("./common/util");
 
 const getPathForWallet = wallet => {
     wallet = wallet.trim()

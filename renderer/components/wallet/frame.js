@@ -2,7 +2,7 @@ import {useEffect, useState} from "react"
 import {KeyModal, SeedModal} from "../modal";
 import tabs from '../../styles/tabs.module.css'
 import {StatusBar} from './snippets/status-bar'
-import {Modals} from "../../../common/util/modals"
+import {Modals} from "../../../main/common/util"
 import ProfileModal from "../modal/profile";
 
 export const Tabs = {

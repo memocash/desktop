@@ -1,5 +1,5 @@
 const {Menu} = require("electron");
-const {Modals} = require("../../common/util/modals");
+const {Modals} = require("../common/util");
 
 const isMac = process.platform === "darwin"
 
