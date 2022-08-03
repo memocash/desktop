@@ -41,9 +41,9 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
         }
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
-        await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
         const posts = await window.electron.getPosts([address])
         setPosts(posts)
+        await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
     }, [address, lastUpdate, lastProfileUpdate])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([

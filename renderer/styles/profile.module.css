@@ -64,6 +64,8 @@
 
 .text {
     white-space: pre-line;
+    max-height: 30px;
+    overflow-y: auto;
 }
 
 .header_modal .info button {

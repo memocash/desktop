@@ -6,6 +6,6 @@ module.exports = {
     GetFollowing,
     GetFollowers,
     GetRecentFollow,
-    GetPosts,
+    GetPosts: GetPosts,
     GetCoins,
 }

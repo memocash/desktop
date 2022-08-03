@@ -23,5 +23,5 @@ const GetPosts = async (addresses) => {
 }
 
 module.exports = {
-    GetPosts,
+    GetPosts: GetPosts,
 }
