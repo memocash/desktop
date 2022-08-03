@@ -18,7 +18,7 @@ const GetPosts = async (addresses) => {
         "WHERE memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "GROUP BY memo_posts.tx_hash " +
         "ORDER BY timestamp DESC " +
-        "LIMIT 100 "
+        "LIMIT 50 "
     return await Select(query, addresses)
 }
 

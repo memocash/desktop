@@ -32,7 +32,8 @@ const GetFollowing = async (addresses) => {
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "WHERE max_follows.unfollow = 0 "  +
-        "ORDER BY max_follows.timestamp DESC "
+        "ORDER BY max_follows.timestamp DESC " +
+        "LIMIT 50 "
     return await Select(query, addresses)
 }
 
@@ -68,7 +69,8 @@ const GetFollowers = async (addresses) => {
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "WHERE max_follows.unfollow = 0 "  +
-        "ORDER BY max_follows.timestamp DESC "
+        "ORDER BY max_follows.timestamp DESC " +
+        "LIMIT 50 "
     return await Select(query, addresses)
 }
 
