@@ -22,6 +22,11 @@
     margin: 10px 0 0;
 }
 
+.info h2 {
+    height: 21px;
+    overflow-y: auto;
+}
+
 .header p {
     margin: 5px 0 10px;
 }
@@ -29,7 +34,6 @@
 .header_modal {
     background: #fff;
     border-radius: 5px 5px 0 0;
-    padding: 0 5px;
 }
 
 .header_modal .pic {
@@ -39,8 +43,8 @@
 .header_modal .info {
     display: inline-block;
     margin-left: 10px;
-    padding: 0 5px;
-    max-width: calc(100% - 112px);
+    padding: 0 0 0 5px;
+    width: calc(100% - 107px);
 }
 
 .header_modal .info h2 {
@@ -64,7 +68,7 @@
 
 .text {
     white-space: pre-line;
-    max-height: 30px;
+    max-height: 31px;
     overflow-y: auto;
 }
 
