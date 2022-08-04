@@ -6,7 +6,10 @@ const GetPosts = async (addresses) => {
         "   memo_posts.*, " +
         "   profile_names.name, " +
         "   images.data AS pic, " +
-        "   MIN(COALESCE(blocks.timestamp, tx_seens.timestamp), tx_seens.timestamp) AS timestamp " +
+        "   MIN(" +
+        "       COALESCE(blocks.timestamp, tx_seens.timestamp), " +
+        "       COALESCE(tx_seens.timestamp, blocks.timestamp)" +
+        "   ) AS timestamp " +
         "FROM memo_posts " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +

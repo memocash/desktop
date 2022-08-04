@@ -66,6 +66,9 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
     const clickProfile = (address) => {
         setAddress(address)
     }
+    const openTx = async (txHash) => {
+        await window.electron.openTransaction({txHash})
+    }
     return (
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>
@@ -97,11 +100,12 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
                                     `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
                                     "/default-profile.jpg"}/>
                                 {post.name}
-                                <span title={post.timestamp} className={profile.time}>
-                                    {post.timestamp ? " " + TimeSince(post.timestamp) : ""}
+                                {" "}
+                                <span title={post.timestamp} className={profile.time}
+                                      onClick={() => openTx(post.tx_hash)}>
+                                    {post.timestamp ? TimeSince(post.timestamp) : "Tx"}
                                 </span>
                             </div>
-                            {/*<p>{post.address}</p>*/}
                             <div className={profile.post_body}>
                                 <Links>{post.text}</Links>
                             </div>
