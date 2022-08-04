@@ -30,7 +30,7 @@ const StatusBar = ({connected, lastUpdate}) => {
                     Balance: {info.balance.toLocaleString()} satoshis
                     ({info.output_count.toLocaleString()} outputs, {info.utxo_count.toLocaleString()} utxos)
                 </>}
-                {(connected === Status.NotConnected) && <>Connecting...</>}
+                {(connected === Status.NotConnected) && <>Loading...</>}
                 {(connected === Status.Disconnected) && <>Disconnected</>}
             </div>
             <div className={tabs.statusIcons}>

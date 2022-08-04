@@ -19,7 +19,7 @@ const DataHandlers = () => {
     ipcMain.handle(Handlers.GetCoins, async (e, addresses) => GetCoins(addresses))
     ipcMain.handle(Handlers.GetRecentAddresses, async (e, addresses) => GetRecentAddressTransactions(addresses))
     ipcMain.handle(Handlers.SaveMemoProfiles, async (e, profiles) => {
-        await SaveImagesFromProfiles(profiles
+        SaveImagesFromProfiles(profiles
             .concat(profiles.map(profile => profile.following ?
                 profile.following.map(follow => follow.follow_lock.profile) : []).flat())
             .concat(profiles.map(profile => profile.followers ?
