@@ -84,7 +84,10 @@
     max-height: calc(100vh - 265px);
     overflow: auto;
     background: #fff;
+    min-height: 10px;
     border-radius: 0 0 5px 5px;
+    border-top: 1px solid #f5f5f5;
+    margin-top: -1px;
 }
 
 .pic {
