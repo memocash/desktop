@@ -17,7 +17,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
         profile: "",
         pic: "",
     })
-    const [_, setLastProfileUpdate] = useState(false)
+    const [lastProfileUpdate, setLastProfileUpdate] = useState(false)
     const [posts, setPosts] = useState([])
     const [isFollowing, setIsFollowing] = useState(false)
     const [picData, setPicData] = useState(undefined)
@@ -45,8 +45,10 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         const posts = await window.electron.getPosts([address])
         setPosts(posts)
+    }, [lastUpdate, lastProfileUpdate])
+    useEffect(async () => {
         await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
-    }, [address, lastUpdate])
+    }, [address])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
             opcodes.OP_RETURN,
