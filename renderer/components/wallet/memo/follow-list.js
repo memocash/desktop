@@ -53,8 +53,6 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                 <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                           col={Column.Name} title={"Name"}/>
                 <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
-                          col={Column.Address} title={"Address"}/>
-                <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                           col={Column.Transaction} title={"Transaction"}/>
                 <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                           col={Column.Timestamp} title={"Timestamp"}/>
@@ -70,11 +68,7 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                                 :
                                 <img alt={"Profile image"} className={profile.img}
                                      src={"/default-profile.jpg"}/>}
-                            {follow.name}
-                        </div>
-                        <div className={profile.address}
-                             onClick={() => setProfile(showFollowers ? follow.address : follow.follow_address)}>
-                            {showFollowers ? follow.address : follow.follow_address}
+                            {(follow.name && follow.name.length) ? follow.name : follow.address}
                         </div>
                         <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
                             {ShortHash(follow.tx_hash)}

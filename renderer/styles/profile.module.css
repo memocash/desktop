@@ -81,11 +81,10 @@
 }
 
 .posts {
-    max-height: calc(100vh - 285px);
+    max-height: calc(100vh - 265px);
     overflow: auto;
     background: #fff;
     border-radius: 0 0 5px 5px;
-    padding: 10px;
 }
 
 .pic {
@@ -133,7 +132,7 @@
     max-width: 100%;
     max-height: calc(100vh - 180px);
     overflow-y: auto;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     outline: none;
 }
 
@@ -201,12 +200,33 @@
     grid-column: span 3;
 }
 
-.post p {
-    word-wrap: break-word;
-    word-break: break-word;
+.posts .post:nth-child(2n) {
+    background: #f9f9f9;
 }
 
-.post img {
+.post .post_header {
+    cursor: pointer;
+}
+
+.post .post_header img {
+    display: block;
+    position: absolute;
+    top: 5px;
+    left: 5px;
     width: 30px;
     height: 30px;
+}
+
+.post .post_header {
+    position: relative;
+    padding: 10px 0 0 40px;
+    height: 30px;
+    font-weight: bold;
+}
+
+.post .post_body {
+    word-wrap: break-word;
+    word-break: break-word;
+    padding: 2px 5px 2px 5px;
+    min-height: 21px;
 }

@@ -10,13 +10,13 @@ import {CreateTransaction} from "../snippets/create_tx";
 import {Modals} from "./index";
 import Links from "../snippets/links";
 
-const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
+const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
         pic: "",
     })
-    const [lastProfileUpdate, setLastProfileUpdate] = useState(false)
+    const [_, setLastProfileUpdate] = useState(false)
     const [posts, setPosts] = useState([])
     const [isFollowing, setIsFollowing] = useState(false)
     const [picData, setPicData] = useState(undefined)
@@ -32,19 +32,20 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
             setPicData(picData)
         }
         const wallet = await GetWallet()
-        setIsSelf(false)
+        let isSelf = false
         for (const walletAddress of wallet.addresses) {
             if (walletAddress === address) {
-                setIsSelf(true)
+                isSelf = true
                 break
             }
         }
+        setIsSelf(isSelf)
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         const posts = await window.electron.getPosts([address])
         setPosts(posts)
         await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
-    }, [address, lastUpdate, lastProfileUpdate])
+    }, [address, lastUpdate])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
             opcodes.OP_RETURN,
@@ -59,15 +60,16 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
         }
         await CreateTransaction(wallet, utxosRef.current.value, followOpReturnOutput, 0, beatHash)
     }
+    const clickProfile = (address) => {
+        setAddress(address)
+    }
     return (
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>
                 <div className={profile.pic}>
-                    {picData ?
-                        <img alt={"Profile image"} className={profile.img}
-                             src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
-                        : <img alt={"Profile image"} className={profile.img}
-                               src={"/default-profile.jpg"}/>}
+                    <img alt={"Profile image"} className={profile.img}
+                         src={picData ? `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
+                             "/default-profile.jpg"}/>
                 </div>
                 <div className={profile.info}>
                     <h2>{profileInfo.name ? profileInfo.name : "Name not set"}</h2>
@@ -87,14 +89,17 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal}) => {
                 {posts.map((post, i) => {
                     return (
                         <div key={i} className={profile.post}>
-                            <p>{post.timestamp}</p>
-                            <p>{post.name}</p>
-                            <p>{post.pic &&
-                            <img alt="Pic" className={profile.img}
-                                 src={`data:image/png;base64,${Buffer.from(post.pic).toString("base64")}`}/>}
-                            </p>
-                            <p>{post.address}</p>
-                            <p><Links>{post.text}</Links></p>
+                            <div className={profile.post_header} onClick={() => clickProfile(post.address)}>
+                                <img alt={"Pic"} src={post.pic ?
+                                    `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
+                                    "/default-profile.jpg"}/>
+                                {post.name}
+                                {post.timestamp ? " - " + post.timestamp : ""}
+                            </div>
+                            {/*<p>{post.address}</p>*/}
+                            <div className={profile.post_body}>
+                                <Links>{post.text}</Links>
+                            </div>
                         </div>
                     )
                 })}
