@@ -9,6 +9,7 @@ import {UpdateMemoHistory} from "../update/index.js";
 import {CreateTransaction} from "../snippets/create_tx";
 import {Modals} from "./index";
 import Links from "../snippets/links";
+import {TimeSince} from "../../util/time";
 
 const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -94,7 +95,9 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
                                     `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
                                     "/default-profile.jpg"}/>
                                 {post.name}
-                                {post.timestamp ? " - " + post.timestamp : ""}
+                                <span title={post.timestamp} className={profile.time}>
+                                    {post.timestamp ? " " + TimeSince(post.timestamp) : ""}
+                                </span>
                             </div>
                             {/*<p>{post.address}</p>*/}
                             <div className={profile.post_body}>

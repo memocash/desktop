@@ -135,7 +135,7 @@
     max-width: 100%;
     max-height: calc(100vh - 180px);
     overflow-y: auto;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     outline: none;
 }
 
@@ -225,6 +225,12 @@
     padding: 10px 0 0 40px;
     height: 30px;
     font-weight: bold;
+}
+
+.time {
+    font-weight: normal;
+    font-size: 11px;
+    color: #888;
 }
 
 .post .post_body {

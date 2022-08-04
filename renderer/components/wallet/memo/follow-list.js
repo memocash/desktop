@@ -1,8 +1,9 @@
 import profile from "../../../styles/profile.module.css";
 import ShortHash from "../../util/txs";
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import {TitleCol} from "../snippets/title-col";
 import {useReferredState} from "../../util/state";
+import {TimeSince} from "../../util/time";
 
 const Column = {
     Name: "name",
@@ -54,8 +55,6 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                           col={Column.Name} title={"Name"}/>
                 <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                           col={Column.Transaction} title={"Transaction"}/>
-                <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
-                          col={Column.Timestamp} title={"Timestamp"}/>
             </div>
             {follows.map((follow, i) => {
                 return (
@@ -70,10 +69,14 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                                      src={"/default-profile.jpg"}/>}
                             {(follow.name && follow.name.length) ? follow.name : follow.address}
                         </div>
-                        <div><a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
-                            {ShortHash(follow.tx_hash)}
-                        </a></div>
-                        <div>{follow.timestamp}</div>
+                        <div>
+                            <a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
+                                {ShortHash(follow.tx_hash)}
+                            </a>
+                            <span className={profile.time} title={follow.timestamp}>
+                                {follow.timestamp ? " " + TimeSince(follow.timestamp) : ""}
+                            </span>
+                        </div>
                     </div>
                 )
             })}
