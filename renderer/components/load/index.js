@@ -43,7 +43,7 @@ const WalletOptions = {
     }
 }
 
-const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
+const LoadHome = ({onCreateWallet, onLoadWallet}) => {
     const [isUnreadableFile, setIsUnreadableFile] = useState(false);
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
@@ -55,7 +55,7 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     useEffect(async () => {
         const existingWallets = await window.electron.getExistingWalletFiles()
         let suggestedName = "default_wallet"
-        if (await electron.getWindowId() !== 1 && existingWallets.includes(suggestedName)) {
+        if (await window.electron.getWindowId() !== 1 && existingWallets.includes(suggestedName)) {
             for (let number = 1; true; number++) {
                 suggestedName = "wallet_" + number
                 if (!existingWallets.includes(suggestedName)) {
@@ -164,4 +164,4 @@ const AddWalletHome = ({onCreateWallet, onLoadWallet}) => {
     )
 }
 
-export default AddWalletHome
+export default LoadHome

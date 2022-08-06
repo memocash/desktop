@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
-import {TitleCol} from "./snippets/title-col";
+import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
 
 const Column = {

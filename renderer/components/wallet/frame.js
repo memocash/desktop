@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react"
 import tabs from '../../styles/tabs.module.css'
-import {StatusBar} from './snippets/status-bar'
+import {StatusBar} from './snippets/status_bar'
 import {Modals} from "../../../main/common/util"
 import Find from "../modal/modals/profile/find";
 

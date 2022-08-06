@@ -68,6 +68,10 @@
     margin-top: 10px;
 }
 
+.imageWrapper img {
+    width: 100px;
+}
+
 .importKeys .boxMain {
     display: flex;
     flex-direction: column;

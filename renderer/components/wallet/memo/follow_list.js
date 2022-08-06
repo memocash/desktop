@@ -1,7 +1,7 @@
 import profile from "../../../styles/profile.module.css";
 import ShortHash from "../../util/txs";
 import {useEffect} from "react";
-import {TitleCol} from "../snippets/title-col";
+import {TitleCol} from "../snippets/title_col";
 import {useReferredState} from "../../util/state";
 import {TimeSince} from "../../util/time";
 

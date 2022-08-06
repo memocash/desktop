@@ -1,12 +1,12 @@
 import {useState} from "react"
 import {useRouter} from "next/router"
 import {generateMnemonic, validateMnemonic} from "bip39"
-import AddWalletHome from "../components/AddWallet"
-import AddSeed from "../components/AddWallet/addSeed"
-import ConfirmSeed from "../components/AddWallet/confirmSeed"
-import CreatePassword from "../components/AddWallet/createPassword"
-import SelectType from "../components/AddWallet/select_type"
-import ImportKeys from "../components/AddWallet/import_keys";
+import LoadHome from "../components/load"
+import AddSeed from "../components/load/add_seed"
+import ConfirmSeed from "../components/load/confirm_seed"
+import CreatePassword from "../components/load/create_password"
+import SelectType from "../components/load/select_type"
+import ImportKeys from "../components/load/import_keys";
 import styles from "../styles/addWallet.module.css"
 
 const Panes = {
@@ -48,7 +48,7 @@ const Index = () => {
             console.log(err)
             return
         }
-        router.push("/wallet")
+        await router.push("/wallet")
     }
 
     const onSelectStandard = () => {
@@ -112,54 +112,31 @@ const Index = () => {
 
     const handlePasswordCreated = async (password) => {
         await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
-        router.push("/wallet")
+        await router.push("/wallet")
     }
 
     return (
         <div className={styles.rootPage}>
             <div className={styles.content}>
                 <div className={styles.imageWrapper}>
-                    <img src="/memo-logo-large.png" width="100"/>
+                    <img alt={"Memo logo"} src="/memo-logo-large.png"/>
                 </div>
                 <div className={styles.main}>
-                    {pane === Panes.Step1ChooseFile &&
-                    <AddWalletHome
-                        onCreateWallet={createWalletStep1}
-                        onLoadWallet={loadWallet}
-                    />
-                    }
-                    {pane === Panes.Step2SelectType &&
-                    <SelectType
-                        onBack={onBackFromSelectType}
-                        onSelectStandard={onSelectStandard}
-                        onSelectImport={onSelectImport}
-                    />}
-                    {pane === Panes.Step3SetKeys &&
-                    <ImportKeys
-                        onBack={onBackFromAddSeed}
-                        onSetKeysAndAddresses={onSetKeysAndAddresses}
-                    />}
-                    {pane === Panes.Step3SetSeed &&
-                    <AddSeed
-                        onStoredSeed={handleStoredSeed}
-                        onUserProvidedSeed={handleUserProvidedSeed}
-                        onBack={onBackFromAddSeed}
-                        seedPhrase={seedPhrase}
-                    />
-                    }
-                    {pane === Panes.Step4ConfirmSeed &&
-                    <ConfirmSeed
-                        onBack={onBackFromConfirmSeed}
-                        onSeedPhraseConfirmed={handleSeedPhraseConfirmed}
-                        seedPhrase={seedPhrase}
-                    />
-                    }
-                    {pane === Panes.Step5SetPassword &&
-                    <CreatePassword
-                        onBack={onBackFromCreatePassword}
-                        onPasswordCreated={handlePasswordCreated}
-                    />
-                    }
+                    {pane === Panes.Step1ChooseFile && <LoadHome
+                        onCreateWallet={createWalletStep1} onLoadWallet={loadWallet}/>}
+                    {pane === Panes.Step2SelectType && <SelectType
+                        onBack={onBackFromSelectType} onSelectStandard={onSelectStandard}
+                        onSelectImport={onSelectImport}/>}
+                    {pane === Panes.Step3SetKeys && <ImportKeys
+                        onBack={onBackFromAddSeed} onSetKeysAndAddresses={onSetKeysAndAddresses}/>}
+                    {pane === Panes.Step3SetSeed && <AddSeed
+                        onStoredSeed={handleStoredSeed} onUserProvidedSeed={handleUserProvidedSeed}
+                        onBack={onBackFromAddSeed} seedPhrase={seedPhrase}/>}
+                    {pane === Panes.Step4ConfirmSeed && <ConfirmSeed
+                        onBack={onBackFromConfirmSeed} onSeedPhraseConfirmed={handleSeedPhraseConfirmed}
+                        seedPhrase={seedPhrase}/>}
+                    {pane === Panes.Step5SetPassword && <CreatePassword
+                        onBack={onBackFromCreatePassword} onPasswordCreated={handlePasswordCreated}/>}
                 </div>
             </div>
         </div>
