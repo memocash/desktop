@@ -1,5 +1,4 @@
 import {useEffect, useState} from "react";
-import {BsCurrencyBitcoin, BsHeart} from "react-icons/bs";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import profile from "../../../styles/profile.module.css";
 import Modal from "../../modal/modal";
@@ -10,7 +9,7 @@ import {UpdateMemoHistory} from "../update/index.js";
 import {CreateTransaction} from "../snippets/create_tx";
 import {Modals} from "./index";
 import Links from "../snippets/links";
-import {TimeSince} from "../../util/time";
+import Post from "./post";
 
 const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -64,12 +63,6 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
         }
         await CreateTransaction(wallet, utxosRef.current.value, followOpReturnOutput, 0, beatHash)
     }
-    const clickProfile = (address) => {
-        setAddress(address)
-    }
-    const openTx = async (txHash) => {
-        await window.electron.openTransaction({txHash})
-    }
     return (
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>
@@ -95,26 +88,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
             <div className={profile.posts}>
                 {posts.map((post, i) => {
                     return (
-                        <div key={i} className={profile.post}>
-                            <div className={profile.post_header} onClick={() => clickProfile(post.address)}>
-                                <img alt={"Pic"} src={(post.pic && post.pic.length) ?
-                                    `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
-                                    "/default-profile.jpg"}/>
-                                {post.name}
-                                {" "}
-                                <span title={post.timestamp} className={profile.time}
-                                      onClick={() => openTx(post.tx_hash)}>
-                                    {post.timestamp ? TimeSince(post.timestamp) : "Tx"}
-                                </span>
-                            </div>
-                            <div className={profile.post_body}>
-                                <Links>{post.text}</Links>
-                            </div>
-                            <div className={profile.post_footer}>
-                                <span><BsHeart/> {post.like_count}</span>
-                                <span><BsCurrencyBitcoin/> {post.tip_total.toLocaleString()}</span>
-                            </div>
-                        </div>
+                        <Post key={i} post={post} setAddress={setAddress}/>
                     )
                 })}
             </div>
