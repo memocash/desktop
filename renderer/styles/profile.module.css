@@ -245,4 +245,9 @@
 
 .post .post_footer svg {
     margin-bottom: -2px;
+    margin-right: 2px;
+}
+
+.post .post_footer span {
+    margin-right: 15px;
 }

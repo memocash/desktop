@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {BsHeart} from "react-icons/bs";
+import {BsCurrencyBitcoin, BsHeart} from "react-icons/bs";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import profile from "../../../styles/profile.module.css";
 import Modal from "../../modal/modal";
@@ -111,7 +111,8 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
                                 <Links>{post.text}</Links>
                             </div>
                             <div className={profile.post_footer}>
-                                {post.like_count} <BsHeart/>
+                                <span><BsHeart/> {post.like_count}</span>
+                                <span><BsCurrencyBitcoin/> {post.tip_total.toLocaleString()}</span>
                             </div>
                         </div>
                     )

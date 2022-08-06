@@ -10,7 +10,8 @@ const GetPosts = async (addresses) => {
         "       COALESCE(blocks.timestamp, tx_seens.timestamp), " +
         "       COALESCE(tx_seens.timestamp, blocks.timestamp)" +
         "   ) AS timestamp, " +
-        "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count " +
+        "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count," +
+        "   SUM(memo_likes.tip) AS tip_total " +
         "FROM memo_posts " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
