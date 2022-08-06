@@ -6,6 +6,7 @@ const Handlers = {
     GetRecentFollow: "get-recent-follow",
     GetFollowers: "get-followers",
     GetFollowing: "get-following",
+    GetPost: "get-post",
     GetPosts: "get-posts",
     SetWindowStorage: "set-window-storage",
     GetWindowStorage: "get-window-storage",

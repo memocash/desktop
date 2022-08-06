@@ -1,7 +1,20 @@
 const {Select} = require("../sqlite");
 
 const GetPosts = async (addresses) => {
-    const query = "" +
+    const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ")"
+    return await Select(getSelectQuery(where), addresses)
+}
+
+const GetPost = async (txHash) => {
+    const results = await Select(getSelectQuery("memo_posts.tx_hash = ?"), [txHash])
+    if (results.length === 0) {
+        return {}
+    }
+    return results[0]
+}
+
+const getSelectQuery = (where) => {
+    return "" +
         "SELECT " +
         "   memo_posts.*, " +
         "   profile_names.name, " +
@@ -21,13 +34,13 @@ const GetPosts = async (addresses) => {
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "LEFT JOIN memo_likes ON (memo_likes.post_tx_hash = memo_posts.tx_hash) " +
-        "WHERE memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "WHERE " + where + " " +
         "GROUP BY memo_posts.tx_hash " +
         "ORDER BY timestamp DESC " +
         "LIMIT 50 "
-    return await Select(query, addresses)
 }
 
 module.exports = {
-    GetPosts: GetPosts,
+    GetPost,
+    GetPosts,
 }

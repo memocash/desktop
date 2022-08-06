@@ -239,6 +239,10 @@
     min-height: 21px;
 }
 
+.posts .post .post_body {
+    cursor: pointer;
+}
+
 .post .post_footer {
     padding: 5px;
 }
