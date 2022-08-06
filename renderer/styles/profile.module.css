@@ -238,3 +238,11 @@
     padding: 2px 5px 2px 5px;
     min-height: 21px;
 }
+
+.post .post_footer {
+    padding: 5px;
+}
+
+.post .post_footer svg {
+    margin-bottom: -2px;
+}
