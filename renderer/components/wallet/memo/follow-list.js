@@ -61,12 +61,10 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
                     <div className={profile.row} key={i}>
                         <div className={profile.imgWrapper}
                              onClick={() => setProfile(showFollowers ? follow.address : follow.follow_address)}>
-                            {follow.pic ?
-                                <img alt={"Profile image"} className={profile.img}
-                                     src={`data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}`}/>
-                                :
-                                <img alt={"Profile image"} className={profile.img}
-                                     src={"/default-profile.jpg"}/>}
+                            <img alt={"Profile image"} className={profile.img}
+                                 src={(follow.pic_data && follow.pic_data.length) ?
+                                     `data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}` :
+                                     "/default-profile.jpg"}/>
                             {(follow.name && follow.name.length) ? follow.name : follow.address}
                         </div>
                         <div>

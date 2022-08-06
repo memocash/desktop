@@ -48,6 +48,14 @@ const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
                 tx_hash
                 text
                 ${txQuery}
+                likes {
+                    tx_hash
+                    tip
+                    lock {
+                        address
+                    }
+                    ${txQuery}
+                }
             }
             following {
                 tx_hash

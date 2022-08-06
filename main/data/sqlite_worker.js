@@ -151,4 +151,11 @@ const Definitions = [
         tx_hash CHAR,
         UNIQUE(tx_hash)
     )`,
+    `memo_likes (
+        address CHAR,
+        like_tx_hash CHAR,
+        post_tx_hash CHAR,
+        tip INT,
+        UNIQUE(like_tx_hash)
+    )`,
 ]

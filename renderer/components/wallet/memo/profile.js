@@ -96,7 +96,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
                     return (
                         <div key={i} className={profile.post}>
                             <div className={profile.post_header} onClick={() => clickProfile(post.address)}>
-                                <img alt={"Pic"} src={post.pic ?
+                                <img alt={"Pic"} src={(post.pic && post.pic.length) ?
                                     `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
                                     "/default-profile.jpg"}/>
                                 {post.name}

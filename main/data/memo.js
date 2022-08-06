@@ -73,6 +73,22 @@ const SaveMemoProfiles = async (profiles) => {
             await SaveTransactions(posts.map(post => {
                 return post.tx
             }))
+            let allLikes = []
+            for (let j = 0; j < posts.length; j++) {
+                const post = posts[j]
+                if (post.likes && post.likes.length) {
+                    for (let k = 0; k < post.likes.length; k++) {
+                        post.likes[k].post_tx_hash = post.tx_hash
+                    }
+                    allLikes = allLikes.concat(post.likes)
+                }
+            }
+            await Insert("INSERT OR IGNORE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
+                "VALUES " + Array(posts.length).fill("(?, ?, ?, ?)").join(", "), allLikes.map(like => [
+                like.lock.address, like.tx_hash, like.post_tx_hash, like.tip]).flat())
+            await SaveTransactions(allLikes.map(like => {
+                return like.tx
+            }))
         }
     }
     if (!saveProfiles.length) {
