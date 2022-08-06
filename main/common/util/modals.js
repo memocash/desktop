@@ -1,8 +1,16 @@
 const Modals = {
+    None: "none",
     Seed: "seed",
     Key: "key",
-    Profile: "profile",
-    None: "none",
+    Password: "password",
+    ProfileFind: "profile-find",
+    ProfileSetName: "profile-set-name",
+    ProfileSetText: "profile-set-text",
+    ProfileSetPic: "profile-set-pic",
+    ProfileView: "profile-view",
+    Following: "following",
+    Followers: "followers",
+    Post: "post",
 }
 
 module.exports = {

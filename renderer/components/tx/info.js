@@ -8,8 +8,8 @@ import {useReferredState} from "../util/state";
 import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
-import styles from "../modal/seed.module.css";
-import Password from "../modal/password";
+import styles from "../../styles/modal.module.css"
+import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 
 const Info = () => {

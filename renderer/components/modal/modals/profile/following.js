@@ -1,17 +1,17 @@
-import Modal from "../../modal/modal";
-import {Modals} from "./index";
-import profile from "../../../styles/profile.module.css";
+import Modal from "../../modal";
+import {Modals} from "../../../../../main/common/util"
+import profile from "../../../../styles/profile.module.css";
 import {useEffect, useState} from "react";
-import FollowList from "./follow-list";
-import seed from "../../modal/seed.module.css";
+import FollowList from "../../../wallet/memo/follow_list";
+import styles from "../../../../styles/modal.module.css"
 
-const Following = ({onClose, address, setModal, setProfile, showFollowers = false}) => {
+const Following = ({setModal, modalProps: {address, setProfile}, showFollowers = false}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
         pic: "",
     })
-    const [picData, setPicData] = useState(undefined)
+    const [picData, setPicData] = useState([])
     useEffect(async () => {
         const profileInfo = await window.electron.getProfileInfo([address])
         if (profileInfo === undefined) {
@@ -23,15 +23,15 @@ const Following = ({onClose, address, setModal, setProfile, showFollowers = fals
             setPicData(picData)
         }
     }, [address])
+    const onClose = () => setModal(Modals.None)
     return (
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>
                 <div className={profile.pic}>
-                    {picData ?
-                        <img alt={"Profile image"} className={profile.img}
-                             src={`data:image/png;base64,${Buffer.from(picData).toString("base64")}`}/>
-                        : <img alt={"Profile image"} className={profile.img}
-                               src={"/default-profile.jpg"}/>}
+                    <img alt={"Profile image"} className={profile.img}
+                         src={(picData && picData.length) ?
+                             `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
+                             "/default-profile.jpg"}/>
                 </div>
                 <div className={profile.info}>
                     <h2>
@@ -39,14 +39,16 @@ const Following = ({onClose, address, setModal, setProfile, showFollowers = fals
                         {showFollowers ? " followers" : " following"}
                     </h2>
                     <p>
-                        <button onClick={() => setModal(Modals.Profile)}>Back to Profile</button>
+                        <button onClick={() => setModal(Modals.ProfileView, {address: profileInfo.address})}>
+                            Back to Profile
+                        </button>
                     </p>
                 </div>
             </div>
             <div className={profile.body_modal}>
                 <FollowList addresses={[address]} setProfile={setProfile} showFollowers={showFollowers}/>
             </div>
-            <div className={seed.buttons}>
+            <div className={styles.buttons}>
                 <button onClick={() => setModal(Modals.None)}>Close</button>
             </div>
         </Modal>

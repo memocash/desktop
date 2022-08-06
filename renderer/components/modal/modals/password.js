@@ -1,4 +1,4 @@
-import styles from "./seed.module.css";
+import styles from "../../../styles/modal.module.css"
 import {useRef, useState} from "react";
 
 const Password = ({onClose, onCorrectPassword}) => {

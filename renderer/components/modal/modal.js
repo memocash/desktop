@@ -1,8 +1,8 @@
-import styles from "./modal.module.css"
+import styles from "../../styles/modal.module.css"
 
 const Modal = ({children, onClose}) => {
     return (
-        <div className={styles.root} onClick={onClose}>
+        <div className={styles.wrapper} onClick={onClose}>
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 {children}
             </div>

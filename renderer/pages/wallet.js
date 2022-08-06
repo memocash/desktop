@@ -1,7 +1,9 @@
 import Frame, {Tabs} from "../components/wallet/frame";
-import {Addresses, History, Send, Receive, Coins, Update, Memo} from "../components/wallet";
+import {Addresses, Coins, History, Memo, Receive, Send, Update} from "../components/wallet";
 import {useEffect, useRef, useState} from "react";
 import {Status} from "../components/util/connect"
+import ModalViewer from "../components/modal/viewer";
+import {Modals} from "../../main/common/util";
 
 const StorageKeyWalletTab = "wallet-tab"
 
@@ -23,10 +25,11 @@ const Page = ({tab, page, shown, children}) => {
 }
 
 const WalletLoaded = () => {
+    const [modalWindow, setModalWindow] = useState(Modals.None)
+    const [modalProps, setModalProps] = useState({})
     const [tab, setTab] = useState("")
     const [lastUpdate, setLastUpdate] = useState("")
     const [connected, setConnected] = useState(Status.NotConnected)
-    const [profileAddress, setProfileAddress] = useState("")
     const shownRef = useRef([])
     useEffect(async () => {
         const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.Memo
@@ -40,22 +43,22 @@ const WalletLoaded = () => {
             shownRef.current.push(tab)
         }
     }
-    const viewProfile = async (address) => {
-        setTab(Tabs.Memo)
-        setProfileAddress(address)
+    const setModal = (modalWindow, modalProps = {}) => {
+        setModalWindow(modalWindow)
+        setModalProps(modalProps)
     }
     return (
         <>
-            <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}
-                   viewProfile={viewProfile}>
+            <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
-                    <Memo lastUpdate={lastUpdate} address={profileAddress} setAddress={setProfileAddress}/></Page>
+                    <Memo lastUpdate={lastUpdate} setModal={setModal}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>
             </Frame>
+            <ModalViewer setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}/>
             <Update setConnected={setConnected} setLastUpdate={setLastUpdate}/>
         </>
     )

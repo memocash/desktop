@@ -3,7 +3,7 @@ import {TimeSince} from "../../util/time";
 import Links from "../snippets/links";
 import {BsCurrencyBitcoin, BsHeart} from "react-icons/bs";
 
-const Post = ({post, setAddress}) => {
+const Post = ({post, setModal, setAddress}) => {
     const clickProfile = (address) => {
         setAddress(address)
     }

@@ -1,12 +1,12 @@
-import Modal from "../../modal/modal";
-import bitcoin from "../../util/bitcoin";
+import Modal from "../../modal";
+import bitcoin from "../../../util/bitcoin";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import GetWallet from "../../util/wallet";
-import {CreateTransaction} from "../snippets/create_tx";
+import GetWallet from "../../../util/wallet";
+import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {useRef} from "react";
-import seed from "../../modal/seed.module.css";
+import styles from "../../../../styles/modal.module.css"
 
-const SetName = ({onClose, utxosRef}) => {
+const SetPic = ({onClose, modalProps: {utxosRef}}) => {
     const setPicRef = useRef()
     const formSetPicSubmit = async (e) => {
         e.preventDefault()
@@ -30,13 +30,13 @@ const SetName = ({onClose, utxosRef}) => {
     }
     return (
         <Modal onClose={onClose}>
-            <div className={seed.root}>
+            <div className={styles.root}>
                 <form onSubmit={formSetPicSubmit}>
                     <label>
                         <span>Set pic:</span>
                         <input ref={setPicRef} type="text"/>
                     </label>
-                    <div className={seed.buttons}>
+                    <div className={styles.buttons}>
                         <input type="submit" value="Set"/>
                         <button onClick={onClose}>Cancel</button>
                     </div>
@@ -46,4 +46,4 @@ const SetName = ({onClose, utxosRef}) => {
     )
 }
 
-export default SetName
+export default SetPic

@@ -1,9 +1,8 @@
 import {useEffect, useState} from "react"
-import {KeyModal, SeedModal} from "../modal";
 import tabs from '../../styles/tabs.module.css'
 import {StatusBar} from './snippets/status-bar'
 import {Modals} from "../../../main/common/util"
-import ProfileModal from "../modal/profile";
+import Find from "../modal/modals/profile/find";
 
 export const Tabs = {
     History: "history",
@@ -22,11 +21,7 @@ const Tab = ({selected, name, clicked, title}) => {
     )
 }
 
-const Frame = ({selected, clicked, children, connected, lastUpdate, viewProfile}) => {
-    const [modal, setModal] = useState(Modals.None)
-    useEffect(() => {
-        window.electron.listenDisplayModal((e, modal) => setModal(modal))
-    }, [])
+const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
@@ -41,9 +36,6 @@ const Frame = ({selected, clicked, children, connected, lastUpdate, viewProfile}
                 {children}
             </div>
             <StatusBar connected={connected} lastUpdate={lastUpdate}/>
-            {(modal === Modals.Seed) && <SeedModal onClose={() => setModal(false)}/>}
-            {(modal === Modals.Key) && <KeyModal onClose={() => setModal(false)}/>}
-            {(modal === Modals.Profile) && <ProfileModal onClose={() => setModal(false)} viewProfile={viewProfile}/>}
         </div>
     )
 }

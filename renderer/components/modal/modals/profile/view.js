@@ -1,17 +1,18 @@
 import {useEffect, useState} from "react";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import profile from "../../../styles/profile.module.css";
-import Modal from "../../modal/modal";
-import seed from "../../modal/seed.module.css";
-import bitcoin from "../../util/bitcoin";
-import GetWallet from "../../util/wallet";
-import {UpdateMemoHistory} from "../update/index.js";
-import {CreateTransaction} from "../snippets/create_tx";
-import {Modals} from "./index";
-import Links from "../snippets/links";
-import Post from "./post";
+import profile from "../../../../styles/profile.module.css";
+import styles from "../../../../styles/modal.module.css"
+import bitcoin from "../../../util/bitcoin";
+import GetWallet from "../../../util/wallet";
+import {Modals} from "../../../../../main/common/util"
+import Post from "../../../wallet/memo/post";
+import {CreateTransaction} from "../../../wallet/snippets/create_tx";
+import Links from "../../../wallet/snippets/links";
+import UpdateMemoHistory from "../../../wallet/update/memo";
+import Modal from "../../modal";
 
-const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress}) => {
+const View = ({setModal, modalProps}) => {
+    const {address, utxosRef, lastUpdate} = modalProps
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -63,6 +64,7 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
         }
         await CreateTransaction(wallet, utxosRef.current.value, followOpReturnOutput, 0, beatHash)
     }
+    const onClose = () => setModal(Modals.None)
     return (
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>
@@ -80,23 +82,23 @@ const Profile = ({onClose, address, utxosRef, lastUpdate, setModal, setAddress})
                     <p>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>}
-                        <button onClick={() => setModal(Modals.Following)}>Following</button>
-                        <button onClick={() => setModal(Modals.Followers)}>Followers</button>
+                        <button onClick={() => setModal(Modals.Following, {address})}>Following</button>
+                        <button onClick={() => setModal(Modals.Followers, {address})}>Followers</button>
                     </p>
                 </div>
             </div>
             <div className={profile.posts}>
                 {posts.map((post, i) => {
                     return (
-                        <Post key={i} post={post} setAddress={setAddress}/>
+                        <Post key={i} post={post} setModal={setModal}/>
                     )
                 })}
             </div>
-            <div className={seed.buttons}>
+            <div className={styles.buttons}>
                 <button onClick={onClose}>Close</button>
             </div>
         </Modal>
     )
 }
 
-export default Profile
+export default View

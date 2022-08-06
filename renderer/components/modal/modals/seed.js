@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react"
-import Modal from "./modal"
-import styles from "./seed.module.css"
+import Modal from "../modal"
+import styles from "../../../styles/modal.module.css"
 import Password from "./password";
 
 const SeedModal = ({onClose}) => {

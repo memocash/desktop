@@ -2,13 +2,10 @@ import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
 import {BsPencil} from "react-icons/bs";
-import {Following, Modals, SetName, SetPic, SetProfile} from "./memo/index";
-import Profile from "./memo/profile";
-import FollowList from "./memo/follow-list";
+import FollowList from "./memo/follow_list";
+import {Modals} from "../../../main/common/util";
 
-const Memo = ({lastUpdate, setAddress, address}) => {
-    const [modal, setModal] = useState(Modals.None)
-    const [profileAddress, setProfileAddress] = useState("")
+const Memo = ({lastUpdate, setModal}) => {
     const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
         address: "",
@@ -34,21 +31,11 @@ const Memo = ({lastUpdate, setAddress, address}) => {
             return b.value - a.value
         })
     }, [lastUpdate])
-    useEffect(() => {
-        if (address && address.length) {
-            setProfile(address)
-        }
-    }, [address])
-    const clickEditName = () => setModal(Modals.SetName)
-    const clickEditProfile = () => setModal(Modals.SetProfile)
-    const clickEditPic = () => setModal(Modals.SetPic)
-    const onClose = () => {
-        setModal(Modals.None)
-        setAddress("")
-    }
+    const clickEditName = () => setModal(Modals.ProfileSetName, {utxosRef})
+    const clickEditProfile = () => setModal(Modals.ProfileSetText, {utxosRef})
+    const clickEditPic = () => setModal(Modals.ProfileSetPic, {utxosRef})
     const setProfile = (address) => {
-        setProfileAddress(address)
-        setModal(Modals.Profile)
+        setModal(Modals.ProfileView, {address, utxosRef, lastUpdate})
     }
     return (
         <div className={profile.wrapper}>
@@ -74,15 +61,6 @@ const Memo = ({lastUpdate, setAddress, address}) => {
                 </div>
             </div>
             <FollowList addresses={walletAddresses} setProfile={setProfile}/>
-            {modal === Modals.SetName && <SetName onClose={onClose} utxosRef={utxosRef}/>}
-            {modal === Modals.SetProfile && <SetProfile onClose={onClose} utxosRef={utxosRef}/>}
-            {modal === Modals.SetPic && <SetPic onClose={onClose} utxosRef={utxosRef}/>}
-            {modal === Modals.Profile && <Profile onClose={onClose} utxosRef={utxosRef} address={profileAddress}
-                                                  lastUpdate={lastUpdate} setModal={setModal} setAddress={setAddress}/>}
-            {modal === Modals.Following && <Following onClose={onClose} address={profileAddress} setModal={setModal}
-                                                      setProfile={setProfile}/>}
-            {modal === Modals.Followers && <Following onClose={onClose} address={profileAddress} setModal={setModal}
-                                                      setProfile={setProfile} showFollowers={true}/>}
         </div>
     )
 }
