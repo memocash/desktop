@@ -37,9 +37,21 @@ const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
         tx_hash
     }
     `
+    const likesQuery = `
+    likes {
+        tx_hash
+        tip
+        lock {
+            address
+        }
+        ${txQuery}
+    }
+    `
     const postFields = `
     tx_hash
     text
+    ${txQuery}
+    ${likesQuery}
     lock {
         address
         profile {
@@ -58,14 +70,7 @@ const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
                 tx_hash
                 text
                 ${txQuery}
-                likes {
-                    tx_hash
-                    tip
-                    lock {
-                        address
-                    }
-                    ${txQuery}
-                }
+                ${likesQuery}
                 parent {
                     ${postFields}
                 }

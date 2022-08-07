@@ -158,4 +158,9 @@ const Definitions = [
         tip INT,
         UNIQUE(like_tx_hash)
     )`,
+    `memo_replies (
+        parent_tx_hash CHAR,
+        child_tx_hash CHAR,
+        UNIQUE(parent_tx_hash, child_tx_hash)
+    )`,
 ]
