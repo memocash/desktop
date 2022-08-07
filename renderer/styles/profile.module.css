@@ -27,6 +27,10 @@
     overflow-y: auto;
 }
 
+.info button {
+    cursor: pointer;
+}
+
 .header p {
     margin: 5px 0 10px;
 }
@@ -210,11 +214,7 @@
     border-radius: 5px;
 }
 
-.post .post_header {
-    cursor: pointer;
-}
-
-.post .post_header img {
+.post_header img {
     display: block;
     position: absolute;
     top: 5px;
@@ -224,11 +224,20 @@
     border-radius: 3px;
 }
 
-.post .post_header {
+.post_header {
     position: relative;
     padding: 10px 0 0 40px;
     height: 30px;
     font-weight: bold;
+}
+
+.header_buttons {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.header_buttons button {
+    margin-right: 10px;
 }
 
 .time {
@@ -237,32 +246,49 @@
     color: #888;
 }
 
-.post .post_body {
+.post_body {
     word-wrap: break-word;
     word-break: break-word;
     padding: 2px 5px 2px 5px;
     min-height: 21px;
 }
 
-.posts .post .post_body {
-    cursor: pointer;
+.post_body h3 {
+    margin: 5px 0;
 }
 
-.post .post_footer {
+.post_footer {
     padding: 5px;
 }
 
-.post .post_footer svg {
+.post_footer svg {
     margin-bottom: -2px;
     margin-right: 2px;
 }
 
-.post .post_footer span {
+.post_footer span {
     display: inline-block;
     margin-right: 15px;
+    margin-bottom: 5px;
     min-width: 50px;
 }
 
-.post .post_footer .like_link {
+.post_footer .like_link button {
+    cursor: pointer;
+}
+
+.post_footer button {
+    cursor: pointer;
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+.likes_list {
+    background: #fff;
+    padding: 1px 10px;
+    border-radius: 5px;
+}
+
+.likes_list button {
     cursor: pointer;
 }

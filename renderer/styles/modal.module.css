@@ -43,6 +43,7 @@
 }
 
 .buttons button {
+    cursor: pointer;
     margin-left: 20px;
 }
 

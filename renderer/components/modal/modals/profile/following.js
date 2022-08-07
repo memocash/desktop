@@ -40,7 +40,7 @@ const Following = ({setModal, modalProps: {address, setProfile}, showFollowers =
                     </h2>
                     <p>
                         <button onClick={() => setModal(Modals.ProfileView, {address: profileInfo.address})}>
-                            Back to Profile
+                            Profile
                         </button>
                     </p>
                 </div>
