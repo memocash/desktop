@@ -4,6 +4,7 @@ import {Modals} from "../../../main/common/util";
 import {Find, Following, Post, SetName, SetPic, SetProfile, View} from "./modals/profile";
 import Password from "./modals/password";
 import {useEffect} from "react";
+import PostLikes from "./modals/profile/post_likes";
 
 const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
     useEffect(() => {
@@ -26,6 +27,7 @@ const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
             {modalWindow === Modals.Followers &&
                 <Following setModal={setModal} modalProps={modalProps} showFollowers={true}/>}
             {modalWindow === Modals.Post && <Post setModal={setModal} modalProps={modalProps}/>}
+            {modalWindow === Modals.PostLikes && <PostLikes setModal={setModal} modalProps={modalProps}/>}
         </div>
     )
 }

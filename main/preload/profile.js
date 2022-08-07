@@ -5,6 +5,7 @@ module.exports = {
     getFollowing: (addresses) => ipcRenderer.invoke(Handlers.GetFollowing, addresses),
     getFollowers: (addresses) => ipcRenderer.invoke(Handlers.GetFollowers, addresses),
     getPic: (url) => ipcRenderer.invoke("get-pic", url),
+    getLikes: async (txHash) => await ipcRenderer.invoke(Handlers.GetLikes, txHash),
     getPost: async (txHash) => await ipcRenderer.invoke(Handlers.GetPost, txHash),
     getPosts: (addresses) => ipcRenderer.invoke(Handlers.GetPosts, addresses),
     getProfileInfo: (addresses) => ipcRenderer.invoke(Handlers.GetProfileInfo, addresses),

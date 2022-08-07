@@ -205,6 +205,11 @@
     background: #f9f9f9;
 }
 
+.post_single {
+    background: #fff;
+    border-radius: 5px;
+}
+
 .post .post_header {
     cursor: pointer;
 }
@@ -253,5 +258,11 @@
 }
 
 .post .post_footer span {
+    display: inline-block;
     margin-right: 15px;
+    min-width: 50px;
+}
+
+.post .post_footer .like_link {
+    cursor: pointer;
 }
