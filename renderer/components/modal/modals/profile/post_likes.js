@@ -7,6 +7,7 @@ import Post from "../../../wallet/memo/post";
 import {TitleCol} from "../../../wallet/snippets/title_col";
 import {useReferredState} from "../../../util/state";
 import {TimeSince} from "../../../util/time";
+import {BsBoxArrowInUpRight} from "react-icons/bs";
 
 const Column = {
     Name: "name",
@@ -43,6 +44,7 @@ const PostLikes = ({setModal, modalProps: {txHash}}) => {
         setSortCol(field)
     }
     const setProfile = (address) => setModal(Modals.ProfileView, {address})
+    const openTx = async (txHash) => await window.electron.openTransaction({txHash})
     return (
         <Modal onClose={onClose}>
             <Post post={post} setModal={setModal} isSingle={true}/>
@@ -63,7 +65,10 @@ const PostLikes = ({setModal, modalProps: {txHash}}) => {
                                 {like.name}
                             </div>
                             <div>{like.tip ? like.tip.toLocaleString() : 0}</div>
-                            <div>{TimeSince(like.timestamp)}</div>
+                            <div>
+                                {TimeSince(like.timestamp)}
+                                <button onClick={() => openTx(like.like_tx_hash)}><BsBoxArrowInUpRight/> Tx</button>
+                            </div>
                         </div>
                     )
                 })}

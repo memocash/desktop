@@ -296,6 +296,7 @@
 
 .likes_list button {
     cursor: pointer;
+    margin-left: 5px;
 }
 
 .set_profile {
