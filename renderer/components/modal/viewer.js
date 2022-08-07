@@ -8,7 +8,7 @@ import PostLikes from "./modals/profile/post_likes";
 
 const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
     useEffect(() => {
-        window.electron.listenDisplayModal((e, modal) => setModal(modal))
+        window.electron.listenDisplayModal((e, modal, props = {}) => setModal(modal, props))
     }, [])
     const onClose = () => {
         setModal(Modals.None)

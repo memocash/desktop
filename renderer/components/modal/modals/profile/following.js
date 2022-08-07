@@ -5,7 +5,7 @@ import {useEffect, useState} from "react";
 import FollowList from "../../../wallet/memo/follow_list";
 import styles from "../../../../styles/modal.module.css"
 
-const Following = ({setModal, modalProps: {address, setProfile}, showFollowers = false}) => {
+const Following = ({setModal, modalProps: {address}, showFollowers = false}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -46,7 +46,7 @@ const Following = ({setModal, modalProps: {address, setProfile}, showFollowers =
                 </div>
             </div>
             <div className={profile.body_modal}>
-                <FollowList addresses={[address]} setProfile={setProfile} showFollowers={showFollowers}/>
+                <FollowList addresses={[address]} setModal={setModal} showFollowers={showFollowers}/>
             </div>
             <div className={styles.buttons}>
                 <button onClick={() => setModal(Modals.None)}>Close</button>

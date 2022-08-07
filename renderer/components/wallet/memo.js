@@ -34,9 +34,7 @@ const Memo = ({lastUpdate, setModal}) => {
     const clickEditName = () => setModal(Modals.ProfileSetName, {utxosRef})
     const clickEditProfile = () => setModal(Modals.ProfileSetText, {utxosRef})
     const clickEditPic = () => setModal(Modals.ProfileSetPic, {utxosRef})
-    const setProfile = (address) => {
-        setModal(Modals.ProfileView, {address, utxosRef, lastUpdate})
-    }
+    const setProfile = (address) => setModal(Modals.ProfileView, {address, utxosRef, lastUpdate})
     return (
         <div className={profile.wrapper}>
             <div className={profile.header}>
@@ -60,7 +58,7 @@ const Memo = ({lastUpdate, setModal}) => {
                     </p>
                 </div>
             </div>
-            <FollowList addresses={walletAddresses} setProfile={setProfile}/>
+            <FollowList addresses={walletAddresses} setModal={setModal}/>
         </div>
     )
 }

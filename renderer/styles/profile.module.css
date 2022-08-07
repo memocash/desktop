@@ -145,11 +145,11 @@
     max-height: calc(100vh - 240px);
 }
 
-.followers .row {
+.row {
     display: contents;
 }
 
-.followers .imgWrapper img {
+.imgWrapper img {
     position: absolute;
     display: block;
     top: 3px;
@@ -162,23 +162,23 @@
     word-break: break-word;
 }
 
-.followers .img {
+.img {
     width: 30px;
     height: 30px;
     border-radius: 3px;
 }
 
-.followers .row:hover > span,
-.followers .row:hover > div {
+.row:hover > span,
+.row:hover > div {
     background: #ccc;
 }
 
-.followers .row > span,
-.followers .row > div {
+.row > span,
+.row > div {
     padding: 5px;
 }
 
-.followers .row > div.imgWrapper {
+.row > div.imgWrapper {
     padding: 5px 5px 5px 40px;
     min-height: 26px;
     cursor: pointer;
@@ -187,8 +187,8 @@
     word-break: break-word;
 }
 
-.followers .row:first-of-type > span,
-.followers .row:first-of-type > div {
+.row:first-of-type > span,
+.row:first-of-type > div {
     background: #eee;
     padding: 3px 5px;
     border-right: 1px solid #ccc;
@@ -285,8 +285,13 @@
 
 .likes_list {
     background: #fff;
-    padding: 10px 5px;
-    border-radius: 5px;
+    border-top: 1px solid #ccc;
+    display: grid;
+    max-width: 100%;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    grid-template-columns: repeat(3, 1fr);
+    outline: none;
 }
 
 .likes_list button {

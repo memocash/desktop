@@ -4,6 +4,7 @@ import {useEffect} from "react";
 import {TitleCol} from "../snippets/title_col";
 import {useReferredState} from "../../util/state";
 import {TimeSince} from "../../util/time";
+import {Modals} from "../../../../main/common/util";
 
 const Column = {
     Name: "name",
@@ -12,7 +13,7 @@ const Column = {
     Timestamp: "timestamp",
 }
 
-const FollowList = ({addresses, setProfile, showFollowers = false}) => {
+const FollowList = ({addresses, setModal, showFollowers = false}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
@@ -48,6 +49,7 @@ const FollowList = ({addresses, setProfile, showFollowers = false}) => {
         setSortDesc(desc)
         setSortCol(field)
     }
+    const setProfile = (address) => setModal(Modals.ProfileView, {address})
     return (
         <div className={profile.followers}>
             <div className={profile.row}>
