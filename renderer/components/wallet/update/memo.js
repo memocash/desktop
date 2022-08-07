@@ -37,6 +37,16 @@ const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
         tx_hash
     }
     `
+    const postFields = `
+    tx_hash
+    text
+    lock {
+        address
+        profile {
+            ${profileFields}
+        }
+    }
+    `
     const query = `
     query ($addresses: [String!]) {
         profiles(addresses: $addresses) {
@@ -55,6 +65,12 @@ const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
                         address
                     }
                     ${txQuery}
+                }
+                parent {
+                    ${postFields}
+                }
+                replies {
+                    ${postFields}
                 }
             }
             following {
