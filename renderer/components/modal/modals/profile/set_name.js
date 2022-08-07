@@ -4,6 +4,7 @@ import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {useRef} from "react";
+import profile from "../../../../styles/profile.module.css"
 import styles from "../../../../styles/modal.module.css"
 
 const SetName = ({onClose, modalProps: {utxosRef}}) => {
@@ -30,17 +31,17 @@ const SetName = ({onClose, modalProps: {utxosRef}}) => {
     }
     return (
         <Modal onClose={onClose}>
-            <div className={styles.root}>
+            <div className={profile.set_profile}>
                 <form onSubmit={formSetNameSubmit}>
                     <label>
                         <span>Set name:</span>
-                        <input ref={setNameRef} type="text"/>
                     </label>
-                    <div className={styles.buttons}>
-                        <input type="submit" value="Set"/>
-                        <button onClick={onClose}>Cancel</button>
-                    </div>
+                    <input ref={setNameRef} type="text"/>
+                    <input type="submit" value="Set"/>
                 </form>
+            </div>
+            <div className={styles.buttons}>
+                <button onClick={onClose}>Cancel</button>
             </div>
         </Modal>
     )

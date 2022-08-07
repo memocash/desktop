@@ -5,6 +5,7 @@ import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {useRef} from "react";
 import styles from "../../../../styles/modal.module.css"
+import profile from "../../../../styles/profile.module.css";
 
 const SetPic = ({onClose, modalProps: {utxosRef}}) => {
     const setPicRef = useRef()
@@ -30,17 +31,17 @@ const SetPic = ({onClose, modalProps: {utxosRef}}) => {
     }
     return (
         <Modal onClose={onClose}>
-            <div className={styles.root}>
+            <div className={profile.set_profile}>
                 <form onSubmit={formSetPicSubmit}>
                     <label>
                         <span>Set pic:</span>
-                        <input ref={setPicRef} type="text"/>
                     </label>
-                    <div className={styles.buttons}>
-                        <input type="submit" value="Set"/>
-                        <button onClick={onClose}>Cancel</button>
-                    </div>
+                    <input ref={setPicRef} type="text"/>
+                    <input type="submit" value="Set"/>
                 </form>
+            </div>
+            <div className={styles.buttons}>
+                <button onClick={onClose}>Cancel</button>
             </div>
         </Modal>
     )

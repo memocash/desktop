@@ -285,10 +285,24 @@
 
 .likes_list {
     background: #fff;
-    padding: 1px 10px;
+    padding: 10px 5px;
     border-radius: 5px;
 }
 
 .likes_list button {
+    cursor: pointer;
+}
+
+.set_profile {
+    background: #fff;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.set_profile input[type=text] {
+    margin: 0 5px;
+}
+
+.set_profile input[type=submit] {
     cursor: pointer;
 }
