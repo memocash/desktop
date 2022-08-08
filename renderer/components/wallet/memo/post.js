@@ -1,7 +1,7 @@
 import profile from "../../../styles/profile.module.css";
 import {TimeSince} from "../../util/time";
 import Links from "../snippets/links";
-import {BsBoxArrowInUpRight, BsCurrencyBitcoin, BsHeart} from "react-icons/bs";
+import {BsBoxArrowInUpRight, BsCurrencyBitcoin, BsHeart, BsJournalText, BsListCheck, BsPerson} from "react-icons/bs";
 import {Modals} from "../../../../main/common/util";
 
 const Post = ({post, setModal, isSingle = false}) => {
@@ -10,6 +10,8 @@ const Post = ({post, setModal, isSingle = false}) => {
         await window.electron.openTransaction({txHash})
     }
     const clickLikesLink = () => setModal(Modals.PostLikes, {txHash: post.tx_hash})
+    const clickViewPost = () => setModal(Modals.Post, {txHash: post.tx_hash})
+    const clickViewProfile = () => setModal(Modals.ProfileView, {address: post.address})
     return (
         <div className={isSingle && profile.post_single}>
             <div className={profile.post}>
@@ -27,12 +29,17 @@ const Post = ({post, setModal, isSingle = false}) => {
                     <Links>{post.text}</Links>
                 </div>
                 <div className={profile.post_footer}>
-                    <span><BsHeart/> {post.like_count}</span>
-                    <span><BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}</span>
-                    <button onClick={() => setModal(Modals.ProfileView, {address: post.address})}>Profile</button>
-                    <button onClick={() => setModal(Modals.Post, {txHash: post.tx_hash})}>Post</button>
-                    <button onClick={clickLikesLink}>Likes</button>
-                    <button onClick={(e) => openTx(e, post.tx_hash)}><BsBoxArrowInUpRight/> Tx</button>
+                    <button title={"Like / Tip"} onClick={() => setModal(Modals.PostLike, {txHash: post.tx_hash})}>
+                        <BsHeart/> {post.like_count}
+                        {" "}
+                        <BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}</button>
+                    <button title={"View Post"} onClick={clickViewPost}>
+                        <BsJournalText/></button>
+                    <button title={"Likes List"} onClick={clickLikesLink}><BsListCheck/></button>
+                    <button title={"View Profile"} onClick={clickViewProfile}>
+                        <BsPerson/></button>
+                    <button title={"View Transaction"} onClick={(e) => openTx(e, post.tx_hash)}>
+                        <BsBoxArrowInUpRight/></button>
                 </div>
             </div>
         </div>

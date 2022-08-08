@@ -6,6 +6,7 @@ const Modals = {
     Password: "password",
     Post: "post",
     PostCreate: "post-create",
+    PostLike: "post-like",
     PostLikes: "post-likes",
     ProfileFind: "profile-find",
     ProfileSetName: "profile-set-name",
