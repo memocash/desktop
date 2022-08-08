@@ -312,3 +312,12 @@
 .set_profile input[type=submit] {
     cursor: pointer;
 }
+
+.replies {
+    background: #fff;
+    border-top: 1px solid #ddd;
+}
+
+.replies .post {
+    border-left: 20px solid #ddd;
+}

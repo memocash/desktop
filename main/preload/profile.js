@@ -8,6 +8,7 @@ module.exports = {
     getLikes: async (txHash) => await ipcRenderer.invoke(Handlers.GetLikes, txHash),
     getPost: async (txHash) => await ipcRenderer.invoke(Handlers.GetPost, txHash),
     getPosts: (addresses) => ipcRenderer.invoke(Handlers.GetPosts, addresses),
+    getPostReplies: (txHash) => ipcRenderer.invoke(Handlers.GetPostReplies, txHash),
     getProfileInfo: (addresses) => ipcRenderer.invoke(Handlers.GetProfileInfo, addresses),
     getRecentFollow: (addresses, address) => ipcRenderer.invoke(Handlers.GetRecentFollow, addresses, address),
     getRecentSetName: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetName, addresses),

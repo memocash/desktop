@@ -2,18 +2,24 @@ const {Select} = require("../sqlite");
 
 const GetPosts = async (addresses) => {
     const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ")"
-    return await Select(getSelectQuery(where), addresses)
+    return await Select(getSelectQuery({where}), addresses)
 }
 
 const GetPost = async (txHash) => {
-    const results = await Select(getSelectQuery("memo_posts.tx_hash = ?"), [txHash])
+    const results = await Select(getSelectQuery({where: "memo_posts.tx_hash = ?"}), [txHash])
     if (results.length === 0) {
         return {}
     }
     return results[0]
 }
 
-const getSelectQuery = (where) => {
+const GetPostReplies = async (postTxHash) => {
+    const join = "JOIN memo_replies ON (memo_replies.child_tx_hash = memo_posts.tx_hash)"
+    const where = "memo_replies.parent_tx_hash = ?"
+    return await Select(getSelectQuery({where, join}), [postTxHash])
+}
+
+const getSelectQuery = ({join = "", where}) => {
     return "" +
         "SELECT " +
         "   memo_posts.*, " +
@@ -34,6 +40,7 @@ const getSelectQuery = (where) => {
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "LEFT JOIN memo_likes ON (memo_likes.post_tx_hash = memo_posts.tx_hash) " +
+        join + " " +
         "WHERE " + where + " " +
         "GROUP BY memo_posts.tx_hash " +
         "ORDER BY timestamp DESC " +
@@ -43,4 +50,5 @@ const getSelectQuery = (where) => {
 module.exports = {
     GetPost,
     GetPosts,
+    GetPostReplies,
 }

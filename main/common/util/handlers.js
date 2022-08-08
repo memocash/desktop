@@ -9,6 +9,7 @@ const Handlers = {
     GetLikes: "get-likes",
     GetPost: "get-post",
     GetPosts: "get-posts",
+    GetPostReplies: "get-post-replies",
     SetWindowStorage: "set-window-storage",
     GetWindowStorage: "get-window-storage",
     RightClickMenu: "right-click-menu",

@@ -1,6 +1,9 @@
 const {ipcMain} = require("electron");
 const {GetProfileInfo, GetRecentSetName, GetRecentSetProfile, GetRecentSetPic} = require("../../data/memo");
-const {GetRecentFollow, GetFollowers, GetFollowing, GetPost, GetPosts, GetLikes} = require("../../data/tables");
+const {
+    GetRecentFollow, GetFollowers, GetFollowing, GetPost, GetPosts, GetLikes,
+    GetPostReplies
+} = require("../../data/tables");
 const {Handlers} = require("../../common/util");
 
 const ProfileHandlers = () => {
@@ -14,6 +17,7 @@ const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetLikes, async (e, txHash) => GetLikes(txHash))
     ipcMain.handle(Handlers.GetPost, async (e, txHash) => GetPost(txHash))
     ipcMain.handle(Handlers.GetPosts, async (e, addresses) => GetPosts(addresses))
+    ipcMain.handle(Handlers.GetPostReplies, async (e, txHash) => GetPostReplies(txHash))
 }
 
 module.exports = {
