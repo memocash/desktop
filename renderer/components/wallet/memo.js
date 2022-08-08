@@ -55,6 +55,7 @@ const Memo = ({lastUpdate, setModal}) => {
                     </p>
                     <p>
                         <button onClick={() => setProfile(profileInfo.address)}>Profile</button>
+                        <button onClick={() => setModal(Modals.PostCreate)}>New Post</button>
                     </p>
                 </div>
             </div>

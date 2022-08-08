@@ -1,6 +1,7 @@
 import Find from "./find";
 import Following from "./following";
 import Post from "./post";
+import PostCreate from "./post_create";
 import SetName from "./set_name"
 import SetPic from "./set_pic"
 import SetProfile from "./set_profile"
@@ -10,6 +11,7 @@ export {
     Find,
     Following,
     Post,
+    PostCreate,
     SetName,
     SetPic,
     SetProfile,
