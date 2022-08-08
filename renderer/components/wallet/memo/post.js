@@ -9,6 +9,7 @@ const Post = ({post, setModal, isSingle = false}) => {
         e.stopPropagation()
         await window.electron.openTransaction({txHash})
     }
+    const clickLikeLink = () => setModal(Modals.PostLike, {txHash: post.tx_hash})
     const clickLikesLink = () => setModal(Modals.PostLikes, {txHash: post.tx_hash})
     const clickViewPost = () => setModal(Modals.Post, {txHash: post.tx_hash})
     const clickViewProfile = () => setModal(Modals.ProfileView, {address: post.address})
@@ -29,7 +30,7 @@ const Post = ({post, setModal, isSingle = false}) => {
                     <Links>{post.text}</Links>
                 </div>
                 <div className={profile.post_footer}>
-                    <button title={"Like / Tip"} onClick={() => setModal(Modals.PostLike, {txHash: post.tx_hash})}>
+                    <button title={"Like / Tip"} onClick={clickLikeLink}>
                         <BsHeart/> {post.like_count}
                         {" "}
                         <BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}</button>
