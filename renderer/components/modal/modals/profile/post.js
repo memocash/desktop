@@ -11,18 +11,28 @@ const PostModal = ({setModal, modalProps: {txHash}}) => {
     useEffect(async () => {
         const post = await window.electron.getPost(txHash)
         post.replies = await window.electron.getPostReplies(txHash)
+        post.parent = await window.electron.getPostParent(txHash)
         setPost(post)
     }, [txHash])
     return (
         <Modal onClose={onClose}>
-            <Post post={post} setModal={setModal} isSingle={true}/>
-            {post.replies && post.replies.length > 0 && (<div className={profile.replies}>
-                {post.replies.map((reply, i) => {
-                    return (
-                        <Post key={i} post={reply} setModal={setModal}/>
-                    )
-                })}
-            </div>)}
+            <div className={post.parent && profile.post_parent_wrapper}>
+                {post.parent &&
+                    <div className={profile.post_parent}>
+                        <Post post={post.parent} setModal={setModal}/>
+                    </div>
+                }
+                <Post post={post} setModal={setModal} isSingle={true}/>
+                {post.replies && post.replies.length > 0 && (
+                    <div className={profile.replies}>
+                        {post.replies.map((reply, i) => {
+                            return (
+                                <Post key={i} post={reply} setModal={setModal}/>
+                            )
+                        })}
+                    </div>
+                )}
+            </div>
             <div className={styles.buttons}>
                 <button onClick={onClose}>Close</button>
             </div>

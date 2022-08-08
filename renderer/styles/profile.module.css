@@ -313,6 +313,17 @@
     cursor: pointer;
 }
 
+.post_parent_wrapper {
+    background: #ddd;
+    border-radius: 5px;
+    padding-left: 20px;
+}
+
+.post_parent {
+    margin-left: -20px;
+    border-bottom: 1px solid #ddd;
+}
+
 .replies {
     background: #fff;
     border-top: 1px solid #ddd;

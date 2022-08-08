@@ -8,7 +8,7 @@ const GetPosts = async (addresses) => {
 const GetPost = async (txHash) => {
     const results = await Select(getSelectQuery({where: "memo_posts.tx_hash = ?"}), [txHash])
     if (results.length === 0) {
-        return {}
+        return undefined
     }
     return results[0]
 }
@@ -17,6 +17,16 @@ const GetPostReplies = async (postTxHash) => {
     const join = "JOIN memo_replies ON (memo_replies.child_tx_hash = memo_posts.tx_hash)"
     const where = "memo_replies.parent_tx_hash = ?"
     return await Select(getSelectQuery({where, join}), [postTxHash])
+}
+
+const GetPostParent = async (postTxHash) => {
+    const join = "JOIN memo_replies ON (memo_replies.parent_tx_hash = memo_posts.tx_hash)"
+    const where = "memo_replies.child_tx_hash = ?"
+    const results = await Select(getSelectQuery({where, join}), [postTxHash])
+    if (results.length === 0) {
+        return undefined
+    }
+    return results[0]
 }
 
 const getSelectQuery = ({join = "", where}) => {
@@ -50,5 +60,6 @@ const getSelectQuery = ({join = "", where}) => {
 module.exports = {
     GetPost,
     GetPosts,
+    GetPostParent,
     GetPostReplies,
 }
