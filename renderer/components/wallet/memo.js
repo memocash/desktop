@@ -35,6 +35,7 @@ const Memo = ({lastUpdate, setModal}) => {
     const clickEditProfile = () => setModal(Modals.ProfileSetText, {utxosRef})
     const clickEditPic = () => setModal(Modals.ProfileSetPic, {utxosRef})
     const setProfile = (address) => setModal(Modals.ProfileView, {address, utxosRef, lastUpdate})
+    const createPost = () => setModal(Modals.PostCreate, {utxosRef})
     return (
         <div className={profile.wrapper}>
             <div className={profile.header}>
@@ -55,7 +56,7 @@ const Memo = ({lastUpdate, setModal}) => {
                     </p>
                     <p>
                         <button onClick={() => setProfile(profileInfo.address)}>Profile</button>
-                        <button onClick={() => setModal(Modals.PostCreate)}>New Post</button>
+                        <button onClick={() => createPost()}>New Post</button>
                     </p>
                 </div>
             </div>
