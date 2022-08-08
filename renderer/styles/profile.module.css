@@ -213,6 +213,7 @@
 .post_single {
     background: #fff;
     border-radius: 5px;
+    border: 1px solid #999;
 }
 
 .post_header img {
@@ -318,6 +319,10 @@
     background: #ddd;
     border-radius: 5px;
     padding-left: 20px;
+}
+
+.post_parent_wrapper .post {
+    background: #fff;
 }
 
 .post_parent {
