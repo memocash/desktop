@@ -16,7 +16,7 @@ const PostModal = ({setModal, modalProps: {txHash}}) => {
     }, [txHash])
     return (
         <Modal onClose={onClose}>
-            <div className={post.parent && profile.post_parent_wrapper}>
+            <div className={post.parent ? profile.post_parent_wrapper : null}>
                 {post.parent &&
                     <div className={profile.post_parent}>
                         <Post post={post.parent} setModal={setModal}/>

@@ -62,7 +62,7 @@ const View = ({setModal, modalProps}) => {
         if (recentFollow && !recentFollow.block_hash) {
             beatHash = recentFollow.tx_hash
         }
-        await CreateTransaction(wallet, utxosRef.current.value, followOpReturnOutput, 0, beatHash)
+        await CreateTransaction(wallet, utxosRef.current.value, [{script: followOpReturnOutput}], beatHash)
     }
     const onClose = () => setModal(Modals.None)
     return (

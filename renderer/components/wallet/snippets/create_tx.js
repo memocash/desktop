@@ -1,8 +1,12 @@
 import bitcoin from "../../util/bitcoin";
 import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
-const CreateTransaction = async (wallet, utxos, outputScript, outputValue, beatHash = "") => {
-    let requiredInput = bitcoin.Fee.Base + outputScript.length + outputValue + bitcoin.Fee.OutputValueSize
+const CreateTransaction = async (wallet, utxos, outputs, beatHash = "") => {
+    let requiredInput = bitcoin.Fee.Base
+    for (let i = 0; i < outputs.length; i++) {
+        const {script, value} = outputs[i]
+        requiredInput += script.length + value + bitcoin.Fee.OutputValueSize
+    }
     let totalInput = 0
     let inputs = []
     for (let i = 0; i < utxos.length; i++) {
@@ -16,13 +20,15 @@ const CreateTransaction = async (wallet, utxos, outputScript, outputValue, beatH
     }
     const changeAddress = wallet.addresses[0]
     const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
-    let outputs = [
-        outputScript.toString("hex") + ":" + outputValue.toString(),
-    ]
+    let outputStrings = []
+    for (let i = 0; i < outputs.length; i++) {
+        const {script, value} = outputs[i]
+        outputStrings.push(script.toString("hex") + ":" + value.toString())
+    }
     if (change > 0) {
         outputs.push(address.toOutputScript(changeAddress).toString("hex") + ":" + change)
     }
-    await window.electron.openPreviewSend({inputs, outputs, beatHash})
+    await window.electron.openPreviewSend({inputs, outputStrings, beatHash})
 }
 
 export {

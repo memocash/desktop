@@ -22,7 +22,7 @@ const PostCreate = ({onClose, modalProps: {utxosRef}}) => {
             Buffer.from(post),
         ])
         const wallet = await GetWallet()
-        await CreateTransaction(wallet, utxosRef.current.value, postOpReturnOutput, 0)
+        await CreateTransaction(wallet, utxosRef.current.value, [{script: postOpReturnOutput}])
     }
     return (
         <Modal onClose={onClose}>

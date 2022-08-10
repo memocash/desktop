@@ -48,7 +48,7 @@ const PostLikes = ({setModal, modalProps: {txHash}}) => {
     return (
         <Modal onClose={onClose}>
             <Post post={post} setModal={setModal} isSingle={true}/>
-            <div className={profile.likes_list}>
+            {likes.length ? <div className={profile.likes_list}>
                 <div className={profile.row}>
                     <TitleCol sortFunc={sortLikes} desc={sortDesc} sortCol={sortCol} col={Column.Name} title={"Name"}/>
                     <TitleCol sortFunc={sortLikes} desc={sortDesc} sortCol={sortCol} col={Column.Tip} title={"Tip"}/>
@@ -72,7 +72,7 @@ const PostLikes = ({setModal, modalProps: {txHash}}) => {
                         </div>
                     )
                 })}
-            </div>
+            </div> : <div className={profile.no_results}>No likes</div>}
             <div className={styles.buttons}>
                 <button onClick={onClose}>Close</button>
             </div>

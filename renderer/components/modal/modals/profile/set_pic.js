@@ -27,7 +27,7 @@ const SetPic = ({onClose, modalProps: {utxosRef}}) => {
         if (recentSetPic && !recentSetPic.block_hash) {
             beatHash = recentSetPic.tx_hash
         }
-        await CreateTransaction(wallet, utxosRef.current.value, picOpReturnOutput, 0, beatHash)
+        await CreateTransaction(wallet, utxosRef.current.value, [{script: picOpReturnOutput}], beatHash)
     }
     return (
         <Modal onClose={onClose}>

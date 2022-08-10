@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
-import {BsPencil} from "react-icons/bs";
+import {BsPencil, BsPencilSquare, BsPerson} from "react-icons/bs";
 import FollowList from "./memo/follow_list";
 import {Modals} from "../../../main/common/util";
 
@@ -55,8 +55,10 @@ const Memo = ({lastUpdate, setModal}) => {
                         <a className={profile.editLink}><BsPencil/></a>
                     </p>
                     <p>
-                        <button onClick={() => setProfile(profileInfo.address)}>Profile</button>
-                        <button onClick={() => createPost()}>New Post</button>
+                        <button title={"View Profile"} onClick={() => setProfile(profileInfo.address)}>
+                            <BsPerson/></button>
+                        <button title={"New Post"} onClick={() => createPost()}>
+                            <BsPencilSquare/></button>
                     </p>
                 </div>
             </div>

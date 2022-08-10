@@ -27,7 +27,7 @@ const SetName = ({onClose, modalProps: {utxosRef}}) => {
         if (recentSetName && !recentSetName.block_hash) {
             beatHash = recentSetName.tx_hash
         }
-        await CreateTransaction(wallet, utxosRef.current.value, nameOpReturnOutput, 0, beatHash)
+        await CreateTransaction(wallet, utxosRef.current.value, [{script: nameOpReturnOutput}], beatHash)
     }
     return (
         <Modal onClose={onClose}>

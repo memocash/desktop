@@ -14,7 +14,7 @@ const Post = ({post, setModal, isSingle = false}) => {
     const clickViewPost = () => setModal(Modals.Post, {txHash: post.tx_hash})
     const clickViewProfile = () => setModal(Modals.ProfileView, {address: post.address})
     return (
-        <div className={isSingle && profile.post_single}>
+        <div className={isSingle ? profile.post_single : null}>
             <div className={profile.post}>
                 <div className={profile.post_header}>
                     <img alt={"Pic"} src={(post.pic && post.pic.length) ?

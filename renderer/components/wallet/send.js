@@ -5,6 +5,7 @@ import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
 import {CreateTransaction} from "./snippets/create_tx";
+import {GetMaxValue} from "../util/send";
 
 const Send = ({lastUpdate}) => {
     const payToRef = useRef("")
@@ -21,11 +22,7 @@ const Send = ({lastUpdate}) => {
         calcAndSetMaxValue()
     }, [lastUpdate])
     const calcAndSetMaxValue = () => {
-        let totalUtxoValue = -bitcoin.Fee.Base - bitcoin.Fee.OutputP2PKH
-        for (let i = 0; i < utxosRef.current.value.length; i++) {
-            totalUtxoValue += utxosRef.current.value[i].value - bitcoin.Fee.InputP2PKH
-        }
-        setMaxValue(Math.max(0, totalUtxoValue))
+        setMaxValue(Math.max(0, GetMaxValue(utxosRef.current.value)))
     }
     const onAmountChange = (e) => {
         let {value, min, max} = e.target;
@@ -63,7 +60,7 @@ const Send = ({lastUpdate}) => {
         }
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
-        await CreateTransaction(wallet, utxosRef.current.value, outputScript, amount)
+        await CreateTransaction(wallet, utxosRef.current.value, [{script: outputScript, value: amount}])
     }
     return (
         <form onSubmit={formSubmit}>

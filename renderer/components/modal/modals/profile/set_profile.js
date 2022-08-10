@@ -27,7 +27,7 @@ const SetProfile = ({onClose, modalProps: {utxosRef}}) => {
         if (recentSetProfile && !recentSetProfile.block_hash) {
             beatHash = recentSetProfile.tx_hash
         }
-        await CreateTransaction(wallet, utxosRef.current.value, profileOpReturnOutput, 0, beatHash)
+        await CreateTransaction(wallet, utxosRef.current.value, [{script: profileOpReturnOutput}], beatHash)
     }
     return (
         <Modal onClose={onClose}>
