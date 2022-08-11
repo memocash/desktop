@@ -3,6 +3,17 @@ import {TimeSince} from "../../util/time";
 import Links from "../snippets/links";
 import {BsBoxArrowInUpRight, BsCurrencyBitcoin, BsHeart, BsJournalText, BsListCheck, BsPerson} from "react-icons/bs";
 import {Modals} from "../../../../main/common/util";
+import {useEffect, useId, useRef} from "react";
+
+let Listeners = {}
+
+const UpdatePostListeners = () => {
+    let txHashes = []
+    for (let postId in Listeners) {
+        txHashes.push(Listeners[postId])
+    }
+
+}
 
 const Post = ({post, setModal, isSingle = false}) => {
     const openTx = async (e, txHash) => {
@@ -13,6 +24,15 @@ const Post = ({post, setModal, isSingle = false}) => {
     const clickLikesLink = () => setModal(Modals.PostLikes, {txHash: post.tx_hash})
     const clickViewPost = () => setModal(Modals.Post, {txHash: post.tx_hash})
     const clickViewProfile = () => setModal(Modals.ProfileView, {address: post.address})
+    const postId = useId()
+    useEffect(() => {
+        Listeners[postId] = post.tx_hash
+        UpdatePostListeners()
+        return () => {
+            delete Listeners[postId]
+            UpdatePostListeners()
+        }
+    }, [])
     return (
         <div className={isSingle ? profile.post_single : null}>
             <div className={profile.post}>
