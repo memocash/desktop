@@ -7,7 +7,7 @@ const CreateTransaction = async (wallet, outputs, beatHash = "") => {
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
-        requiredInput += script.length + (value ? value : 0) + bitcoin.Fee.OutputValueSize
+        requiredInput += script.length + (parseInt(value) || 0) + bitcoin.Fee.OutputValueSize
     }
     let totalInput = 0
     let inputs = []

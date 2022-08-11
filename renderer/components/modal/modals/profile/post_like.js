@@ -32,16 +32,19 @@ const PostLike = ({setModal, modalProps: {txHash}}) => {
         if (tip && tip > maxValueRef.current.value) {
             window.electron.showMessageDialog("Tip too high (max: " + maxValueRef.current.value + ")")
             return
+        } else if (tip > 0 && tip < bitcoin.DustLimit) {
+            window.electron.showMessageDialog("Tip too low (min: " + bitcoin.DustLimit + ")")
+            return
         }
         const likeOpReturnOutput = script.compile([
             opcodes.OP_RETURN,
             Buffer.from(bitcoin.Prefix.LikeMemo, "hex"),
-            Buffer.from(txHash),
+            Buffer.from(txHash, "hex").reverse(),
         ])
         const wallet = await GetWallet()
         let outputs = [{script: likeOpReturnOutput}]
         if (tip > 0) {
-            outputs.push({value: tip, script: address.toOutputScript(postRef.current.value.address)})
+            outputs.push({value: tip, script: address.toOutputScript(postRef.current.address)})
         }
         await CreateTransaction(wallet, outputs)
     }
