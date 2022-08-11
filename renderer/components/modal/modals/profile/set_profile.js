@@ -7,7 +7,7 @@ import {useRef} from "react";
 import styles from "../../../../styles/modal.module.css"
 import profile from "../../../../styles/profile.module.css";
 
-const SetProfile = ({onClose, modalProps: {utxosRef}}) => {
+const SetProfile = ({onClose}) => {
     const setProfileRef = useRef()
     const formSetProfileSubmit = async (e) => {
         e.preventDefault()
@@ -27,7 +27,7 @@ const SetProfile = ({onClose, modalProps: {utxosRef}}) => {
         if (recentSetProfile && !recentSetProfile.block_hash) {
             beatHash = recentSetProfile.tx_hash
         }
-        await CreateTransaction(wallet, utxosRef.current.value, [{script: profileOpReturnOutput}], beatHash)
+        await CreateTransaction(wallet, [{script: profileOpReturnOutput}], beatHash)
     }
     return (
         <Modal onClose={onClose}>

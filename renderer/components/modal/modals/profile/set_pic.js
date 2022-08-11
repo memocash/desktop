@@ -7,7 +7,7 @@ import {useRef} from "react";
 import styles from "../../../../styles/modal.module.css"
 import profile from "../../../../styles/profile.module.css";
 
-const SetPic = ({onClose, modalProps: {utxosRef}}) => {
+const SetPic = ({onClose}) => {
     const setPicRef = useRef()
     const formSetPicSubmit = async (e) => {
         e.preventDefault()
@@ -27,7 +27,7 @@ const SetPic = ({onClose, modalProps: {utxosRef}}) => {
         if (recentSetPic && !recentSetPic.block_hash) {
             beatHash = recentSetPic.tx_hash
         }
-        await CreateTransaction(wallet, utxosRef.current.value, [{script: picOpReturnOutput}], beatHash)
+        await CreateTransaction(wallet, [{script: picOpReturnOutput}], beatHash)
     }
     return (
         <Modal onClose={onClose}>

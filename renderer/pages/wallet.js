@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from "react";
 import {Status} from "../components/util/connect"
 import ModalViewer from "../components/modal/viewer";
 import {Modals} from "../../main/common/util";
+import {Utxos} from "../components/util/utxos";
 
 const StorageKeyWalletTab = "wallet-tab"
 
@@ -49,11 +50,12 @@ const WalletLoaded = () => {
     }
     return (
         <>
+            <Utxos lastUpdate={lastUpdate}/>
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
                     <Memo lastUpdate={lastUpdate} setModal={setModal}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
-                <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send lastUpdate={lastUpdate}/></Page>
+                <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>

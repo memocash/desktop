@@ -11,8 +11,10 @@ import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {GetMaxValue} from "../../../util/send";
 import {useReferredState} from "../../../util/state";
+import {GetUtxosRef} from "../../../util/utxos";
 
-const PostLike = ({setModal, modalProps: {txHash, utxosRef}}) => {
+const PostLike = ({setModal, modalProps: {txHash}}) => {
+    const utxosRef = GetUtxosRef()
     const onClose = () => setModal(Modals.None)
     const [post, postRef, setPost] = useReferredState({})
     const tipInputRef = useRef()
@@ -22,10 +24,7 @@ const PostLike = ({setModal, modalProps: {txHash, utxosRef}}) => {
         setPost(post)
     }, [txHash])
     useEffect(async () => {
-        if (!utxosRef) {
-            return
-        }
-        setMaxValue(Math.max(0, GetMaxValue(utxosRef.current.value)))
+        setMaxValue(Math.max(0, GetMaxValue()))
     }, [utxosRef])
     const formLikeSubmit = async (e) => {
         e.preventDefault()
@@ -44,7 +43,7 @@ const PostLike = ({setModal, modalProps: {txHash, utxosRef}}) => {
         if (tip > 0) {
             outputs.push({value: tip, script: address.toOutputScript(postRef.current.value.address)})
         }
-        await CreateTransaction(wallet, utxosRef.current.value, outputs)
+        await CreateTransaction(wallet, outputs)
     }
     return (
         <Modal onClose={onClose}>

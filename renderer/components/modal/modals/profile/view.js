@@ -11,8 +11,7 @@ import Links from "../../../wallet/snippets/links";
 import UpdateMemoHistory from "../../../wallet/update/memo";
 import Modal from "../../modal";
 
-const View = ({setModal, modalProps}) => {
-    const {address, utxosRef, lastUpdate} = modalProps
+const View = ({setModal, modalProps: {address, lastUpdate}}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -62,7 +61,7 @@ const View = ({setModal, modalProps}) => {
         if (recentFollow && !recentFollow.block_hash) {
             beatHash = recentFollow.tx_hash
         }
-        await CreateTransaction(wallet, utxosRef.current.value, [{script: followOpReturnOutput}], beatHash)
+        await CreateTransaction(wallet, [{script: followOpReturnOutput}], beatHash)
     }
     const onClose = () => setModal(Modals.None)
     return (

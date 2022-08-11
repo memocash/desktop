@@ -7,7 +7,7 @@ import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {useRef} from "react";
 
-const PostCreate = ({onClose, modalProps: {utxosRef}}) => {
+const PostCreate = ({onClose}) => {
     const postInputRef = useRef()
     const formPostSubmit = async (e) => {
         e.preventDefault()
@@ -22,7 +22,7 @@ const PostCreate = ({onClose, modalProps: {utxosRef}}) => {
             Buffer.from(post),
         ])
         const wallet = await GetWallet()
-        await CreateTransaction(wallet, utxosRef.current.value, [{script: postOpReturnOutput}])
+        await CreateTransaction(wallet, [{script: postOpReturnOutput}])
     }
     return (
         <Modal onClose={onClose}>

@@ -6,24 +6,17 @@ import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
 import {CreateTransaction} from "./snippets/create_tx";
 import {GetMaxValue} from "../util/send";
+import {GetUtxosRef} from "../util/utxos";
 
-const Send = ({lastUpdate}) => {
+const Send = () => {
     const payToRef = useRef("")
     const messageRef = useRef("")
     const amountRef = useRef(0)
-    const utxosRef = useRef([])
+    const utxosRef = GetUtxosRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
     useEffect(async () => {
-        const wallet = await GetWallet()
-        utxosRef.current.value = await window.electron.getUtxos(wallet.addresses)
-        utxosRef.current.value.sort((a, b) => {
-            return b.value - a.value
-        })
-        calcAndSetMaxValue()
-    }, [lastUpdate])
-    const calcAndSetMaxValue = () => {
-        setMaxValue(Math.max(0, GetMaxValue(utxosRef.current.value)))
-    }
+        setMaxValue(Math.max(0, GetMaxValue()))
+    }, [utxosRef])
     const onAmountChange = (e) => {
         let {value, min, max} = e.target;
         if (!value) {
@@ -32,7 +25,6 @@ const Send = ({lastUpdate}) => {
         e.target.value = Math.max(Number(min), Math.min(Number(max), Number(value)));
     }
     const onClickMax = () => {
-        calcAndSetMaxValue()
         amountRef.current.value = maxValueRef.current
     }
     const formSubmit = async (e) => {
@@ -60,7 +52,7 @@ const Send = ({lastUpdate}) => {
         }
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
-        await CreateTransaction(wallet, utxosRef.current.value, [{script: outputScript, value: amount}])
+        await CreateTransaction(wallet, [{script: outputScript, value: amount}])
     }
     return (
         <form onSubmit={formSubmit}>
