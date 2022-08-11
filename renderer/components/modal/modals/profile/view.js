@@ -10,6 +10,7 @@ import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import Links from "../../../wallet/snippets/links";
 import UpdateMemoHistory from "../../../wallet/update/memo";
 import Modal from "../../modal";
+import {UpdatePosts} from "../../../wallet/update/posts";
 
 const View = ({setModal, modalProps: {address, lastUpdate}}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -48,6 +49,11 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
     }, [lastUpdate, lastProfileUpdate])
     useEffect(async () => {
         await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
+        let txHashes = []
+        for (let i = 0; i < posts.length; i++) {
+            txHashes.push(posts[i].tx_hash)
+        }
+        await UpdatePosts({txHashes, setLastUpdate: setLastProfileUpdate})
     }, [address])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([

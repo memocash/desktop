@@ -58,7 +58,7 @@ const ListenNewMemos = ({wallet, setLastUpdate}) => {
         await window.electron.saveMemoProfiles([profile.profiles])
         setLastUpdate((new Date()).toISOString())
     }
-    window.electron.listenNewTxs({query, variables: {addresses: wallet.addresses}, handler})
+    window.electron.listenGraphQL({query, variables: {addresses: wallet.addresses}, handler})
 }
 
 export default ListenNewMemos

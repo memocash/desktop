@@ -33,7 +33,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
             setLastUpdate((new Date()).toISOString())
         }
     }
-    window.electron.listenNewTxs({query, variables: {address: wallet.addresses[0]}, handler})
+    window.electron.listenGraphQL({query, variables: {address: wallet.addresses[0]}, handler})
 }
 
 export default ListenNewTxs

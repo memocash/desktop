@@ -15,5 +15,6 @@ module.exports = {
     getRecentSetName: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetName, addresses),
     getRecentSetPic: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetPic, addresses),
     getRecentSetProfile: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetProfile, addresses),
+    saveMemoPosts: async (posts) => await ipcRenderer.invoke(Handlers.SaveMemoPosts, posts),
     saveMemoProfiles: async (profiles) => await ipcRenderer.invoke(Handlers.SaveMemoProfiles, profiles),
 }

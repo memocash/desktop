@@ -3,7 +3,7 @@ const {Handlers, GetId, Listeners} = require("../common/util");
 
 module.exports = {
     graphQL: async (query, variables) => await ipcRenderer.invoke(Handlers.GraphQL, {query, variables}),
-    listenNewTxs: ({query, variables, handler, onopen, onclose}) => {
+    listenGraphQL: ({query, variables, handler, onopen, onclose}) => {
         const id = GetId()
         ipcRenderer.on(Listeners.GraphQLDataPrefix + id, (evt, data) => {
             handler(data)

@@ -27,7 +27,7 @@ const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
             ListenBlocks({addresses, setLastUpdate, setConnected})
         }, 2000)
     }
-    window.electron.listenNewTxs({query, handler, onopen, onclose})
+    window.electron.listenGraphQL({query, handler, onopen, onclose})
 }
 
 const RecentBlock = async () => {

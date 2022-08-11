@@ -29,6 +29,7 @@ const Handlers = {
     OpenTransaction: "open-transaction",
     SaveTransactions: "save-transactions",
     SaveBlock: "save-block",
+    SaveMemoPosts: "save-memo-posts",
     SaveMemoProfiles: "save-memo-profiles",
     GetPic: "get-pic",
     GenerateHistory: "generate-history",

@@ -1,5 +1,6 @@
 const {Select, Insert} = require("./sqlite");
 const {SaveTransactions} = require("./txs");
+const {SaveMemoPosts} = require("./tables/memo_post");
 
 const GetProfileInfo = async (addresses) => {
     const query = "" +
@@ -67,50 +68,7 @@ const SaveMemoProfiles = async (profiles) => {
             }))
         }
         if (posts && posts.length) {
-            const replies = posts.map(post => post.replies).flat()
-            let parents = []
-            let parentChildren = []
-            for (let i = 0; i < posts.length; i++) {
-                posts[i].lock = lock
-                if (posts[i].parent) {
-                    parents.push(posts[i].parent)
-                    parentChildren.push({parent: posts[i].parent.tx_hash, child: posts[i].tx_hash})
-                }
-                if (!posts[i].replies) {
-                    continue
-                }
-                for (let j = 0; j < posts[i].replies.length; j++) {
-                    parentChildren.push({parent: posts[i].tx_hash, child: posts[i].replies[j].tx_hash})
-                }
-            }
-            const allPosts = [...parents, ...posts, ...replies]
-            await Insert("INSERT OR REPLACE INTO memo_posts (address, text, tx_hash) " +
-                "VALUES " + Array(allPosts.length).fill("(?, ?, ?)").join(", "), allPosts.map(post => [
-                post.lock.address, post.text, post.tx_hash]).flat())
-            if (parentChildren.length) {
-                await Insert("INSERT OR IGNORE INTO memo_replies (parent_tx_hash, child_tx_hash) " +
-                    "VALUES " + Array(parentChildren.length).fill("(?, ?)").join(", "), parentChildren.map(parentChild => [
-                    parentChild.parent, parentChild.child]).flat())
-            }
-            await SaveTransactions(allPosts.map(post => {
-                return post.tx
-            }))
-            let allLikes = []
-            for (let j = 0; j < allPosts.length; j++) {
-                const post = allPosts[j]
-                if (post.likes && post.likes.length) {
-                    for (let k = 0; k < post.likes.length; k++) {
-                        post.likes[k].post_tx_hash = post.tx_hash
-                    }
-                    allLikes = allLikes.concat(post.likes)
-                }
-            }
-            await Insert("INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
-                "VALUES " + Array(allLikes.length).fill("(?, ?, ?, ?)").join(", "), allLikes.map(like => [
-                like.lock.address, like.tx_hash, like.post_tx_hash, like.tip]).flat())
-            await SaveTransactions(allLikes.map(like => {
-                return like.tx
-            }))
+            await SaveMemoPosts(posts)
         }
     }
     if (!saveProfiles.length) {

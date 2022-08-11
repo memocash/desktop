@@ -1,102 +1,44 @@
+import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql";
+
 const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
-    const txQuery = `
-    tx {
-        hash
-        seen
-        raw
-        inputs {
-            index
-            prev_hash
-            prev_index
-        }
-        outputs {
-            index
-            amount
-            lock {
-                address
-            }
-        }
-        blocks {
-            hash
-            timestamp
-            height
-        }
-    }
-    `
-    const profileFields = `
-    name {
-        name
-        tx_hash
-    }
-    profile {
-        text
-        tx_hash
-    }
-    pic {
-        pic
-        tx_hash
-    }
-    `
-    const likesQuery = `
-    likes {
-        tx_hash
-        tip
-        lock {
-            address
-        }
-        ${txQuery}
-    }
-    `
-    const postFields = `
-    tx_hash
-    text
-    ${txQuery}
-    ${likesQuery}
-    lock {
-        address
-        profile {
-            ${profileFields}
-        }
-    }
-    `
     const query = `
     query ($addresses: [String!]) {
         profiles(addresses: $addresses) {
             lock {
                 address
             }
-            ${profileFields}
+            ${ProfileFields}
             posts {
                 tx_hash
                 text
-                ${txQuery}
-                ${likesQuery}
+                ${TxQuery}
+                ${LikesQuery}
                 parent {
-                    ${postFields}
+                    ${PostFields}
                 }
                 replies {
-                    ${postFields}
+                    ${PostFields}
                 }
             }
             following {
                 tx_hash
                 unfollow
-                ${txQuery}
+                ${TxQuery}
                 follow_lock {
                     address
                     profile {
-                        ${profileFields}
+                        ${ProfileFields}
                     }
                 }
             }
             followers {
                 tx_hash
                 unfollow
-                ${txQuery}
+                ${TxQuery}
                 lock {
                     address
                     profile {
-                        ${profileFields}
+                        ${ProfileFields}
                     }
                 }
             }
