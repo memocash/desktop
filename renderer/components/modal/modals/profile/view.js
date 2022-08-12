@@ -11,6 +11,8 @@ import Links from "../../../wallet/snippets/links";
 import UpdateMemoHistory from "../../../wallet/update/memo";
 import Modal from "../../modal";
 import {UpdatePosts} from "../../../wallet/update/posts";
+import {BsArrowLeft, BsArrowRight} from "react-icons/all";
+import {BsPerson} from "react-icons/bs";
 
 const View = ({setModal, modalProps: {address, lastUpdate}}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -87,8 +89,18 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
                     <p>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>}
-                        <button onClick={() => setModal(Modals.Following, {address})}>Following</button>
-                        <button onClick={() => setModal(Modals.Followers, {address})}>Followers</button>
+                        <button title={"Following"} onClick={() => setModal(Modals.Following, {address})}>
+                            <BsPerson/>
+                            <BsArrowRight/>
+                            {" "}
+                            {profileInfo.num_following}
+                        </button>
+                        <button title={"Followers"} onClick={() => setModal(Modals.Followers, {address})}>
+                            <BsPerson/>
+                            <BsArrowLeft/>
+                            {" "}
+                            {profileInfo.num_followers}
+                        </button>
                     </p>
                 </div>
             </div>

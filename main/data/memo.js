@@ -1,20 +1,29 @@
 const {Select, Insert} = require("./sqlite");
 const {SaveTransactions} = require("./txs");
 const {SaveMemoPosts} = require("./tables/memo_post");
+const {MaxFollows} = require("./common/memo_follow");
 
 const GetProfileInfo = async (addresses) => {
+    const maxFollowersWhere = "follow_address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    const maxFollowingWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
         "SELECT " +
         "   profiles.address, " +
         "   profile_names.name AS name, " +
         "   profile_texts.profile AS profile, " +
-        "   profile_pics.pic AS pic " +
+        "   profile_pics.pic AS pic, " +
+        "   COUNT(DISTINCT max_followers.tx_hash) AS num_followers, " +
+        "   COUNT(DISTINCT max_following.tx_hash) AS num_following " +
         "FROM profiles " +
         "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
         "LEFT JOIN profile_texts ON (profile_texts.tx_hash = profiles.profile) " +
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
+        "LEFT JOIN (" + MaxFollows(maxFollowersWhere) + ") max_followers " +
+        "   ON (max_followers.follow_address = profiles.address) " +
+        "LEFT JOIN (" + MaxFollows(maxFollowingWhere) + ") max_following " +
+        "   ON (max_following.address = profiles.address) " +
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
-    const results = await Select("profiles", query, addresses)
+    const results = await Select("profiles", query, [...addresses, ...addresses, ...addresses])
     if (!results || !results.length) {
         return undefined
     }
@@ -32,23 +41,23 @@ const SaveMemoProfiles = async (profiles) => {
         if (name) {
             await Insert("profile_names",
                 "INSERT OR REPLACE INTO profile_names (address, name, tx_hash) VALUES (?, ?, ?)", [
-                lock.address, name.name, name.tx_hash])
+                    lock.address, name.name, name.tx_hash])
         }
         if (profile) {
             await Insert("profile_texts",
                 "INSERT OR REPLACE INTO profile_texts (address, profile, tx_hash) VALUES (?, ?, ?)", [
-                lock.address, profile.text, profile.tx_hash])
+                    lock.address, profile.text, profile.tx_hash])
         }
         if (pic) {
             await Insert("profile_pics",
                 "INSERT OR REPLACE INTO profile_pics (address, pic, tx_hash) VALUES (?, ?, ?)", [
-                lock.address, pic.pic, pic.tx_hash])
+                    lock.address, pic.pic, pic.tx_hash])
         }
         if (following && following.length) {
             await Insert("memo_follows-following",
                 "INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(following.length).fill("(?, ?, ?, ?)").join(", "), following.map(follow => [
-                lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
+                    lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
             const followingProfiles = following.map(follow => {
                 follow.follow_lock.profile.lock = {address: follow.follow_lock.address}
                 return follow.follow_lock.profile
@@ -62,7 +71,7 @@ const SaveMemoProfiles = async (profiles) => {
             await Insert("memo_follows-followers",
                 "INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(followers.length).fill("(?, ?, ?, ?)").join(", "), followers.map(follow => [
-                follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
+                    follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
             const followersProfiles = followers.map(follow => {
                 follow.lock.profile.lock = {address: follow.lock.address}
                 return follow.lock.profile

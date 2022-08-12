@@ -4,6 +4,7 @@ import profile from "../../../../styles/profile.module.css";
 import {useEffect, useState} from "react";
 import FollowList from "../../../wallet/memo/follow_list";
 import styles from "../../../../styles/modal.module.css"
+import {BsPerson} from "react-icons/bs";
 
 const Following = ({setModal, modalProps: {address}, showFollowers = false}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -40,7 +41,7 @@ const Following = ({setModal, modalProps: {address}, showFollowers = false}) => 
                     </h2>
                     <p>
                         <button onClick={() => setModal(Modals.ProfileView, {address: profileInfo.address})}>
-                            Profile
+                            <BsPerson/>
                         </button>
                     </p>
                 </div>

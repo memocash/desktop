@@ -1,4 +1,5 @@
 const {Select} = require("../sqlite")
+const {MaxFollows} = require("../common/memo_follow");
 
 const GetFollowing = async (addresses) => {
     const query = "" +
@@ -31,13 +32,14 @@ const GetFollowing = async (addresses) => {
         "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
-        "WHERE max_follows.unfollow = 0 "  +
+        "WHERE max_follows.unfollow = 0 " +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "
     return await Select("memo_follows-following", query, addresses)
 }
 
 const GetFollowers = async (addresses) => {
+    const maxFollowsWhere = "follow_address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
         "SELECT " +
         "   memo_follows.address," +
@@ -48,27 +50,12 @@ const GetFollowers = async (addresses) => {
         "   images.data AS pic_data, " +
         "   max_follows.timestamp " +
         "FROM memo_follows " +
-        "JOIN (" +
-        "   SELECT " +
-        "       unfollow, " +
-        "       SUBSTR(MIN(printf('%07d', 1000000 - COALESCE(height, 1000000)) || " +
-        "           memo_follows.tx_hash), 8) AS tx_hash, " +
-        "       MIN(" +
-        "           COALESCE(blocks.timestamp, tx_seens.timestamp), " +
-        "           COALESCE(tx_seens.timestamp, blocks.timestamp)" +
-        "       ) AS timestamp " +
-        "   FROM memo_follows " +
-        "   LEFT JOIN block_txs ON (block_txs.tx_hash = memo_follows.tx_hash) " +
-        "   LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
-        "   LEFT JOIN tx_seens ON (tx_seens.hash = memo_follows.tx_hash) " +
-        "   WHERE follow_address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "   GROUP BY address, follow_address " +
-        ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
+        "JOIN (" + MaxFollows(maxFollowsWhere) + ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
         "LEFT JOIN profiles ON (profiles.address = memo_follows.address) " +
         "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
-        "WHERE max_follows.unfollow = 0 "  +
+        "WHERE max_follows.unfollow = 0 " +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "
     return await Select("memo_follows-followers", query, addresses)
