@@ -12,7 +12,7 @@ const GetCoins = (addresses) => {
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL " +
         "GROUP BY outputs.hash, outputs.`index` "
-    return Select(query, addresses)
+    return Select("outputs-coins", query, addresses)
 }
 
 module.exports = {

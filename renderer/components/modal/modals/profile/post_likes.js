@@ -23,7 +23,8 @@ const PostLikes = ({setModal, modalProps: {txHash}}) => {
     useEffect(async () => {
         const likes = await window.electron.getLikes(txHash)
         setLikes(likes)
-        const post = await window.electron.getPost(txHash)
+        const {addresses} = await window.electron.getWallet()
+        const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
     }, [txHash])
     const onClose = () => setModal(Modals.None)

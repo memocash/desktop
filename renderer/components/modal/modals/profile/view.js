@@ -44,7 +44,7 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
         setIsSelf(isSelf)
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
-        const posts = await window.electron.getPosts([address])
+        const posts = await window.electron.getPosts({addresses: [address], userAddresses: wallet.addresses})
         setPosts(posts)
     }, [lastUpdate, lastProfileUpdate])
     useEffect(async () => {

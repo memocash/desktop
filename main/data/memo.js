@@ -14,7 +14,7 @@ const GetProfileInfo = async (addresses) => {
         "LEFT JOIN profile_texts ON (profile_texts.tx_hash = profiles.profile) " +
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
-    const results = await Select(query, addresses)
+    const results = await Select("profiles", query, addresses)
     if (!results || !results.length) {
         return undefined
     }
@@ -107,7 +107,7 @@ const GetRecentSetName = async (addresses) => {
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_names.tx_hash ASC " +
         "LIMIT 1"
-    const results = await Select(query, addresses)
+    const results = await Select("recent-set-name", query, addresses)
     if (!results || !results.length) {
         return undefined
     }
@@ -126,7 +126,7 @@ const GetRecentSetProfile = async (addresses) => {
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_texts.tx_hash ASC " +
         "LIMIT 1"
-    const results = await Select(query, addresses)
+    const results = await Select("recent-set-profile", query, addresses)
     if (!results || !results.length) {
         return undefined
     }
@@ -145,7 +145,7 @@ const GetRecentSetPic = async (addresses) => {
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_pics.tx_hash ASC " +
         "LIMIT 1"
-    const results = await Select(query, addresses)
+    const results = await Select("recent-set-pic", query, addresses)
     if (!results || !results.length) {
         return undefined
     }
@@ -158,7 +158,7 @@ const GetPicsExist = async (urls) => {
         "   urls " +
         "FROM images " +
         "WHERE urls IN (" + Array(urls.length).fill("?").join(", ") + ") "
-    return await Select(query, urls)
+    return await Select("images-exists-multi", query, urls)
 }
 
 const GetPicExists = async (url) => {
@@ -167,7 +167,7 @@ const GetPicExists = async (url) => {
         "   url " +
         "FROM images " +
         "WHERE url = ?"
-    const results = await Select(query, [url])
+    const results = await Select("images-exists", query, [url])
     return results && results.length
 }
 
@@ -177,7 +177,7 @@ const GetPic = async (url) => {
         "   data " +
         "FROM images " +
         "WHERE url = ?"
-    const results = await Select(query, [url])
+    const results = await Select("images-get", query, [url])
     if (!results || !results.length) {
         return undefined
     }

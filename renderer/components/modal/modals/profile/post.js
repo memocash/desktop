@@ -12,9 +12,10 @@ const PostModal = ({setModal, modalProps: {txHash}}) => {
     const [post, postRef, setPost] = useReferredState({})
     const [lastUpdate, setLastUpdate] = useState(0)
     useEffect(async () => {
-        const post = await window.electron.getPost(txHash)
-        post.replies = await window.electron.getPostReplies(txHash)
-        post.parent = await window.electron.getPostParent(txHash)
+        const {addresses} = await window.electron.getWallet()
+        const post = await window.electron.getPost({txHash, userAddresses: addresses})
+        post.replies = await window.electron.getPostReplies({txHash, userAddresses: addresses})
+        post.parent = await window.electron.getPostParent({txHash, userAddresses: addresses})
         setPost(post)
     }, [txHash, lastUpdate])
     useEffect(async () => {

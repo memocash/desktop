@@ -34,7 +34,7 @@ const GetFollowing = async (addresses) => {
         "WHERE max_follows.unfollow = 0 "  +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "
-    return await Select(query, addresses)
+    return await Select("memo_follows-following", query, addresses)
 }
 
 const GetFollowers = async (addresses) => {
@@ -71,7 +71,7 @@ const GetFollowers = async (addresses) => {
         "WHERE max_follows.unfollow = 0 "  +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "
-    return await Select(query, addresses)
+    return await Select("memo_follows-followers", query, addresses)
 }
 
 const GetRecentFollow = async (addresses, address) => {
@@ -87,7 +87,7 @@ const GetRecentFollow = async (addresses, address) => {
         "ORDER BY COALESCE(blocks.height, 1000000) DESC, memo_follows.tx_hash ASC " +
         "LIMIT 1"
     addresses.push(address)
-    const results = await Select(query, addresses)
+    const results = await Select("memo_follows-recent", query, addresses)
     if (!results || !results.length) {
         return undefined
     }

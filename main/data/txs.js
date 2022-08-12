@@ -54,7 +54,7 @@ const GetTransactions = async (addresses) => {
         "WHERE address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "GROUP BY hash " +
         "ORDER BY timestamp DESC"
-    return Select(query, addresses)
+    return Select("history", query, addresses)
 }
 
 const GenerateHistory = async (addresses) => {
@@ -90,7 +90,7 @@ const GetWalletInfo = async (addresses) => {
         "FROM outputs " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
-    return Select(query, addresses)
+    return Select("outputs-wallet-info", query, addresses)
 }
 
 const GetRecentAddressTransactions = async (addresses) => {
@@ -104,12 +104,12 @@ const GetRecentAddressTransactions = async (addresses) => {
         "JOIN history ON (history.address = outputs.address) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "GROUP BY outputs.address "
-    return Select(query, addresses)
+    return Select("recent-address-transactions", query, addresses)
 }
 
 const GetTransaction = async (txHash) => {
-    const outputs = await Select("SELECT * FROM outputs WHERE hash = ?", [txHash])
-    const inputs = await Select("SELECT * FROM inputs WHERE hash = ?", [txHash])
+    const outputs = await Select("transaction-outputs", "SELECT * FROM outputs WHERE hash = ?", [txHash])
+    const inputs = await Select("transaction-inputs", "SELECT * FROM inputs WHERE hash = ?", [txHash])
     if (inputs.length > 0) {
         let inputOutputsWhere = []
         let inputOutputsParams = []
@@ -117,7 +117,7 @@ const GetTransaction = async (txHash) => {
             inputOutputsWhere.push("hash = ? AND `index` = ?")
             inputOutputsParams.push(inputs[i].prev_hash, inputs[i].prev_index)
         }
-        const inputOutputs = await Select("SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
+        const inputOutputs = await Select("transaction-input-outputs", "SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
             inputOutputsParams)
         for (let i = 0; i < inputs.length; i++) {
             for (let j = 0; j < inputOutputs.length; j++) {
@@ -128,22 +128,22 @@ const GetTransaction = async (txHash) => {
             }
         }
     }
-    const seens = await Select("SELECT * FROM tx_seens WHERE hash = ?", [txHash])
+    const seens = await Select("tx_seens", "SELECT * FROM tx_seens WHERE hash = ?", [txHash])
     let seen
     if (seens && seens.length) {
         seen = seens[0]
     }
-    const raws = await Select("SELECT * FROM tx_raws WHERE hash = ?", [txHash])
+    const raws = await Select("tx_raws", "SELECT * FROM tx_raws WHERE hash = ?", [txHash])
     let raw
     if (raws && raws.length) {
         raw = raws[0].raw
     }
     let block
     try {
-        const blockTxs = await Select("SELECT * FROM block_txs WHERE tx_hash = ?", [txHash])
-        const blocks = await Select("SELECT * FROM blocks WHERE hash = ?", [blockTxs[0].block_hash])
+        const blockTxs = await Select("block_txs", "SELECT * FROM block_txs WHERE tx_hash = ?", [txHash])
+        const blocks = await Select("blocks", "SELECT * FROM blocks WHERE hash = ?", [blockTxs[0].block_hash])
         block = blocks[0]
-        const maxBlock = await Select("SELECT * FROM blocks ORDER BY height DESC LIMIT 1")
+        const maxBlock = await Select("blocks-max", "SELECT * FROM blocks ORDER BY height DESC LIMIT 1")
         block.confirmations = maxBlock[0].height - block.height
     } catch (e) {
     }
@@ -156,7 +156,7 @@ const GetUtxos = async (addresses) => {
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL"
-    return Select(query, addresses)
+    return Select("outputs-utxos", query, addresses)
 }
 
 module.exports = {

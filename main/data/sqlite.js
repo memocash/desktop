@@ -30,9 +30,9 @@ const Insert = async (tableId, query, variables) => {
     })
 }
 
-const Select = async (query, variables) => {
+const Select = async (tableId, query, variables) => {
     return new Promise((resolve, reject) => {
-        const queryId = "SELECT_" + GetId()
+        const queryId = "SELECT_" + tableId + "_" + GetId()
         queries[queryId] = {resolve, reject}
         worker.postMessage({action: "SELECT", queryId, query, variables})
     })

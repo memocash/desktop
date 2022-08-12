@@ -23,7 +23,7 @@ const GetLikes = async (postTxHash) => {
         "LEFT JOIN tx_seens ON (tx_seens.hash = memo_likes.like_tx_hash) " +
         "WHERE memo_likes.post_tx_hash = ? " +
         "";
-    return await Select(query, [postTxHash])
+    return await Select("memo_likes", query, [postTxHash])
 }
 
 module.exports = {

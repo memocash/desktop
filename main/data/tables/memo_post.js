@@ -1,36 +1,40 @@
 const {Select, Insert} = require("../sqlite");
 const {SaveTransactions} = require("../txs");
 
-const GetPosts = async (addresses) => {
+const GetPosts = async ({addresses, userAddresses}) => {
     const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ")"
-    return await Select(getSelectQuery({where}), addresses)
+    const query = getSelectQuery({userAddresses, where})
+    return await Select("memo_posts-multi", query, [...userAddresses, ...addresses])
 }
 
-const GetPost = async (txHash) => {
-    const results = await Select(getSelectQuery({where: "memo_posts.tx_hash = ?"}), [txHash])
+const GetPost = async ({txHash, userAddresses}) => {
+    const results = await Select("memo_posts", getSelectQuery({where: "memo_posts.tx_hash = ?", userAddresses}),
+        [...userAddresses, txHash])
     if (results.length === 0) {
         return undefined
     }
     return results[0]
 }
 
-const GetPostReplies = async (postTxHash) => {
+const GetPostReplies = async ({postTxHash, userAddresses}) => {
     const join = "JOIN memo_replies ON (memo_replies.child_tx_hash = memo_posts.tx_hash)"
     const where = "memo_replies.parent_tx_hash = ?"
-    return await Select(getSelectQuery({where, join}), [postTxHash])
+    return await Select("memo_posts-replies", getSelectQuery({where, join, userAddresses}),
+        [...userAddresses, postTxHash])
 }
 
-const GetPostParent = async (postTxHash) => {
+const GetPostParent = async ({postTxHash, userAddresses}) => {
     const join = "JOIN memo_replies ON (memo_replies.parent_tx_hash = memo_posts.tx_hash)"
     const where = "memo_replies.child_tx_hash = ?"
-    const results = await Select(getSelectQuery({where, join}), [postTxHash])
+    const results = await Select("memo_posts-parent", getSelectQuery({where, join, userAddresses}),
+        [...userAddresses, postTxHash])
     if (results.length === 0) {
         return undefined
     }
     return results[0]
 }
 
-const getSelectQuery = ({join = "", where}) => {
+const getSelectQuery = ({join = "", userAddresses, where}) => {
     return "" +
         "SELECT " +
         "   memo_posts.*, " +
@@ -40,7 +44,10 @@ const getSelectQuery = ({join = "", where}) => {
         "       COALESCE(blocks.timestamp, tx_seens.timestamp), " +
         "       COALESCE(tx_seens.timestamp, blocks.timestamp)" +
         "   ) AS timestamp, " +
-        "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count," +
+        "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count, " +
+        "   SUM(CASE WHEN memo_likes.address IN (" +
+        "       " + Array(userAddresses.length).fill("?").join(", ") + "" +
+        "   ) THEN 1 ELSE 0 END) > 0 AS has_liked, " +
         "   SUM(memo_likes.tip) AS tip_total " +
         "FROM memo_posts " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
