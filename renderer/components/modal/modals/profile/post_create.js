@@ -12,8 +12,8 @@ const PostCreate = ({onClose}) => {
     const formPostSubmit = async (e) => {
         e.preventDefault()
         const post = postInputRef.current.value
-        if (post && Buffer.from(post).length > bitcoin.MaxOpReturn) {
-            window.electron.showMessageDialog("Post length is too long (max: " + bitcoin.MaxOpReturn + ")")
+        if (post && Buffer.from(post).length > bitcoin.Fee.MaxOpReturn) {
+            window.electron.showMessageDialog("Post length is too long (max: " + bitcoin.Fee.MaxOpReturn + ")")
             return
         }
         const postOpReturnOutput = script.compile([

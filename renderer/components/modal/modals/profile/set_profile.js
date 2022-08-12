@@ -12,8 +12,8 @@ const SetProfile = ({onClose}) => {
     const formSetProfileSubmit = async (e) => {
         e.preventDefault()
         const profile = setProfileRef.current.value
-        if (profile && profile.length > bitcoin.MaxOpReturn) {
-            window.electron.showMessageDialog("Profile length is too long (max: " + bitcoin.MaxOpReturn + ")")
+        if (profile && profile.length > bitcoin.Fee.MaxOpReturn) {
+            window.electron.showMessageDialog("Profile length is too long (max: " + bitcoin.Fee.MaxOpReturn + ")")
             return
         }
         const profileOpReturnOutput = script.compile([

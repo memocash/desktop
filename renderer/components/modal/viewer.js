@@ -2,7 +2,7 @@ import SeedModal from "./modals/seed"
 import KeyModal from "./modals/key"
 import {Modals} from "../../../main/common/util";
 import {
-    Find, Following, Post, PostCreate, PostLike, PostLikes, SetName, SetPic, SetProfile, View
+    Find, Following, Post, PostCreate, PostLike, PostLikes, PostReply, SetName, SetPic, SetProfile, View
 } from "./modals/profile";
 import Password from "./modals/password";
 import {useEffect} from "react";
@@ -31,6 +31,7 @@ const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
             {modalWindow === Modals.PostLikes && <PostLikes setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.PostCreate && <PostCreate onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.PostLike && <PostLike setModal={setModal} modalProps={modalProps}/>}
+            {modalWindow === Modals.PostReply && <PostReply setModal={setModal} modalProps={modalProps}/>}
         </div>
     )
 }

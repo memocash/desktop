@@ -29,7 +29,7 @@ const Send = () => {
     }
     const formSubmit = async (e) => {
         e.preventDefault()
-        if (maxValueRef.current < bitcoin.DustLimit) {
+        if (maxValueRef.current < bitcoin.Fee.DustLimit) {
             window.electron.showMessageDialog("Not enough value in wallet to create a transaction")
             return
         }
@@ -42,11 +42,11 @@ const Send = () => {
             window.electron.showMessageDialog("Unable to parse address: " + err.toString())
             return
         }
-        if (message && message.length > bitcoin.MaxOpReturn) {
-            window.electron.showMessageDialog("Message length is too long (max: " + bitcoin.MaxOpReturn + ")")
+        if (message && message.length > bitcoin.Fee.MaxOpReturn) {
+            window.electron.showMessageDialog("Message length is too long (max: " + bitcoin.Fee.MaxOpReturn + ")")
             return
         }
-        if (amount < bitcoin.DustLimit) {
+        if (amount < bitcoin.Fee.DustLimit) {
             window.electron.showMessageDialog("Amount must be above dust limit (546)")
             return
         }

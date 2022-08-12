@@ -12,8 +12,8 @@ const SetPic = ({onClose}) => {
     const formSetPicSubmit = async (e) => {
         e.preventDefault()
         const pic = setPicRef.current.value
-        if (pic && pic.length > bitcoin.MaxOpReturn) {
-            window.electron.showMessageDialog("Pic length is too long (max: " + bitcoin.MaxOpReturn + ")")
+        if (pic && pic.length > bitcoin.Fee.MaxOpReturn) {
+            window.electron.showMessageDialog("Pic length is too long (max: " + bitcoin.Fee.MaxOpReturn + ")")
             return
         }
         const picOpReturnOutput = script.compile([

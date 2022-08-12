@@ -16,7 +16,8 @@ const CreateTransaction = async (wallet, outputs, beatHash = "") => {
         inputs.push([utxo.hash, utxo.index, utxo.value, utxo.address].join(":"))
         requiredInput += bitcoin.Fee.InputP2PKH
         totalInput += parseInt(utxo.value)
-        if (totalInput === requiredInput || totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.DustLimit) {
+        if (totalInput === requiredInput ||
+            totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.Fee.DustLimit) {
             break
         }
     }

@@ -6,6 +6,14 @@ const Fee = {
     OutputP2PKH: 34,
     OutputFeeOpReturn: 20,
     OutputValueSize: 9, // 8 + 1
+    DustLimit: 546,
+    TxHashByteLength: 32,
+    OpPushDataBase: 3,
+    MaxOpReturn: 217,
+    MaxOpReturnBsv: 100000,
+    GetMaxContentWithTxHash: () => {
+        return Fee.MaxOpReturn - Fee.OpPushDataBase - Fee.TxHashByteLength
+    },
 }
 
 const Prefix = {
@@ -40,8 +48,6 @@ const GetPkHashFromAddress = (addressString) => {
 }
 
 export default {
-    DustLimit: 546,
-    MaxOpReturn: 100000,
     Fee: Fee,
     Utf8ByteLength: Utf8ByteLength,
     GetPkHashFromAddress,

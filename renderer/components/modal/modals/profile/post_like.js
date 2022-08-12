@@ -33,8 +33,8 @@ const PostLike = ({setModal, modalProps: {txHash}}) => {
         if (tip && tip > maxValueRef.current.value) {
             window.electron.showMessageDialog("Tip too high (max: " + maxValueRef.current.value + ")")
             return
-        } else if (tip > 0 && tip < bitcoin.DustLimit) {
-            window.electron.showMessageDialog("Tip too low (min: " + bitcoin.DustLimit + ")")
+        } else if (tip > 0 && tip < bitcoin.Fee.DustLimit) {
+            window.electron.showMessageDialog("Tip too low (min: " + bitcoin.Fee.DustLimit + ")")
             return
         }
         const likeOpReturnOutput = script.compile([
@@ -57,6 +57,7 @@ const PostLike = ({setModal, modalProps: {txHash}}) => {
                     <label>
                         <span>Tip (max: {maxValue.toLocaleString()}):</span>
                     </label>
+                    {" "}
                     <input ref={tipInputRef} type="number"/>
                     <input type="submit" value="Like"/>
                 </form>
