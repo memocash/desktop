@@ -87,8 +87,6 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
                     </p>
                     <p>Address: {address}</p>
                     <p>
-                        {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
-                            {isFollowing ? "Unfollow" : "Follow"}</button>}
                         <button title={"Following"} onClick={() => setModal(Modals.Following, {address})}>
                             <BsPerson/>
                             <BsArrowRight/>
@@ -101,6 +99,8 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
                             {" "}
                             {profileInfo.num_followers}
                         </button>
+                        {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
+                            {isFollowing ? "Unfollow" : "Follow"}</button>}
                     </p>
                 </div>
             </div>
