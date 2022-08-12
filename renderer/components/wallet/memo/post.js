@@ -2,7 +2,7 @@ import profile from "../../../styles/profile.module.css";
 import {TimeSince} from "../../util/time";
 import Links from "../snippets/links";
 import {
-    BsBoxArrowInUpRight, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText, BsListCheck, BsPerson
+    BsBoxArrowInUpRight, BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText, BsListCheck, BsPerson
 } from "react-icons/bs";
 import {Modals} from "../../../../main/common/util";
 
@@ -13,6 +13,7 @@ const Post = ({post, setModal, isSingle = false}) => {
     }
     const clickLikeLink = () => setModal(Modals.PostLike, {txHash: post.tx_hash})
     const clickLikesLink = () => setModal(Modals.PostLikes, {txHash: post.tx_hash})
+    const clickReplyLink = () => setModal(Modals.PostReply, {txHash: post.tx_hash})
     const clickViewPost = () => setModal(Modals.Post, {txHash: post.tx_hash})
     const clickViewProfile = () => setModal(Modals.ProfileView, {address: post.address})
     return (
@@ -36,6 +37,8 @@ const Post = ({post, setModal, isSingle = false}) => {
                         {post.has_liked ? <BsHeartFill color={"#d00"}/> : <BsHeart/>} {post.like_count}
                         {" "}
                         <BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}</button>
+                    <button title={"Reply"} onClick={clickReplyLink}>
+                        <BsChatLeft/> {post.reply_count}</button>
                     <button title={"View Post"} onClick={clickViewPost}>
                         <BsJournalText/></button>
                     <button title={"Likes List"} onClick={clickLikesLink}><BsListCheck/></button>

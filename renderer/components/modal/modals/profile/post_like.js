@@ -62,7 +62,7 @@ const PostLike = ({setModal, modalProps: {txHash}}) => {
                 </form>
             </div>
             <div className={styles.buttons}>
-                <button onClick={onClose}>Cancel</button>
+                <button onClick={onClose}>Close</button>
             </div>
         </Modal>
     )

@@ -8,6 +8,7 @@ const Modals = {
     PostCreate: "post-create",
     PostLike: "post-like",
     PostLikes: "post-likes",
+    PostReply: "post-reply",
     ProfileFind: "profile-find",
     ProfileSetName: "profile-set-name",
     ProfileSetPic: "profile-set-pic",

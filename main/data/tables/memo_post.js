@@ -17,15 +17,15 @@ const GetPost = async ({txHash, userAddresses}) => {
 }
 
 const GetPostReplies = async ({txHash, userAddresses}) => {
-    const join = "JOIN memo_replies ON (memo_replies.child_tx_hash = memo_posts.tx_hash)"
-    const where = "memo_replies.parent_tx_hash = ?"
+    const join = "JOIN memo_replies parent ON (parent.child_tx_hash = memo_posts.tx_hash)"
+    const where = "parent.parent_tx_hash = ?"
     return await Select("memo_posts-replies", getSelectQuery({where, join, userAddresses}),
         [...userAddresses, txHash])
 }
 
 const GetPostParent = async ({txHash, userAddresses}) => {
-    const join = "JOIN memo_replies ON (memo_replies.parent_tx_hash = memo_posts.tx_hash)"
-    const where = "memo_replies.child_tx_hash = ?"
+    const join = "JOIN memo_replies child ON (child.parent_tx_hash = memo_posts.tx_hash)"
+    const where = "child.child_tx_hash = ?"
     const results = await Select("memo_posts-parent", getSelectQuery({where, join, userAddresses}),
         [...userAddresses, txHash])
     if (results.length === 0) {
@@ -44,6 +44,7 @@ const getSelectQuery = ({join = "", userAddresses, where}) => {
         "       COALESCE(blocks.timestamp, tx_seens.timestamp), " +
         "       COALESCE(tx_seens.timestamp, blocks.timestamp)" +
         "   ) AS timestamp, " +
+        "   COUNT(DISTINCT memo_replies.child_tx_hash) AS reply_count, " +
         "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count, " +
         "   SUM(CASE WHEN memo_likes.address IN (" +
         "       " + Array(userAddresses.length).fill("?").join(", ") + "" +
@@ -57,6 +58,7 @@ const getSelectQuery = ({join = "", userAddresses, where}) => {
         "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
+        "LEFT JOIN memo_replies ON (memo_replies.parent_tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN memo_likes ON (memo_likes.post_tx_hash = memo_posts.tx_hash) " +
         join + " " +
         "WHERE " + where + " " +
