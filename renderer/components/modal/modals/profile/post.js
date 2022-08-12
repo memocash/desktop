@@ -10,18 +10,18 @@ import {useReferredState} from "../../../util/state";
 const PostModal = ({setModal, modalProps: {txHash}}) => {
     const onClose = () => setModal(Modals.None)
     const [post, postRef, setPost] = useReferredState({})
-    const [lastUpdate, setLastUpdate] = useState(0)
     useEffect(async () => {
+        await loadPost()
+        await updatePosts()
+    }, [txHash])
+    const loadPost = async () => {
         const {addresses} = await window.electron.getWallet()
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         post.replies = await window.electron.getPostReplies({txHash, userAddresses: addresses})
         post.parent = await window.electron.getPostParent({txHash, userAddresses: addresses})
         setPost(post)
-    }, [txHash, lastUpdate])
-    useEffect(async () => {
-        if (!postRef.current.tx_hash) {
-            return
-        }
+    }
+    const updatePosts = async () => {
         let txHashes = [postRef.current.tx_hash]
         if (postRef.current.parent) {
             txHashes.push(postRef.current.parent.tx_hash)
@@ -31,8 +31,9 @@ const PostModal = ({setModal, modalProps: {txHash}}) => {
                 txHashes.push(postRef.current.replies[i].tx_hash)
             }
         }
-        await UpdatePosts({txHashes, setLastUpdate})
-    }, [txHash, postRef])
+        await UpdatePosts({txHashes})
+        await loadPost()
+    }
     return (
         <Modal onClose={onClose}>
             <div className={post.parent ? profile.post_parent_wrapper : null}>
