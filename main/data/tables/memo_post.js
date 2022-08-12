@@ -16,18 +16,18 @@ const GetPost = async ({txHash, userAddresses}) => {
     return results[0]
 }
 
-const GetPostReplies = async ({postTxHash, userAddresses}) => {
+const GetPostReplies = async ({txHash, userAddresses}) => {
     const join = "JOIN memo_replies ON (memo_replies.child_tx_hash = memo_posts.tx_hash)"
     const where = "memo_replies.parent_tx_hash = ?"
     return await Select("memo_posts-replies", getSelectQuery({where, join, userAddresses}),
-        [...userAddresses, postTxHash])
+        [...userAddresses, txHash])
 }
 
-const GetPostParent = async ({postTxHash, userAddresses}) => {
+const GetPostParent = async ({txHash, userAddresses}) => {
     const join = "JOIN memo_replies ON (memo_replies.parent_tx_hash = memo_posts.tx_hash)"
     const where = "memo_replies.child_tx_hash = ?"
     const results = await Select("memo_posts-parent", getSelectQuery({where, join, userAddresses}),
-        [...userAddresses, postTxHash])
+        [...userAddresses, txHash])
     if (results.length === 0) {
         return undefined
     }

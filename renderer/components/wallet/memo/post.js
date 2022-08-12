@@ -33,7 +33,7 @@ const Post = ({post, setModal, isSingle = false}) => {
                 </div>
                 <div className={profile.post_footer}>
                     <button title={"Like / Tip"} onClick={clickLikeLink}>
-                        {post.has_liked ? <BsHeartFill/> : <BsHeart/>} {post.like_count}
+                        {post.has_liked ? <BsHeartFill color={"#d00"}/> : <BsHeart/>} {post.like_count}
                         {" "}
                         <BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}</button>
                     <button title={"View Post"} onClick={clickViewPost}>
