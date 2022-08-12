@@ -16,7 +16,7 @@ const PostModal = ({setModal, modalProps: {txHash}}) => {
         post.replies = await window.electron.getPostReplies(txHash)
         post.parent = await window.electron.getPostParent(txHash)
         setPost(post)
-    }, [lastUpdate])
+    }, [txHash, lastUpdate])
     useEffect(async () => {
         if (!postRef.current.tx_hash) {
             return
@@ -31,7 +31,7 @@ const PostModal = ({setModal, modalProps: {txHash}}) => {
             }
         }
         await UpdatePosts({txHashes, setLastUpdate})
-    }, [postRef])
+    }, [txHash, postRef])
     return (
         <Modal onClose={onClose}>
             <div className={post.parent ? profile.post_parent_wrapper : null}>

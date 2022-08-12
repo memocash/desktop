@@ -22,9 +22,9 @@ worker.on("error", (error) => {
     console.log("Unknown error: " + error)
 })
 
-const Insert = async (query, variables) => {
+const Insert = async (tableId, query, variables) => {
     return new Promise((resolve, reject) => {
-        const queryId = "INSERT_" + GetId()
+        const queryId = "INSERT_" + tableId + "_" + GetId()
         queries[queryId] = {resolve, reject}
         worker.postMessage({action: "INSERT", queryId, query, variables})
     })

@@ -63,7 +63,6 @@ const SaveMemoPosts = async (posts) => {
     let parents = []
     let parentChildren = []
     for (let i = 0; i < posts.length; i++) {
-        posts[i].lock = lock
         if (posts[i].parent) {
             parents.push(posts[i].parent)
             parentChildren.push({parent: posts[i].parent.tx_hash, child: posts[i].tx_hash})
@@ -76,11 +75,14 @@ const SaveMemoPosts = async (posts) => {
         }
     }
     const allPosts = [...parents, ...posts, ...replies]
-    await Insert("INSERT OR REPLACE INTO memo_posts (address, text, tx_hash) " +
+    if (allPosts.length === 0) {
+        return
+    }
+    await Insert("memo_posts", "INSERT OR REPLACE INTO memo_posts (address, text, tx_hash) " +
         "VALUES " + Array(allPosts.length).fill("(?, ?, ?)").join(", "), allPosts.map(post => [
         post.lock.address, post.text, post.tx_hash]).flat())
     if (parentChildren.length) {
-        await Insert("INSERT OR IGNORE INTO memo_replies (parent_tx_hash, child_tx_hash) " +
+        await Insert("memo_replies", "INSERT OR IGNORE INTO memo_replies (parent_tx_hash, child_tx_hash) " +
             "VALUES " + Array(parentChildren.length).fill("(?, ?)").join(", "), parentChildren.map(parentChild => [
             parentChild.parent, parentChild.child]).flat())
     }
@@ -97,7 +99,7 @@ const SaveMemoPosts = async (posts) => {
             allLikes = allLikes.concat(post.likes)
         }
     }
-    await Insert("INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
+    await Insert("memo_likes", "INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
         "VALUES " + Array(allLikes.length).fill("(?, ?, ?, ?)").join(", "), allLikes.map(like => [
         like.lock.address, like.tx_hash, like.post_tx_hash, like.tip]).flat())
     await SaveTransactions(allLikes.map(like => {

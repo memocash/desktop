@@ -30,19 +30,23 @@ const SaveMemoProfiles = async (profiles) => {
         }
         saveProfiles.push({lock, name, profile, pic})
         if (name) {
-            await Insert("INSERT OR REPLACE INTO profile_names (address, name, tx_hash) VALUES (?, ?, ?)", [
+            await Insert("profile_names",
+                "INSERT OR REPLACE INTO profile_names (address, name, tx_hash) VALUES (?, ?, ?)", [
                 lock.address, name.name, name.tx_hash])
         }
         if (profile) {
-            await Insert("INSERT OR REPLACE INTO profile_texts (address, profile, tx_hash) VALUES (?, ?, ?)", [
+            await Insert("profile_texts",
+                "INSERT OR REPLACE INTO profile_texts (address, profile, tx_hash) VALUES (?, ?, ?)", [
                 lock.address, profile.text, profile.tx_hash])
         }
         if (pic) {
-            await Insert("INSERT OR REPLACE INTO profile_pics (address, pic, tx_hash) VALUES (?, ?, ?)", [
+            await Insert("profile_pics",
+                "INSERT OR REPLACE INTO profile_pics (address, pic, tx_hash) VALUES (?, ?, ?)", [
                 lock.address, pic.pic, pic.tx_hash])
         }
         if (following && following.length) {
-            await Insert("INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
+            await Insert("memo_follows-following",
+                "INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(following.length).fill("(?, ?, ?, ?)").join(", "), following.map(follow => [
                 lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
             const followingProfiles = following.map(follow => {
@@ -55,7 +59,8 @@ const SaveMemoProfiles = async (profiles) => {
             }))
         }
         if (followers && followers.length) {
-            await Insert("INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
+            await Insert("memo_follows-followers",
+                "INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
                 "VALUES " + Array(followers.length).fill("(?, ?, ?, ?)").join(", "), followers.map(follow => [
                 follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
             const followersProfiles = followers.map(follow => {
@@ -68,6 +73,9 @@ const SaveMemoProfiles = async (profiles) => {
             }))
         }
         if (posts && posts.length) {
+            for (let i = 0; i < posts.length; i++) {
+                posts[i].lock = lock
+            }
             await SaveMemoPosts(posts)
         }
     }
@@ -84,7 +92,7 @@ const SaveMemoProfiles = async (profiles) => {
         profile.profile ? profile.profile.tx_hash : "",
         profile.pic ? profile.pic.tx_hash : "",
     ]).flat()
-    await Insert(query, values)
+    await Insert("profiles", query, values)
 }
 
 const GetRecentSetName = async (addresses) => {
@@ -181,7 +189,7 @@ const SavePic = async (url, data) => {
         "INSERT OR REPLACE " +
         "INTO images (url, data) " +
         "VALUES (?, ?)"
-    await Insert(query, [url, data])
+    await Insert("images", query, [url, data])
 }
 
 module.exports = {
