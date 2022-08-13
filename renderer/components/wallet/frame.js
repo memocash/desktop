@@ -1,8 +1,5 @@
-import {useEffect, useState} from "react"
 import tabs from '../../styles/tabs.module.css'
 import {StatusBar} from './snippets/status_bar'
-import {Modals} from "../../../main/common/util"
-import Find from "../modal/modals/profile/find";
 
 export const Tabs = {
     History: "history",
@@ -11,6 +8,7 @@ export const Tabs = {
     Addresses: "addresses",
     Coins: "coins",
     Memo: "memo",
+    Chat: "chat",
 }
 
 const Tab = ({selected, name, clicked, title}) => {
@@ -22,15 +20,21 @@ const Tab = ({selected, name, clicked, title}) => {
 }
 
 const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
+    const tabTitles = {
+        "Memo": Tabs.Memo,
+        "Chat": Tabs.Chat,
+        "History": Tabs.History,
+        "Send": Tabs.Send,
+        //"Receive": Tabs.Receive,
+        "Addresses": Tabs.Addresses,
+        "Coins": Tabs.Coins,
+    }
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
-                <Tab selected={selected} clicked={clicked} name={Tabs.Memo} title="Memo"/>
-                <Tab selected={selected} clicked={clicked} name={Tabs.History} title="History"/>
-                <Tab selected={selected} clicked={clicked} name={Tabs.Send} title="Send"/>
-                {/*<Tab selected={selected} clicked={clicked} name={Tabs.Receive} title="Receive"/>*/}
-                <Tab selected={selected} clicked={clicked} name={Tabs.Addresses} title="Addresses"/>
-                <Tab selected={selected} clicked={clicked} name={Tabs.Coins} title="Coins"/>
+                {Object.entries(tabTitles).map(([title, name]) => {
+                    return (<Tab selected={selected} clicked={clicked} name={name} title={title}/>)
+                })}
             </div>
             <div className={tabs.body}>
                 {children}

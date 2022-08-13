@@ -1,4 +1,5 @@
 import Addresses from "./addresses";
+import Chat from "./chat";
 import History from "./history";
 import Send from "./send";
 import Receive from "./receive";
@@ -8,6 +9,7 @@ import Memo from "./memo.js";
 
 export {
     Addresses,
+    Chat,
     History,
     Send,
     Receive,
