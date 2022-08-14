@@ -163,4 +163,9 @@ const Definitions = [
         child_tx_hash CHAR,
         UNIQUE(parent_tx_hash, child_tx_hash)
     )`,
+    `memo_chat_post (
+        tx_hash CHAR,
+        room CHAR,
+        UNIQUE(tx_hash)
+    )`,
 ]

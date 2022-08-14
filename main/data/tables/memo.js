@@ -1,7 +1,7 @@
-const {Select, Insert} = require("./sqlite");
+const {Select, Insert} = require("../sqlite");
 const {SaveTransactions} = require("./txs");
-const {SaveMemoPosts} = require("./tables/memo_post");
-const {MaxFollows} = require("./common/memo_follow");
+const {SaveMemoPosts} = require("./memo_post");
+const {MaxFollows} = require("../common/memo_follow");
 
 const GetProfileInfo = async (addresses) => {
     const maxFollowersWhere = "follow_address IN (" + Array(addresses.length).fill("?").join(", ") + ") "

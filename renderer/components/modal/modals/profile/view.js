@@ -11,8 +11,7 @@ import Links from "../../../wallet/snippets/links";
 import UpdateMemoHistory from "../../../wallet/update/memo";
 import Modal from "../../modal";
 import {UpdatePosts} from "../../../wallet/update/posts";
-import {BsArrowLeft, BsArrowRight} from "react-icons/all";
-import {BsPerson} from "react-icons/bs";
+import {BsArrowLeft, BsArrowRight, BsPerson} from "react-icons/bs";
 
 const View = ({setModal, modalProps: {address, lastUpdate}}) => {
     const [profileInfo, setProfileInfo] = useState({

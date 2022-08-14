@@ -32,8 +32,8 @@ const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
     return (
         <div className={tabs.container}>
             <div className={tabs.header}>
-                {Object.entries(tabTitles).map(([title, name]) => {
-                    return (<Tab selected={selected} clicked={clicked} name={name} title={title}/>)
+                {Object.entries(tabTitles).map(([title, name], index) => {
+                    return (<Tab key={index} selected={selected} clicked={clicked} name={name} title={title}/>)
                 })}
             </div>
             <div className={tabs.body}>

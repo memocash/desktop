@@ -1,7 +1,7 @@
 const {ipcMain} = require("electron");
 const path = require("path");
 const {Handlers} = require("../../common/util");
-const {GetWalletInfo} = require("../../data/txs");
+const {GetWalletInfo} = require("../../data/tables");
 const menu = require("../../menu");
 const {SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow} = require("../window");
 

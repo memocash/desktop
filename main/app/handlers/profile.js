@@ -1,7 +1,7 @@
 const {ipcMain} = require("electron");
-const {GetProfileInfo, GetRecentSetName, GetRecentSetProfile, GetRecentSetPic} = require("../../data/memo");
 const {
-    GetRecentFollow, GetFollowers, GetFollowing, GetPost, GetPosts, GetLikes, GetPostReplies, GetPostParent
+    GetFollowers, GetFollowing, GetLikes, GetPost, GetPostParent, GetPostReplies, GetPosts, GetProfileInfo,
+    GetRecentFollow, GetRecentSetName, GetRecentSetPic, GetRecentSetProfile,
 } = require("../../data/tables");
 const {Handlers} = require("../../common/util");
 

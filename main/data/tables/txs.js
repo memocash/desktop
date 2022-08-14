@@ -1,4 +1,4 @@
-const {Insert, Select} = require("./sqlite")
+const {Insert, Select} = require("../sqlite")
 
 const SaveTransactions = async (transactions) => {
     if (!transactions || !transactions.length) {
@@ -160,12 +160,12 @@ const GetUtxos = async (addresses) => {
 }
 
 module.exports = {
-    SaveTransactions,
-    SaveBlock,
-    GetTransactions,
-    GetTransaction,
-    GetRecentAddressTransactions,
-    GetWalletInfo,
     GenerateHistory,
+    GetRecentAddressTransactions,
+    GetTransaction,
+    GetTransactions,
     GetUtxos,
+    GetWalletInfo,
+    SaveBlock,
+    SaveTransactions,
 }

@@ -1,5 +1,5 @@
 const {Select, Insert} = require("../sqlite");
-const {SaveTransactions} = require("../txs");
+const {SaveTransactions} = require("./txs");
 
 const GetPosts = async ({addresses, userAddresses}) => {
     const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ")"
@@ -107,6 +107,9 @@ const SaveMemoPosts = async (posts) => {
             }
             allLikes = allLikes.concat(post.likes)
         }
+    }
+    if (allLikes.length === 0) {
+        return
     }
     await Insert("memo_likes", "INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
         "VALUES " + Array(allLikes.length).fill("(?, ?, ?, ?)").join(", "), allLikes.map(like => [

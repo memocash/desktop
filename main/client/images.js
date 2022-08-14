@@ -1,4 +1,4 @@
-const {GetPicExists, SavePic} = require("../data/memo");
+const {GetPicExists, SavePic} = require("../data/tables");
 const SaveImagesFromProfiles = async (profiles) => {
     for (let i = 0; i < profiles.length; i++) {
         const profile = profiles[i]

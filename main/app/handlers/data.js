@@ -1,13 +1,10 @@
 const {ipcMain} = require("electron");
 const {SaveImagesFromProfiles} = require("../../client/images");
 const {Handlers} = require("../../common/util");
-const {SaveMemoProfiles, GetPic} = require("../../data/memo");
-const {GetCoins} = require("../../data/tables");
 const {
     SaveTransactions, SaveBlock, GenerateHistory, GetTransactions, GetUtxos, GetTransaction,
-    GetRecentAddressTransactions
-} = require("../../data/txs");
-const {SaveMemoPosts} = require("../../data/tables/memo_post");
+    GetRecentAddressTransactions, SaveMemoProfiles, GetPic, GetCoins, SaveChatRoom, SaveMemoPosts
+} = require("../../data/tables");
 
 const DataHandlers = () => {
     ipcMain.handle(Handlers.SaveTransactions, async (e, transactions) => await SaveTransactions(transactions))
@@ -19,6 +16,7 @@ const DataHandlers = () => {
     ipcMain.handle(Handlers.GetUtxos, async (e, addresses) => GetUtxos(addresses))
     ipcMain.handle(Handlers.GetCoins, async (e, addresses) => GetCoins(addresses))
     ipcMain.handle(Handlers.GetRecentAddresses, async (e, addresses) => GetRecentAddressTransactions(addresses))
+    ipcMain.handle(Handlers.SaveChatRoom, async (e, room) => await SaveChatRoom(room))
     ipcMain.handle(Handlers.SaveMemoPosts, async (e, posts) => await SaveMemoPosts(posts))
     ipcMain.handle(Handlers.SaveMemoProfiles, async (e, profiles) => {
         SaveImagesFromProfiles(profiles
