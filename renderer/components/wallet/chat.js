@@ -4,11 +4,12 @@ import UpdateChat from "./update/chat";
 
 const Chat = () => {
     const [lastUpdate, setLastUpdate] = useState(null);
+    const [roomName, setRoomName] = useState("test");
     useEffect(async () => {
-        await UpdateChat({roomName: "test", setLastUpdate});
+        await UpdateChat({roomName: roomName, setLastUpdate});
     }, [])
     useEffect(() => {
-        // Load chat data from SQLite database
+        const posts = window.electron.getChatPosts(roomName)
     }, [lastUpdate])
     return (
         <div className={profile.wrapper}>
