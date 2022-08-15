@@ -67,3 +67,13 @@
     font-size: 11px;
     color: #888;
 }
+
+.post_header button {
+    cursor: pointer;
+    margin: -5px 0 0 5px;
+    padding: 1px 5px;
+}
+
+.post_header button svg {
+    margin-bottom: -2px;
+}
