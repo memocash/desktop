@@ -15,6 +15,14 @@ const Chat = ({setModal}) => {
     const [room, setRoom] = useState("test");
     const [posts, setPosts] = useState([]);
     const messageRef = useRef()
+    const sidebarRef = useRef()
+    const contentRef = useRef()
+    const sidebarHandleRef = useRef({
+        tracking: false,
+        startCursorScreenX: null,
+        maxWidth: 200,
+        minWidth: 75,
+    })
     useEffect(async () => {
         await UpdateChat({roomName: room, setLastUpdate});
         ListenChatPosts({names: [room], setLastUpdate})
@@ -47,14 +55,39 @@ const Chat = ({setModal}) => {
         await CreateTransaction(await GetWallet(), [{script: chatPostOpReturnOutput}])
         messageRef.current.value = ""
     }
+    const handleMouseDown = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        sidebarHandleRef.current.startWidth = sidebarRef.current.offsetWidth
+        sidebarHandleRef.current.startWidthContent = contentRef.current.offsetWidth
+        sidebarHandleRef.current.startCursorScreenX = e.screenX
+        sidebarHandleRef.current.tracking = true
+    }
+    const handleMouseUp = (e) => {
+        sidebarHandleRef.current.tracking = false
+    }
+    const handleMouseMove = (e) => {
+        if (!sidebarHandleRef.current.tracking) {
+            return
+        }
+        const delta = e.screenX - sidebarHandleRef.current.startCursorScreenX
+        const newWidth = Math.min(Math.max(sidebarHandleRef.current.startWidth + delta,
+            sidebarHandleRef.current.minWidth), sidebarHandleRef.current.maxWidth)
+        console.log(sidebarHandleRef.current.startWidth)
+        sidebarRef.current.style.width = newWidth + "px"
+        const newWidthContent = sidebarHandleRef.current.startWidthContent - delta +
+            (sidebarHandleRef.current.startWidth + delta - newWidth)
+        contentRef.current.style.width = newWidthContent + "px"
+    }
     return (
-        <div className={styles.wrapper}>
-            <div className={styles.sidebar}>
+        <div className={styles.wrapper} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+            <div ref={sidebarRef} className={styles.sidebar}>
                 <div className={styles.sidebar_header}>
                     <h2>{room}</h2>
                 </div>
             </div>
-            <div className={styles.content}>
+            <div className={styles.sidebar_handle} onMouseDown={handleMouseDown}/>
+            <div ref={contentRef} className={styles.content}>
                 <div className={styles.posts}>
                     {posts.map((post, index) => {
                         return (
