@@ -4,11 +4,12 @@
 }
 
 .sidebar {
-    width: 100px;
+    width: 99px;
     height: 100%;
     display: inline-block;
     vertical-align: top;
     background: #f5f5f5;
+    border-right: 1px solid #ccc;
 }
 
 .sidebar h2 {
@@ -35,6 +36,6 @@
     border-top: 1px solid #ccc;
 }
 
-.posts .post:nth-child(even) {
+.posts .post:nth-child(odd) {
     background: #f5f5f5;
 }
