@@ -2,7 +2,7 @@ const {ipcRenderer} = require("electron");
 const {Handlers} = require("../common/util");
 
 module.exports = {
-    getChatPosts: async (room) => await ipcRenderer.invoke(Handlers.GetChatPosts, room),
+    getChatPosts: async ({room, userAddresses}) => await ipcRenderer.invoke(Handlers.GetChatPosts, {room, userAddresses}),
     getFollowing: (addresses) => ipcRenderer.invoke(Handlers.GetFollowing, addresses),
     getFollowers: (addresses) => ipcRenderer.invoke(Handlers.GetFollowers, addresses),
     getPic: (url) => ipcRenderer.invoke("get-pic", url),

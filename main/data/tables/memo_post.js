@@ -34,6 +34,13 @@ const GetPostParent = async ({txHash, userAddresses}) => {
     return results[0]
 }
 
+const GetRoomPosts = async ({room, userAddresses}) => {
+    const join = "JOIN memo_chat_post ON (memo_chat_post.tx_hash = memo_posts.tx_hash)"
+    const where = "memo_chat_post.room = ?"
+    return await Select("memo_posts-room", getSelectQuery({where, join, userAddresses}),
+        [...userAddresses, room])
+}
+
 const getSelectQuery = ({join = "", userAddresses, where}) => {
     return "" +
         "SELECT " +
@@ -124,5 +131,6 @@ module.exports = {
     GetPosts,
     GetPostParent,
     GetPostReplies,
+    GetRoomPosts,
     SaveMemoPosts,
 }

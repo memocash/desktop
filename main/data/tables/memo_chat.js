@@ -1,4 +1,4 @@
-const {Insert, Select} = require("../sqlite")
+const {Insert} = require("../sqlite")
 const {SaveMemoPosts} = require("./memo_post");
 
 const SaveChatRoom = async (room) => {
@@ -12,14 +12,6 @@ const SaveChatRoom = async (room) => {
     await Insert("chat_room", query, room.posts.map(post => [post.tx_hash, room.name]).flat())
 }
 
-const GetRoomPosts = async (room) => {
-    const query = "" +
-        "SELECT * FROM memo_chat_post " +
-        "WHERE room = ? "
-    return await Select("chat_room", query, [room])
-}
-
 module.exports = {
     SaveChatRoom,
-    GetRoomPosts,
 }

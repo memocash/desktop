@@ -6,7 +6,7 @@ const {
 const {Handlers} = require("../../common/util");
 
 const ProfileHandlers = () => {
-    ipcMain.handle(Handlers.GetChatPosts, async (e, room) => GetRoomPosts(room))
+    ipcMain.handle(Handlers.GetChatPosts, async (e, {room, userAddresses}) => GetRoomPosts({room, userAddresses}))
     ipcMain.handle(Handlers.GetProfileInfo, async (e, addresses) => GetProfileInfo(addresses))
     ipcMain.handle(Handlers.GetRecentSetName, async (e, addresses) => GetRecentSetName(addresses))
     ipcMain.handle(Handlers.GetRecentSetProfile, async (e, addresses) => GetRecentSetProfile(addresses))
