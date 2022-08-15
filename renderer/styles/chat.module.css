@@ -19,7 +19,7 @@
     width: 4px;
     height: 100%;
     cursor: col-resize;
-    border-right: 1px solid #ccc;
+    border-right: 1px solid #555;
 }
 
 .content {
