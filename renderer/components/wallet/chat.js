@@ -12,11 +12,12 @@ import {CreateTransaction} from "./snippets/create_tx";
 
 const Chat = ({setModal}) => {
     const [lastUpdate, setLastUpdate] = useState(null);
-    const [room, setRoom] = useState("test");
+    const [room, setRoom] = useState("");
     const [posts, setPosts] = useState([]);
     const messageRef = useRef()
     const sidebarRef = useRef()
     const contentRef = useRef()
+    const [disableMessageForm, setDisableMessageForm] = useState(true)
     const sidebarHandleRef = useRef({
         tracking: false,
         startCursorScreenX: null,
@@ -24,6 +25,11 @@ const Chat = ({setModal}) => {
         minWidth: 75,
     })
     useEffect(async () => {
+        if (!room || !room.length) {
+            setDisableMessageForm(true)
+            return
+        }
+        setDisableMessageForm(false)
         await UpdateChat({roomName: room, setLastUpdate});
         ListenChatPosts({names: [room], setLastUpdate})
     }, [room])
@@ -55,6 +61,12 @@ const Chat = ({setModal}) => {
         await CreateTransaction(await GetWallet(), [{script: chatPostOpReturnOutput}])
         messageRef.current.value = ""
     }
+    const formClickHandler = () => {
+        if (!disableMessageForm) {
+            return
+        }
+        clickOpenRoomModal()
+    }
     const handleMouseDown = (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -73,7 +85,6 @@ const Chat = ({setModal}) => {
         const delta = e.screenX - sidebarHandleRef.current.startCursorScreenX
         const newWidth = Math.min(Math.max(sidebarHandleRef.current.startWidth + delta,
             sidebarHandleRef.current.minWidth), sidebarHandleRef.current.maxWidth)
-        console.log(sidebarHandleRef.current.startWidth)
         sidebarRef.current.style.width = newWidth + "px"
         const newWidthContent = sidebarHandleRef.current.startWidthContent - delta +
             (sidebarHandleRef.current.startWidth + delta - newWidth)
@@ -87,7 +98,7 @@ const Chat = ({setModal}) => {
                     <h2>{room}</h2>
                 </div>
                 <div className={styles.sidebar_content}>
-                    <button onClick={clickOpenRoomModal}>
+                    <button title={"Open Room"} onClick={clickOpenRoomModal}>
                         <BsDoorOpen/>
                     </button>
                 </div>
@@ -125,9 +136,11 @@ const Chat = ({setModal}) => {
                         )
                     })}
                 </div>
-                <form className={styles.sender} onSubmit={formSubmitHandler}>
-                    <input ref={messageRef} type={"text"} placeholder={"Type a message..."}/>
-                    <input type={"submit"} value={"Send"}/>
+                <form className={styles.sender} onSubmit={formSubmitHandler} onClick={formClickHandler}>
+                    <fieldset disabled={disableMessageForm}>
+                        <input ref={messageRef} type={"text"} placeholder={"Type a message..."}/>
+                        <input type={"submit"} value={"Send"}/>
+                    </fieldset>
                 </form>
             </div>
         </div>
