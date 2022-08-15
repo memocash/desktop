@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import styles from "../../styles/chat.module.css";
 import GetWallet from "../util/wallet";
-import UpdateChat from "./update/chat";
+import {ListenChatPosts, UpdateChat} from "./update/chat";
 import {TimeSince} from "../util/time";
 import {Modals} from "../../../main/common/util";
 import {BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
@@ -17,11 +17,11 @@ const Chat = ({setModal}) => {
     const messageRef = useRef()
     useEffect(async () => {
         await UpdateChat({roomName: room, setLastUpdate});
+        ListenChatPosts({names: [room], setLastUpdate})
     }, [])
     useEffect(async () => {
         const userAddresses = (await GetWallet()).addresses
         const posts = await window.electron.getChatPosts({room, userAddresses})
-        posts.reverse()
         setPosts(posts)
     }, [lastUpdate])
     const clickViewProfile = (address) => setModal(Modals.ProfileView, {address})
@@ -45,6 +45,7 @@ const Chat = ({setModal}) => {
             Buffer.from(message),
         ])
         await CreateTransaction(await GetWallet(), [{script: chatPostOpReturnOutput}])
+        messageRef.current.value = ""
     }
     return (
         <div className={styles.wrapper}>
@@ -66,7 +67,8 @@ const Chat = ({setModal}) => {
                                         {post.name}
                                     </a>
                                     {" "}
-                                    {post.timestamp ? TimeSince(post.timestamp) : ""}
+                                    <span className={styles.time}>
+                                        {post.timestamp ? TimeSince(post.timestamp) : ""}</span>
                                     <button title={"Like / Tip"} onClick={() => clickLikeLink(post.tx_hash)}>
                                         {post.has_liked ? <BsHeartFill color={"#d00"}/> : <BsHeart/>} {post.like_count}
                                         {" "}

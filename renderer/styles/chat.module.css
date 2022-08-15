@@ -27,8 +27,12 @@
     width: 100%;
     height: calc(100% - 40px);
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    flex-direction: column-reverse;
+    overflow-y: auto;
+}
+
+.posts .post:first-child {
+    margin-top: auto;
 }
 
 .posts .post {
@@ -36,6 +40,7 @@
     overflow-x: auto;
     padding: 5px 10px;
     border-top: 1px solid #ccc;
+    flex-shrink: 0;
 }
 
 .posts .post:nth-child(odd) {
@@ -44,8 +49,8 @@
 
 .post_header {
     position: relative;
-    height: 18px;
-    padding: 4px 0 2px 25px;
+    height: 22px;
+    padding: 0 0 2px 23px;
 }
 
 .post_header a {
@@ -58,8 +63,8 @@
     left: 0;
     object-fit: cover;
     border-radius: 3px;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 
 .post_header .time {
@@ -70,7 +75,7 @@
 
 .post_header button {
     cursor: pointer;
-    margin: -5px 0 0 5px;
+    margin-left: 5px;
     padding: 1px 5px;
 }
 
