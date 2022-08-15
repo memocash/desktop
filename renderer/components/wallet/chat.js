@@ -58,6 +58,10 @@ const Chat = ({setModal}) => {
                         )
                     })}
                 </div>
+                <div className={styles.sender}>
+                    <input type={"text"} placeholder={"Type a message..."}/>
+                    <input type={"submit"} value={"Send"}/>
+                </div>
             </div>
         </div>
     )

@@ -25,7 +25,7 @@
 
 .posts {
     width: 100%;
-    height: 100%;
+    height: calc(100% - 40px);
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -76,4 +76,24 @@
 
 .post_header button svg {
     margin-bottom: -2px;
+}
+
+.sender {
+    height: 39px;
+    border-top: 1px solid #ccc;
+}
+
+.sender input[type=text] {
+    height: 30px;
+    width: calc(100% - 70px);
+    padding: 2px 10px;
+    border-radius: 0;
+    outline: none;
+    border: none;
+}
+
+.sender input[type=submit] {
+    height: 39px;
+    width: 50px;
+    padding: 10px;
 }
