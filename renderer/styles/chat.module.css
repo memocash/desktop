@@ -32,10 +32,38 @@
 }
 
 .posts .post {
+    width: calc(100% - 20px);
+    overflow-x: auto;
     padding: 5px 10px;
     border-top: 1px solid #ccc;
 }
 
 .posts .post:nth-child(odd) {
     background: #f5f5f5;
+}
+
+.post_header {
+    position: relative;
+    height: 18px;
+    padding: 4px 0 2px 25px;
+}
+
+.post_header a {
+    cursor: pointer;
+}
+
+.post_header img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    object-fit: cover;
+    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+}
+
+.post_header .time {
+    font-weight: normal;
+    font-size: 11px;
+    color: #888;
 }
