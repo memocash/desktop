@@ -1,15 +1,20 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import styles from "../../styles/chat.module.css";
 import GetWallet from "../util/wallet";
 import UpdateChat from "./update/chat";
 import {TimeSince} from "../util/time";
 import {Modals} from "../../../main/common/util";
 import {BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
+import Links from "./snippets/links";
+import bitcoin from "../util/bitcoin";
+import {address, opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {CreateTransaction} from "./snippets/create_tx";
 
 const Chat = ({setModal}) => {
     const [lastUpdate, setLastUpdate] = useState(null);
     const [room, setRoom] = useState("test");
     const [posts, setPosts] = useState([]);
+    const messageRef = useRef()
     useEffect(async () => {
         await UpdateChat({roomName: room, setLastUpdate});
     }, [])
@@ -23,6 +28,24 @@ const Chat = ({setModal}) => {
     const clickViewPost = (txHash) => setModal(Modals.Post, {txHash})
     const clickLikeLink = (txHash) => setModal(Modals.PostLike, {txHash})
     const clickReplyLink = (txHash) => setModal(Modals.PostReply, {txHash})
+    const formSubmitHandler = async (e) => {
+        e.preventDefault()
+        const message = messageRef.current.value
+        const maxMessageSize = bitcoin.Fee.MaxOpReturn - bitcoin.Fee.OpPushDataBase - Buffer.from(room).length
+        if (!message || !message.length) {
+            return
+        } else if (Buffer.from(message).length > maxMessageSize) {
+            window.electron.showMessageDialog("Message too long (max length: " + maxMessageSize + ")")
+            return
+        }
+        const chatPostOpReturnOutput = script.compile([
+            opcodes.OP_RETURN,
+            Buffer.from(bitcoin.Prefix.ChatPost, "hex"),
+            Buffer.from(room),
+            Buffer.from(message),
+        ])
+        await CreateTransaction(await GetWallet(), [{script: chatPostOpReturnOutput}])
+    }
     return (
         <div className={styles.wrapper}>
             <div className={styles.sidebar}>
@@ -47,21 +70,24 @@ const Chat = ({setModal}) => {
                                     <button title={"Like / Tip"} onClick={() => clickLikeLink(post.tx_hash)}>
                                         {post.has_liked ? <BsHeartFill color={"#d00"}/> : <BsHeart/>} {post.like_count}
                                         {" "}
-                                        <BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}</button>
+                                        <BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}
+                                    </button>
                                     <button title={"Reply"} onClick={() => clickReplyLink(post.tx_hash)}>
                                         <BsChatLeft/> {post.reply_count}</button>
                                     <button title={"View Post"} onClick={() => clickViewPost(post.tx_hash)}>
                                         <BsJournalText/></button>
                                 </div>
-                                <div className={styles.post_body}>{post.text}</div>
+                                <div className={styles.post_body}>
+                                    <Links>{post.text}</Links>
+                                </div>
                             </div>
                         )
                     })}
                 </div>
-                <div className={styles.sender}>
-                    <input type={"text"} placeholder={"Type a message..."}/>
+                <form className={styles.sender} onSubmit={formSubmitHandler}>
+                    <input ref={messageRef} type={"text"} placeholder={"Type a message..."}/>
                     <input type={"submit"} value={"Send"}/>
-                </div>
+                </form>
             </div>
         </div>
     )

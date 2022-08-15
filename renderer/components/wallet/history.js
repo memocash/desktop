@@ -133,7 +133,7 @@ const History = ({lastUpdate}) => {
                     <div key={i} className={[styles.row, selectedTxHash === tx.hash && styles.rowSelected].join(" ")}
                          onClick={(e) => clickRow(e, tx.hash)} onDoubleClick={() => doubleClickTx(tx.hash)}>
                         <span>{tx.confirms >= 100 ? <>&#10004;</> : tx.confirms}</span>
-                        <span>{tx.timestamp.replace(/\.\d+/, "")}</span>
+                        <span>{tx.timestamp ? tx.timestamp.replace(/\.\d+/, "") : "Unknown"}</span>
                         <span>{ShortHash(tx.hash)}</span>
                         <span className={styles.itemValue}>{tx.value.toLocaleString()}</span>
                         <span className={styles.itemValue}>{tx.balance.toLocaleString()}</span>
