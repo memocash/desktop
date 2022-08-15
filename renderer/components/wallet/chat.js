@@ -4,7 +4,7 @@ import GetWallet from "../util/wallet";
 import {ListenChatPosts, UpdateChat} from "./update/chat";
 import {TimeSince} from "../util/time";
 import {Modals} from "../../../main/common/util";
-import {BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
+import {BsChatLeft, BsCurrencyBitcoin, BsDoorOpen, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
 import Links from "./snippets/links";
 import bitcoin from "../util/bitcoin";
 import {address, opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
@@ -26,12 +26,12 @@ const Chat = ({setModal}) => {
     useEffect(async () => {
         await UpdateChat({roomName: room, setLastUpdate});
         ListenChatPosts({names: [room], setLastUpdate})
-    }, [])
+    }, [room])
     useEffect(async () => {
         const userAddresses = (await GetWallet()).addresses
         const posts = await window.electron.getChatPosts({room, userAddresses})
         setPosts(posts)
-    }, [lastUpdate])
+    }, [lastUpdate, room])
     const clickViewProfile = (address) => setModal(Modals.ProfileView, {address})
     const clickViewPost = (txHash) => setModal(Modals.Post, {txHash})
     const clickLikeLink = (txHash) => setModal(Modals.PostLike, {txHash})
@@ -79,11 +79,17 @@ const Chat = ({setModal}) => {
             (sidebarHandleRef.current.startWidth + delta - newWidth)
         contentRef.current.style.width = newWidthContent + "px"
     }
+    const clickOpenRoomModal = () => setModal(Modals.ChatRoomLoad, {setRoom})
     return (
         <div className={styles.wrapper} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <div ref={sidebarRef} className={styles.sidebar}>
                 <div className={styles.sidebar_header}>
                     <h2>{room}</h2>
+                </div>
+                <div className={styles.sidebar_content}>
+                    <button onClick={clickOpenRoomModal}>
+                        <BsDoorOpen/>
+                    </button>
                 </div>
             </div>
             <div className={styles.sidebar_handle} onMouseDown={handleMouseDown}/>
