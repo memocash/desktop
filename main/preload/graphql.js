@@ -19,5 +19,6 @@ module.exports = {
             })
         }
         ipcRenderer.send(Handlers.GraphQLSubscribe, {id, query, variables})
+        return () => ipcRenderer.send(Handlers.GraphQLSubscribeClose, {id})
     },
 }

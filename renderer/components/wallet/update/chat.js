@@ -63,10 +63,11 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
     const onclose = () => {
         console.log("GraphQL chat posts subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
-            ListenChatPosts({names, setLastUpdate})
+            close = ListenChatPosts({names, setLastUpdate})
         }, 2000)
     }
-    window.electron.listenGraphQL({query, variables: {names}, handler, onclose})
+    let close = window.electron.listenGraphQL({query, variables: {names}, handler, onclose})
+    return () => close()
 }
 
 export {

@@ -24,10 +24,11 @@ const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
         setConnected(Status.Disconnected)
         console.log("GraphQL block subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
-            ListenBlocks({addresses, setLastUpdate, setConnected})
+            close = ListenBlocks({addresses, setLastUpdate, setConnected})
         }, 2000)
     }
-    window.electron.listenGraphQL({query, handler, onopen, onclose})
+    let close = window.electron.listenGraphQL({query, handler, onopen, onclose})
+    return () => close()
 }
 
 const RecentBlock = async () => {

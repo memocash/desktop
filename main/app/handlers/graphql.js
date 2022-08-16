@@ -1,5 +1,5 @@
 const {ipcMain} = require("electron");
-const {GraphQL, Subscribe} = require("../../client/graphql");
+const {GraphQL, Subscribe, CloseSocket} = require("../../client/graphql");
 const {Handlers, Listeners} = require("../../common/util");
 
 const GraphQLHandlers = () => {
@@ -14,8 +14,9 @@ const GraphQLHandlers = () => {
         const onclose = (data) => {
             !e.sender.isDestroyed() && e.sender.send(Listeners.GraphQLClosePrefix + id, data)
         }
-        Subscribe({query, variables, callback, onopen, onclose})
+        Subscribe({id, query, variables, callback, onopen, onclose})
     })
+    ipcMain.on(Handlers.GraphQLSubscribeClose, (e, {id}) => CloseSocket({id}))
 }
 
 module.exports = {

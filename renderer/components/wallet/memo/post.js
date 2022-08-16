@@ -5,8 +5,16 @@ import {
     BsBoxArrowInUpRight, BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText, BsListCheck, BsPerson
 } from "react-icons/bs";
 import {Modals} from "../../../../main/common/util";
+import {useEffect, useState} from "react";
 
 const Post = ({post, setModal, isSingle = false}) => {
+    const [counter, setCounter] = useState(0)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCounter((prevCounter) => prevCounter + 1);
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [])
     const openTx = async (e, txHash) => {
         e.stopPropagation()
         await window.electron.openTransaction({txHash})
@@ -26,7 +34,7 @@ const Post = ({post, setModal, isSingle = false}) => {
                     {post.name}
                     {" "}
                     <span title={post.timestamp} className={profile.time}>
-                        {post.timestamp ? TimeSince(post.timestamp) : "Tx"}
+                        {post.timestamp ? TimeSince(post.timestamp, counter) : "Tx"}
                     </span>
                 </div>
                 <div className={profile.post_body}>

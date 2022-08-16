@@ -24,14 +24,22 @@ const Chat = ({setModal}) => {
         maxWidth: 200,
         minWidth: 75,
     })
-    useEffect(async () => {
+    const [counter, setCounter] = useState(0)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCounter((prevCounter) => prevCounter + 1);
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [])
+    useEffect(() => {
         if (!room || !room.length) {
             setDisableMessageForm(true)
             return
         }
+        (async () => await UpdateChat({roomName: room, setLastUpdate}))()
         setDisableMessageForm(false)
-        await UpdateChat({roomName: room, setLastUpdate});
-        ListenChatPosts({names: [room], setLastUpdate})
+        const closeSocket = ListenChatPosts({names: [room], setLastUpdate})
+        return () => closeSocket()
     }, [room])
     useEffect(async () => {
         const userAddresses = (await GetWallet()).addresses
@@ -118,7 +126,7 @@ const Chat = ({setModal}) => {
                                     </a>
                                     {" "}
                                     <span className={styles.time}>
-                                        {post.timestamp ? TimeSince(post.timestamp) : ""}</span>
+                                        {post.timestamp ? TimeSince(post.timestamp, counter) : ""}</span>
                                     <button title={"Like / Tip"} onClick={() => clickLikeLink(post.tx_hash)}>
                                         {post.has_liked ? <BsHeartFill color={"#d00"}/> : <BsHeart/>} {post.like_count}
                                         {" "}

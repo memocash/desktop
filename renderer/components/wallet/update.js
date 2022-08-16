@@ -1,9 +1,10 @@
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
 import {ListenBlocks, ListenNewTxs, RecentBlock, UpdateHistory, UpdateMemoHistory} from "./update/index.js";
 import ListenNewMemos from "./update/listen_memo";
 
 const Update = ({setConnected, setLastUpdate}) => {
+    const walletRef = useRef(null);
     useEffect(async () => {
         window.electron.walletLoaded()
         let wallet = await GetWallet()
@@ -11,13 +12,25 @@ const Update = ({setConnected, setLastUpdate}) => {
             console.log("ERROR: Addresses not loaded")
             return
         }
+        walletRef.current = wallet
         await RecentBlock()
         await UpdateHistory({wallet, setConnected, setLastUpdate})
         await UpdateMemoHistory({addresses: wallet.addresses, setLastUpdate})
-        ListenNewTxs({wallet, setLastUpdate})
-        ListenNewMemos({wallet, setLastUpdate})
-        ListenBlocks({addresses: wallet.addresses, setLastUpdate, setConnected})
     }, [])
+    useEffect(() => {
+        if (!walletRef.current) {
+            return
+        }
+        const closeNewTxs = ListenNewTxs({wallet: walletRef.current, setLastUpdate})
+        const closeNewMemos = ListenNewMemos({wallet: walletRef.current, setLastUpdate})
+        const closeBlocks = ListenBlocks({addresses: walletRef.current.addresses, setLastUpdate, setConnected})
+        return () => {
+            closeNewTxs()
+            closeNewMemos()
+            closeBlocks()
+        }
+
+    }, [walletRef.current])
     return (<></>)
 }
 

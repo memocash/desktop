@@ -26,6 +26,7 @@ const Handlers = {
     GetWalletInfo: "get-wallet-info",
     GraphQL: "graphql",
     GraphQLSubscribe: "graphql-subscribe",
+    GraphQLSubscribeClose: "graphql-subscribe-close",
     OpenPreviewSend: "open-preview-send",
     OpenTransaction: "open-transaction",
     SaveTransactions: "save-transactions",

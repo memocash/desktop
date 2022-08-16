@@ -3,7 +3,17 @@ const WebSocket = require('ws');
 
 const Host = "127.0.0.1:26770"
 
-const Subscribe = async ({query, variables, callback, onopen, onclose}) => {
+const sockets = {}
+
+const CloseSocket = ({id}) => {
+    if (!sockets[id]) {
+        return
+    }
+    sockets[id].close()
+    delete sockets[id]
+}
+
+const Subscribe = ({id, query, variables, callback, onopen, onclose}) => {
     let socket = new WebSocket("ws://" + Host + "/graphql")
     socket.onmessage = (ev) => {
         const data = JSON.parse(ev.data)
@@ -37,7 +47,13 @@ const Subscribe = async ({query, variables, callback, onopen, onclose}) => {
         /*console.log("GraphQL subscribe error!")
         console.log(err)*/
     }
-    socket.onclose = onclose
+    socket.onclose = () => {
+        if (sockets[id]) {
+            delete sockets[id]
+        }
+        onclose()
+    }
+    sockets[id] = socket
 }
 
 const GraphQL = async ({query, variables}) => {
@@ -83,4 +99,5 @@ const GraphQL = async ({query, variables}) => {
 module.exports = {
     GraphQL: GraphQL,
     Subscribe: Subscribe,
+    CloseSocket: CloseSocket,
 }
