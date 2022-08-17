@@ -1,5 +1,24 @@
 import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql";
-import {Status} from "../../util/connect";
+
+const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
+    const query = `
+    query ($addresses: [String!]) {
+        profiles(addresses: $addresses) {
+            rooms {
+                name
+                unfollow
+                ${TxQuery}
+            }
+        }
+    }
+    `
+    let data = await window.electron.graphQL(query, {
+        addresses: addresses,
+    })
+    console.log(data.data.profiles)
+    //await window.electron.saveChatRoom(data.data.follows)
+    setLastUpdate((new Date()).toISOString())
+}
 
 const UpdateChat = async ({roomName, setLastUpdate}) => {
     const query = `
@@ -72,5 +91,6 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
 
 export {
     UpdateChat,
+    UpdateChatFollows,
     ListenChatPosts,
 }

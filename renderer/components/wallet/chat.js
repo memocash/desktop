@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import styles from "../../styles/chat.module.css";
 import GetWallet from "../util/wallet";
-import {ListenChatPosts, UpdateChat} from "./update/chat";
+import {ListenChatPosts, UpdateChat, UpdateChatFollows} from "./update/chat";
 import {TimeSince} from "../util/time";
 import {Modals} from "../../../main/common/util";
 import {BsChatLeft, BsCurrencyBitcoin, BsDoorOpen, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
@@ -30,6 +30,10 @@ const Chat = ({setModal}) => {
             setCounter((prevCounter) => prevCounter + 1);
         }, 10000);
         return () => clearInterval(interval);
+    }, [])
+    useEffect(async () => {
+        const {addresses} = await GetWallet()
+        await UpdateChatFollows({addresses, setLastUpdate});
     }, [])
     useEffect(() => {
         if (!room || !room.length) {
