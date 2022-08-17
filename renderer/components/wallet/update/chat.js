@@ -92,8 +92,39 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
     return () => close()
 }
 
+const ListenChatFollows = ({addresses, setLastUpdate}) => {
+    const query = `
+        subscription($addresses: [String!]) {
+            room_follows(addresses: $addresses) {
+                name
+                tx_hash
+                unfollow
+                ${TxQuery}
+                lock {
+                    address
+                }
+            }
+        }
+        `
+    const handler = async (roomFollow) => {
+        await window.electron.saveChatRoomFollows([roomFollow.room_follows])
+        if (typeof setLastUpdate === "function") {
+            setLastUpdate((new Date()).toISOString())
+        }
+    }
+    const onclose = () => {
+        console.log("GraphQL chat follows subscribe close, reconnecting in 2 seconds!")
+        setTimeout(() => {
+            close = ListenChatFollows({addresses, setLastUpdate})
+        }, 2000)
+    }
+    let close = window.electron.listenGraphQL({query, variables: {addresses}, handler, onclose})
+    return () => close()
+}
+
 export {
     UpdateChat,
     UpdateChatFollows,
+    ListenChatFollows,
     ListenChatPosts,
 }

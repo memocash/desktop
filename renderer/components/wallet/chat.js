@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import styles from "../../styles/chat.module.css";
 import GetWallet from "../util/wallet";
-import {ListenChatPosts, UpdateChat, UpdateChatFollows} from "./update/chat";
+import {ListenChatFollows, ListenChatPosts, UpdateChat, UpdateChatFollows} from "./update/index";
 import {TimeSince} from "../util/time";
 import {Modals} from "../../../main/common/util";
 import {BsChatLeft, BsCurrencyBitcoin, BsDoorOpen, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
@@ -36,6 +36,14 @@ const Chat = ({setModal}) => {
     useEffect(async () => {
         const {addresses} = await GetWallet()
         await UpdateChatFollows({addresses, setLastUpdate: setLastUpdateFollows});
+    }, [])
+    useEffect(() => {
+        let closeSocketFollows
+        (async () => {
+            const {addresses} = await GetWallet()
+            closeSocketFollows = ListenChatFollows({addresses, setLastUpdate: setLastUpdateFollows})
+        })()
+        return () => closeSocketFollows()
     }, [])
     useEffect(async () => {
         const {addresses} = await GetWallet()
@@ -120,7 +128,7 @@ const Chat = ({setModal}) => {
                     <h2>{room}</h2>
                 </div>
                 <div className={styles.sidebar_content}>
-                    <ul>{follows.map((follow) => (<li onClick={(e) => clickRoom(e, follow.room)}>
+                    <ul>{follows.map((follow, i) => (<li key={i} onClick={(e) => clickRoom(e, follow.room)}>
                         {follow.room}
                     </li>))}</ul>
                 </div>
