@@ -27,8 +27,9 @@ const StatusBar = ({connected, lastUpdate}) => {
         <div className={tabs.statusBar}>
             <div>
                 {(connected === Status.Connected) && <>
-                    Balance: {info.balance.toLocaleString()} satoshis
-                    ({info.output_count.toLocaleString()} outputs, {info.utxo_count.toLocaleString()} utxos)
+                    Balance: {info.balance ? info.balance.toLocaleString() : 0} satoshis
+                    ({info.output_count ? info.output_count.toLocaleString() : 0} outputs,
+                    {info.utxo_count ? info.utxo_count.toLocaleString() : 0} utxos)
                 </>}
                 {(connected === Status.NotConnected) && <>Loading...</>}
                 {(connected === Status.Disconnected) && <>Disconnected</>}

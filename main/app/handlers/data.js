@@ -3,7 +3,7 @@ const {SaveImagesFromProfiles} = require("../../client/images");
 const {Handlers} = require("../../common/util");
 const {
     SaveTransactions, SaveBlock, GenerateHistory, GetTransactions, GetUtxos, GetTransaction,
-    GetRecentAddressTransactions, SaveMemoProfiles, GetPic, GetCoins, SaveChatRoom, SaveMemoPosts
+    GetRecentAddressTransactions, SaveMemoProfiles, GetPic, GetCoins, SaveChatRoom, SaveChatRoomFollows, SaveMemoPosts
 } = require("../../data/tables");
 
 const DataHandlers = () => {
@@ -17,6 +17,7 @@ const DataHandlers = () => {
     ipcMain.handle(Handlers.GetCoins, async (e, addresses) => GetCoins(addresses))
     ipcMain.handle(Handlers.GetRecentAddresses, async (e, addresses) => GetRecentAddressTransactions(addresses))
     ipcMain.handle(Handlers.SaveChatRoom, async (e, room) => await SaveChatRoom(room))
+    ipcMain.handle(Handlers.SaveChatRoomFollows, async (e, roomFollows) => await SaveChatRoomFollows(roomFollows))
     ipcMain.handle(Handlers.SaveMemoPosts, async (e, posts) => await SaveMemoPosts(posts))
     ipcMain.handle(Handlers.SaveMemoProfiles, async (e, profiles) => {
         SaveImagesFromProfiles(profiles

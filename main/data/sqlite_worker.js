@@ -168,4 +168,11 @@ const Definitions = [
         room CHAR,
         UNIQUE(tx_hash)
     )`,
+    `memo_chat_follow (
+        address CHAR,
+        room CHAR,
+        unfollow INT,
+        tx_hash CHAR,
+        UNIQUE(tx_hash)
+    )`,
 ]

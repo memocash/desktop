@@ -32,6 +32,7 @@ const Handlers = {
     SaveTransactions: "save-transactions",
     SaveBlock: "save-block",
     SaveChatRoom: "save-chat-room",
+    SaveChatRoomFollows: "save-chat-room-follows",
     SaveMemoPosts: "save-memo-posts",
     SaveMemoProfiles: "save-memo-profiles",
     GetPic: "get-pic",

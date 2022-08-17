@@ -6,7 +6,11 @@ const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
         profiles(addresses: $addresses) {
             rooms {
                 name
+                lock {
+                    address
+                }
                 unfollow
+                tx_hash
                 ${TxQuery}
             }
         }
@@ -15,8 +19,7 @@ const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
     let data = await window.electron.graphQL(query, {
         addresses: addresses,
     })
-    console.log(data.data.profiles)
-    //await window.electron.saveChatRoom(data.data.follows)
+    await window.electron.saveChatRoomFollows(data.data.profiles[0].rooms)
     setLastUpdate((new Date()).toISOString())
 }
 
