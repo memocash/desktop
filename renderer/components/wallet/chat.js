@@ -12,8 +12,10 @@ import {CreateTransaction} from "./snippets/create_tx";
 
 const Chat = ({setModal}) => {
     const [lastUpdate, setLastUpdate] = useState(null);
+    const [lastUpdateFollows, setLastUpdateFollows] = useState(null);
     const [room, setRoom] = useState("");
     const [posts, setPosts] = useState([]);
+    const [follows, setFollows] = useState([])
     const messageRef = useRef()
     const sidebarRef = useRef()
     const contentRef = useRef()
@@ -33,8 +35,13 @@ const Chat = ({setModal}) => {
     }, [])
     useEffect(async () => {
         const {addresses} = await GetWallet()
-        await UpdateChatFollows({addresses, setLastUpdate});
+        await UpdateChatFollows({addresses, setLastUpdate: setLastUpdateFollows});
     }, [])
+    useEffect(async () => {
+        const {addresses} = await GetWallet()
+        const follows = await window.electron.getChatFollows({addresses})
+        setFollows(follows)
+    }, [lastUpdateFollows])
     useEffect(() => {
         if (!room || !room.length) {
             setDisableMessageForm(true)
@@ -103,6 +110,9 @@ const Chat = ({setModal}) => {
         contentRef.current.style.width = newWidthContent + "px"
     }
     const clickOpenRoomModal = () => setModal(Modals.ChatRoomLoad, {setRoom})
+    const clickRoom = (e, room) => {
+        e.stopPropagation()
+    }
     return (
         <div className={styles.wrapper} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <div ref={sidebarRef} className={styles.sidebar}>
@@ -110,6 +120,11 @@ const Chat = ({setModal}) => {
                     <h2>{room}</h2>
                 </div>
                 <div className={styles.sidebar_content}>
+                    <ul>{follows.map((follow) => (<li onClick={(e) => clickRoom(e, follow.room)}>
+                        {follow.room}
+                    </li>))}</ul>
+                </div>
+                <div className={styles.sidebar_footer}>
                     <button title={"Open Room"} onClick={clickOpenRoomModal}>
                         <BsDoorOpen/>
                     </button>

@@ -1,6 +1,24 @@
-const {Insert} = require("../sqlite")
+const {Insert, Select} = require("../sqlite")
 const {SaveMemoPosts} = require("./memo_post");
 const {SaveTransactions} = require("./txs");
+const {MaxChatRoomFollows} = require("../common/memo_follow");
+
+const GetChatFollows = async ({addresses}) => {
+    const maxFollowsWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    const query = "" +
+        "SELECT " +
+        "   memo_chat_follow.address, " +
+        "   memo_chat_follow.room, " +
+        "   memo_chat_follow.unfollow, " +
+        "   memo_chat_follow.tx_hash " +
+        "FROM memo_chat_follow " +
+        "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
+        ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
+        "WHERE max_follows.unfollow = 0 " +
+        "ORDER BY max_follows.timestamp DESC " +
+        "LIMIT 50 "
+    return await Select("chat_room_follow", query, addresses)
+}
 
 const SaveChatRoom = async (room) => {
     if (!room.posts || room.posts.length === 0) {
@@ -26,6 +44,7 @@ const SaveChatRoomFollows = async (roomFollows) => {
 }
 
 module.exports = {
+    GetChatFollows,
     SaveChatRoom,
     SaveChatRoomFollows,
 }

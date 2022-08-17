@@ -13,25 +13,48 @@
 }
 
 .sidebar_header {
-    width: calc(100% + 4px);
+    width: 100%;
 }
 
 .sidebar h2 {
+    height: 20px;
     margin: 10px 10px;
 }
 
 .sidebar_content {
+    padding: 0;
+    width: 100%;
+}
+
+.sidebar_content ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    border-top: 1px solid #ccc;
+}
+
+.sidebar_content li {
+    cursor: pointer;
+    padding: 5px;
+    border-bottom: 1px solid #ccc;
+}
+
+.sidebar_content li:hover {
+    background: #eee;
+}
+
+.sidebar_footer {
     padding: 10px;
-    width: calc(100% - 16px);
+    width: calc(100% - 20px);
     margin-top: auto;
 }
 
-.sidebar_content button {
+.sidebar_footer button {
     cursor: pointer;
 }
 
 .sidebar_handle {
-    background: #f5f5f5;
+    margin-left: -4px;
     width: 4px;
     height: 100%;
     cursor: col-resize;
