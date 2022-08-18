@@ -120,6 +120,7 @@ const Chat = ({setModal}) => {
     const clickOpenRoomModal = () => setModal(Modals.ChatRoomLoad, {setRoom})
     const clickRoom = (e, room) => {
         e.stopPropagation()
+        setRoom(room)
     }
     return (
         <div className={styles.wrapper} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
