@@ -49,12 +49,16 @@
 
 .sidebar_content li {
     cursor: pointer;
-    padding: 5px;
+    padding: 10px;
     border-bottom: 1px solid #ccc;
 }
 
 .sidebar_content li:hover {
     background: #eee;
+}
+
+.sidebar_content li.selected {
+    background: #ddd;
 }
 
 .sidebar_footer {
