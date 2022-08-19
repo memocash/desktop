@@ -9,13 +9,15 @@ import Links from "./snippets/links";
 import bitcoin from "../util/bitcoin";
 import {address, opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {CreateTransaction} from "./snippets/create_tx";
+import {useReferredState} from "../util/state";
 
 const Chat = ({setModal}) => {
     const [lastUpdate, setLastUpdate] = useState(null);
     const [lastUpdateFollows, setLastUpdateFollows] = useState(null);
     const [room, setRoom] = useState("");
+    const [isFollowingRoom, setIsFollowingRoom] = useState(false);
     const [posts, setPosts] = useState([]);
-    const [follows, setFollows] = useState([])
+    const [follows, followsRef, setFollows] = useReferredState([])
     const messageRef = useRef()
     const sidebarRef = useRef()
     const contentRef = useRef()
@@ -49,6 +51,7 @@ const Chat = ({setModal}) => {
         const {addresses} = await GetWallet()
         const follows = await window.electron.getChatFollows({addresses})
         setFollows(follows)
+        checkIsFollowing()
     }, [lastUpdateFollows])
     useEffect(() => {
         if (!room || !room.length) {
@@ -59,6 +62,7 @@ const Chat = ({setModal}) => {
         setDisableMessageForm(false)
         const closeSocket = ListenChatPosts({names: [room], setLastUpdate})
         roomNameRef.current.value = ""
+        checkIsFollowing()
         return () => closeSocket()
     }, [room])
     useEffect(async () => {
@@ -66,6 +70,16 @@ const Chat = ({setModal}) => {
         const posts = await window.electron.getChatPosts({room, userAddresses})
         setPosts(posts)
     }, [lastUpdate, room])
+    const checkIsFollowing = () => {
+        let isFollowingRoom = false
+        for (let i = 0; i < followsRef.current.length; i++) {
+            if (followsRef.current[i].room === room) {
+                isFollowingRoom = true
+                break
+            }
+        }
+        setIsFollowingRoom(isFollowingRoom)
+    }
     const clickViewProfile = (address) => setModal(Modals.ProfileView, {address})
     const clickViewPost = (txHash) => setModal(Modals.Post, {txHash})
     const clickLikeLink = (txHash) => setModal(Modals.PostLike, {txHash})
@@ -120,6 +134,7 @@ const Chat = ({setModal}) => {
     }
     const clickOpenRoomModal = () => setModal(Modals.ChatRoomLoad, {setRoom})
     const clickOpenJoinModal = () => setModal(Modals.ChatRoomJoin, {room})
+    const clickOpenLeaveModal = () => setModal(Modals.ChatRoomJoin, {room, leave: true})
     const clickRoom = (e, room) => {
         e.stopPropagation()
         setRoom(room)
@@ -154,9 +169,15 @@ const Chat = ({setModal}) => {
                 <div className={styles.content_header}>
                     <h2>{room}</h2>
                     <div className={styles.content_header_buttons}>
-                        <button title={"Join Room"} onClick={clickOpenJoinModal}>
-                            <BsDoorOpen/>
-                        </button>
+                        {isFollowingRoom ? (
+                            <button title={"Leave Room"} onClick={clickOpenLeaveModal}>
+                                <BsDoorOpen/>
+                            </button>
+                        ) : (
+                            <button title={"Join Room"} onClick={clickOpenJoinModal}>
+                                <BsDoorOpen/>
+                            </button>
+                        )}
                     </div>
                 </div>
                 <div className={styles.posts}>
