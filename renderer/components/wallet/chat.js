@@ -58,6 +58,7 @@ const Chat = ({setModal}) => {
         (async () => await UpdateChat({roomName: room, setLastUpdate}))()
         setDisableMessageForm(false)
         const closeSocket = ListenChatPosts({names: [room], setLastUpdate})
+        roomNameRef.current.value = ""
         return () => closeSocket()
     }, [room])
     useEffect(async () => {
@@ -123,11 +124,19 @@ const Chat = ({setModal}) => {
         e.stopPropagation()
         setRoom(room)
     }
+    const roomNameRef = useRef()
+    const formLoadRoomSubmit = async (e) => {
+        e.preventDefault()
+        const name = roomNameRef.current.value
+        setRoom(name)
+    }
     return (
         <div className={styles.wrapper} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <div ref={sidebarRef} className={styles.sidebar}>
                 <div className={styles.sidebar_header}>
-                    <h2>{room}</h2>
+                    <form onSubmit={formLoadRoomSubmit}>
+                        <input ref={roomNameRef} type="text" placeholder={"Room"}/>
+                    </form>
                 </div>
                 <div className={styles.sidebar_content}>
                     <ul>{follows.map((follow, i) => (<li key={i} onClick={(e) => clickRoom(e, follow.room)}>
@@ -135,16 +144,18 @@ const Chat = ({setModal}) => {
                     </li>))}</ul>
                 </div>
                 <div className={styles.sidebar_footer}>
-                    <button title={"Open Room"} onClick={clickOpenRoomModal}>
-                        <BsDoorOpen/>
-                    </button>
-                    <button title={"Join Room"} onClick={clickOpenJoinModal}>
-                        <BsDoorOpen/>
-                    </button>
                 </div>
             </div>
             <div className={styles.sidebar_handle} onMouseDown={handleMouseDown}/>
             <div ref={contentRef} className={styles.content}>
+                <div className={styles.content_header}>
+                    <h2>{room}</h2>
+                    <div className={styles.content_header_buttons}>
+                        <button title={"Join Room"} onClick={clickOpenJoinModal}>
+                            <BsDoorOpen/>
+                        </button>
+                    </div>
+                </div>
                 <div className={styles.posts}>
                     {posts.map((post, index) => {
                         return (
