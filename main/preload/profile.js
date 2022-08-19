@@ -15,6 +15,7 @@ module.exports = {
     getPostReplies: ({txHash, userAddresses}) => ipcRenderer.invoke(Handlers.GetPostReplies, {txHash, userAddresses}),
     getProfileInfo: (addresses) => ipcRenderer.invoke(Handlers.GetProfileInfo, addresses),
     getRecentFollow: (addresses, address) => ipcRenderer.invoke(Handlers.GetRecentFollow, addresses, address),
+    getRecentRoomFollow: (addresses, room) => ipcRenderer.invoke(Handlers.GetRecentRoomFollow, addresses, room),
     getRecentSetName: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetName, addresses),
     getRecentSetPic: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetPic, addresses),
     getRecentSetProfile: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetProfile, addresses),

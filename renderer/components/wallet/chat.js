@@ -118,6 +118,7 @@ const Chat = ({setModal}) => {
         contentRef.current.style.width = newWidthContent + "px"
     }
     const clickOpenRoomModal = () => setModal(Modals.ChatRoomLoad, {setRoom})
+    const clickOpenJoinModal = () => setModal(Modals.ChatRoomJoin, {room})
     const clickRoom = (e, room) => {
         e.stopPropagation()
         setRoom(room)
@@ -135,6 +136,9 @@ const Chat = ({setModal}) => {
                 </div>
                 <div className={styles.sidebar_footer}>
                     <button title={"Open Room"} onClick={clickOpenRoomModal}>
+                        <BsDoorOpen/>
+                    </button>
+                    <button title={"Join Room"} onClick={clickOpenJoinModal}>
                         <BsDoorOpen/>
                     </button>
                 </div>

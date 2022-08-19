@@ -20,6 +20,25 @@ const GetChatFollows = async ({addresses}) => {
     return await Select("chat_room_follow", query, addresses)
 }
 
+const GetRecentRoomFollow = async (addresses, room) => {
+    const query = "" +
+        "SELECT " +
+        "   memo_chat_follow.*, " +
+        "   block_txs.block_hash AS block_hash " +
+        "FROM memo_chat_follow " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_chat_follow.tx_hash) " +
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "WHERE memo_chat_follow.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "AND memo_chat_follow.room = ? " +
+        "ORDER BY COALESCE(blocks.height, 1000000) DESC, memo_chat_follow.tx_hash ASC " +
+        "LIMIT 1"
+    const results = await Select("recent-room-follow", query, [...addresses, room])
+    if (!results || !results.length) {
+        return undefined
+    }
+    return results[0]
+}
+
 const SaveChatRoom = async (room) => {
     if (!room.posts || room.posts.length === 0) {
         return
@@ -45,6 +64,7 @@ const SaveChatRoomFollows = async (roomFollows) => {
 
 module.exports = {
     GetChatFollows,
+    GetRecentRoomFollow,
     SaveChatRoom,
     SaveChatRoomFollows,
 }
