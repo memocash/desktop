@@ -11,7 +11,7 @@ import RoomJoin from "./modals/chat/room_join";
 import RoomFollowers from "./modals/chat/room_followers";
 import RoomFollowing from "./modals/chat/room_following";
 
-const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
+const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     useEffect(() => {
         window.electron.listenDisplayModal((e, modal, props = {}) => setModal(modal, props))
     }, [])
@@ -37,7 +37,8 @@ const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
             {modalWindow === Modals.PostLike && <PostLike setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.PostReply && <PostReply setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomFollowers && <RoomFollowers setModal={setModal} modalProps={modalProps}/>}
-            {modalWindow === Modals.ChatRoomFollowing && <RoomFollowing setModal={setModal} modalProps={modalProps}/>}
+            {modalWindow === Modals.ChatRoomFollowing &&
+                <RoomFollowing setModal={setModal} setChatRoom={setChatRoom} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomLoad && <RoomLoad onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps}/>}
         </div>

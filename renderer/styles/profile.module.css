@@ -201,6 +201,10 @@
     cursor: pointer;
 }
 
+.row a {
+    cursor: pointer;
+}
+
 .txLink {
     cursor: pointer;
 }

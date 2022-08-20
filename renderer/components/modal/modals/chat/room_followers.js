@@ -44,7 +44,7 @@ const RoomFollowers = ({setModal, modalProps: {room}}) => {
     return (
         <Modal onClose={onClose}>
             <div className={profile.list_header}>
-                <h2>{room} followers</h2>
+                <h2>{room} members</h2>
             </div>
             {follows.length ? <div className={[profile.likes_list, profile.follows_list].join(" ")}>
                 <div className={profile.row}>

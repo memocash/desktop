@@ -31,6 +31,7 @@ const WalletLoaded = () => {
     const [tab, setTab] = useState("")
     const [lastUpdate, setLastUpdate] = useState("")
     const [connected, setConnected] = useState(Status.NotConnected)
+    const [room, setRoom] = useState("")
     const shownRef = useRef([])
     useEffect(async () => {
         const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.Memo
@@ -48,20 +49,26 @@ const WalletLoaded = () => {
         setModalWindow(modalWindow)
         setModalProps(modalProps)
     }
+    const setChatRoom = (room) => {
+        setTab(Tabs.Chat)
+        setRoom(room)
+    }
     return (
         <>
             <Utxos lastUpdate={lastUpdate}/>
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
                     <Memo lastUpdate={lastUpdate} setModal={setModal}/></Page>
-                <Page tab={tab} page={Tabs.Chat} shown={shownRef}><Chat setModal={setModal}/></Page>
+                <Page tab={tab} page={Tabs.Chat} shown={shownRef}>
+                    <Chat setModal={setModal} room={room} setRoom={setRoom}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>
             </Frame>
-            <ModalViewer setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}/>
+            <ModalViewer setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}
+                         setChatRoom={setChatRoom}/>
             <Update setConnected={setConnected} setLastUpdate={setLastUpdate}/>
         </>
     )

@@ -11,10 +11,9 @@ import {address, opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {CreateTransaction} from "./snippets/create_tx";
 import {useReferredState} from "../util/state";
 
-const Chat = ({setModal}) => {
+const Chat = ({setModal, room, setRoom}) => {
     const [lastUpdate, setLastUpdate] = useState(null);
     const [lastUpdateFollows, setLastUpdateFollows] = useState(null);
-    const [room, setRoom] = useState("");
     const [isFollowingRoom, setIsFollowingRoom] = useState(false);
     const [posts, setPosts] = useState([]);
     const [follows, followsRef, setFollows] = useReferredState([])
@@ -184,7 +183,7 @@ const Chat = ({setModal}) => {
                     <div className={styles.content_header_left}>
                         <h2>{room}</h2>
                         {room.length ? <a onClick={clickRoomFollowers}>
-                            {numFollowers} follower{numFollowers === 1 ? "" : "s"}</a> : ""}
+                            {numFollowers} member{numFollowers === 1 ? "" : "s"}</a> : ""}
                     </div>
                     <div className={styles.content_header_buttons}>
                         {isFollowingRoom ? (

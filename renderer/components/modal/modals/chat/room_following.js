@@ -14,7 +14,7 @@ const Column = {
     Timestamp: "timestamp",
 }
 
-const RoomFollowing = ({setModal, modalProps: {address}}) => {
+const RoomFollowing = ({setModal, setChatRoom, modalProps: {address}}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
@@ -40,10 +40,14 @@ const RoomFollowing = ({setModal, modalProps: {address}}) => {
         setSortCol(field)
     }
     const openTx = async (txHash) => await window.electron.openTransaction({txHash})
+    const clickRoom = (room) => {
+        setChatRoom(room)
+        setModal(Modals.None)
+    }
     return (
         <Modal onClose={onClose}>
             <ProfileInfoLight setModal={setModal} address={address}>
-                {" "}rooms following
+                {" "}rooms
             </ProfileInfoLight>
             {follows.length ? <div className={[profile.likes_list, profile.follows_list].join(" ")}>
                 <div className={profile.row}>
@@ -56,7 +60,7 @@ const RoomFollowing = ({setModal, modalProps: {address}}) => {
                     return (
                         <div key={i} className={profile.row}>
                             <div>
-                                {follow.room}
+                                <a onClick={() => clickRoom(follow.room)}>{follow.room}</a>
                             </div>
                             <div>
                                 {TimeSince(follow.timestamp)}
@@ -65,7 +69,7 @@ const RoomFollowing = ({setModal, modalProps: {address}}) => {
                         </div>
                     )
                 })}
-            </div> : <div className={profile.no_results}>No followers</div>}
+            </div> : <div className={profile.no_results}>Not in any rooms</div>}
             <div className={modalStyles.buttons}>
                 <button onClick={onClose}>Close</button>
             </div>
