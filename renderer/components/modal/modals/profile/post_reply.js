@@ -1,7 +1,6 @@
 import Modal from "../../modal";
 import styles from "../../../../styles/modal.module.css";
 import profile from "../../../../styles/profile.module.css";
-import {Modals} from "../../../../../main/common/util";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {useEffect, useRef, useState} from "react";
 import Post from "../../../wallet/memo/post";
@@ -9,8 +8,7 @@ import bitcoin from "../../../util/bitcoin";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 
-const PostReply = ({setModal, modalProps: {txHash}}) => {
-    const onClose = () => setModal(Modals.None)
+const PostReply = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
     const [post, setPost] = useState({})
     const messageInputRef = useRef()
     useEffect(async () => {
@@ -38,7 +36,7 @@ const PostReply = ({setModal, modalProps: {txHash}}) => {
     }
     return (
         <Modal onClose={onClose}>
-            <Post post={post} setModal={setModal} isSingle={true}/>
+            <Post post={post} setModal={setModal} isSingle={true} setChatRoom={setChatRoom}/>
             <div className={profile.set_profile}>
                 <form onSubmit={formReplySubmit}>
                     <label>

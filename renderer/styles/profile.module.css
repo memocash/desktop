@@ -251,6 +251,12 @@
     margin-right: 2px;
 }
 
+.room_link {
+    font-weight: normal;
+    margin-left: 5px;
+    cursor: pointer;
+}
+
 .time {
     font-weight: normal;
     font-size: 11px;

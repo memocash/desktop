@@ -18,6 +18,7 @@ const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     const onClose = () => {
         setModal(Modals.None)
     }
+    const basic = {setModal, onClose, setChatRoom}
     return (
         <div>
             {modalWindow === Modals.Seed && <SeedModal onClose={onClose}/>}
@@ -27,18 +28,17 @@ const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
             {modalWindow === Modals.ProfileSetName && <SetName onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileSetText && <SetProfile onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileSetPic && <SetPic onClose={onClose} modalProps={modalProps}/>}
-            {modalWindow === Modals.ProfileView && <View setModal={setModal} modalProps={modalProps}/>}
+            {modalWindow === Modals.ProfileView && <View basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.Following && <Following setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.Followers &&
                 <Following setModal={setModal} modalProps={modalProps} showFollowers={true}/>}
-            {modalWindow === Modals.Post && <Post setModal={setModal} modalProps={modalProps}/>}
-            {modalWindow === Modals.PostLikes && <PostLikes setModal={setModal} modalProps={modalProps}/>}
+            {modalWindow === Modals.Post && <Post basic={basic} modalProps={modalProps}/>}
+            {modalWindow === Modals.PostLikes && <PostLikes basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.PostCreate && <PostCreate onClose={onClose} modalProps={modalProps}/>}
-            {modalWindow === Modals.PostLike && <PostLike setModal={setModal} modalProps={modalProps}/>}
-            {modalWindow === Modals.PostReply && <PostReply setModal={setModal} modalProps={modalProps}/>}
-            {modalWindow === Modals.ChatRoomFollowers && <RoomFollowers setModal={setModal} modalProps={modalProps}/>}
-            {modalWindow === Modals.ChatRoomFollowing &&
-                <RoomFollowing setModal={setModal} setChatRoom={setChatRoom} modalProps={modalProps}/>}
+            {modalWindow === Modals.PostLike && <PostLike basic={basic} modalProps={modalProps}/>}
+            {modalWindow === Modals.PostReply && <PostReply basic={basic} modalProps={modalProps}/>}
+            {modalWindow === Modals.ChatRoomFollowers && <RoomFollowers basic={basic} modalProps={modalProps}/>}
+            {modalWindow === Modals.ChatRoomFollowing && <RoomFollowing basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomLoad && <RoomLoad onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps}/>}
         </div>

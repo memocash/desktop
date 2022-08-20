@@ -14,7 +14,7 @@ const Column = {
     Timestamp: "timestamp",
 }
 
-const RoomFollowing = ({setModal, setChatRoom, modalProps: {address}}) => {
+const RoomFollowing = ({basic: {setModal, setChatRoom}, modalProps: {address}}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])

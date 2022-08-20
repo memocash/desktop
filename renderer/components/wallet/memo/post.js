@@ -7,7 +7,7 @@ import {
 import {Modals} from "../../../../main/common/util";
 import {useEffect, useState} from "react";
 
-const Post = ({post, setModal, isSingle = false}) => {
+const Post = ({post, setModal, setChatRoom, isSingle = false}) => {
     const [counter, setCounter] = useState(0)
     useEffect(() => {
         const interval = setInterval(() => {
@@ -24,6 +24,10 @@ const Post = ({post, setModal, isSingle = false}) => {
     const clickReplyLink = () => setModal(Modals.PostReply, {txHash: post.tx_hash})
     const clickViewPost = () => setModal(Modals.Post, {txHash: post.tx_hash})
     const clickViewProfile = () => setModal(Modals.ProfileView, {address: post.address})
+    const clickChatRoom = (room) => {
+        setChatRoom(room)
+        setModal(Modals.None)
+    }
     return (
         <div className={isSingle ? profile.post_single : null}>
             <div className={profile.post}>
@@ -36,6 +40,9 @@ const Post = ({post, setModal, isSingle = false}) => {
                     <span title={post.timestamp} className={profile.time}>
                         {post.timestamp ? TimeSince(post.timestamp, counter) : "Tx"}
                     </span>
+                    {post.room && post.room.length ? (
+                        <a className={profile.room_link} onClick={() => clickChatRoom(post.room)}>{post.room}</a>
+                    ) : ""}
                 </div>
                 <div className={profile.post_body}>
                     <Links>{post.text}</Links>

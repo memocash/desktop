@@ -35,9 +35,8 @@ const GetPostParent = async ({txHash, userAddresses}) => {
 }
 
 const GetRoomPosts = async ({room, userAddresses}) => {
-    const join = "JOIN memo_chat_post ON (memo_chat_post.tx_hash = memo_posts.tx_hash)"
     const where = "memo_chat_post.room = ?"
-    return await Select("memo_posts-room", getSelectQuery({where, join, userAddresses}),
+    return await Select("memo_posts-room", getSelectQuery({where, userAddresses}),
         [...userAddresses, room])
 }
 
@@ -56,7 +55,8 @@ const getSelectQuery = ({join = "", userAddresses, where}) => {
         "   SUM(CASE WHEN memo_likes.address IN (" +
         "       " + Array(userAddresses.length).fill("?").join(", ") + "" +
         "   ) THEN 1 ELSE 0 END) > 0 AS has_liked, " +
-        "   SUM(memo_likes.tip) AS tip_total " +
+        "   SUM(memo_likes.tip) AS tip_total, " +
+        "   memo_chat_post.room " +
         "FROM memo_posts " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
@@ -67,6 +67,7 @@ const getSelectQuery = ({join = "", userAddresses, where}) => {
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "LEFT JOIN memo_replies ON (memo_replies.parent_tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN memo_likes ON (memo_likes.post_tx_hash = memo_posts.tx_hash) " +
+        "LEFT JOIN memo_chat_post ON (memo_chat_post.tx_hash = memo_posts.tx_hash) " +
         join + " " +
         "WHERE " + where + " " +
         "GROUP BY memo_posts.tx_hash " +

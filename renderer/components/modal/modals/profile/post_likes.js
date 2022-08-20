@@ -15,7 +15,7 @@ const Column = {
     Timestamp: "timestamp",
 }
 
-const PostLikes = ({setModal, modalProps: {txHash}}) => {
+const PostLikes = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [likes, likesRef, setLikes] = useReferredState([])
@@ -27,7 +27,6 @@ const PostLikes = ({setModal, modalProps: {txHash}}) => {
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
     }, [txHash])
-    const onClose = () => setModal(Modals.None)
     const sortLikes = (field) => {
         let desc = sortDescRef.current
         if (sortColRef.current === field) {
@@ -48,7 +47,7 @@ const PostLikes = ({setModal, modalProps: {txHash}}) => {
     const openTx = async (txHash) => await window.electron.openTransaction({txHash})
     return (
         <Modal onClose={onClose}>
-            <Post post={post} setModal={setModal} isSingle={true}/>
+            <Post post={post} setModal={setModal} isSingle={true} setChatRoom={setChatRoom}/>
             {likes.length ? <div className={profile.likes_list}>
                 <div className={profile.row}>
                     <TitleCol sortFunc={sortLikes} desc={sortDesc} sortCol={sortCol} col={Column.Name} title={"Name"}/>

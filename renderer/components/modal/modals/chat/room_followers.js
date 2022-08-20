@@ -13,7 +13,7 @@ const Column = {
     Timestamp: "timestamp",
 }
 
-const RoomFollowers = ({setModal, modalProps: {room}}) => {
+const RoomFollowers = ({basic: {setModal, onClose}, modalProps: {room}}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
@@ -22,7 +22,6 @@ const RoomFollowers = ({setModal, modalProps: {room}}) => {
         console.log(follows)
         setFollows(follows)
     }, [room])
-    const onClose = () => setModal(Modals.None)
     const sortFollows = (field) => {
         let desc = sortDescRef.current
         if (sortColRef.current === field) {

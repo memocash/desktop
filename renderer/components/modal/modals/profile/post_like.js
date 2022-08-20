@@ -1,21 +1,18 @@
 import Modal from "../../modal";
 import styles from "../../../../styles/modal.module.css";
 import profile from "../../../../styles/profile.module.css";
-import {Modals} from "../../../../../main/common/util";
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import {useEffect, useRef, useState} from "react";
+import {address, opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {useEffect, useRef} from "react";
 import Post from "../../../wallet/memo/post";
 import bitcoin from "../../../util/bitcoin";
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {GetMaxValue} from "../../../util/send";
 import {useReferredState} from "../../../util/state";
 import {GetUtxosRef} from "../../../util/utxos";
 
-const PostLike = ({setModal, modalProps: {txHash}}) => {
+const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
     const utxosRef = GetUtxosRef()
-    const onClose = () => setModal(Modals.None)
     const [post, postRef, setPost] = useReferredState({})
     const tipInputRef = useRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
@@ -51,7 +48,7 @@ const PostLike = ({setModal, modalProps: {txHash}}) => {
     }
     return (
         <Modal onClose={onClose}>
-            <Post post={post} setModal={setModal} isSingle={true}/>
+            <Post post={post} setModal={setModal} isSingle={true} setChatRoom={setChatRoom}/>
             <div className={profile.set_profile}>
                 <form onSubmit={formLikeSubmit}>
                     <label>

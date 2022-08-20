@@ -13,7 +13,7 @@ import Modal from "../../modal";
 import {UpdatePosts} from "../../../wallet/update/posts";
 import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
 
-const View = ({setModal, modalProps: {address, lastUpdate}}) => {
+const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, lastUpdate}}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -76,7 +76,6 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
         }
         await CreateTransaction(wallet, [{script: followOpReturnOutput}], beatHash)
     }
-    const onClose = () => setModal(Modals.None)
     return (
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>
@@ -118,7 +117,7 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
             <div className={profile.posts}>
                 {posts.map((post, i) => {
                     return (
-                        <Post key={i} post={post} setModal={setModal}/>
+                        <Post key={i} post={post} setModal={setModal} setChatRoom={setChatRoom}/>
                     )
                 })}
             </div>
