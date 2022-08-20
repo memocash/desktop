@@ -1,11 +1,9 @@
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import {ListenChatFollows, ListenChatPosts, UpdateChat, UpdateChatFollows} from "../update/index";
 
-const Update = (props) => {
-    const {
-        followsRef, lastUpdateFollows, room, setFollows, setIsFollowingRoom, setLastUpdate, setLastUpdateFollows
-    } = props;
+const Update = ({followsRef, room, setFollows, setIsFollowingRoom, setLastUpdate}) => {
+    const [lastUpdateFollows, setLastUpdateFollows] = useState(null)
     useEffect(async () => {
         const {addresses} = await GetWallet()
         const follows = await window.electron.getChatFollows({addresses})
