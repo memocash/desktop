@@ -39,6 +39,7 @@ const Handlers = {
     SaveChatRoom: "save-chat-room",
     SaveChatRoomFollows: "save-chat-room-follows",
     SaveMemoPosts: "save-memo-posts",
+    SaveMemoProfileImages: "save-memo-profile-images",
     SaveMemoProfiles: "save-memo-profiles",
     GetPic: "get-pic",
     GenerateHistory: "generate-history",

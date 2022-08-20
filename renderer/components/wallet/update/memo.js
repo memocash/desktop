@@ -50,6 +50,8 @@ const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
     })
     await window.electron.saveMemoProfiles(data.data.profiles)
     setLastUpdate((new Date()).toISOString())
+    await window.electron.saveMemoProfileImages(data.data.profiles)
+    setLastUpdate((new Date()).toISOString())
 }
 
 export default UpdateMemoHistory

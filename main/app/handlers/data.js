@@ -19,12 +19,14 @@ const DataHandlers = () => {
     ipcMain.handle(Handlers.SaveChatRoom, async (e, room) => await SaveChatRoom(room))
     ipcMain.handle(Handlers.SaveChatRoomFollows, async (e, roomFollows) => await SaveChatRoomFollows(roomFollows))
     ipcMain.handle(Handlers.SaveMemoPosts, async (e, posts) => await SaveMemoPosts(posts))
-    ipcMain.handle(Handlers.SaveMemoProfiles, async (e, profiles) => {
-        SaveImagesFromProfiles(profiles
+    ipcMain.handle(Handlers.SaveMemoProfileImages, async (e, profiles) => {
+        await SaveImagesFromProfiles(profiles
             .concat(profiles.map(profile => profile.following ?
                 profile.following.map(follow => follow.follow_lock.profile) : []).flat())
             .concat(profiles.map(profile => profile.followers ?
                 profile.followers.map(follow => follow.lock.profile) : []).flat()))
+    })
+    ipcMain.handle(Handlers.SaveMemoProfiles, async (e, profiles) => {
         await SaveMemoProfiles(profiles)
     })
 }
