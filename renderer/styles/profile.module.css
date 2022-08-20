@@ -301,6 +301,21 @@
     margin-left: 5px;
 }
 
+.list_header {
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.list_header h2 {
+    margin: 0;
+}
+
+.follows_list {
+    grid-template-columns: repeat(2, 1fr);
+}
+
 .no_results {
     padding: 10px;
     text-align: center;

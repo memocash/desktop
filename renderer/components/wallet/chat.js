@@ -156,6 +156,9 @@ const Chat = ({setModal}) => {
         const name = roomNameRef.current.value
         setRoom(name)
     }
+    const clickRoomFollowers = () => {
+        setModal(Modals.ChatRoomFollowers, {room})
+    }
     return (
         <div className={styles.wrapper} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <div ref={sidebarRef} className={styles.sidebar}>
@@ -180,7 +183,7 @@ const Chat = ({setModal}) => {
                 <div className={styles.content_header}>
                     <div className={styles.content_header_left}>
                         <h2>{room}</h2>
-                        {room.length ? <p>{numFollowers} followers</p> : ""}
+                        {room.length ? <a onClick={clickRoomFollowers}>{numFollowers} followers</a> : ""}
                     </div>
                     <div className={styles.content_header_buttons}>
                         {isFollowingRoom ? (

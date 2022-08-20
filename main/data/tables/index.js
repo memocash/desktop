@@ -2,7 +2,9 @@ const {
     GetPic, GetPicExists, GetPicsExist, GetProfileInfo, GetRecentSetName, GetRecentSetPic, GetRecentSetProfile,
     SaveMemoProfiles, SavePic,
 } = require("./memo")
-const {GetChatFollows, GetRecentRoomFollow, GetRoomFollowCount, SaveChatRoom, SaveChatRoomFollows} = require("./memo_chat")
+const {
+    GetChatFollows, GetRecentRoomFollow, GetRoomFollowCount, GetRoomFollows, SaveChatRoom, SaveChatRoomFollows
+} = require("./memo_chat")
 const {GetFollowing, GetFollowers, GetRecentFollow} = require("./memo_follow")
 const {GetLikes} = require("./memo_like")
 const {GetPost, GetPosts, GetPostParent, GetPostReplies, GetRoomPosts, SaveMemoPosts} = require("./memo_post")
@@ -34,6 +36,7 @@ module.exports = {
     GetRecentSetPic,
     GetRecentSetProfile,
     GetRoomFollowCount,
+    GetRoomFollows,
     GetRoomPosts,
     GetTransaction,
     GetTransactions,

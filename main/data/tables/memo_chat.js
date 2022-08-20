@@ -51,6 +51,31 @@ const GetRoomFollowCount = async ({room}) => {
     return await Select("chat_room_follow_count", query, [room])
 }
 
+const GetRoomFollows = async ({room}) => {
+    const maxFollowsWhere = "room = ? "
+    const query = "" +
+        "SELECT " +
+        "   memo_chat_follow.address, " +
+        "   memo_chat_follow.room, " +
+        "   memo_chat_follow.unfollow, " +
+        "   memo_chat_follow.tx_hash, " +
+        "   profile_names.name, " +
+        "   profile_pics.pic, " +
+        "   images.data AS pic_data, " +
+        "   max_follows.timestamp " +
+        "FROM memo_chat_follow " +
+        "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
+        ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
+        "LEFT JOIN profiles ON (profiles.address = memo_chat_follow.address) " +
+        "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
+        "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
+        "LEFT JOIN images ON (images.url = profile_pics.pic) " +
+        "WHERE max_follows.unfollow = 0 " +
+        "ORDER BY max_follows.timestamp DESC " +
+        "LIMIT 50 "
+    return await Select("chat_room_follow_by_room", query, [room])
+}
+
 const SaveChatRoom = async (room) => {
     if (!room.posts || room.posts.length === 0) {
         return
@@ -78,6 +103,7 @@ module.exports = {
     GetChatFollows,
     GetRecentRoomFollow,
     GetRoomFollowCount,
+    GetRoomFollows,
     SaveChatRoom,
     SaveChatRoomFollows,
 }

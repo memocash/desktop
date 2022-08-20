@@ -2,7 +2,7 @@ const {ipcMain} = require("electron");
 const {
     GetFollowers, GetFollowing, GetLikes, GetPost, GetPostParent, GetPostReplies, GetPosts, GetProfileInfo,
     GetRecentFollow, GetRecentSetName, GetRecentSetPic, GetRecentSetProfile, GetRoomPosts, GetChatFollows,
-    GetRecentRoomFollow, GetRoomFollowCount,
+    GetRecentRoomFollow, GetRoomFollowCount, GetRoomFollows,
 } = require("../../data/tables");
 const {Handlers} = require("../../common/util");
 
@@ -10,6 +10,7 @@ const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetChatFollows, async (e, {addresses}) => GetChatFollows({addresses}))
     ipcMain.handle(Handlers.GetChatPosts, async (e, {room, userAddresses}) => GetRoomPosts({room, userAddresses}))
     ipcMain.handle(Handlers.GetChatRoomFollowCount, async (e, {room}) => GetRoomFollowCount({room}))
+    ipcMain.handle(Handlers.GetChatRoomFollows, async (e, {room}) => GetRoomFollows({room}))
     ipcMain.handle(Handlers.GetProfileInfo, async (e, addresses) => GetProfileInfo(addresses))
     ipcMain.handle(Handlers.GetRecentRoomFollow, async (e, addresses, room) => GetRecentRoomFollow(addresses, room))
     ipcMain.handle(Handlers.GetRecentSetName, async (e, addresses) => GetRecentSetName(addresses))

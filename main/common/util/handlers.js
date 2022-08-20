@@ -2,6 +2,7 @@ const Handlers = {
     GetChatFollows: "get-chat-follows",
     GetChatPosts: "get-chat-posts",
     GetChatRoomFollowCount: "get-chat-room-follow-count",
+    GetChatRoomFollows: "get-chat-room-follows",
     GetProfileInfo: "get-profile-info",
     GetRecentRoomFollow: "get-recent-room-follow",
     GetRecentSetName: "get-recent-set-name",

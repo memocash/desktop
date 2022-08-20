@@ -8,6 +8,7 @@ import Password from "./modals/password";
 import {useEffect} from "react";
 import RoomLoad from "./modals/chat/room_load";
 import RoomJoin from "./modals/chat/room_join";
+import RoomFollowers from "./modals/chat/room_followers";
 
 const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
     useEffect(() => {
@@ -34,6 +35,7 @@ const Viewer = ({setModal, modalWindow, modalProps = {}}) => {
             {modalWindow === Modals.PostCreate && <PostCreate onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.PostLike && <PostLike setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.PostReply && <PostReply setModal={setModal} modalProps={modalProps}/>}
+            {modalWindow === Modals.ChatRoomFollowers && <RoomFollowers setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomLoad && <RoomLoad onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps}/>}
         </div>

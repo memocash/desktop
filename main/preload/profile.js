@@ -6,6 +6,7 @@ module.exports = {
     getChatPosts: async ({room, userAddresses}) =>
         await ipcRenderer.invoke(Handlers.GetChatPosts, {room, userAddresses}),
     getChatRoomFollowCount: async ({room}) => await ipcRenderer.invoke(Handlers.GetChatRoomFollowCount, {room}),
+    getChatRoomFollows: async ({room}) => await ipcRenderer.invoke(Handlers.GetChatRoomFollows, {room}),
     getFollowing: (addresses) => ipcRenderer.invoke(Handlers.GetFollowing, addresses),
     getFollowers: (addresses) => ipcRenderer.invoke(Handlers.GetFollowers, addresses),
     getPic: (url) => ipcRenderer.invoke("get-pic", url),
