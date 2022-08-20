@@ -18,6 +18,7 @@ const Chat = ({setModal}) => {
     const [isFollowingRoom, setIsFollowingRoom] = useState(false);
     const [posts, setPosts] = useState([]);
     const [follows, followsRef, setFollows] = useReferredState([])
+    const [numFollowers, setNumFollowers] = useState(0);
     const messageRef = useRef()
     const sidebarRef = useRef()
     const contentRef = useRef()
@@ -64,6 +65,16 @@ const Chat = ({setModal}) => {
         roomNameRef.current.value = ""
         checkIsFollowing()
         return () => closeSocket()
+    }, [room])
+    useEffect(async () => {
+        if (!room || !room.length) {
+            setNumFollowers(0)
+            return
+        }
+        const numFollowers = await window.electron.getChatRoomFollowCount({room})
+        if (numFollowers.length) {
+            setNumFollowers(numFollowers[0].count)
+        }
     }, [room])
     useEffect(async () => {
         const userAddresses = (await GetWallet()).addresses
@@ -167,7 +178,10 @@ const Chat = ({setModal}) => {
             <div className={styles.sidebar_handle} onMouseDown={handleMouseDown}/>
             <div ref={contentRef} className={styles.content}>
                 <div className={styles.content_header}>
-                    <h2>{room}</h2>
+                    <div className={styles.content_header_left}>
+                        <h2>{room}</h2>
+                        {room.length ? <p>{numFollowers} followers</p> : ""}
+                    </div>
                     <div className={styles.content_header_buttons}>
                         {isFollowingRoom ? (
                             <button title={"Leave Room"} onClick={clickOpenLeaveModal}>

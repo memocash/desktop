@@ -93,10 +93,19 @@
     flex-direction: row;
 }
 
-.content_header h2 {
-    padding: 5px 10px;
-    margin: 0;
+.content_header .content_header_left {
     flex: 1;
+}
+
+.content_header_left h2 {
+    padding: 3px 10px 0;
+    margin: 0;
+}
+
+.content_header_left p {
+    padding: 0 10px;
+    margin: 0;
+    color: #555;
 }
 
 .content_header_buttons {
