@@ -3,7 +3,8 @@ const {
     SaveMemoProfiles, SavePic,
 } = require("./memo")
 const {
-    GetChatFollows, GetRecentRoomFollow, GetRoomFollowCount, GetRoomFollows, SaveChatRoom, SaveChatRoomFollows
+    GetChatFollows, GetRecentRoomFollow, GetRoomFollowCount, GetRoomFollows, SaveChatRoom, SaveChatRoomFollows,
+    GetAddressesRoomFollowCount,
 } = require("./memo_chat")
 const {GetFollowing, GetFollowers, GetRecentFollow} = require("./memo_follow")
 const {GetLikes} = require("./memo_like")
@@ -16,6 +17,7 @@ const {
 
 module.exports = {
     GenerateHistory,
+    GetAddressesRoomFollowCount,
     GetChatFollows,
     GetCoins,
     GetFollowers,

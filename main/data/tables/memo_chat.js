@@ -10,7 +10,8 @@ const GetChatFollows = async ({addresses}) => {
         "   memo_chat_follow.address, " +
         "   memo_chat_follow.room, " +
         "   memo_chat_follow.unfollow, " +
-        "   memo_chat_follow.tx_hash " +
+        "   memo_chat_follow.tx_hash, " +
+        "   max_follows.timestamp " +
         "FROM memo_chat_follow " +
         "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
         ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
@@ -48,7 +49,19 @@ const GetRoomFollowCount = async ({room}) => {
         "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
         ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
         "WHERE max_follows.unfollow = 0 "
-    return await Select("chat_room_follow_count", query, [room])
+    return await Select("chat_room_follow-count", query, [room])
+}
+
+const GetAddressesRoomFollowCount = async ({addresses}) => {
+    const maxFollowsWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    const query = "" +
+        "SELECT " +
+        "   COUNT(1) AS count " +
+        "FROM memo_chat_follow " +
+        "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
+        ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
+        "WHERE max_follows.unfollow = 0 "
+    return await Select("chat_room_follow-addresses-count", query, addresses)
 }
 
 const GetRoomFollows = async ({room}) => {
@@ -100,6 +113,7 @@ const SaveChatRoomFollows = async (roomFollows) => {
 }
 
 module.exports = {
+    GetAddressesRoomFollowCount,
     GetChatFollows,
     GetRecentRoomFollow,
     GetRoomFollowCount,

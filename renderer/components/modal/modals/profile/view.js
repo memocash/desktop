@@ -11,7 +11,7 @@ import Links from "../../../wallet/snippets/links";
 import UpdateMemoHistory from "../../../wallet/update/memo";
 import Modal from "../../modal";
 import {UpdatePosts} from "../../../wallet/update/posts";
-import {BsArrowLeft, BsArrowRight, BsPerson} from "react-icons/bs";
+import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
 
 const View = ({setModal, modalProps: {address, lastUpdate}}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -24,6 +24,7 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
     const [isFollowing, setIsFollowing] = useState(false)
     const [picData, setPicData] = useState(undefined)
     const [isSelf, setIsSelf] = useState(true)
+    const [roomsFollowingCount, setRoomsFollowingCount] = useState(0)
     useEffect(async () => {
         const profileInfo = await window.electron.getProfileInfo([address])
         if (profileInfo === undefined) {
@@ -55,6 +56,11 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
             txHashes.push(posts[i].tx_hash)
         }
         await UpdatePosts({txHashes, setLastUpdate: setLastProfileUpdate})
+        const roomsFollowingCount = await window.electron.getAddressesRoomFollowCount({addresses: [address]})
+        console.log("roomsFollowingCount", roomsFollowingCount)
+        if (roomsFollowingCount.length) {
+            setRoomsFollowingCount(roomsFollowingCount[0].count)
+        }
     }, [address])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
@@ -97,6 +103,12 @@ const View = ({setModal, modalProps: {address, lastUpdate}}) => {
                             <BsArrowLeft/>
                             {" "}
                             {profileInfo.num_followers}
+                        </button>
+                        <button title={"Chat Rooms Following"}
+                                onClick={() => setModal(Modals.ChatRoomFollowing, {address})}>
+                            <BsPeople/>
+                            {" "}
+                            {roomsFollowingCount}
                         </button>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>}

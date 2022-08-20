@@ -183,7 +183,8 @@ const Chat = ({setModal}) => {
                 <div className={styles.content_header}>
                     <div className={styles.content_header_left}>
                         <h2>{room}</h2>
-                        {room.length ? <a onClick={clickRoomFollowers}>{numFollowers} followers</a> : ""}
+                        {room.length ? <a onClick={clickRoomFollowers}>
+                            {numFollowers} follower{numFollowers === 1 ? "" : "s"}</a> : ""}
                     </div>
                     <div className={styles.content_header_buttons}>
                         {isFollowingRoom ? (

@@ -2,6 +2,8 @@ const {ipcRenderer} = require("electron");
 const {Handlers} = require("../common/util");
 
 module.exports = {
+    getAddressesRoomFollowCount: async ({addresses}) =>
+        await ipcRenderer.invoke(Handlers.GetAddressesRoomFollowCount, {addresses}),
     getChatFollows: async ({addresses}) => await ipcRenderer.invoke(Handlers.GetChatFollows, {addresses}),
     getChatPosts: async ({room, userAddresses}) =>
         await ipcRenderer.invoke(Handlers.GetChatPosts, {room, userAddresses}),

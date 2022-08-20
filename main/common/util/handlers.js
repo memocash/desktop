@@ -1,4 +1,5 @@
 const Handlers = {
+    GetAddressesRoomFollowCount: "get-addresses-room-follow-count",
     GetChatFollows: "get-chat-follows",
     GetChatPosts: "get-chat-posts",
     GetChatRoomFollowCount: "get-chat-room-follow-count",
