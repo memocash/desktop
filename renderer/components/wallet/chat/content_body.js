@@ -5,10 +5,13 @@ import Links from "../snippets/links";
 import {Modals} from "../../../../main/common/util";
 import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
+import {ListenPosts} from "../update/index";
 
 const ContentBody = ({lastUpdate, room, setModal}) => {
     const [counter, setCounter] = useState(0)
     const [posts, setPosts] = useState([])
+    const [txHashes, setTxHashes] = useState([])
+    const [lastUpdatePosts, setLastUpdatePosts] = useState(null)
     useEffect(() => {
         const interval = setInterval(() => {
             setCounter((prevCounter) => prevCounter + 1);
@@ -19,7 +22,19 @@ const ContentBody = ({lastUpdate, room, setModal}) => {
         const userAddresses = (await GetWallet()).addresses
         const posts = await window.electron.getChatPosts({room, userAddresses})
         setPosts(posts)
-    }, [lastUpdate, room])
+        let txHashes = []
+        for (let i = 0; i < posts.length; i++) {
+            txHashes.push(posts[i].txHash)
+        }
+        setTxHashes(txHashes)
+    }, [lastUpdate, lastUpdatePosts, room])
+    useEffect(() => {
+        if (!txHashes || !txHashes.length) {
+            return
+        }
+        const closeSocket = ListenPosts({txHashes, setLastUpdate: setLastUpdatePosts})
+        return () => closeSocket()
+    }, [txHashes])
     const clickViewProfile = (address) => setModal(Modals.ProfileView, {address})
     const clickViewPost = (txHash) => setModal(Modals.Post, {txHash})
     const clickLikeLink = (txHash) => setModal(Modals.PostLike, {txHash})
