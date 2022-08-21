@@ -32,14 +32,21 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
             setLastUpdate((new Date()).toISOString())
         }
     }
+    let exited = false
     const onclose = () => {
+        if (exited) {
+            return
+        }
         console.log("GraphQL new tx listener subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenNewTxs({wallet, setLastUpdate})
         }, 2000)
     }
     let close = window.electron.listenGraphQL({query, variables: {address: wallet.addresses[0]}, handler, onclose})
-    return () => close()
+    return () => {
+        exited = true
+        close()
+    }
 }
 
 export default ListenNewTxs

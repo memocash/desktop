@@ -24,15 +24,21 @@ const ListenPosts = ({txHashes, setLastUpdate}) => {
         await window.electron.saveMemoPosts([data.posts])
         setLastUpdate((new Date()).toISOString())
     }
+    let exited = false
     const onclose = () => {
-        console.log("GraphQL posts listener subscribe close, reconnecting in 2 seconds!")
+        if (exited) {
+            return
+        }
+        console.log("GraphQL posts listener subscribe close, reconnecting in 2 seconds!", txHashes)
         setTimeout(() => {
             close = ListenPosts({txHashes, setLastUpdate})
         }, 2000)
     }
     let close = window.electron.listenGraphQL({query, variables: {txHashes}, handler, onclose})
-    return () => close()
-
+    return () => {
+        exited = true
+        close()
+    }
 }
 
 export default ListenPosts

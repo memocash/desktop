@@ -82,14 +82,21 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
             setLastUpdate((new Date()).toISOString())
         }
     }
+    let exited = false
     const onclose = () => {
+        if (exited) {
+            return
+        }
         console.log("GraphQL chat posts subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenChatPosts({names, setLastUpdate})
         }, 2000)
     }
     let close = window.electron.listenGraphQL({query, variables: {names}, handler, onclose})
-    return () => close()
+    return () => {
+        exited = true
+        close()
+    }
 }
 
 const ListenChatFollows = ({addresses, setLastUpdate}) => {
@@ -112,14 +119,21 @@ const ListenChatFollows = ({addresses, setLastUpdate}) => {
             setLastUpdate((new Date()).toISOString())
         }
     }
+    let exited = false
     const onclose = () => {
+        if (exited) {
+            return
+        }
         console.log("GraphQL chat follows subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenChatFollows({addresses, setLastUpdate})
         }, 2000)
     }
     let close = window.electron.listenGraphQL({query, variables: {addresses}, handler, onclose})
-    return () => close()
+    return () => {
+        exited = true
+        close()
+    }
 }
 
 export {

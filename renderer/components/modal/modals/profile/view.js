@@ -56,7 +56,6 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         }
         await UpdatePosts({txHashes, setLastUpdate: setLastProfileUpdate})
         const roomsFollowingCount = await window.electron.getAddressesRoomFollowCount({addresses: [address]})
-        console.log("roomsFollowingCount", roomsFollowingCount)
         if (roomsFollowingCount.length) {
             setRoomsFollowingCount(roomsFollowingCount[0].count)
         }

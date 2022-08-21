@@ -60,14 +60,21 @@ const ListenNewMemos = ({wallet, setLastUpdate}) => {
         await window.electron.saveMemoProfileImages([profile.profiles])
         setLastUpdate((new Date()).toISOString())
     }
+    let exited = false
     const onclose = () => {
+        if (exited) {
+            return
+        }
         console.log("GraphQL memo listener subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenNewMemos({wallet, setLastUpdate})
         }, 2000)
     }
     let close = window.electron.listenGraphQL({query, variables: {addresses: wallet.addresses}, handler, onclose})
-    return () => close()
+    return () => {
+        exited = true
+        close()
+    }
 }
 
 export default ListenNewMemos
