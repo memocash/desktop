@@ -21,7 +21,7 @@ const ListenPosts = ({txHashes, setLastUpdate}) => {
         }
         `
     const handler = async (data) => {
-        await window.electron.saveMemoPosts(data.posts)
+        await window.electron.saveMemoPosts([data.posts])
         setLastUpdate((new Date()).toISOString())
     }
     const onclose = () => {

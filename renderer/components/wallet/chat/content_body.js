@@ -24,7 +24,7 @@ const ContentBody = ({lastUpdate, room, setModal}) => {
         setPosts(posts)
         let txHashes = []
         for (let i = 0; i < posts.length; i++) {
-            txHashes.push(posts[i].txHash)
+            txHashes.push(posts[i].tx_hash)
         }
         setTxHashes(txHashes)
     }, [lastUpdate, lastUpdatePosts, room])
