@@ -7,6 +7,7 @@ import Post from "../../../wallet/memo/post";
 import bitcoin from "../../../util/bitcoin";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
+import {Modals} from "../../../../../main/common/util";
 
 const PostReply = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
     const [post, setPost] = useState({})
@@ -33,6 +34,7 @@ const PostReply = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
             Buffer.from(message),
         ])
         await CreateTransaction(await GetWallet(), [{script: replyOpReturnOutput}])
+        setModal(Modals.Post, {txHash})
     }
     return (
         <Modal onClose={onClose}>

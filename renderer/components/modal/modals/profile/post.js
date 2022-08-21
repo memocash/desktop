@@ -1,36 +1,43 @@
 import Modal from "../../modal";
 import Post from "../../../wallet/memo/post";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import styles from "../../../../styles/modal.module.css";
 import profile from "../../../../styles/profile.module.css";
-import {UpdatePosts} from "../../../wallet/update/posts";
-import {useReferredState} from "../../../util/state";
+import {ListenPosts, UpdatePosts} from "../../../wallet/update/index";
 
 const PostModal = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
-    const [post, postRef, setPost] = useReferredState({})
+    const [post, setPost] = useState({})
+    const [txHashes, setTxHashes] = useState([])
+    const [lastUpdate, setLastUpdate] = useState(null)
     useEffect(async () => {
+        const post = await loadPost()
+        let txHashes = [post.tx_hash]
+        if (post.parent) {
+            txHashes.push(post.parent.tx_hash)
+        }
+        if (post.replies) {
+            for (let i = 0; i < post.replies.length; i++) {
+                txHashes.push(post.replies[i].tx_hash)
+            }
+        }
+        setTxHashes(txHashes)
+        await UpdatePosts({txHashes})
         await loadPost()
-        await updatePosts()
-    }, [txHash])
+    }, [txHash, lastUpdate])
+    useEffect(() => {
+        if (!txHashes || !txHashes.length) {
+            return
+        }
+        const closeSocket = ListenPosts({txHashes, setLastUpdate})
+        return () => closeSocket()
+    }, [txHashes])
     const loadPost = async () => {
         const {addresses} = await window.electron.getWallet()
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         post.replies = await window.electron.getPostReplies({txHash, userAddresses: addresses})
         post.parent = await window.electron.getPostParent({txHash, userAddresses: addresses})
         setPost(post)
-    }
-    const updatePosts = async () => {
-        let txHashes = [postRef.current.tx_hash]
-        if (postRef.current.parent) {
-            txHashes.push(postRef.current.parent.tx_hash)
-        }
-        if (postRef.current.replies) {
-            for (let i = 0; i < postRef.current.replies.length; i++) {
-                txHashes.push(postRef.current.replies[i].tx_hash)
-            }
-        }
-        await UpdatePosts({txHashes})
-        await loadPost()
+        return post
     }
     return (
         <Modal onClose={onClose}>

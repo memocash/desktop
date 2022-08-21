@@ -8,9 +8,8 @@ import {Modals} from "../../../../../main/common/util"
 import Post from "../../../wallet/memo/post";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import Links from "../../../wallet/snippets/links";
-import UpdateMemoHistory from "../../../wallet/update/memo";
+import {UpdateMemoHistory, UpdatePosts} from "../../../wallet/update/index";
 import Modal from "../../modal";
-import {UpdatePosts} from "../../../wallet/update/posts";
 import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
 
 const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, lastUpdate}}) => {

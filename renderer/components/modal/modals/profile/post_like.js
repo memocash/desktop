@@ -9,6 +9,7 @@ import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {GetMaxValue} from "../../../util/send";
 import {useReferredState} from "../../../util/state";
+import {Modals} from "../../../../../main/common/util";
 import {GetUtxosRef} from "../../../util/utxos";
 
 const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
@@ -45,6 +46,7 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
             outputs.push({value: tip, script: address.toOutputScript(postRef.current.address)})
         }
         await CreateTransaction(wallet, outputs)
+        setModal(Modals.Post, {txHash})
     }
     return (
         <Modal onClose={onClose}>
