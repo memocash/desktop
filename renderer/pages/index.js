@@ -8,15 +8,8 @@ import CreatePassword from "../components/load/create_password"
 import SelectType from "../components/load/select_type"
 import ImportKeys from "../components/load/import_keys";
 import styles from "../styles/addWallet.module.css"
-
-const Panes = {
-    Step1ChooseFile: "step1-choose-file",
-    Step2SelectType: "step2-select-type",
-    Step3SetKeys: "step3-set-keys",
-    Step3SetSeed: "step3-set-seed",
-    Step4ConfirmSeed: "step4-confirm-seed",
-    Step5SetPassword: "step5-set-password",
-}
+import {Panes} from "../components/load/common"
+import NetworkConfiguration from "../components/load/network_configuration";
 
 const Index = () => {
     const router = useRouter()
@@ -122,7 +115,7 @@ const Index = () => {
                     <img alt={"Memo logo"} src="/memo-logo-large.png"/>
                 </div>
                 <div className={styles.main}>
-                    {pane === Panes.Step1ChooseFile && <LoadHome
+                    {pane === Panes.Step1ChooseFile && <LoadHome setPane={setPane}
                         onCreateWallet={createWalletStep1} onLoadWallet={loadWallet}/>}
                     {pane === Panes.Step2SelectType && <SelectType
                         onBack={onBackFromSelectType} onSelectStandard={onSelectStandard}
@@ -137,6 +130,7 @@ const Index = () => {
                         seedPhrase={seedPhrase}/>}
                     {pane === Panes.Step5SetPassword && <CreatePassword
                         onBack={onBackFromCreatePassword} onPasswordCreated={handlePasswordCreated}/>}
+                    {pane === Panes.NetworkConfiguration && <NetworkConfiguration setPane={setPane}/>}
                 </div>
             </div>
         </div>

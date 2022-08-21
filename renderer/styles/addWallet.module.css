@@ -86,3 +86,11 @@
     resize: none;
     width: 100%;
 }
+
+.network_form {
+    margin-top: 12px;
+}
+
+.network_form select {
+    margin-left: 10px;
+}

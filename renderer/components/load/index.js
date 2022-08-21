@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
+import NetworkForm from "./network_form";
 
 const WalletOptions = {
     UnreadableFile: () => {
@@ -43,7 +44,7 @@ const WalletOptions = {
     }
 }
 
-const LoadHome = ({onCreateWallet, onLoadWallet}) => {
+const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
     const [isUnreadableFile, setIsUnreadableFile] = useState(false);
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
@@ -155,6 +156,7 @@ const LoadHome = ({onCreateWallet, onLoadWallet}) => {
                                 : <WalletOptions.ImportWithoutPassword/>
                             : <WalletOptions.Create/>
                     }
+                    <NetworkForm setPane={setPane}/>
                 </div>
             </div>
             <div className={styles.buttons}>
