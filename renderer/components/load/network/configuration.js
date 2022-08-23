@@ -4,10 +4,21 @@ import {GetNetworkOptions} from "./common";
 import {useEffect, useRef, useState} from "react";
 
 const NetworkConfiguration = ({setPane}) => {
-    const [networkOptions] = useState(GetNetworkOptions())
-    const [network, setNetwork] = useState(networkOptions[0])
+    const [networkOptions, setNetworkOptions] = useState([])
+    const [network, setNetwork] = useState({})
     const selectValueRef = useRef()
     const networkNameRef = useRef()
+    useEffect(async () => {
+        let networkConfig = await window.electron.getNetworkConfig()
+        let networkOptions
+        if (networkConfig === undefined) {
+            networkOptions = GetNetworkOptions()
+        } else {
+            networkOptions = networkConfig.Networks
+        }
+        setNetworkOptions(networkOptions)
+        setNetwork(networkOptions[0])
+    }, [])
     useEffect(() => {
         networkNameRef.current.value = network.Name
     }, [network])

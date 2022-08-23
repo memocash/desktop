@@ -70,4 +70,10 @@ module.exports = {
     saveNetworkConfig: async (networkConfig) => {
         await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(networkConfig, null, 2)+"\n")
     },
+    getNetworkConfig: async () => {
+        if (!await fileExists(Dir.NetworkConfigFile)) {
+            return
+        }
+        return JSON.parse(await fs.readFile(getPathForWallet(Dir.NetworkConfigFile), {encoding: "utf8"}))
+    },
 }
