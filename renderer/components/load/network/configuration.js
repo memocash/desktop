@@ -4,20 +4,23 @@ import {GetNetworkOptions} from "./common";
 import {useEffect, useRef, useState} from "react";
 
 const NetworkConfiguration = ({setPane}) => {
-    const [lastUpdate, setLastUpdate] = useState("")
     const [networkOptions, setNetworkOptions] = useState([])
     const [network, setNetwork] = useState({})
     const selectValueRef = useRef()
     const networkNameRef = useRef()
     const databaseFileRef = useRef()
     const serverRef = useRef()
+    const formRef = useRef()
     useEffect(async () => {
         const networkOptions = await GetNetworkOptions()
         setNetworkOptions(networkOptions)
         setNetwork(networkOptions[0])
-    }, [lastUpdate])
+    }, [])
     useEffect(() => {
         networkNameRef.current.value = network.Name
+        formRef.current.elements.ruleset.value = network.Ruleset
+        databaseFileRef.current.value = network.DatabaseFile
+        serverRef.current.value = network.Server
     }, [network])
     const onSelectChange = () => {
         setNetwork(networkOptions.find(option => option.Id === selectValueRef.current.value))
@@ -26,7 +29,7 @@ const NetworkConfiguration = ({setPane}) => {
         e.preventDefault()
         const elements = e.target.elements
         let networkConfig = {
-            Networks: networkOptions,
+            Networks: await GetNetworkOptions(),
         }
         networkConfig.Networks.map((item) => {
             if (network.Id === item.Id) {
@@ -37,7 +40,7 @@ const NetworkConfiguration = ({setPane}) => {
             }
         })
         await window.electron.saveNetworkConfig(networkConfig)
-        setLastUpdate((new Date()).toISOString())
+        setNetworkOptions(networkConfig.Networks)
     }
     return (
         <div className={styles.root}>
@@ -51,7 +54,7 @@ const NetworkConfiguration = ({setPane}) => {
                             ))}
                         </select>
                     </div>
-                    <form className={styles.config_right} onSubmit={onFormSubmit}>
+                    <form className={styles.config_right} onSubmit={onFormSubmit} ref={formRef}>
                         <div>
                             <label>Network name:</label>
                             <input type={"text"} ref={networkNameRef}/>
