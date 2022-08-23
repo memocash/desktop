@@ -1,13 +1,18 @@
 import styles from "../../../styles/addWallet.module.css";
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {Panes} from "../common";
 import {GetNetworkOptions} from "./common";
 
 const EditOption = "edit"
 
 const NetworkForm = ({setPane}) => {
-    const [networkOptions] = useState(GetNetworkOptions())
-    const selectValueRef = useRef(networkOptions[0].Id)
+    const [networkOptions, setNetworkOptions] = useState([])
+    const selectValueRef = useRef()
+    useEffect(async () => {
+        const networkOptions = await GetNetworkOptions()
+        setNetworkOptions(networkOptions)
+        selectValueRef.current = networkOptions[0].Id
+    }, [])
     const onSelectChange = (e) => {
         if (e.target.value === EditOption) {
             e.target.value = selectValueRef.current
@@ -19,12 +24,14 @@ const NetworkForm = ({setPane}) => {
     return (
         <form className={styles.network_form}>
             <label>Network</label>
-            <select onChange={onSelectChange}>
-                {networkOptions.map((option, i) => (
-                    <option key={i} value={option.Id}>{option.Name}</option>
-                ))}
-                <option value={EditOption}>Edit networks...</option>
-            </select>
+            {networkOptions.length ? <>
+                <select onChange={onSelectChange}>
+                    {networkOptions.map((option, i) => (
+                        <option key={i} value={option.Id}>{option.Name}</option>
+                    ))}
+                    <option value={EditOption}>Edit networks...</option>
+                </select>
+            </> : ": Loading..."}
         </form>
     )
 }

@@ -4,21 +4,18 @@ import {GetNetworkOptions} from "./common";
 import {useEffect, useRef, useState} from "react";
 
 const NetworkConfiguration = ({setPane}) => {
+    const [lastUpdate, setLastUpdate] = useState("")
     const [networkOptions, setNetworkOptions] = useState([])
     const [network, setNetwork] = useState({})
     const selectValueRef = useRef()
     const networkNameRef = useRef()
+    const databaseFileRef = useRef()
+    const serverRef = useRef()
     useEffect(async () => {
-        let networkConfig = await window.electron.getNetworkConfig()
-        let networkOptions
-        if (networkConfig === undefined) {
-            networkOptions = GetNetworkOptions()
-        } else {
-            networkOptions = networkConfig.Networks
-        }
+        const networkOptions = await GetNetworkOptions()
         setNetworkOptions(networkOptions)
         setNetwork(networkOptions[0])
-    }, [])
+    }, [lastUpdate])
     useEffect(() => {
         networkNameRef.current.value = network.Name
     }, [network])
@@ -27,10 +24,20 @@ const NetworkConfiguration = ({setPane}) => {
     }
     const onFormSubmit = async (e) => {
         e.preventDefault()
+        const elements = e.target.elements
         let networkConfig = {
             Networks: networkOptions,
         }
+        networkConfig.Networks.map((item) => {
+            if (network.Id === item.Id) {
+                item.Name = networkNameRef.current.value
+                item.Ruleset = elements.ruleset.value
+                item.DatabaseFile = databaseFileRef.current.value
+                item.Server = serverRef.current.value
+            }
+        })
         await window.electron.saveNetworkConfig(networkConfig)
+        setLastUpdate((new Date()).toISOString())
     }
     return (
         <div className={styles.root}>
@@ -58,11 +65,11 @@ const NetworkConfiguration = ({setPane}) => {
                         </div>
                         <div>
                             <label>Database file:</label>
-                            <input type={"text"}/>
+                            <input type={"text"} ref={databaseFileRef}/>
                         </div>
                         <div>
                             <label>Server:</label>
-                            <input type={"text"}/>
+                            <input type={"text"} ref={serverRef}/>
                         </div>
                         <div>
                             <label></label>
