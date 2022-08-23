@@ -9,7 +9,7 @@ import SelectType from "../components/load/select_type"
 import ImportKeys from "../components/load/import_keys";
 import styles from "../styles/addWallet.module.css"
 import {Panes} from "../components/load/common"
-import NetworkConfiguration from "../components/load/network_configuration";
+import NetworkConfiguration from "../components/load/network/configuration";
 
 const Index = () => {
     const router = useRouter()

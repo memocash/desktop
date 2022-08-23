@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
-import NetworkForm from "./network_form";
+import NetworkForm from "./network/form";
 
 const WalletOptions = {
     UnreadableFile: () => {

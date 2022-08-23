@@ -94,3 +94,29 @@
 .network_form select {
     margin-left: 10px;
 }
+
+.config_title {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.config_container {
+    display: flex;
+}
+
+.config_left {
+    width: 200px;
+}
+
+.config_left select {
+    width: 100%;
+}
+
+.config_right {
+    margin-left: 20px;
+    flex: 1;
+}
+
+.config_right p {
+    margin-top: 0;
+}
