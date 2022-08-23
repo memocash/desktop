@@ -67,4 +67,7 @@ module.exports = {
     setWallet: async (wallet, filename, password) =>
         ipcRenderer.send(Handlers.StoreWallet, wallet, getPathForWallet(filename), password),
     walletLoaded: () => ipcRenderer.send(Handlers.WalletLoaded),
+    saveNetworkConfig: async (networkConfig) => {
+        await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(networkConfig, null, 2)+"\n")
+    },
 }

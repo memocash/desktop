@@ -14,6 +14,13 @@ const NetworkConfiguration = ({setPane}) => {
     const onSelectChange = () => {
         setNetwork(networkOptions.find(option => option.Id === selectValueRef.current.value))
     }
+    const onFormSubmit = async (e) => {
+        e.preventDefault()
+        let networkConfig = {
+            Networks: networkOptions,
+        }
+        await window.electron.saveNetworkConfig(networkConfig)
+    }
     return (
         <div className={styles.root}>
             <div className={styles.box}>
@@ -26,7 +33,7 @@ const NetworkConfiguration = ({setPane}) => {
                             ))}
                         </select>
                     </div>
-                    <div className={styles.config_right}>
+                    <form className={styles.config_right} onSubmit={onFormSubmit}>
                         <div>
                             <label>Network name:</label>
                             <input type={"text"} ref={networkNameRef}/>
@@ -52,7 +59,7 @@ const NetworkConfiguration = ({setPane}) => {
                                 <input type={"submit"} value={"Save"}/>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
             <div className={styles.buttons}>

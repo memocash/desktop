@@ -121,22 +121,26 @@
     flex: 1;
     display: grid;
     grid-template-columns: 125px 1fr;
+    grid-row-gap: 15px;
 }
 
 .config_right > div {
     display: contents;
 }
 
-.config_right input[type="text"] {
-    margin: 0 0 16px;
+.config_right input[type=text] {
+    margin-left: 0;
 }
 
-.config_right input[type="radio"] {
-    margin: 0 0 16px;
+.config_right input[type=radio] {
     position: relative;
     top: 1px;
 }
 
-.config_right input[type="radio"]:not(:first-child) {
+.config_right input[type=radio]:not(:first-child) {
     margin-left: 10px;
+}
+
+.config_right input[type=submit] {
+    cursor: pointer;
 }
