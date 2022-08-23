@@ -112,11 +112,31 @@
     width: 100%;
 }
 
+.config_left option {
+    cursor: pointer;
+}
+
 .config_right {
     margin-left: 20px;
     flex: 1;
+    display: grid;
+    grid-template-columns: 125px 1fr;
 }
 
-.config_right p {
-    margin-top: 0;
+.config_right > div {
+    display: contents;
+}
+
+.config_right input[type="text"] {
+    margin: 0 0 16px;
+}
+
+.config_right input[type="radio"] {
+    margin: 0 0 16px;
+    position: relative;
+    top: 1px;
+}
+
+.config_right input[type="radio"]:not(:first-child) {
+    margin-left: 10px;
 }

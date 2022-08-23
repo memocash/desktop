@@ -1,12 +1,16 @@
 import styles from "../../../styles/addWallet.module.css"
 import {Panes} from "../common";
 import {GetNetworkOptions} from "./common";
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 
 const NetworkConfiguration = ({setPane}) => {
     const [networkOptions] = useState(GetNetworkOptions())
     const [network, setNetwork] = useState(networkOptions[0])
     const selectValueRef = useRef()
+    const networkNameRef = useRef()
+    useEffect(() => {
+        networkNameRef.current.value = network.Name
+    }, [network])
     const onSelectChange = () => {
         setNetwork(networkOptions.find(option => option.Id === selectValueRef.current.value))
     }
@@ -23,23 +27,31 @@ const NetworkConfiguration = ({setPane}) => {
                         </select>
                     </div>
                     <div className={styles.config_right}>
-                        <p>
+                        <div>
                             <label>Network name:</label>
-                            <input type={"text"} value={network.Name}/>
-                        </p>
-                        <p>
+                            <input type={"text"} ref={networkNameRef}/>
+                        </div>
+                        <div>
                             <label>Ruleset:</label>
-                            <input type="radio" value="bch" name="ruleset"/> BCH
-                            <input type="radio" value="bsv" name="ruleset"/> BSV
-                        </p>
-                        <p>
+                            <div>
+                                <input type="radio" value="bch" name="ruleset"/> BCH
+                                <input type="radio" value="bsv" name="ruleset"/> BSV
+                            </div>
+                        </div>
+                        <div>
                             <label>Database file:</label>
-                            <input type={"text"} value={""}/>
-                        </p>
-                        <p>
+                            <input type={"text"}/>
+                        </div>
+                        <div>
                             <label>Server:</label>
-                            <input type={"text"} value={""}/>
-                        </p>
+                            <input type={"text"}/>
+                        </div>
+                        <div>
+                            <label></label>
+                            <div>
+                                <input type={"submit"} value={"Save"}/>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
