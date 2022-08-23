@@ -11,6 +11,7 @@ const NetworkConfiguration = ({setPane}) => {
     const databaseFileRef = useRef()
     const serverRef = useRef()
     const formRef = useRef()
+    const [invalidServerError, setInvalidServerError] = useState("")
     useEffect(async () => {
         const networkOptions = await GetNetworkOptions()
         setNetworkOptions(networkOptions)
@@ -27,20 +28,47 @@ const NetworkConfiguration = ({setPane}) => {
     }
     const onFormSubmit = async (e) => {
         e.preventDefault()
+        const serverError = validServerError(serverRef.current.value)
+        if (serverError && serverError.length) {
+            return
+        }
         const elements = e.target.elements
         let networkConfig = {
             Networks: await GetNetworkOptions(),
         }
+        let updatedNetwork
         networkConfig.Networks.map((item) => {
             if (network.Id === item.Id) {
                 item.Name = networkNameRef.current.value
                 item.Ruleset = elements.ruleset.value
                 item.DatabaseFile = databaseFileRef.current.value
-                item.Server = serverRef.current.value
+                item.Server = serverRef.current.value.replace(/[\/?]$/, "")
+                updatedNetwork = item
             }
         })
         await window.electron.saveNetworkConfig(networkConfig)
         setNetworkOptions(networkConfig.Networks)
+        setNetwork(updatedNetwork)
+    }
+    const validServerError = (server) => {
+        if (!/^(http|https):\/\//.test(server)) {
+            return "Server must have http/s"
+        }
+        let url;
+        try {
+            url = new URL(server)
+        } catch (_) {
+            return "Unable to parse server"
+        }
+        if (url.pathname.length > 0 && url.pathname !== "/") {
+            return "Server path not allowed"
+        } else if (url.search.length > 0) {
+            return "Server search not allowed"
+        }
+        return ""
+    }
+    const onServerChange = () => {
+        setInvalidServerError(validServerError(serverRef.current.value))
     }
     return (
         <div className={styles.root}>
@@ -72,12 +100,13 @@ const NetworkConfiguration = ({setPane}) => {
                         </div>
                         <div>
                             <label>Server:</label>
-                            <input type={"text"} ref={serverRef}/>
+                            <input type={"text"} ref={serverRef} onChange={onServerChange}/>
                         </div>
                         <div>
                             <label></label>
                             <div>
                                 <input type={"submit"} value={"Save"}/>
+                                <span className={styles.error}>{invalidServerError}</span>
                             </div>
                         </div>
                     </form>

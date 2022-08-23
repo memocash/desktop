@@ -143,4 +143,11 @@
 
 .config_right input[type=submit] {
     cursor: pointer;
+    margin-right: 5px;
+}
+
+.config_right span.error {
+    color: #f00;
+    font-weight: bold;
+    margin-left: 10px;
 }
