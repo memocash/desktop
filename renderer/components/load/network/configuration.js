@@ -57,18 +57,18 @@ const NetworkConfiguration = ({setPane}) => {
                     <form className={styles.config_right} onSubmit={onFormSubmit} ref={formRef}>
                         <div>
                             <label>Network name:</label>
-                            <input type={"text"} ref={networkNameRef}/>
+                            <input type={"text"} ref={networkNameRef} disabled={true}/>
                         </div>
                         <div>
                             <label>Ruleset:</label>
                             <div>
-                                <input type="radio" value="bch" name="ruleset"/> BCH
-                                <input type="radio" value="bsv" name="ruleset"/> BSV
+                                <input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}/> BCH
+                                <input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}/> BSV
                             </div>
                         </div>
                         <div>
                             <label>Database file:</label>
-                            <input type={"text"} ref={databaseFileRef}/>
+                            <input type={"text"} ref={databaseFileRef} disabled={true}/>
                         </div>
                         <div>
                             <label>Server:</label>

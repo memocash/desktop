@@ -14,7 +14,7 @@ const NetworkOptions = [
         Id: "bsv",
     },
     {
-        Name: "Dev (BCH)",
+        Name: "Dev",
         Ruleset: "bch",
         DatabaseFile: "~/.memo/memo-dev.db",
         Server: "http://127.0.0.1:26770",
