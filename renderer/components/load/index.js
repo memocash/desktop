@@ -1,50 +1,11 @@
 import {useEffect, useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
 import NetworkForm from "./network/form";
+import {Panes} from "./common";
+import {useRouter} from "next/router";
 
-const WalletOptions = {
-    UnreadableFile: () => {
-        return (
-            <div>
-                Cannot read file
-            </div>
-        )
-    },
-    Create: () => {
-        return (
-            <div>
-                This file does not exist. To create a new wallet by this name, press "Next".
-            </div>
-        )
-    },
-    ImportWithPassword: (props) => {
-        const {
-            hasEnteredWrongPassword,
-            onPasswordChange,
-            onPasswordKeyDown,
-            passwordInputRef
-        } = props
-        return (
-            <div>
-                <p>This file is encrypted. Enter your password or choose another file.</p>
-                <p><label>Password:
-                    <input autoFocus ref={passwordInputRef} onChange={onPasswordChange}
-                           onKeyDown={onPasswordKeyDown} type="password"/>
-                </label></p>
-                {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
-            </div>
-        )
-    },
-    ImportWithoutPassword: () => {
-        return (
-            <div>
-                Wallet found. To import it, press "Next".
-            </div>
-        )
-    }
-}
-
-const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
+const LoadHome = ({setPane, setFilePath}) => {
+    const router = useRouter()
     const [isUnreadableFile, setIsUnreadableFile] = useState(false);
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
@@ -52,7 +13,6 @@ const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
     const walletInput = useRef()
     const passwordInput = useRef()
-
     useEffect(async () => {
         const existingWallets = await window.electron.getExistingWalletFiles()
         let suggestedName = "default_wallet"
@@ -67,7 +27,24 @@ const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
         walletInput.current.value = suggestedName
         await fileChangeHandler()
     }, [])
-
+    const onCreateWallet = (pathToWallet) => {
+        setFilePath(pathToWallet)
+        setPane(Panes.Step2SelectType)
+    }
+    const onLoadWallet = async (pathToWallet, password) => {
+        let walletJson = await window.electron.getWalletFile(pathToWallet)
+        try {
+            if (password) {
+                walletJson = window.electron.decryptWallet(walletJson, password)
+            }
+            const wallet = JSON.parse(walletJson)
+            await window.electron.setWallet(wallet, pathToWallet, password)
+        } catch (err) {
+            console.log(err)
+            return
+        }
+        await router.push("/wallet")
+    }
     const loadFile = async (walletFile) => {
         const fileContents = await window.electron.getWalletFile(walletFile)
         setFileExists(true)
@@ -79,7 +56,6 @@ const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
         }
         setWalletContents(fileContents)
     }
-
     const fileChangeHandler = async () => {
         try {
             const fileExists = await window.electron.checkFile(walletInput.current.value)
@@ -93,7 +69,6 @@ const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
             setIsUnreadableFile(true)
         }
     }
-
     const handleClickImport = async () => {
         const filepath = await window.electron.openFileDialog()
         if (!filepath.length) {
@@ -102,15 +77,14 @@ const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
         walletInput.current.value = window.electron.getWalletShort(filepath)
         await loadFile(filepath)
     }
-
-    const handleClickNext = () => {
+    const handleClickNext = async () => {
         const pathname = walletInput.current.value
         if (!fileExists) {
             onCreateWallet(pathname)
             return
         }
         if (!passwordProtectedFile) {
-            onLoadWallet(pathname)
+            await onLoadWallet(pathname)
             return
         }
         let password;
@@ -123,15 +97,14 @@ const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
         } catch (err) {
             setHasEnteredWrongPassword(true)
         }
-        onLoadWallet(pathname, password)
+        await onLoadWallet(pathname, password)
     }
-
-    const passwordKeyDown = (e) => {
+    const passwordKeyDown = async (e) => {
         if (e.keyCode === 13) {
-            handleClickNext()
+            await handleClickNext()
         }
     }
-
+    const onPasswordChange = () => setHasEnteredWrongPassword(false)
     return (
         <div className={styles.root}>
             <div className={styles.box}>
@@ -144,17 +117,19 @@ const LoadHome = ({onCreateWallet, onLoadWallet, setPane}) => {
                         </label>
                     </p>
                     {isUnreadableFile ?
-                        <WalletOptions.UnreadableFile/>
+                        <div>Cannot read file</div>
                         : fileExists ?
                             passwordProtectedFile ?
-                                <WalletOptions.ImportWithPassword
-                                    hasEnteredWrongPassword={hasEnteredWrongPassword}
-                                    onPasswordChange={() => setHasEnteredWrongPassword(false)}
-                                    onPasswordKeyDown={passwordKeyDown}
-                                    passwordInputRef={passwordInput}
-                                />
-                                : <WalletOptions.ImportWithoutPassword/>
-                            : <WalletOptions.Create/>
+                                <div>
+                                    <p>This file is encrypted. Enter your password or choose another file.</p>
+                                    <p><label>Password:
+                                        <input autoFocus ref={passwordInput} onChange={onPasswordChange}
+                                               onKeyDown={passwordKeyDown} type="password"/>
+                                    </label></p>
+                                    {hasEnteredWrongPassword && <div>Incorrect password. Please try again.</div>}
+                                </div>
+                                : <div>Wallet found. To import it, press "Next".</div>
+                            : <div>This file does not exist. To create a new wallet by this name, press "Next".</div>
                     }
                     <NetworkForm setPane={setPane}/>
                 </div>

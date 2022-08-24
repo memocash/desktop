@@ -6,7 +6,6 @@ const CreatePassword = ({onBack, onPasswordCreated}) => {
     const [passwordsDontMatch, setPasswordsDontMatch] = useState(false)
     const password = useRef()
     const confirmPassword = useRef()
-
     const handleVerifyPassword = () => {
         const firstPassword = password.current.value
         const secondPassword = confirmPassword.current.value
@@ -16,13 +15,11 @@ const CreatePassword = ({onBack, onPasswordCreated}) => {
             setPasswordsDontMatch(true)
         }
     }
-
     const handleEditPassword = () => {
         if (passwordsDontMatch) {
             setPasswordsDontMatch(false)
         }
     }
-
     return (
         <div className={styles.root}>
             <div className={styles.box}>

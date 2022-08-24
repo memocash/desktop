@@ -144,7 +144,6 @@
 }
 
 .config_right input[type=submit] {
-    cursor: pointer;
     margin-right: 5px;
 }
 

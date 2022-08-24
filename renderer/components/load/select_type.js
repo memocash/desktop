@@ -1,18 +1,17 @@
 import {useState} from "react"
 import styles from "../../styles/addWallet.module.css"
+import {Panes} from "./common";
 
 const TypeOptions = {
     Standard: "standard",
     Import: "import",
 }
 
-const SelectType = ({onSelectStandard, onSelectImport, onBack}) => {
+const SelectType = ({setPane, generateSeedPhrase}) => {
     const [isStandard, setIsStandard] = useState(true)
-
     const changeWalletType = (e) => {
         setIsStandard(e.target.value === TypeOptions.Standard)
     }
-
     const handleClickNext = () => {
         if (isStandard) {
             onSelectStandard()
@@ -20,7 +19,12 @@ const SelectType = ({onSelectStandard, onSelectImport, onBack}) => {
             onSelectImport()
         }
     }
-
+    const onSelectStandard = () => {
+        generateSeedPhrase()
+        setPane(Panes.Step3SetSeed)
+    }
+    const onSelectImport = () => setPane(Panes.Step3SetKeys)
+    const onBack = () => setPane(Panes.Step1ChooseFile)
     return (
         <div className={styles.root}>
             <div className={styles.box}>

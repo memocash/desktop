@@ -158,7 +158,7 @@ const NetworkConfiguration = ({setPane}) => {
                 </div>
             </div>
             <div className={styles.buttons}>
-                <button onClick={clickBack}>Back</button>
+                <button onClick={clickBack}>Done</button>
             </div>
         </div>
     )

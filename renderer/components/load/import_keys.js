@@ -5,7 +5,6 @@ import styles from "../../styles/addWallet.module.css"
 const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
     const [error, setError] = useState("")
     const privateKeyList = useRef()
-
     const handleClickNext = () => {
         const list = privateKeyList.current.value.split("\n")
         let keyList = [], addressList = []
@@ -37,7 +36,6 @@ const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
         }
         onSetKeysAndAddresses(keyList, addressList)
     }
-
     return (
         <div className={`${styles.root} ${styles.importKeys}`}>
             <div className={styles.box}>
