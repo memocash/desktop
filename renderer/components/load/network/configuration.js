@@ -150,7 +150,7 @@ const NetworkConfiguration = ({setPane}) => {
                             <label></label>
                             <div>
                                 <input type={"submit"} value={"Save"} disabled={!hasChanged}/>
-                                <button onClick={resetForm} disabled={!hasChanged}>Cancel</button>
+                                <button onClick={resetForm} disabled={!hasChanged}>Reset</button>
                                 <div className={styles.error}>{invalidServerError}</div>
                             </div>
                         </div>
