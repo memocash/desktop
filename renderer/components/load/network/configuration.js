@@ -4,6 +4,7 @@ import {GetNetworkOptions} from "./common";
 import {useEffect, useRef, useState} from "react";
 
 const NetworkConfiguration = ({setPane}) => {
+    const [hasChanged, setHasChanged] = useState(false)
     const [networkOptions, setNetworkOptions] = useState([])
     const [network, setNetwork] = useState({})
     const selectValueRef = useRef()
@@ -67,8 +68,16 @@ const NetworkConfiguration = ({setPane}) => {
         }
         return ""
     }
-    const onServerChange = () => {
+    const onFormChange = () => {
         setInvalidServerError(validServerError(serverRef.current.value))
+        if (network.Server !== serverRef.current.value ||
+            formRef.current.elements.ruleset.value !== network.Ruleset ||
+            networkNameRef.current.value !== network.Name ||
+            databaseFileRef.current.value !== network.DatabaseFile) {
+            setHasChanged(true)
+        } else {
+            setHasChanged(false)
+        }
     }
     return (
         <div className={styles.root}>
@@ -78,7 +87,10 @@ const NetworkConfiguration = ({setPane}) => {
                     <div className={styles.config_left}>
                         <select size={5} ref={selectValueRef} onClick={onSelectChange}>
                             {networkOptions.map((option, i) => (
-                                <option key={i} value={option.Id}>{option.Name}</option>
+                                <option key={i} value={option.Id}>
+                                    {option.Name}
+                                    {option.Id === network.Id && hasChanged ? " *" : ""}
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -90,8 +102,10 @@ const NetworkConfiguration = ({setPane}) => {
                         <div>
                             <label>Ruleset:</label>
                             <div>
-                                <input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}/> BCH
-                                <input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}/> BSV
+                                <input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}
+                                       onChange={onFormChange}/> BCH
+                                <input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}
+                                       onChange={onFormChange}/> BSV
                             </div>
                         </div>
                         <div>
@@ -100,7 +114,7 @@ const NetworkConfiguration = ({setPane}) => {
                         </div>
                         <div>
                             <label>Server:</label>
-                            <input type={"text"} ref={serverRef} onChange={onServerChange}/>
+                            <input type={"text"} ref={serverRef} onChange={onFormChange}/>
                         </div>
                         <div>
                             <label></label>
