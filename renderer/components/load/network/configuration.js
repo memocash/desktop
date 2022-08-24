@@ -17,6 +17,7 @@ const NetworkConfiguration = ({setPane}) => {
         const networkOptions = await GetNetworkOptions()
         setNetworkOptions(networkOptions)
         setNetwork(networkOptions[0])
+        selectValueRef.current.value = networkOptions[0].Id
     }, [])
     useEffect(() => {
         resetForm()
@@ -94,6 +95,16 @@ const NetworkConfiguration = ({setPane}) => {
             setHasChanged(false)
         }
     }
+    const clickBack = () => {
+        const confirmMessage = "" +
+            "You have unsaved changes.\n" +
+            "Are you sure you want to go back?\n" +
+            "Changes will be lost."
+        if (hasChanged && !confirm(confirmMessage)) {
+            return false
+        }
+        setPane(Panes.Step1ChooseFile)
+    }
     return (
         <div className={styles.root}>
             <div className={styles.box}>
@@ -147,7 +158,7 @@ const NetworkConfiguration = ({setPane}) => {
                 </div>
             </div>
             <div className={styles.buttons}>
-                <button onClick={() => setPane(Panes.Step1ChooseFile)}>Back</button>
+                <button onClick={clickBack}>Back</button>
             </div>
         </div>
     )
