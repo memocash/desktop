@@ -130,6 +130,10 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
                             : <div>This file does not exist. To create a new wallet by this name, press "Next".</div>
                     }
                     <NetworkForm setPane={setPane} networkValueRef={networkValueRef}/>
+                    <p className={styles.warning}>
+                        <b>WARNING!</b> This application is experimental and may have catastrophic bugs.
+                        Use at your own risk!
+                    </p>
                 </div>
             </div>
             <div className={styles.buttons}>

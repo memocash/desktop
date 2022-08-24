@@ -57,6 +57,11 @@
     padding: 20px;
 }
 
+.boxMain .warning {
+    margin-top: 35px;
+    color: red;
+}
+
 .content {
     box-sizing: border-box;
     display: flex;
