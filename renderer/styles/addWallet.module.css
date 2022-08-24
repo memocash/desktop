@@ -135,9 +135,10 @@
 .config_right input[type=radio] {
     position: relative;
     top: 1px;
+    cursor: pointer;
 }
 
-.config_right input[type=radio]:not(:first-child) {
+.config_right label:not(:first-child) input[type=radio] {
     margin-left: 10px;
 }
 
@@ -146,8 +147,8 @@
     margin-right: 5px;
 }
 
-.config_right span.error {
+.config_right .error {
     color: #f00;
     font-weight: bold;
-    margin-left: 10px;
+    margin-top: 10px;
 }

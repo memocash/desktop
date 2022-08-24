@@ -19,11 +19,15 @@ const NetworkConfiguration = ({setPane}) => {
         setNetwork(networkOptions[0])
     }, [])
     useEffect(() => {
+        resetForm()
+    }, [network])
+    const resetForm = () => {
         networkNameRef.current.value = network.Name
         formRef.current.elements.ruleset.value = network.Ruleset
         databaseFileRef.current.value = network.DatabaseFile
         serverRef.current.value = network.Server
-    }, [network])
+        checkFormDifference()
+    }
     const onSelectChange = () => {
         setNetwork(networkOptions.find(option => option.Id === selectValueRef.current.value))
     }
@@ -69,6 +73,9 @@ const NetworkConfiguration = ({setPane}) => {
         return ""
     }
     const onFormChange = () => {
+        checkFormDifference()
+    }
+    const checkFormDifference = () => {
         setInvalidServerError(validServerError(serverRef.current.value))
         if (network.Server !== serverRef.current.value ||
             formRef.current.elements.ruleset.value !== network.Ruleset ||
@@ -102,10 +109,10 @@ const NetworkConfiguration = ({setPane}) => {
                         <div>
                             <label>Ruleset:</label>
                             <div>
-                                <input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}
-                                       onChange={onFormChange}/> BCH
-                                <input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}
-                                       onChange={onFormChange}/> BSV
+                                <label><input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}
+                                       onChange={onFormChange}/> BCH</label>
+                                <label><input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}
+                                       onChange={onFormChange}/> BSV</label>
                             </div>
                         </div>
                         <div>
@@ -119,8 +126,9 @@ const NetworkConfiguration = ({setPane}) => {
                         <div>
                             <label></label>
                             <div>
-                                <input type={"submit"} value={"Save"}/>
-                                <span className={styles.error}>{invalidServerError}</span>
+                                <input type={"submit"} value={"Save"} disabled={!hasChanged}/>
+                                <button onClick={resetForm} disabled={!hasChanged}>Cancel</button>
+                                <div className={styles.error}>{invalidServerError}</div>
                             </div>
                         </div>
                     </form>
