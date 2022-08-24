@@ -1,6 +1,6 @@
 const {ipcMain, Menu, MenuItem, app, dialog} = require("electron");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
-const {GetMenu, GetStorage, SetStorage, GetWindow} = require("../window");
+const {GetMenu, GetStorage, SetStorage, GetWindow, SetNetworkOption, GetNetworkOption} = require("../window");
 
 const WindowHandlers = () => {
     ipcMain.handle(Handlers.GetWindowId, async (e) => e.sender.id)
@@ -47,6 +47,8 @@ const WindowHandlers = () => {
             message: message,
         })
     })
+    ipcMain.handle(Handlers.GetWindowNetwork, async (e) => GetNetworkOption(e.sender.id))
+    ipcMain.handle(Handlers.SetWindowNetwork, async (e, networkOption) => SetNetworkOption(e.sender.id, networkOption))
 }
 
 module.exports = {

@@ -1,4 +1,4 @@
-import {useState} from "react"
+import {useRef, useState} from "react"
 import {useRouter} from "next/router"
 import {generateMnemonic} from "bip39"
 import LoadHome from "../components/load"
@@ -10,6 +10,7 @@ import ImportKeys from "../components/load/import_keys";
 import styles from "../styles/addWallet.module.css"
 import {Panes} from "../components/load/common"
 import NetworkConfiguration from "../components/load/network/configuration";
+import {GetNetworkOptions, SetWindowNetwork} from "../components/load/network/common";
 
 const Index = () => {
     const router = useRouter()
@@ -18,6 +19,7 @@ const Index = () => {
     const [seedPhrase, setSeedPhrase] = useState("")
     const [keyList, setKeyList] = useState([])
     const [addressList, setAddressList] = useState([])
+    const networkValueRef = useRef()
     const generateSeedPhrase = () => {
         const mnemonic = generateMnemonic()
         setSeedPhrase(mnemonic)
@@ -43,6 +45,17 @@ const Index = () => {
     }
     const handlePasswordCreated = async (password) => {
         await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
+        await loadWallet()
+    }
+    const loadWallet = async () => {
+        const networkOptions = await GetNetworkOptions()
+        for (let i = 0; i < networkOptions.length; i++) {
+            const option = networkOptions[i]
+            if (option.Id === networkValueRef.current) {
+                await SetWindowNetwork(option)
+                break
+            }
+        }
         await router.push("/wallet")
     }
     return (
@@ -52,7 +65,8 @@ const Index = () => {
                     <img alt={"Memo logo"} src="/memo-logo-large.png"/>
                 </div>
                 <div className={styles.main}>
-                    {pane === Panes.Step1ChooseFile && <LoadHome setPane={setPane} setFilePath={setFilePath}/>}
+                    {pane === Panes.Step1ChooseFile && <LoadHome setFilePath={setFilePath} loadWallet={loadWallet}
+                                                                 setPane={setPane} networkValueRef={networkValueRef}/>}
                     {pane === Panes.Step2SelectType && <SelectType generateSeedPhrase={generateSeedPhrase}
                                                                    setPane={setPane}/>}
                     {pane === Panes.Step3SetKeys && <ImportKeys onSetKeysAndAddresses={onSetKeysAndAddresses}

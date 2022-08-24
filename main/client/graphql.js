@@ -1,8 +1,6 @@
 const http = require("http")
 const WebSocket = require('ws');
 
-const Host = "127.0.0.1:26770"
-
 const sockets = {}
 
 const CloseSocket = ({id}) => {
@@ -13,8 +11,8 @@ const CloseSocket = ({id}) => {
     delete sockets[id]
 }
 
-const Subscribe = ({id, query, variables, callback, onopen, onclose}) => {
-    let socket = new WebSocket("ws://" + Host + "/graphql")
+const Subscribe = ({network, id, query, variables, callback, onopen, onclose}) => {
+    let socket = new WebSocket(httpUrlToWs(network.Server) + "/graphql")
     socket.onmessage = (ev) => {
         const data = JSON.parse(ev.data)
         switch (data.type) {
@@ -56,13 +54,18 @@ const Subscribe = ({id, query, variables, callback, onopen, onclose}) => {
     sockets[id] = socket
 }
 
-const GraphQL = async ({query, variables}) => {
+const httpUrlToWs = (url) => {
+    return url.replace(/^(http)(s)?:\/\//, "ws$2://")
+}
+
+const GraphQL = async ({network, query, variables}) => {
+    console.log("Using network for GraphQL: " + network.Id)
     const body = JSON.stringify({
         query: query,
         variables: variables,
     })
     return new Promise((resolve, reject) => {
-        const request = http.request("http://" + Host + "/graphql", {
+        const request = http.request(network.Server + "/graphql", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

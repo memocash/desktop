@@ -1,6 +1,6 @@
 import styles from "../../../styles/addWallet.module.css"
 import {Panes} from "../common";
-import {GetNetworkOptions} from "./common";
+import {GetNetworkConfig, GetNetworkOptions, SaveNetworkConfig} from "./common";
 import {useEffect, useRef, useState} from "react";
 
 const NetworkConfiguration = ({setPane}) => {
@@ -47,9 +47,7 @@ const NetworkConfiguration = ({setPane}) => {
             return
         }
         const elements = e.target.elements
-        let networkConfig = {
-            Networks: await GetNetworkOptions(),
-        }
+        let networkConfig = await GetNetworkConfig()
         let updatedNetwork
         networkConfig.Networks.map((item) => {
             if (network.Id === item.Id) {
@@ -60,7 +58,7 @@ const NetworkConfiguration = ({setPane}) => {
                 updatedNetwork = item
             }
         })
-        await window.electron.saveNetworkConfig(networkConfig)
+        await SaveNetworkConfig(networkConfig)
         setNetworkOptions(networkConfig.Networks)
         setNetwork(updatedNetwork)
     }

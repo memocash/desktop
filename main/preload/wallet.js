@@ -70,6 +70,8 @@ module.exports = {
     saveNetworkConfig: async (networkConfig) => {
         await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(networkConfig, null, 2)+"\n")
     },
+    getWindowNetwork: async () => await ipcRenderer.invoke(Handlers.GetWindowNetwork),
+    setWindowNetwork: async (network) => await ipcRenderer.invoke(Handlers.SetWindowNetwork, network),
     getNetworkConfig: async () => {
         if (!await fileExists(Dir.NetworkConfigFile)) {
             return

@@ -32,6 +32,8 @@ const Handlers = {
     GraphQL: "graphql",
     GraphQLSubscribe: "graphql-subscribe",
     GraphQLSubscribeClose: "graphql-subscribe-close",
+    GetWindowNetwork: "get-window-network",
+    SetWindowNetwork: "set-window-network",
     OpenPreviewSend: "open-preview-send",
     OpenTransaction: "open-transaction",
     SaveTransactions: "save-transactions",

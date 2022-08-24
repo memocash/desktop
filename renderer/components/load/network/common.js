@@ -22,14 +22,44 @@ const NetworkOptions = [
     },
 ]
 
-const GetNetworkOptions = async () => {
+const GetNetworkConfig = async () => {
     let networkConfig = await window.electron.getNetworkConfig()
     if (!networkConfig || !networkConfig.Networks || !networkConfig.Networks.length) {
-        return NetworkOptions
+        return {Networks: NetworkOptions}
     }
-    return networkConfig.Networks
+    return networkConfig
 }
 
-export {
+const GetNetworkOptions = async () => {
+    return (await GetNetworkConfig()).Networks
+}
+
+// TODO: Allow wallet name as input to return default network for wallet
+const GetDefaultNetwork = async () => {
+    let networkConfig = await window.electron.getNetworkConfig()
+    if (!networkConfig || !networkConfig.Networks || !networkConfig.Networks.length) {
+        return NetworkOptions[0]
+    }
+    return networkConfig.Networks[0]
+}
+
+const SaveNetworkConfig = async (networkConfig) => {
+    await window.electron.saveNetworkConfig(networkConfig)
+}
+
+const GetWindowNetwork = async () => {
+    return await window.electron.getWindowNetwork()
+}
+
+const SetWindowNetwork = async (network) => {
+    await window.electron.setWindowNetwork(network)
+}
+
+module.exports = {
+    GetDefaultNetwork,
+    GetNetworkConfig,
     GetNetworkOptions,
+    GetWindowNetwork,
+    SaveNetworkConfig,
+    SetWindowNetwork,
 }

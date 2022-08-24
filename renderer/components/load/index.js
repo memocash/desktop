@@ -2,10 +2,8 @@ import {useEffect, useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
 import NetworkForm from "./network/form";
 import {Panes} from "./common";
-import {useRouter} from "next/router";
 
-const LoadHome = ({setPane, setFilePath}) => {
-    const router = useRouter()
+const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
     const [isUnreadableFile, setIsUnreadableFile] = useState(false);
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
@@ -43,7 +41,7 @@ const LoadHome = ({setPane, setFilePath}) => {
             console.log(err)
             return
         }
-        await router.push("/wallet")
+        await loadWallet()
     }
     const loadFile = async (walletFile) => {
         const fileContents = await window.electron.getWalletFile(walletFile)
@@ -131,7 +129,7 @@ const LoadHome = ({setPane, setFilePath}) => {
                                 : <div>Wallet found. To import it, press "Next".</div>
                             : <div>This file does not exist. To create a new wallet by this name, press "Next".</div>
                     }
-                    <NetworkForm setPane={setPane}/>
+                    <NetworkForm setPane={setPane} networkValueRef={networkValueRef}/>
                 </div>
             </div>
             <div className={styles.buttons}>

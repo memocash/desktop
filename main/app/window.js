@@ -6,14 +6,17 @@ const wallets = {}
 const storage = {}
 const windows = {}
 const menus = {}
+const networkOptions = {}
 const txWindows = {}
 let windowNumber = 0
 
 const GetMenu = (winId) => menus[winId]
+const GetNetworkOption = (winId) => networkOptions[winId]
 const GetStorage = (winId) => storage[winId]
 const GetWallet = (winId) => wallets[winId]
 const GetWindow = (winId) => windows[winId]
 const SetMenu = (winId, menu) => menus[winId] = menu
+const SetNetworkOption = (winId, option) => networkOptions[winId] = option
 const SetStorage = (winId, data) => storage[winId] = data
 const SetWallet = (winId, wallet) => wallets[winId] = wallet
 
@@ -78,10 +81,12 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
 
 module.exports = {
     GetMenu,
+    GetNetworkOption,
     GetStorage,
     GetWallet,
     GetWindow,
     SetMenu,
+    SetNetworkOption,
     SetStorage,
     SetWallet,
     CreateWindow,
