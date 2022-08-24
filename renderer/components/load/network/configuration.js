@@ -29,6 +29,14 @@ const NetworkConfiguration = ({setPane}) => {
         checkFormDifference()
     }
     const onSelectChange = () => {
+        const confirmMessage = "" +
+            "You have unsaved changes.\n" +
+            "Are you sure you want to select another network?\n" +
+            "Changes will be lost."
+        if (hasChanged && !confirm(confirmMessage)) {
+            selectValueRef.current.value = network.Id
+            return false
+        }
         setNetwork(networkOptions.find(option => option.Id === selectValueRef.current.value))
     }
     const onFormSubmit = async (e) => {
@@ -109,10 +117,14 @@ const NetworkConfiguration = ({setPane}) => {
                         <div>
                             <label>Ruleset:</label>
                             <div>
-                                <label><input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}
-                                       onChange={onFormChange}/> BCH</label>
-                                <label><input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}
-                                       onChange={onFormChange}/> BSV</label>
+                                <label>
+                                    <input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}
+                                           onChange={onFormChange}/> BCH
+                                </label>
+                                <label>
+                                    <input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}
+                                           onChange={onFormChange}/> BSV
+                                </label>
                             </div>
                         </div>
                         <div>
