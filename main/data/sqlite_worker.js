@@ -6,13 +6,16 @@ if (isMainThread) {
     throw new Error('Its not a worker');
 }
 
-parentPort.on("message", ({action, queryId, query, variables}) => {
+parentPort.on("message", async ({action, queryId, query, variables, dbFile}) => {
     switch (action) {
         case "INSERT":
             Insert({queryId, query, variables})
             break
         case "SELECT":
             Select({queryId, query, variables})
+            break
+        case "SET_DB":
+            await SetDb(dbFile)
             break
         default:
             throw new Error(queryId + ": unknown action - " + action)
@@ -50,14 +53,15 @@ const Select = async ({queryId, query, variables}) => {
 let _db
 
 const GetDb = async () => {
-    if (_db === undefined) {
-        _db = database(homedir + "/.memo/memo.db")
-        for (let i = 0; i < Definitions.length; i++) {
-            const create = _db.prepare("CREATE TABLE IF NOT EXISTS " + Definitions[i])
-            await create.run()
-        }
-    }
     return _db
+}
+
+const SetDb = async (db) => {
+    _db = database(db.replace("~", homedir))
+    for (let i = 0; i < Definitions.length; i++) {
+        const create = _db.prepare("CREATE TABLE IF NOT EXISTS " + Definitions[i])
+        await create.run()
+    }
 }
 
 const Definitions = [

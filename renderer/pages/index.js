@@ -10,7 +10,7 @@ import ImportKeys from "../components/load/import_keys";
 import styles from "../styles/addWallet.module.css"
 import {Panes} from "../components/load/common"
 import NetworkConfiguration from "../components/load/network/configuration";
-import {GetNetworkOptions, SetWindowNetwork} from "../components/load/network/common";
+import {GetNetworkConfig, SaveNetworkConfig, SetWindowNetwork} from "../components/load/network/common"
 
 const Index = () => {
     const router = useRouter()
@@ -48,11 +48,13 @@ const Index = () => {
         await loadWallet()
     }
     const loadWallet = async () => {
-        const networkOptions = await GetNetworkOptions()
-        for (let i = 0; i < networkOptions.length; i++) {
-            const option = networkOptions[i]
+        const networkConfig = await GetNetworkConfig()
+        for (let i = 0; i < networkConfig.Networks.length; i++) {
+            const option = networkConfig.Networks[i]
             if (option.Id === networkValueRef.current) {
                 await SetWindowNetwork(option)
+                networkConfig.Last = i
+                await SaveNetworkConfig(networkConfig)
                 break
             }
         }

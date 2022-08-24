@@ -3,11 +3,11 @@ const path = require("path");
 const {Handlers} = require("../../common/util");
 const {GetWalletInfo} = require("../../data/tables");
 const menu = require("../../menu");
-const {SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow} = require("../window");
+const {SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, eConf} = require("../window");
 
 const WalletHandlers = () => {
     ipcMain.handle(Handlers.GetWallet, async (e) => GetWallet(e.sender.id))
-    ipcMain.handle(Handlers.GetWalletInfo, async (e, addresses) => GetWalletInfo(addresses))
+    ipcMain.handle(Handlers.GetWalletInfo, async (e, addresses) => GetWalletInfo(eConf(e), addresses))
     ipcMain.on(Handlers.StoreWallet, (e, wallet, filename, password) => {
         SetWallet(e.sender.id, {wallet, filename, password})
     })

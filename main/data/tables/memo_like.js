@@ -1,6 +1,6 @@
 const {Select} = require("../sqlite")
 
-const GetLikes = async (postTxHash) => {
+const GetLikes = async (conf, postTxHash) => {
     const query = "" +
         "SELECT " +
         "   memo_likes.address, " +
@@ -23,7 +23,7 @@ const GetLikes = async (postTxHash) => {
         "LEFT JOIN tx_seens ON (tx_seens.hash = memo_likes.like_tx_hash) " +
         "WHERE memo_likes.post_tx_hash = ? " +
         "";
-    return await Select("memo_likes", query, [postTxHash])
+    return await Select(conf, "memo_likes", query, [postTxHash])
 }
 
 module.exports = {

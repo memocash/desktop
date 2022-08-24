@@ -1,40 +1,46 @@
 const {Worker} = require("worker_threads");
 const path = require("path")
 const {GetId} = require("../common/util");
-const worker = new Worker(path.resolve(__dirname, "sqlite_worker.js"));
 
 let queries = {}
+let workers = {}
 
-worker.on("message", ({queryId, result}) => {
-    if (!queries[queryId]) {
-        return
+const GetWorker = (dbFile) => {
+    if (!workers[dbFile]) {
+        workers[dbFile] = new Worker(path.resolve(__dirname, "sqlite_worker.js"));
+        workers[dbFile].on("message", ({queryId, result}) => {
+            if (!queries[queryId]) {
+                return
+            }
+            queries[queryId].resolve(result)
+        })
+        workers[dbFile].on("error", (error) => {
+            for (let queryId in queries) {
+                if (error.toString().indexOf(queryId) !== -1) {
+                    queries[queryId].reject(error)
+                    return
+                }
+            }
+            console.log("Unknown error: " + error)
+        })
+        workers[dbFile].postMessage({action: "SET_DB", dbFile})
     }
-    queries[queryId].resolve(result)
-})
+    return workers[dbFile]
+}
 
-worker.on("error", (error) => {
-    for (let queryId in queries) {
-        if (error.toString().indexOf(queryId) !== -1) {
-            queries[queryId].reject(error)
-            return
-        }
-    }
-    console.log("Unknown error: " + error)
-})
-
-const Insert = async (tableId, query, variables) => {
+const Insert = async (conf, tableId, query, variables) => {
     return new Promise((resolve, reject) => {
         const queryId = "INSERT_" + tableId + "_" + GetId()
         queries[queryId] = {resolve, reject}
-        worker.postMessage({action: "INSERT", queryId, query, variables})
+        GetWorker(conf.DatabaseFile).postMessage({action: "INSERT", queryId, query, variables})
     })
 }
 
-const Select = async (tableId, query, variables) => {
+const Select = async (conf, tableId, query, variables) => {
     return new Promise((resolve, reject) => {
         const queryId = "SELECT_" + tableId + "_" + GetId()
         queries[queryId] = {resolve, reject}
-        worker.postMessage({action: "SELECT", queryId, query, variables})
+        GetWorker(conf.DatabaseFile).postMessage({action: "SELECT", queryId, query, variables})
     })
 }
 

@@ -1,23 +1,23 @@
 const {Insert, Select} = require("../sqlite")
 
-const SaveTransactions = async (transactions) => {
+const SaveTransactions = async (conf, transactions) => {
     if (!transactions || !transactions.length) {
         return
     }
     for (let i = 0; i < transactions.length; i++) {
-        await Insert("txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
-        await Insert("tx_seens", "INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
+        await Insert(conf, "txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
+        await Insert(conf, "tx_seens", "INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
             transactions[i].hash, transactions[i].seen])
-        await Insert("tx_raws", "INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
+        await Insert(conf, "tx_raws", "INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
             transactions[i].hash, Buffer.from(transactions[i].raw, "hex")])
         for (let j = 0; j < transactions[i].inputs.length; j++) {
-            await Insert("inputs",
+            await Insert(conf, "inputs",
                 "INSERT OR IGNORE INTO inputs (hash, `index`, prev_hash, prev_index) VALUES (?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].inputs[j].index,
                     transactions[i].inputs[j].prev_hash, transactions[i].inputs[j].prev_index])
         }
         for (let j = 0; j < transactions[i].outputs.length; j++) {
-            await Insert("outputs",
+            await Insert(conf, "outputs",
                 "INSERT OR IGNORE INTO outputs (hash, `index`, address, value) VALUES (?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].outputs[j].index,
                     transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount])
@@ -26,23 +26,23 @@ const SaveTransactions = async (transactions) => {
             continue
         }
         for (let j = 0; j < transactions[i].blocks.length; j++) {
-            await Insert("blocks", "INSERT OR IGNORE INTO blocks (hash, timestamp, height) VALUES (?, ?, ?)", [
+            await Insert(conf, "blocks", "INSERT OR IGNORE INTO blocks (hash, timestamp, height) VALUES (?, ?, ?)", [
                 transactions[i].blocks[j].hash, transactions[i].blocks[j].timestamp, transactions[i].blocks[j].height])
-            await Insert("block_txs", "INSERT OR IGNORE INTO block_txs (block_hash, tx_hash) VALUES (?, ?)", [
+            await Insert(conf, "block_txs", "INSERT OR IGNORE INTO block_txs (block_hash, tx_hash) VALUES (?, ?)", [
                 transactions[i].blocks[j].hash, transactions[i].hash])
         }
     }
 }
 
-const SaveBlock = async (block) => {
+const SaveBlock = async (conf, block) => {
     if (!block) {
         return
     }
-    await Insert("blocks", "INSERT OR IGNORE INTO blocks (hash, timestamp, height) VALUES (?, ?, ?)", [
+    await Insert(conf, "blocks", "INSERT OR IGNORE INTO blocks (hash, timestamp, height) VALUES (?, ?, ?)", [
         block.hash, block.timestamp, block.height])
 }
 
-const GetTransactions = async (addresses) => {
+const GetTransactions = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   hash, " +
@@ -54,11 +54,11 @@ const GetTransactions = async (addresses) => {
         "WHERE address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "GROUP BY hash " +
         "ORDER BY timestamp DESC"
-    return Select("history", query, addresses)
+    return Select(conf, "history", query, addresses)
 }
 
-const GenerateHistory = async (addresses) => {
-    await Insert("history",
+const GenerateHistory = async (conf, addresses) => {
+    await Insert(conf, "history",
         "INSERT OR REPLACE INTO history (address, hash, timestamp, height, value) " +
         "SELECT " +
         "   outputs.address, " +
@@ -81,7 +81,7 @@ const GenerateHistory = async (addresses) => {
         "", addresses)
 }
 
-const GetWalletInfo = async (addresses) => {
+const GetWalletInfo = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   COUNT(DISTINCT (outputs.hash || outputs.`index`)) AS output_count, " +
@@ -90,10 +90,10 @@ const GetWalletInfo = async (addresses) => {
         "FROM outputs " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
-    return Select("outputs-wallet-info", query, addresses)
+    return Select(conf, "outputs-wallet-info", query, addresses)
 }
 
-const GetRecentAddressTransactions = async (addresses) => {
+const GetRecentAddressTransactions = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   outputs.address, " +
@@ -104,12 +104,12 @@ const GetRecentAddressTransactions = async (addresses) => {
         "JOIN history ON (history.address = outputs.address) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "GROUP BY outputs.address "
-    return Select("recent-address-transactions", query, addresses)
+    return Select(conf, "recent-address-transactions", query, addresses)
 }
 
-const GetTransaction = async (txHash) => {
-    const outputs = await Select("transaction-outputs", "SELECT * FROM outputs WHERE hash = ?", [txHash])
-    const inputs = await Select("transaction-inputs", "SELECT * FROM inputs WHERE hash = ?", [txHash])
+const GetTransaction = async (conf, txHash) => {
+    const outputs = await Select(conf, "transaction-outputs", "SELECT * FROM outputs WHERE hash = ?", [txHash])
+    const inputs = await Select(conf, "transaction-inputs", "SELECT * FROM inputs WHERE hash = ?", [txHash])
     if (inputs.length > 0) {
         let inputOutputsWhere = []
         let inputOutputsParams = []
@@ -117,7 +117,7 @@ const GetTransaction = async (txHash) => {
             inputOutputsWhere.push("hash = ? AND `index` = ?")
             inputOutputsParams.push(inputs[i].prev_hash, inputs[i].prev_index)
         }
-        const inputOutputs = await Select("transaction-input-outputs", "SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
+        const inputOutputs = await Select(conf, "transaction-input-outputs", "SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
             inputOutputsParams)
         for (let i = 0; i < inputs.length; i++) {
             for (let j = 0; j < inputOutputs.length; j++) {
@@ -128,35 +128,35 @@ const GetTransaction = async (txHash) => {
             }
         }
     }
-    const seens = await Select("tx_seens", "SELECT * FROM tx_seens WHERE hash = ?", [txHash])
+    const seens = await Select(conf, "tx_seens", "SELECT * FROM tx_seens WHERE hash = ?", [txHash])
     let seen
     if (seens && seens.length) {
         seen = seens[0]
     }
-    const raws = await Select("tx_raws", "SELECT * FROM tx_raws WHERE hash = ?", [txHash])
+    const raws = await Select(conf, "tx_raws", "SELECT * FROM tx_raws WHERE hash = ?", [txHash])
     let raw
     if (raws && raws.length) {
         raw = raws[0].raw
     }
     let block
     try {
-        const blockTxs = await Select("block_txs", "SELECT * FROM block_txs WHERE tx_hash = ?", [txHash])
-        const blocks = await Select("blocks", "SELECT * FROM blocks WHERE hash = ?", [blockTxs[0].block_hash])
+        const blockTxs = await Select(conf, "block_txs", "SELECT * FROM block_txs WHERE tx_hash = ?", [txHash])
+        const blocks = await Select(conf, "blocks", "SELECT * FROM blocks WHERE hash = ?", [blockTxs[0].block_hash])
         block = blocks[0]
-        const maxBlock = await Select("blocks-max", "SELECT * FROM blocks ORDER BY height DESC LIMIT 1")
+        const maxBlock = await Select(conf, "blocks-max", "SELECT * FROM blocks ORDER BY height DESC LIMIT 1")
         block.confirmations = maxBlock[0].height - block.height
     } catch (e) {
     }
     return {outputs, inputs, seen, block, raw}
 }
 
-const GetUtxos = async (addresses) => {
+const GetUtxos = async (conf, addresses) => {
     const query = "" +
         "SELECT outputs.* FROM outputs " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL"
-    return Select("outputs-utxos", query, addresses)
+    return Select(conf, "outputs-utxos", query, addresses)
 }
 
 module.exports = {

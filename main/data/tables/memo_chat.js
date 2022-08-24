@@ -3,7 +3,7 @@ const {SaveMemoPosts} = require("./memo_post");
 const {SaveTransactions} = require("./txs");
 const {MaxChatRoomFollows} = require("../common/memo_follow");
 
-const GetChatFollows = async ({addresses}) => {
+const GetChatFollows = async ({conf, addresses}) => {
     const maxFollowsWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
         "SELECT " +
@@ -18,10 +18,10 @@ const GetChatFollows = async ({addresses}) => {
         "WHERE max_follows.unfollow = 0 " +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "
-    return await Select("chat_room_follow", query, addresses)
+    return await Select(conf, "chat_room_follow", query, addresses)
 }
 
-const GetRecentRoomFollow = async (addresses, room) => {
+const GetRecentRoomFollow = async (conf, addresses, room) => {
     const query = "" +
         "SELECT " +
         "   memo_chat_follow.*, " +
@@ -33,14 +33,14 @@ const GetRecentRoomFollow = async (addresses, room) => {
         "AND memo_chat_follow.room = ? " +
         "ORDER BY COALESCE(blocks.height, 1000000) DESC, memo_chat_follow.tx_hash ASC " +
         "LIMIT 1"
-    const results = await Select("recent-room-follow", query, [...addresses, room])
+    const results = await Select(conf, "recent-room-follow", query, [...addresses, room])
     if (!results || !results.length) {
         return undefined
     }
     return results[0]
 }
 
-const GetRoomFollowCount = async ({room}) => {
+const GetRoomFollowCount = async ({conf, room}) => {
     const maxFollowsWhere = "room = ? "
     const query = "" +
         "SELECT " +
@@ -49,10 +49,10 @@ const GetRoomFollowCount = async ({room}) => {
         "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
         ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
         "WHERE max_follows.unfollow = 0 "
-    return await Select("chat_room_follow-count", query, [room])
+    return await Select(conf, "chat_room_follow-count", query, [room])
 }
 
-const GetAddressesRoomFollowCount = async ({addresses}) => {
+const GetAddressesRoomFollowCount = async ({conf, addresses}) => {
     const maxFollowsWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
         "SELECT " +
@@ -61,10 +61,10 @@ const GetAddressesRoomFollowCount = async ({addresses}) => {
         "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
         ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
         "WHERE max_follows.unfollow = 0 "
-    return await Select("chat_room_follow-addresses-count", query, addresses)
+    return await Select(conf, "chat_room_follow-addresses-count", query, addresses)
 }
 
-const GetRoomFollows = async ({room}) => {
+const GetRoomFollows = async ({conf, room}) => {
     const maxFollowsWhere = "room = ? "
     const query = "" +
         "SELECT " +
@@ -86,30 +86,30 @@ const GetRoomFollows = async ({room}) => {
         "WHERE max_follows.unfollow = 0 " +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "
-    return await Select("chat_room_follow_by_room", query, [room])
+    return await Select(conf, "chat_room_follow_by_room", query, [room])
 }
 
-const SaveChatRoom = async (room) => {
+const SaveChatRoom = async (conf, room) => {
     if (!room.posts || room.posts.length === 0) {
         return
     }
-    await SaveMemoPosts(room.posts)
+    await SaveMemoPosts(conf, room.posts)
     const query = "" +
         "INSERT OR REPLACE INTO memo_chat_post (tx_hash, room) " +
         "VALUES " + Array(room.posts.length).fill("(?, ?)").join(", ")
-    await Insert("chat_room", query, room.posts.map(post => [post.tx_hash, room.name]).flat())
+    await Insert(conf, "chat_room", query, room.posts.map(post => [post.tx_hash, room.name]).flat())
 }
 
-const SaveChatRoomFollows = async (roomFollows) => {
+const SaveChatRoomFollows = async (conf, roomFollows) => {
     if (!roomFollows || roomFollows.length === 0) {
         return
     }
     const query = "" +
         "INSERT OR REPLACE INTO memo_chat_follow (address, room, unfollow, tx_hash) " +
         "VALUES " + Array(roomFollows.length).fill("(?, ?, ?, ?)").join(", ")
-    await Insert("chat_room_follow", query, roomFollows.map(roomFollow =>
+    await Insert(conf, "chat_room_follow", query, roomFollows.map(roomFollow =>
         [roomFollow.lock.address, roomFollow.name, roomFollow.unfollow ? 1 : 0, roomFollow.tx_hash]).flat())
-    await SaveTransactions(roomFollows.map(roomFollow => roomFollow.tx))
+    await SaveTransactions(conf, roomFollows.map(roomFollow => roomFollow.tx))
 }
 
 module.exports = {

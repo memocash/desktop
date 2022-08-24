@@ -59,7 +59,6 @@ const httpUrlToWs = (url) => {
 }
 
 const GraphQL = async ({network, query, variables}) => {
-    console.log("Using network for GraphQL: " + network.Id)
     const body = JSON.stringify({
         query: query,
         variables: variables,

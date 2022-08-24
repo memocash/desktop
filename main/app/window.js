@@ -79,7 +79,10 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams(params)).toString())
 }
 
+const eConf = (e) => GetNetworkOption(e.sender.id)
+
 module.exports = {
+    eConf,
     GetMenu,
     GetNetworkOption,
     GetStorage,

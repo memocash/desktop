@@ -1,14 +1,14 @@
 const {Select, Insert} = require("../sqlite");
 const {SaveTransactions} = require("./txs");
 
-const GetPosts = async ({addresses, userAddresses}) => {
+const GetPosts = async ({conf, addresses, userAddresses}) => {
     const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ")"
     const query = getSelectQuery({userAddresses, where})
-    return await Select("memo_posts-multi", query, [...userAddresses, ...addresses])
+    return await Select(conf, "memo_posts-multi", query, [...userAddresses, ...addresses])
 }
 
-const GetPost = async ({txHash, userAddresses}) => {
-    const results = await Select("memo_posts", getSelectQuery({where: "memo_posts.tx_hash = ?", userAddresses}),
+const GetPost = async ({conf, txHash, userAddresses}) => {
+    const results = await Select(conf, "memo_posts", getSelectQuery({where: "memo_posts.tx_hash = ?", userAddresses}),
         [...userAddresses, txHash])
     if (results.length === 0) {
         return undefined
@@ -16,17 +16,17 @@ const GetPost = async ({txHash, userAddresses}) => {
     return results[0]
 }
 
-const GetPostReplies = async ({txHash, userAddresses}) => {
+const GetPostReplies = async ({conf, txHash, userAddresses}) => {
     const join = "JOIN memo_replies parent ON (parent.child_tx_hash = memo_posts.tx_hash)"
     const where = "parent.parent_tx_hash = ?"
-    return await Select("memo_posts-replies", getSelectQuery({where, join, userAddresses}),
+    return await Select(conf, "memo_posts-replies", getSelectQuery({where, join, userAddresses}),
         [...userAddresses, txHash])
 }
 
-const GetPostParent = async ({txHash, userAddresses}) => {
+const GetPostParent = async ({conf, txHash, userAddresses}) => {
     const join = "JOIN memo_replies child ON (child.parent_tx_hash = memo_posts.tx_hash)"
     const where = "child.child_tx_hash = ?"
-    const results = await Select("memo_posts-parent", getSelectQuery({where, join, userAddresses}),
+    const results = await Select(conf, "memo_posts-parent", getSelectQuery({where, join, userAddresses}),
         [...userAddresses, txHash])
     if (results.length === 0) {
         return undefined
@@ -34,9 +34,9 @@ const GetPostParent = async ({txHash, userAddresses}) => {
     return results[0]
 }
 
-const GetRoomPosts = async ({room, userAddresses}) => {
+const GetRoomPosts = async ({conf, room, userAddresses}) => {
     const where = "memo_chat_post.room = ?"
-    return await Select("memo_posts-room", getSelectQuery({where, userAddresses}),
+    return await Select(conf, "memo_posts-room", getSelectQuery({where, userAddresses}),
         [...userAddresses, room])
 }
 
@@ -75,7 +75,7 @@ const getSelectQuery = ({join = "", userAddresses, where}) => {
         "LIMIT 50 "
 }
 
-const SaveMemoPosts = async (posts) => {
+const SaveMemoPosts = async (conf, posts) => {
     const replies = posts.map(post => post.replies).flat()
     let parents = []
     let parentChildren = []
@@ -95,15 +95,15 @@ const SaveMemoPosts = async (posts) => {
     if (allPosts.length === 0) {
         return
     }
-    await Insert("memo_posts", "INSERT OR REPLACE INTO memo_posts (address, text, tx_hash) " +
+    await Insert(conf, "memo_posts", "INSERT OR REPLACE INTO memo_posts (address, text, tx_hash) " +
         "VALUES " + Array(allPosts.length).fill("(?, ?, ?)").join(", "), allPosts.map(post => [
         post.lock.address, post.text, post.tx_hash]).flat())
     if (parentChildren.length) {
-        await Insert("memo_replies", "INSERT OR IGNORE INTO memo_replies (parent_tx_hash, child_tx_hash) " +
+        await Insert(conf, "memo_replies", "INSERT OR IGNORE INTO memo_replies (parent_tx_hash, child_tx_hash) " +
             "VALUES " + Array(parentChildren.length).fill("(?, ?)").join(", "), parentChildren.map(parentChild => [
             parentChild.parent, parentChild.child]).flat())
     }
-    await SaveTransactions(allPosts.map(post => {
+    await SaveTransactions(conf, allPosts.map(post => {
         return post.tx
     }))
     let allLikes = []
@@ -119,10 +119,10 @@ const SaveMemoPosts = async (posts) => {
     if (allLikes.length === 0) {
         return
     }
-    await Insert("memo_likes", "INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
+    await Insert(conf, "memo_likes", "INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
         "VALUES " + Array(allLikes.length).fill("(?, ?, ?, ?)").join(", "), allLikes.map(like => [
         like.lock.address, like.tx_hash, like.post_tx_hash, like.tip]).flat())
-    await SaveTransactions(allLikes.map(like => {
+    await SaveTransactions(conf, allLikes.map(like => {
         return like.tx
     }))
 }

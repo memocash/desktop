@@ -1,6 +1,6 @@
 const {Select} = require("../sqlite");
 
-const GetCoins = (addresses) => {
+const GetCoins = (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   outputs.*, " +
@@ -12,7 +12,7 @@ const GetCoins = (addresses) => {
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL " +
         "GROUP BY outputs.hash, outputs.`index` "
-    return Select("outputs-coins", query, addresses)
+    return Select(conf, "outputs-coins", query, addresses)
 }
 
 module.exports = {

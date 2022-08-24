@@ -40,7 +40,10 @@ const GetDefaultNetwork = async () => {
     if (!networkConfig || !networkConfig.Networks || !networkConfig.Networks.length) {
         return NetworkOptions[0]
     }
-    return networkConfig.Networks[0]
+    if (!networkConfig.Last) {
+        return networkConfig.Networks[0]
+    }
+    return networkConfig.Networks[networkConfig.Last]
 }
 
 const SaveNetworkConfig = async (networkConfig) => {
