@@ -58,6 +58,7 @@
 }
 
 .statusIcon {
+    cursor: pointer;
     display: block;
     background: black;
     border-radius: 100%;

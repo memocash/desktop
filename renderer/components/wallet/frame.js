@@ -19,7 +19,7 @@ const Tab = ({selected, name, clicked, title}) => {
     )
 }
 
-const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
+const Frame = ({selected, clicked, children, connected, lastUpdate, setModal}) => {
     const tabTitles = {
         "Memo": Tabs.Memo,
         "Chat": Tabs.Chat,
@@ -39,7 +39,7 @@ const Frame = ({selected, clicked, children, connected, lastUpdate}) => {
             <div className={tabs.body}>
                 {children}
             </div>
-            <StatusBar connected={connected} lastUpdate={lastUpdate}/>
+            <StatusBar connected={connected} lastUpdate={lastUpdate} setModal={setModal}/>
         </div>
     )
 }

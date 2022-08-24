@@ -10,6 +10,7 @@ import RoomLoad from "./modals/chat/room_load";
 import RoomJoin from "./modals/chat/room_join";
 import RoomFollowers from "./modals/chat/room_followers";
 import RoomFollowing from "./modals/chat/room_following";
+import NetworkView from "./modals/network_view";
 
 const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     useEffect(() => {
@@ -41,6 +42,7 @@ const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
             {modalWindow === Modals.ChatRoomFollowing && <RoomFollowing basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomLoad && <RoomLoad onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps}/>}
+            {modalWindow === Modals.NetworkView && <NetworkView onClose={onClose}/>}
         </div>
     )
 }

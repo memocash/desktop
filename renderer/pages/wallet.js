@@ -56,7 +56,8 @@ const WalletLoaded = () => {
     return (
         <>
             <Utxos lastUpdate={lastUpdate}/>
-            <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}>
+            <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}
+                   setModal={setModal}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
                     <Memo lastUpdate={lastUpdate} setModal={setModal}/></Page>
                 <Page tab={tab} page={Tabs.Chat} shown={shownRef}>

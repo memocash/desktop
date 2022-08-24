@@ -1,8 +1,10 @@
+import {Modals} from "../../../../main/common/util";
+
 const tabs = require("../../../styles/tabs.module.css");
 const {useEffect, useState} = require("react");
 import {Status} from "../../util/connect"
 
-const StatusBar = ({connected, lastUpdate}) => {
+const StatusBar = ({connected, lastUpdate, setModal}) => {
     const [info, setInfo] = useState({})
     useEffect(async () => {
         const wallet = await window.electron.getWallet()
@@ -35,7 +37,7 @@ const StatusBar = ({connected, lastUpdate}) => {
                 {(connected === Status.Disconnected) && <>Disconnected</>}
             </div>
             <div className={tabs.statusIcons}>
-                <div className={[tabs.statusIcon, statusStyle].join(" ")}/>
+                <div className={[tabs.statusIcon, statusStyle].join(" ")} onClick={() => setModal(Modals.NetworkView)}/>
             </div>
         </div>
     )

@@ -7,6 +7,7 @@ const Modals = {
     Followers: "followers",
     Following: "following",
     Key: "key",
+    NetworkView: "network-view",
     Password: "password",
     Post: "post",
     PostCreate: "post-create",
