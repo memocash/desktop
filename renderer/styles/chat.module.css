@@ -16,6 +16,7 @@
     width: 100%;
     overflow: auto;
     height: 40px;
+    border-bottom: 1px solid #ccc;
 }
 
 .sidebar_header form {
@@ -38,13 +39,35 @@
 .sidebar_content {
     padding: 0;
     width: 100%;
+    max-height: calc(100% - 41px);
+    overflow: hidden;
+}
+
+.sidebar_content:hover {
+    overflow-y: auto;
+}
+
+.sidebar_content::-webkit-scrollbar {
+    width: 2px;
+    visibility: hidden;
+}
+
+.sidebar_content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.sidebar_content::-webkit-scrollbar-thumb {
+    background: #888;
+}
+
+.sidebar_content::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .sidebar_content ul {
     list-style-type: none;
     padding: 0;
     margin: 0;
-    border-top: 1px solid #ccc;
 }
 
 .sidebar_content li {
@@ -62,7 +85,6 @@
 }
 
 .sidebar_footer {
-    padding: 10px;
     width: calc(100% - 20px);
     margin-top: auto;
 }
