@@ -6,28 +6,35 @@ import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
 import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
-const KeyModal = ({onClose}) => {
+const KeyModal = ({onClose, modalProps: {address}}) => {
     const [showKey, setShowKey] = useState(false)
-    const [address, setAddress] = useState("")
+    const [displayAddress, setDisplayAddress] = useState("")
     const [wif, setWif] = useState("")
     useEffect(async () => {
         const wallet = await window.electron.getWallet()
         if (wallet.seed) {
+            let addressId = 0
+            for (let i = 0; i < wallet.addresses.length; i++) {
+                if (wallet.addresses[i] === address) {
+                    addressId = i
+                    break
+                }
+            }
             const seed = mnemonicToSeedSync(wallet.seed)
             const node = fromSeed(seed)
-            const child = node.derivePath("m/44'/0'/0'/0/" + 0)
+            const child = node.derivePath("m/44'/0'/0'/0/" + addressId)
             const wif = child.toWIF()
-            setAddress(ECPair.fromWIF(wif).getAddress())
+            setDisplayAddress(ECPair.fromWIF(wif).getAddress())
             setWif(wif)
         } else {
-            setAddress(wallet.addresses[0])
+            setDisplayAddress(wallet.addresses[0])
             setWif(wallet.keys[0])
         }
         const storedPassword = await window.electron.getPassword()
         if (!storedPassword || !storedPassword.length) {
             setShowKey(true)
         }
-    }, [])
+    }, [address])
     const onCorrectPassword = () => {
         setShowKey(true)
     }
@@ -38,7 +45,7 @@ const KeyModal = ({onClose}) => {
                     <Password onClose={onClose} onCorrectPassword={onCorrectPassword}/>
                     :
                     <div>
-                        <div className={styles.text}>Address: {address}</div>
+                        <div className={styles.text}>Address: {displayAddress}</div>
                         <div className={styles.text}>Script type: p2pkh</div>
                         <div className={styles.text}>Private Key:</div>
                         <textarea className={styles.seedPhrase} value={wif} readOnly/>

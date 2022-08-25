@@ -13,6 +13,10 @@ const CreateTransaction = async (wallet, outputs, beatHash = "") => {
     let inputs = []
     for (let i = 0; i < utxos.length; i++) {
         const utxo = utxos[i]
+        if (utxo.value === bitcoin.Fee.DustLimit) {
+            // Don't spend dust outputs, could be SLP token, which isn't supported yet
+            continue
+        }
         inputs.push([utxo.hash, utxo.index, utxo.value, utxo.address].join(":"))
         requiredInput += bitcoin.Fee.InputP2PKH
         totalInput += parseInt(utxo.value)

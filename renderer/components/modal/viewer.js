@@ -23,7 +23,7 @@ const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     return (
         <div>
             {modalWindow === Modals.Seed && <SeedModal onClose={onClose}/>}
-            {modalWindow === Modals.Key && <KeyModal onClose={onClose}/>}
+            {modalWindow === Modals.Key && <KeyModal onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.Password && <Password setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileFind && <Find setModal={setModal}/>}
             {modalWindow === Modals.ProfileSetName && <SetName onClose={onClose} modalProps={modalProps}/>}

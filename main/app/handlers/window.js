@@ -17,13 +17,13 @@ const WindowHandlers = () => {
         }
         return GetStorage(e.sender.id)[key]
     })
-    ipcMain.handle(Handlers.RightClickMenu, (e) => {
+    ipcMain.handle(Handlers.RightClickMenu, (e, address) => {
         const win = GetWindow(e.sender.id)
         const menu = new Menu()
         menu.append(new MenuItem({
             label: "Private Key",
             click: () => {
-                win.webContents.send(Listeners.DisplayModal, Modals.Key)
+                win.webContents.send(Listeners.DisplayModal, Modals.Key, {address})
             },
         }))
         menu.popup({window: win})

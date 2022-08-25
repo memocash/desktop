@@ -19,7 +19,14 @@ const Addresses = ({lastUpdate}) => {
     useEffect(async () => {
         addressesDiv.current.addEventListener("contextmenu", (e) => {
             e.preventDefault()
-            window.electron.rightClickMenu()
+            let address
+            for (let i = 0; i < e.path.length; i++) {
+                if (e.path[i].nodeName === "DIV") {
+                    address = e.path[i].dataset.address
+                    break
+                }
+            }
+            window.electron.rightClickMenu(address)
         })
         window.electron.walletLoaded()
     }, [])
@@ -135,10 +142,10 @@ const Addresses = ({lastUpdate}) => {
                 }
                 {addresses.map((address, i) => {
                     return (
-                        <div key={i} onClick={(e) => clickRow(e, address.address)}
+                        <div key={i} data-address={address.address} onClick={(e) => clickRow(e, address.address)}
                              className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}>
                             <span>{address.index}</span>
-                            <span>{address.address}</span>
+                            <span className={styles.itemAddress}>{address.address}</span>
                             <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
                         </div>
                     )

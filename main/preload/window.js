@@ -8,7 +8,7 @@ module.exports = {
     getWindowStorage: (key) => ipcRenderer.invoke(Handlers.GetWindowStorage, key),
     listenDisplayModal: (handler) => ipcRenderer.on(Listeners.DisplayModal, handler),
     openFileDialog: async () => await ipcRenderer.invoke(Handlers.OpenFileDialog),
-    rightClickMenu: () => ipcRenderer.invoke(Handlers.RightClickMenu),
+    rightClickMenu: (address) => ipcRenderer.invoke(Handlers.RightClickMenu, address),
     setWindowStorage: (key, value) => ipcRenderer.send(Handlers.SetWindowStorage, key, value),
     showMessageDialog: (message) => ipcRenderer.send(Handlers.ShowMessageDialog, message),
 }
