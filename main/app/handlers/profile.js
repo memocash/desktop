@@ -9,7 +9,7 @@ const {eConf} = require("../window");
 
 const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetAddressesRoomFollowCount, async (e, {addresses}) =>
-        GetAddressesRoomFollowCount({addresses}))
+        GetAddressesRoomFollowCount({conf: eConf(e), addresses}))
     ipcMain.handle(Handlers.GetChatFollows, async (e, {addresses}) => GetChatFollows({conf: eConf(e), addresses}))
     ipcMain.handle(Handlers.GetChatPosts, async (e, {room, userAddresses}) =>
         GetRoomPosts({conf: eConf(e), room, userAddresses}))

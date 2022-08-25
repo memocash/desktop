@@ -72,6 +72,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     txWindows[winId].push(win)
     windows[win.webContents.id] = win
     wallets[win.webContents.id] = wallets[winId]
+    networkOptions[win.webContents.id] = networkOptions[winId]
     let params = {txHash}
     if (!txHash || !txHash.length) {
         params = {inputs, outputs, beatHash}
