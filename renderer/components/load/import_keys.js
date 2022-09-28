@@ -7,6 +7,7 @@ const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
     const privateKeyList = useRef()
     const handleClickNext = () => {
         const list = privateKeyList.current.value.split("\n")
+        list = [...new Set(list)]
         let keyList = [], addressList = []
         for (let i = 0; i < list.length; i++) {
             const item = list[i]
@@ -34,6 +35,7 @@ const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
             setError("ERROR: Cannot only have addresses or WIFs, not both")
             return
         }
+        console.log(addressList)
         onSetKeysAndAddresses(keyList, addressList)
     }
     return (
