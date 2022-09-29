@@ -18,6 +18,7 @@ module.exports = {
             wallet.addresses = []
         }
         wallet.addresses.push(...addressList)
+        wallet.addresses = [...new Set(wallet.addresses)]
         let contents = JSON.stringify(wallet)
         if (password && password.length) {
             contents = CryptoJS.AES.encrypt(contents, password).toString()
