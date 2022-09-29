@@ -35,7 +35,6 @@ const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
             setError("ERROR: Cannot only have addresses or WIFs, not both")
             return
         }
-        console.log(addressList)
         onSetKeysAndAddresses(keyList, addressList)
     }
     return (

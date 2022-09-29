@@ -4,11 +4,14 @@ const {ipcRenderer} = require("electron");
 const {Handlers, Dir} = require("../common/util");
 const {decryptWallet, getPathForWallet, fileExists} = require("./common");
 const path = require("path");
+const fsSync = require("fs");
+
+
 
 module.exports = {
     addAddresses: async (addressList) => {
         const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fs.readFile(filename, {encoding: "utf8"})
+        let walletJson = await fsSync.readFileSync(filename, {encoding: "utf8"})
         if (password && password.length) {
             walletJson = decryptWallet(walletJson, password)
         }
@@ -21,7 +24,7 @@ module.exports = {
         if (password && password.length) {
             contents = CryptoJS.AES.encrypt(contents, password).toString()
         }
-        await fs.writeFile(filename, contents)
+        await fsSync.writeFileSync(filename, contents)
         await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
     },
     checkFile: async (walletName) => {
