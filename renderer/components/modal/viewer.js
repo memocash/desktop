@@ -1,5 +1,6 @@
 import SeedModal from "./modals/seed"
 import KeyModal from "./modals/key"
+import AddressModal from "./modals/address";
 import {Modals} from "../../../main/common/util";
 import {
     Find, Following, Post, PostCreate, PostLike, PostLikes, PostReply, SetName, SetPic, SetProfile, View
@@ -12,7 +13,7 @@ import RoomFollowers from "./modals/chat/room_followers";
 import RoomFollowing from "./modals/chat/room_following";
 import NetworkView from "./modals/network_view";
 
-const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
+const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     useEffect(() => {
         window.electron.listenDisplayModal((e, modal, props = {}) => setModal(modal, props))
     }, [])
@@ -24,6 +25,7 @@ const Viewer = ({setModal, modalWindow, setChatRoom, modalProps = {}}) => {
         <div>
             {modalWindow === Modals.Seed && <SeedModal onClose={onClose}/>}
             {modalWindow === Modals.Key && <KeyModal onClose={onClose} modalProps={modalProps}/>}
+            {modalWindow === Modals.Address && <AddressModal onClose={onClose} setLastUpdate={setLastUpdate}/>}
             {modalWindow === Modals.Password && <Password setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileFind && <Find setModal={setModal}/>}
             {modalWindow === Modals.ProfileSetName && <SetName onClose={onClose} modalProps={modalProps}/>}

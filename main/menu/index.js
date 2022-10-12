@@ -59,6 +59,12 @@ const ShowMenu = (win, newWindow, wallet) => {
         submenu: [
             {label: "Preferences"},
             {label: "Network"},
+            {
+                label: "Add Addresses",
+                click: () => {
+                    win.webContents.send(Listeners.DisplayModal, Modals.Address)
+                }
+            }
         ]
     }, {
         label: "Help",
