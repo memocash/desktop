@@ -25,7 +25,7 @@ const AddressModal = ({onClose, setLastUpdate}) => {
         setLastUpdate((new Date()).toISOString())
         onClose()
     }
-    
+
     return (
         <Modal onClose={onClose}>
             <div className={styles.root}>
