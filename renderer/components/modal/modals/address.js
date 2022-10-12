@@ -5,12 +5,31 @@ import styles from "../../../styles/modal.module.css"
 import GetWallet from "../../util/wallet"
 import GetAddresses from "../../util/addresses"
 
-const AddressModal = ({onClose}) => {
+const AddressModal = ({onClose, setLastUpdate}) => {
+    const [error, setError] = useState("")
     const onSetKeysAndAddresses = async (keys, addresses) => {
-        const convertedKeys = GetAddresses("", keys)
-        await window.electron.addAddresses(addresses)
-        await window.electron.addAddresses(convertedKeys)
-        await window.electron.addKeys(keys)
+        const wallet = await GetWallet()
+        if((keys.length > 0) && wallet.keys.length == 0){
+            console.log("Error, cannot add keys to a keyless wallet")
+            setError("Error, cannot add keys to a keyless wallet")
+            return
+        }
+        else if((addresses.length > 0) && wallet.keys.length > 0){
+            console.log("Error, cannot add addresses directly to a wallet with keys")
+            setError("Error, cannot add addresses directly to a wallet with keys")
+        }
+        else if(wallet.keys.length > 0){
+            console.log("Adding keys and converted addresses")
+            const convertedKeys = GetAddresses("", keys)
+            await window.electron.addAddresses(convertedKeys)
+            await window.electron.addKeys(keys)
+        }
+
+        else{
+            console.log("Directly adding addresses")
+            await window.electron.addAddresses(addresses)
+        }
+        setLastUpdate((new Date()).toISOString())
         onClose()
     }
 
@@ -20,6 +39,7 @@ const AddressModal = ({onClose}) => {
                 {
                     <ImportKeys onSetKeysAndAddresses={onSetKeysAndAddresses} onBack={onClose}/>
                 }
+                {error.length ? <p>{error}</p> : <p>&nbsp;</p>}
             </div>
         </Modal>
     )

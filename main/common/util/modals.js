@@ -1,5 +1,6 @@
 const Modals = {
     None: "none",
+    Address: "address",
     ChatRoomFollowers: "chat-room-followers",
     ChatRoomFollowing: "chat-room-following",
     ChatRoomLoad: "chat-room-load",

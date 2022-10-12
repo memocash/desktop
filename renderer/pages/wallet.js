@@ -68,7 +68,7 @@ const WalletLoaded = () => {
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>
             </Frame>
-            <ModalViewer setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}
+            <ModalViewer setLastUpdate={setLastUpdate} setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}
                          setChatRoom={setChatRoom}/>
             <Update setConnected={setConnected} setLastUpdate={setLastUpdate}/>
         </>
