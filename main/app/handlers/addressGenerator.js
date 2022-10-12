@@ -11,7 +11,8 @@ parentPort.on("message", async (seedPhrase) => {
     const node = fromSeed(seed)
     for (let i = 0; i < 20; i++) {
         const child = node.derivePath("m/44'/0'/0'/0/" + i)
-        parentPort.postMessage(ECPair.fromWIF(child.toWIF()).getAddress())
+        parentPort.postMessage((child))
+        //parentPort.postMessage(ECPair.fromWIF(child.toWIF()).getAddress())
     }
 });
 

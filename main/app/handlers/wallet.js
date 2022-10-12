@@ -12,10 +12,8 @@ const WalletHandlers = () => {
     ipcMain.on(Handlers.GenerateAddresses,  (e, seedPhrase) => {
         let w = new Worker(path.resolve(__dirname,"addressGenerator.js"))
         w.postMessage(seedPhrase)
-        w.on("message", (e) => {
-            console.log(e.data)
-            e.sender.send(Listeners.AddressGenerated, e.data)
-            //addressList.push(e.data)
+        w.on("message", (event) => {
+            e.sender.send(Listeners.AddressGenerated, event.data)
         })
     })
     ipcMain.on(Handlers.StoreWallet, (e, wallet, filename, password) => {

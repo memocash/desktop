@@ -84,10 +84,16 @@ module.exports = {
     getPassword: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).password,
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
     getAddresses: (seedPhrase) => {
-        ipcRenderer.on(Listeners.AddressGenerated, (evt, data) => {
-            console.log("getAddressesData", data)
+        return new Promise((resolve, reject) => {
+            let addressList = []
+            ipcRenderer.on(Listeners.AddressGenerated, (evt, data) => {
+                addressList.push(data)
+                if (addressList.length === 20) {
+                    resolve(addressList)
+                }
+            })
+            ipcRenderer.send(Handlers.GenerateAddresses, seedPhrase)
         })
-        ipcRenderer.send(Handlers.GenerateAddresses, seedPhrase)
     },
     getWallet: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).wallet,
     getWalletFile: async (walletName) => await fs.readFile(getPathForWallet(walletName), {encoding: "utf8"}),
