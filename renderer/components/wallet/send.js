@@ -7,6 +7,7 @@ import {useReferredState} from "../util/state";
 import {CreateTransaction} from "./snippets/create_tx";
 import {GetMaxValue} from "../util/send";
 import {GetUtxosRef} from "../util/utxos";
+import {Info} from "../tx/info";
 
 const Send = () => {
     const payToRef = useRef("")
@@ -52,8 +53,13 @@ const Send = () => {
         }
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
-        await CreateTransaction(wallet, [{script: outputScript, value: amount}])
+        if(e.type == "submit"){
+            await CreateTransaction(wallet, [{script: outputScript, value: amount}])
+        }else if(e.type == "click"){
+            console.log("sent")
+        }
     }
+
     return (
         <form onSubmit={formSubmit}>
             <p>
@@ -78,6 +84,7 @@ const Send = () => {
             </p>
             <p>
                 <input type="submit" value="Preview"/>
+                <input type="button" value="Sign and Broadcast" onClick={formSubmit}/>
             </p>
         </form>
     )
