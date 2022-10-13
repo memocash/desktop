@@ -175,7 +175,7 @@ const Info = () => {
             return
         }
         let getKey
-        if (wallet.seed) {
+        if (wallet.seed && wallet.keys.length == 0) {
             const seed = mnemonicToSeedSync(wallet.seed)
             const node = fromSeed(seed)
             getKey = (address) => {
