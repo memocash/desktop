@@ -23,7 +23,7 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
         setPost(post)
     }, [txHash])
     useEffect(async () => {
-        setMaxValue(Math.max(0, GetMaxValue()))
+        setMaxValue(Math.max(0, await GetMaxValue()))
     }, [utxosRef])
     const formLikeSubmit = async (e) => {
         e.preventDefault()
