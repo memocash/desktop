@@ -15,7 +15,7 @@ const Send = () => {
     const utxosRef = GetUtxosRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
     useEffect(async () => {
-        setMaxValue(Math.max(0, GetMaxValue()))
+        setMaxValue(Math.max(0, await GetMaxValue()))
     }, [utxosRef])
     const onAmountChange = (e) => {
         let {value, min, max} = e.target;
