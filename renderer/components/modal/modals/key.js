@@ -4,7 +4,7 @@ import styles from "../../../styles/modal.module.css"
 import Password from "./password";
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
-import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+const {ECPairFactory: ECPair} = require("ecpair");
 
 const KeyModal = ({onClose, modalProps: {address}}) => {
     const [showKey, setShowKey] = useState(false)

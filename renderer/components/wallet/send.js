@@ -1,5 +1,5 @@
 import {useEffect, useRef} from "react";
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {address} from "bitcoinjs-lib";
 import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";

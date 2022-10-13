@@ -2,7 +2,7 @@ import styles from "../../../styles/chat.module.css";
 import {useEffect, useRef, useState} from "react";
 import {Modals} from "../../../../main/common/util";
 import bitcoin from "../../util/bitcoin";
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {opcodes, script} from "bitcoinjs-lib";
 import {CreateTransaction} from "../snippets/create_tx";
 import GetWallet from "../../util/wallet";
 

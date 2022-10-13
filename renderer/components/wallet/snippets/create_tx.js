@@ -1,5 +1,5 @@
 import bitcoin from "../../util/bitcoin";
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {address} from "bitcoinjs-lib";
 import {GetUtxosRef} from "../../util/utxos";
 
 const CreateTransaction = async (wallet, outputs, beatHash = "") => {

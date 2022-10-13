@@ -23,15 +23,17 @@
     "react-dom": "^17.0.2"
   },
   "dependencies": {
-    "@bitcoin-dot-com/bitcoincashjs2-lib": "^4.1.0",
     "better-sqlite3": "^7.5.0",
     "bip32": "^2.0.5",
     "bip39": "^3.0.4",
+    "bitcoinjs-lib": "^6.0.2",
     "crypto-js": "^4.1.1",
+    "ecpair": "^2.1.0",
     "electron-is-dev": "^2.0.0",
     "electron-next": "^3.1.5",
     "react-icons": "^4.4.0",
     "react-linkify": "^1.0.0-alpha",
+    "tiny-secp256k1": "^2.2.1",
     "ws": "^8.5.0"
   }
 }

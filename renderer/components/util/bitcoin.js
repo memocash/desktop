@@ -1,4 +1,4 @@
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin from "bitcoinjs-lib";
 
 const Fee = {
     Base: 10,

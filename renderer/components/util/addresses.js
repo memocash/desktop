@@ -1,8 +1,4 @@
-import * as path from "path";
-
-const {mnemonicToSeedSync} = require("bip39");
-const {fromSeed} = require("bip32");
-const {ECPair} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
+const ECPair = require("ecpair").ECPairFactory(require("tiny-secp256k1"));
 
 const GetAddresses = (seedPhrase, keyList) => {
     let addressList = []

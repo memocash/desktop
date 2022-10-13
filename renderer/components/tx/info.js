@@ -5,7 +5,8 @@ import styleTx from "../../styles/tx.module.css";
 import ShortHash from "../util/txs";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin from "bitcoinjs-lib";
+const {ECPairFactory: ECPair} = require("ecpair");
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
 import styles from "../../styles/modal.module.css"

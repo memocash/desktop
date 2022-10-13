@@ -1,5 +1,5 @@
 import {useRef, useState} from "react"
-import {address, ECPair} from '@bitcoin-dot-com/bitcoincashjs2-lib'
+import {address, ECPair} from "bitcoinjs-lib"
 import styles from "../../styles/addWallet.module.css"
 
 const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {

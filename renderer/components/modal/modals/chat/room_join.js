@@ -2,7 +2,7 @@ import Modal from "../../modal";
 import profile from "../../../../styles/profile.module.css"
 import styles from "../../../../styles/modal.module.css"
 import bitcoin from "../../../util/bitcoin";
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {opcodes, script} from "bitcoinjs-lib";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 
