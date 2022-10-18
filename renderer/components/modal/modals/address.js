@@ -16,7 +16,7 @@ const AddressModal = ({onClose, setLastUpdate}) => {
             setError("Error, cannot add addresses directly to a wallet with keys")
             return
         } else if(wallet.keys.length > 0){
-            const convertedKeys = GetAddresses("", keys)
+            const convertedKeys = await GetAddresses("", keys)
             await window.electron.addAddresses(convertedKeys)
             await window.electron.addKeys(keys)
         } else{
@@ -25,7 +25,7 @@ const AddressModal = ({onClose, setLastUpdate}) => {
         setLastUpdate((new Date()).toISOString())
         onClose()
     }
-    
+
     return (
         <Modal onClose={onClose}>
             <div className={styles.root}>

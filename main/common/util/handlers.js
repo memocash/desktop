@@ -29,6 +29,7 @@ const Handlers = {
     GetWallet: "get-wallet",
     WalletLoaded: "wallet-loaded",
     GetWalletInfo: "get-wallet-info",
+    GenerateAddresses: "generate-addresses",
     GraphQL: "graphql",
     GraphQLSubscribe: "graphql-subscribe",
     GraphQLSubscribeClose: "graphql-subscribe-close",
@@ -57,6 +58,7 @@ const Listeners = {
     GraphQLClosePrefix: "graphql-close-",
     GraphQLDataPrefix: "graphql-data-",
     GraphQLOpenPrefix: "graphql-open-",
+    AddressGenerated: "address-generated",
 }
 
 module.exports = {

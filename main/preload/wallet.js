@@ -1,7 +1,7 @@
 const fs = require("fs/promises")
 const CryptoJS = require("crypto-js");
 const {ipcRenderer} = require("electron");
-const {Handlers, Dir} = require("../common/util");
+const {Handlers, Dir, Listeners} = require("../common/util");
 const {decryptWallet, getPathForWallet, fileExists} = require("./common");
 const path = require("path");
 const fsOriginal = require("fs");
@@ -83,6 +83,18 @@ module.exports = {
     },
     getPassword: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).password,
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
+    getAddresses: (seedPhrase) => {
+        return new Promise((resolve, reject) => {
+            let addressList = []
+            ipcRenderer.on(Listeners.AddressGenerated, (evt, data) => {
+                addressList.push(data)
+                if (addressList.length === 20) {
+                    resolve(addressList)
+                }
+            })
+            ipcRenderer.send(Handlers.GenerateAddresses, seedPhrase)
+        })
+    },
     getWallet: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).wallet,
     getWalletFile: async (walletName) => await fs.readFile(getPathForWallet(walletName), {encoding: "utf8"}),
     setWallet: async (wallet, filename, password) =>
