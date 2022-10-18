@@ -12,6 +12,7 @@ import RoomJoin from "./modals/chat/room_join";
 import RoomFollowers from "./modals/chat/room_followers";
 import RoomFollowing from "./modals/chat/room_following";
 import NetworkView from "./modals/network_view";
+import GetPassword from "./modals/get_password";
 
 const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     useEffect(() => {
@@ -26,7 +27,7 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
             {modalWindow === Modals.Seed && <SeedModal onClose={onClose}/>}
             {modalWindow === Modals.Key && <KeyModal onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.Address && <AddressModal onClose={onClose} setLastUpdate={setLastUpdate}/>}
-            {modalWindow === Modals.Password && <Password setModal={setModal} modalProps={modalProps}/>}
+            {modalWindow === Modals.Password && <GetPassword onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileFind && <Find setModal={setModal}/>}
             {modalWindow === Modals.ProfileSetName && <SetName onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileSetText && <SetProfile onClose={onClose} modalProps={modalProps}/>}
