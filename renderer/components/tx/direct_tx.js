@@ -4,8 +4,9 @@ import {useEffect, useRef, useState} from "react";
 import {useReferredState} from "../util/state";
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
+import {Modals} from "../../../main/common/util"
 
-const DirectTx = async (inputs, outputs, beatHash) => {
+const DirectTx = async (inputs, outputs, beatHash, setModal) => {
     let outer_size = 0
     let outer_txInfo = {
         inputs: [],
@@ -77,6 +78,7 @@ const DirectTx = async (inputs, outputs, beatHash) => {
         outer_transactionIDEleRef.value = txBuild.getId()
         const feeRate = outer_fee / size
         outer_feeRate = feeRate.toFixed((4))
+        setModal(Modals.None)
         await clickBroadcast()
     }
     const clickBroadcast = async () => {
@@ -90,8 +92,6 @@ const DirectTx = async (inputs, outputs, beatHash) => {
     }
 
     if (inputs && inputs.length && outputs && outputs.length) {
-        console.log(inputs)
-        console.log(outputs)
         const inputStrings = inputs
         const outputStrings = outputs
         let tx = {
@@ -153,7 +153,12 @@ const DirectTx = async (inputs, outputs, beatHash) => {
         outer_fee = fee
         outer_transactionIDEleRef.value = txBuild.getId()
         outer_beatHash = beatHash
-        await onCorrectPassword()
+        const storedPassword = await window.electron.getPassword()
+        if (!storedPassword || !storedPassword.length) {
+            await onCorrectPassword()
+        } else {
+            setModal(Modals.Password, {onCorrectPassword})
+        }
     }
 }
 export default DirectTx

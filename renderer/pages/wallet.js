@@ -63,7 +63,7 @@ const WalletLoaded = () => {
                 <Page tab={tab} page={Tabs.Chat} shown={shownRef}>
                     <Chat setModal={setModal} room={room} setRoom={setRoom}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
-                <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send/></Page>
+                <Page tab={tab} page={Tabs.Send} shown={shownRef}><Send setModal={setModal}/></Page>
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>

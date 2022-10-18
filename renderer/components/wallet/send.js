@@ -10,7 +10,8 @@ import {GetUtxosRef} from "../util/utxos";
 import {Info} from "../tx/info";
 import {CreateDirectTransaction} from "./snippets/create_direct_tx";
 
-const Send = () => {
+const Send = ({setModal}) => {
+    console.log(setModal)
     const payToRef = useRef("")
     const messageRef = useRef("")
     const amountRef = useRef(0)
@@ -57,7 +58,7 @@ const Send = () => {
         if(e.type == "submit"){
             await CreateTransaction(wallet, [{script: outputScript, value: amount}])
         }else if(e.type == "click"){
-            await CreateDirectTransaction(wallet, [{script: outputScript, value:amount}])
+            await CreateDirectTransaction(wallet, [{script: outputScript, value:amount}], setModal)
         }
     }
 
