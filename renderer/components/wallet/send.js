@@ -8,6 +8,7 @@ import {CreateTransaction} from "./snippets/create_tx";
 import {GetMaxValue} from "../util/send";
 import {GetUtxosRef} from "../util/utxos";
 import {Info} from "../tx/info";
+import {CreateDirectTransaction} from "./snippets/create_direct_tx";
 
 const Send = () => {
     const payToRef = useRef("")
@@ -56,7 +57,7 @@ const Send = () => {
         if(e.type == "submit"){
             await CreateTransaction(wallet, [{script: outputScript, value: amount}])
         }else if(e.type == "click"){
-            console.log("sent")
+            await CreateDirectTransaction(wallet, [{script: outputScript, value:amount}])
         }
     }
 
