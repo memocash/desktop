@@ -46,7 +46,7 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
             {modalWindow === Modals.ChatRoomFollowers && <RoomFollowers basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomFollowing && <RoomFollowing basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomLoad && <RoomLoad onClose={onClose} modalProps={modalProps}/>}
-            {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps}/>}
+            {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
             {modalWindow === Modals.NetworkView && <NetworkView onClose={onClose}/>}
         </div>
     )
