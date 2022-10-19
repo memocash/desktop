@@ -11,6 +11,7 @@ import {fromSeed} from "bip32";
 import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
+import {setTx} from "./direct_tx";
 
 const Info = () => {
     const router = useRouter()
@@ -169,65 +170,23 @@ const Info = () => {
     }
     const onCorrectPassword = async () => {
         setShowPasswordForSign(false)
-        const wallet = await GetWallet()
-        if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
-            window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
-            return
+        let outer_transaction = {
+            outer_size: size,
+            outer_txInfo: txInfoRef.current,
+            outer_fee: fee,
+            outer_transactionIDEleRef: transactionIdEleRef.current,
+            outer_beatHash: beatHashRef,
+            outer_feeRate: feeRate
         }
-        let getKey
-        if (wallet.seed && wallet.keys.length == 0) {
-            const seed = mnemonicToSeedSync(wallet.seed)
-            const node = fromSeed(seed)
-            getKey = (address) => {
-                for (let i = 0; i < wallet.addresses.length; i++) {
-                    if (address === wallet.addresses[i]) {
-                        const child = node.derivePath("m/44'/0'/0'/0/" + i)
-                        return ECPair.fromWIF(child.toWIF())
-                    }
-                }
-            }
-        } else {
-            getKey = (address) => {
-                for (let i = 0; i < wallet.keys.length; i++) {
-                    const key = ECPair.fromWIF(wallet.keys[i])
-                    if (address === key.getAddress()) {
-                        return key
-                    }
-                }
-            }
-        }
-        const tx = bitcoin.Transaction.fromBuffer(txInfoRef.current.raw)
-        let txb
-        let txBuild
-        for (let lockTime = 5e8; lockTime < 5e8+2^12; lockTime++) {
-            txb = bitcoin.TransactionBuilder.fromTransaction(tx)
-            for (let i = 0; i < txInfoRef.current.inputs.length; i++) {
-                const input = txInfoRef.current.inputs[i]
-                const key = getKey(input.output.address)
-                if (key === undefined) {
-                    console.log("Unable to find key for input address: " + input.output.address)
-                    return
-                }
-                txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
-            }
-            txBuild = txb.build()
-            if (!beatHashRef.current) {
-                break
-            }
-            const txHash = txBuild.getId()
-            if (txHash < beatHashRef.current) {
-                break
-            }
-            tx.locktime = lockTime
-        }
-        const buf = txBuild.toBuffer()
-        txInfoRef.current.raw = buf
-        const size = buf.length
-        setSize(size)
+
+        await setTx(outer_transaction, null)
+        console.log(outer_transaction)
+        txInfoRef.current = outer_transaction.outer_txInfo
+        setSize(outer_transaction.outer_size)
         setTxInfo(txInfoRef.current)
-        transactionIdEleRef.current.value = txBuild.getId()
-        const feeRate = feeRef.current / size
-        setFeeRate(feeRate.toFixed(4))
+        transactionIdEleRef.current.value = outer_transaction.outer_transactionIDEleRef.value
+        const feeRate = outer_transaction.outer_feeRate
+        setFeeRate(feeRate)
         setSigned(true)
     }
     const clickBroadcast = async () => {
