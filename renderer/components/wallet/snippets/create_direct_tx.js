@@ -1,7 +1,7 @@
 import bitcoin from "../../util/bitcoin";
 import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {GetUtxosRef} from "../../util/utxos";
-import DirectTx from "../../tx/direct_tx";
+import {DirectTx} from "../../tx/direct_tx";
 
 const CreateDirectTransaction = async (wallet, outputs, setModal) => {
     const utxos = GetUtxosRef().current.value

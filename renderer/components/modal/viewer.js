@@ -40,7 +40,7 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
                 <Following setModal={setModal} modalProps={modalProps} showFollowers={true}/>}
             {modalWindow === Modals.Post && <Post basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.PostLikes && <PostLikes basic={basic} modalProps={modalProps}/>}
-            {modalWindow === Modals.PostCreate && <PostCreate onClose={onClose} modalProps={modalProps}/>}
+            {modalWindow === Modals.PostCreate && <PostCreate onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
             {modalWindow === Modals.PostLike && <PostLike basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.PostReply && <PostReply basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomFollowers && <RoomFollowers basic={basic} modalProps={modalProps}/>}

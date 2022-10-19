@@ -11,7 +11,6 @@ import {Info} from "../tx/info";
 import {CreateDirectTransaction} from "./snippets/create_direct_tx";
 
 const Send = ({setModal}) => {
-    console.log(setModal)
     const payToRef = useRef("")
     const messageRef = useRef("")
     const amountRef = useRef(0)
@@ -55,10 +54,10 @@ const Send = ({setModal}) => {
         }
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
-        if(e.type == "submit"){
+        if (e.type == "submit") {
             await CreateTransaction(wallet, [{script: outputScript, value: amount}])
-        }else if(e.type == "click"){
-            await CreateDirectTransaction(wallet, [{script: outputScript, value:amount}], setModal)
+        } else if (e.type == "click") {
+            await CreateDirectTransaction(wallet, [{script: outputScript, value: amount}], setModal)
         }
     }
 

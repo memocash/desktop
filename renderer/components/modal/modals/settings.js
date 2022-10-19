@@ -14,9 +14,9 @@ const SettingsModal = ({onClose, setLastUpdate}) => {
     const onToggle = async () => {
         setdirectTx(!directTx)
     }
-    const formSubmit = async () => {
+    const formSubmit = async (e) => {
+        e.preventDefault()
         await window.electron.changeSettings({DirectTx: directTx})
-        setLastUpdate((new Date()).toISOString())
         onClose()
     }
 
@@ -24,7 +24,7 @@ const SettingsModal = ({onClose, setLastUpdate}) => {
         <Modal onClose={onClose}>
             <div className={styles.root}>
                 <form onSubmit={formSubmit}>
-                    <input checked={directTx} type="checkbox" id="directTxChecked" onClick={onToggle}/>
+                    <input checked={directTx} type="checkbox" id="directTxChecked" onChange={onToggle}/>
                     <label htmlFor="directTxChecked">Send transactions without previewing</label>
                     <input type="submit" value="Save"/>
                     <button onClick={onClose}>Close</button>
