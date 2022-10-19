@@ -161,6 +161,7 @@ const DirectTx = async (inputs, outputs, beatHash, setModal) => {
             await setTx(outer_transaction,setModal)
             await pushTx(outer_transaction.outer_txInfo)
         } else {
+            console.log(setModal)
             setModal(Modals.Password, {onCorrectPassword:async () => {
                     await setTx(outer_transaction, setModal)
                     await pushTx(outer_transaction.outer_txInfo)

@@ -4,7 +4,7 @@ import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import {CreateTransaction} from "./snippets/create_tx";
+import {CreateTransaction, CreateTransactionWithPreview} from "./snippets/create_tx";
 import {GetMaxValue} from "../util/send";
 import {GetUtxosRef} from "../util/utxos";
 import {Info} from "../tx/info";
@@ -55,7 +55,7 @@ const Send = ({setModal}) => {
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
         if (e.type == "submit") {
-            await CreateTransaction(wallet, [{script: outputScript, value: amount}])
+            await CreateTransactionWithPreview(wallet, [{script: outputScript, value: amount}])
         } else if (e.type == "click") {
             await CreateDirectTransaction(wallet, [{script: outputScript, value: amount}], setModal)
         }

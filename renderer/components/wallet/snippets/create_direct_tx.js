@@ -3,9 +3,8 @@ import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {GetUtxosRef} from "../../util/utxos";
 import {DirectTx} from "../../tx/direct_tx";
 
-const CreateDirectTransaction = async (wallet, outputs, setModal) => {
+const CreateDirectTransaction = async (wallet, outputs, setModal, beatHash="") => {
     const utxos = GetUtxosRef().current.value
-    let beatHash = ""
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]

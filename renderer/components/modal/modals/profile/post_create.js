@@ -6,10 +6,8 @@ import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {useRef} from "react";
-import {CreateDirectTransaction} from "../../../wallet/snippets/create_direct_tx";
 
 const PostCreate = ({onClose, setModal}) => {
-    console.log(setModal)
     const postInputRef = useRef()
     const formPostSubmit = async (e) => {
         e.preventDefault()
@@ -24,10 +22,9 @@ const PostCreate = ({onClose, setModal}) => {
             Buffer.from(post),
         ])
         const wallet = await GetWallet()
-        if (wallet.settings.DirectTx) {
-            await CreateDirectTransaction(wallet, [{script: postOpReturnOutput}], setModal)
-        } else {
-            await CreateTransaction(wallet, [{script: postOpReturnOutput}])
+        await CreateTransaction(wallet, [{script: postOpReturnOutput}], setModal)
+        if(!wallet.settings.DirectTx || !(await window.electron.getPassword())){
+            onClose()
         }
     }
     return (
