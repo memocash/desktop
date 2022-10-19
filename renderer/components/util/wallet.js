@@ -3,6 +3,10 @@ import GetKeys from "./keys";
 
 const GetWallet = async () => {
     let wallet = await window.electron.getWallet()
+    if(!wallet.settings){
+        await window.electron.changeSettings({})
+        wallet = await window.electron.getWallet()
+    }
     if(wallet.seed && wallet.seed.length && (!wallet.keys || !wallet.keys.length)){
         const keyList = GetKeys(wallet.seed)
         await window.electron.addKeys(keyList)

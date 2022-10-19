@@ -1,6 +1,7 @@
 import SeedModal from "./modals/seed"
 import KeyModal from "./modals/key"
 import AddressModal from "./modals/address";
+import SettingsModal from "./modals/settings";
 import {Modals} from "../../../main/common/util";
 import {
     Find, Following, Post, PostCreate, PostLike, PostLikes, PostReply, SetName, SetPic, SetProfile, View
@@ -27,6 +28,7 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
             {modalWindow === Modals.Seed && <SeedModal onClose={onClose}/>}
             {modalWindow === Modals.Key && <KeyModal onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.Address && <AddressModal onClose={onClose} setLastUpdate={setLastUpdate}/>}
+            {modalWindow === Modals.Settings && <SettingsModal onClose={onClose} setLastUpdate={setLastUpdate}/>}
             {modalWindow === Modals.Password && <GetPassword onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileFind && <Find setModal={setModal}/>}
             {modalWindow === Modals.ProfileSetName && <SetName onClose={onClose} modalProps={modalProps}/>}
