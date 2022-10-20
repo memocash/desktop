@@ -72,7 +72,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         if (recentFollow && !recentFollow.block_hash) {
             beatHash = recentFollow.tx_hash
         }
-        await CreateTransaction(wallet, [{script: followOpReturnOutput}], beatHash)
+        await CreateTransaction(wallet, [{script: followOpReturnOutput}], setModal, beatHash)
     }
     return (
         <Modal onClose={onClose}>

@@ -89,7 +89,9 @@ const DirectTx = async (inputs, outputs, beatHash, setModal) => {
         outer_transactionIDEleRef: {
             value: 0
         },
-        outer_beatHash: "",
+        outer_beatHash: {
+            current: ""
+        },
         outer_feeRate: 0
     }
 
@@ -155,13 +157,12 @@ const DirectTx = async (inputs, outputs, beatHash, setModal) => {
         outer_transaction.outer_txInfo = tx
         outer_transaction.outer_fee = fee
         outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
-        outer_transaction.outer_beatHash = beatHash
+        outer_transaction.outer_beatHash.current = beatHash
         const storedPassword = await window.electron.getPassword()
         if (!storedPassword || !storedPassword.length) {
             await setTx(outer_transaction,setModal)
             await pushTx(outer_transaction.outer_txInfo)
         } else {
-            console.log(setModal)
             setModal(Modals.Password, {onCorrectPassword:async () => {
                     await setTx(outer_transaction, setModal)
                     await pushTx(outer_transaction.outer_txInfo)

@@ -31,9 +31,9 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
             {modalWindow === Modals.Settings && <SettingsModal onClose={onClose} setLastUpdate={setLastUpdate}/>}
             {modalWindow === Modals.Password && <GetPassword onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileFind && <Find setModal={setModal}/>}
-            {modalWindow === Modals.ProfileSetName && <SetName onClose={onClose} modalProps={modalProps}/>}
-            {modalWindow === Modals.ProfileSetText && <SetProfile onClose={onClose} modalProps={modalProps}/>}
-            {modalWindow === Modals.ProfileSetPic && <SetPic onClose={onClose} modalProps={modalProps}/>}
+            {modalWindow === Modals.ProfileSetName && <SetName onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
+            {modalWindow === Modals.ProfileSetText && <SetProfile onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
+            {modalWindow === Modals.ProfileSetPic && <SetPic onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
             {modalWindow === Modals.ProfileView && <View basic={basic} modalProps={modalProps}/>}
             {modalWindow === Modals.Following && <Following setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.Followers &&

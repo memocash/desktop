@@ -32,7 +32,7 @@ const ContentFooter = ({room, setModal, setRoom}) => {
             Buffer.from(room),
             Buffer.from(message),
         ])
-        await CreateTransaction(await GetWallet(), [{script: chatPostOpReturnOutput}])
+        await CreateTransaction(await GetWallet(), [{script: chatPostOpReturnOutput}], setModal)
         messageRef.current.value = ""
     }
     const formClickHandler = () => {
