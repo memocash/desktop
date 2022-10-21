@@ -78,7 +78,15 @@ const pushTx = async (outer_txInfo) => {
     await window.electron.graphQL(query, {raw: outer_txInfo.raw.toString("hex")})
     console.log("Broadcast successful")
 }
-const DirectTx = async (inputs, outputs, beatHash, setModal) => {
+
+const setAndPushTx = async(outer_transaction, setModal, onDone) => {
+    await setTx(outer_transaction, setModal)
+    await pushTx(outer_transaction.outer_txInfo)
+    if(typeof onDone == "function"){
+        onDone()
+    }
+}
+const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
     let outer_transaction = {
         outer_size: 0,
         outer_txInfo: {
@@ -160,13 +168,10 @@ const DirectTx = async (inputs, outputs, beatHash, setModal) => {
         outer_transaction.outer_beatHash.current = beatHash
         const storedPassword = await window.electron.getPassword()
         if (!storedPassword || !storedPassword.length) {
-            await setTx(outer_transaction,setModal)
-            await pushTx(outer_transaction.outer_txInfo)
+            await setAndPushTx(outer_transaction, setModal, onDone)
         } else {
             setModal(Modals.Password, {onCorrectPassword:async () => {
-                    await setTx(outer_transaction, setModal)
-                    await pushTx(outer_transaction.outer_txInfo)
-                    return
+                    await setAndPushTx(outer_transaction, setModal, onDone)
                 }
             })
         }
