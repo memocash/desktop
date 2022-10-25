@@ -27,7 +27,7 @@ const SetProfile = ({onClose, setModal}) => {
         if (recentSetProfile && !recentSetProfile.block_hash) {
             beatHash = recentSetProfile.tx_hash
         }
-        await CreateTransaction(wallet, [{script: profileOpReturnOutput}], setModal, beatHash)
+        await CreateTransaction(wallet, [{script: profileOpReturnOutput}], setModal, null, beatHash)
     }
     return (
         <Modal onClose={onClose}>

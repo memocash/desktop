@@ -27,7 +27,7 @@ const SetPic = ({onClose, setModal}) => {
         if (recentSetPic && !recentSetPic.block_hash) {
             beatHash = recentSetPic.tx_hash
         }
-        await CreateTransaction(wallet, [{script: picOpReturnOutput}], setModal,beatHash)
+        await CreateTransaction(wallet, [{script: picOpReturnOutput}],setModal, null, beatHash)
     }
     return (
         <Modal onClose={onClose}>
