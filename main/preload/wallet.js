@@ -54,7 +54,8 @@ module.exports = {
         const wallet = JSON.parse(walletJson)
         if (!wallet.settings) {
             wallet.settings = {
-                DirectTx: false
+                DirectTx: false,
+                SkipPassword: true,
             }
         }
         for(let key in newSettings){

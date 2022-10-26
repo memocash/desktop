@@ -86,7 +86,7 @@ const setAndPushTx = async(outer_transaction, setModal, onDone) => {
         onDone()
     }
 }
-const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
+const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePassword) => {
     let outer_transaction = {
         outer_size: 0,
         outer_txInfo: {
@@ -101,6 +101,10 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
             current: ""
         },
         outer_feeRate: 0
+    }
+    if(!requirePassword){
+        let wallet = await GetWallet()
+        requirePassword = !wallet.settings.SkipPassword
     }
 
 
@@ -167,7 +171,7 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
         outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
         outer_transaction.outer_beatHash.current = beatHash
         const storedPassword = await window.electron.getPassword()
-        if (!storedPassword || !storedPassword.length) {
+        if (!storedPassword || !storedPassword.length || !requirePassword) {
             await setAndPushTx(outer_transaction, setModal, onDone)
         } else {
             setModal(Modals.Password, {onCorrectPassword:async () => {

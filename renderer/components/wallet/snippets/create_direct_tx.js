@@ -3,7 +3,7 @@ import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {GetUtxosRef} from "../../util/utxos";
 import {DirectTx} from "../../tx/direct_tx";
 
-const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, beatHash="") => {
+const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, beatHash="", requirePassword) => {
     const utxos = GetUtxosRef().current.value
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
@@ -36,7 +36,7 @@ const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, beatHas
     if (change > 0) {
         outputStrings.push(address.toOutputScript(changeAddress).toString("hex") + ":" + change)
     }
-    await DirectTx(inputs, outputStrings, beatHash, setModal, onDone)
+    await DirectTx(inputs, outputStrings, beatHash, setModal, onDone,requirePassword)
 }
 
 export {
