@@ -35,6 +35,7 @@ const WalletLoaded = () => {
     const shownRef = useRef([])
     useEffect(async () => {
         const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.Memo
+
         setTab(tab)
         shownRef.current.push(tab)
     }, [])

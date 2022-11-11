@@ -69,6 +69,10 @@ const Coins = ({lastUpdate}) => {
     const getCoinOutput = (coin) => {
         return coin.hash + ":" + coin.index
     }
+    const rightClick = (e, hash, index) => {
+        e.preventDefault()
+        window.electron.coinsMenu(hash, index)
+    }
     const keyDownHandler = async (e) => {
         let selectedOutput = selectedOutputRef.current
         if (!selectedOutput || !selectedOutput.length) {
@@ -143,7 +147,7 @@ const Coins = ({lastUpdate}) => {
                         <span>{coin.address}</span>
                         <span className={styles.itemValue}>{coin.value.toLocaleString()}</span>
                         <span className={styles.itemValue}>{coin.height.toLocaleString()}</span>
-                        <span title={coin.hash + ":" + coin.index}>{ShortHash(coin.hash)}:{coin.index}</span>
+                        <span title={coin.hash + ":" + coin.index} onContextMenu={(e) => rightClick(e,coin.hash, coin.index)}>{ShortHash(coin.hash)}:{coin.index}</span>
                     </div>
                 )
             })}

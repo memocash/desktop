@@ -1,7 +1,7 @@
 const ListenNewTxs = ({wallet, setLastUpdate}) => {
     const query = `
         subscription($address: String!) {
-            address(address: $address) {
+            addresses(addresses: $addresses) {
                 hash
                 seen
                 raw
@@ -42,7 +42,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
             close = ListenNewTxs({wallet, setLastUpdate})
         }, 2000)
     }
-    let close = window.electron.listenGraphQL({query, variables: {address: wallet.addresses[0]}, handler, onclose})
+    let close = window.electron.listenGraphQL({query, variables: {addresses: wallet.addresses}, handler, onclose})
     return () => {
         exited = true
         close()

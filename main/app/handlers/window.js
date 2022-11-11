@@ -28,6 +28,20 @@ const WindowHandlers = () => {
         }))
         menu.popup({window: win})
     })
+    ipcMain.handle(Handlers.CoinsMenu, async (e, hash, index) => {
+        const win = GetWindow(e.sender.id)
+        const clipboard = require("electron").clipboard
+        const menu = new Menu()
+        menu.append(new MenuItem({
+            label: "Copy",
+            click: () => {
+                let copyText = hash + ":" + index
+                clipboard.writeText(copyText)
+
+            },
+        }))
+        menu.popup({window: win})
+    })
     app.on(Handlers.BrowserWindowFocus, (e, win) => {
         if (process.platform === "darwin") {
             Menu.setApplicationMenu(GetMenu(win.webContents.id))
