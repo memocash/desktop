@@ -13,6 +13,7 @@ import {CreateDirectTransaction} from "./snippets/create_direct_tx";
 const Send = ({setModal}) => {
     const payToRef = useRef("")
     const messageRef = useRef("")
+    const coinRef = useRef("")
     const amountRef = useRef(0)
     const utxosRef = GetUtxosRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
@@ -38,6 +39,7 @@ const Send = ({setModal}) => {
         const payTo = payToRef.current.value
         const message = messageRef.current.value
         const amount = parseInt(amountRef.current.value)
+        const coin = coinRef.current.value
         try {
             address.fromBase58Check(payTo)
         } catch (err) {
@@ -55,9 +57,9 @@ const Send = ({setModal}) => {
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
         if (e.type == "submit") {
-            await CreateTransactionWithPreview(wallet, [{script: outputScript, value: amount}])
+            await CreateTransactionWithPreview(wallet, coinRef.current.value, [{script: outputScript, value: amount}])
         } else if (e.type == "click") {
-            await CreateDirectTransaction(wallet, [{script: outputScript, value: amount}], setModal,null, "", true)
+            await CreateDirectTransaction(wallet, coinRef.current.value,[{script: outputScript, value: amount}], setModal,null, "", true)
         }
     }
 
@@ -81,6 +83,12 @@ const Send = ({setModal}) => {
                     <input className={form.input_small} ref={amountRef} type="number" max={maxValue}
                            min={0} onChange={onAmountChange}/>
                     <input type="button" value={"Max"} onClick={onClickMax}/>
+                </label>
+            </p>
+            <p>
+                <label>
+                    <span className={form.span}>Coin Output (defaults to largest):</span>
+                    <input className={form.input} ref={coinRef} type="text"/>
                 </label>
             </p>
             <p>

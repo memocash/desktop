@@ -28,14 +28,14 @@ const WindowHandlers = () => {
         }))
         menu.popup({window: win})
     })
-    ipcMain.handle(Handlers.CoinsMenu, async (e, hash, index) => {
+    ipcMain.handle(Handlers.CoinsMenu, async (e, hash, index,value,address) => {
         const win = GetWindow(e.sender.id)
         const clipboard = require("electron").clipboard
         const menu = new Menu()
         menu.append(new MenuItem({
             label: "Copy",
             click: () => {
-                let copyText = hash + ":" + index
+                let copyText = hash + ":" + index + ":" + value + ":" + address
                 clipboard.writeText(copyText)
 
             },

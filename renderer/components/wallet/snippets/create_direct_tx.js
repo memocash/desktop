@@ -3,8 +3,9 @@ import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {GetUtxosRef} from "../../util/utxos";
 import {DirectTx} from "../../tx/direct_tx";
 
-const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, beatHash="", requirePassword) => {
+const CreateDirectTransaction = async (wallet,coin, outputs, setModal,onDone, beatHash="", requirePassword) => {
     const utxos = GetUtxosRef().current.value
+    console.log(utxos)
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
@@ -13,6 +14,22 @@ const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, beatHas
     let totalInput = 0
     let inputs = []
     for (let i = 0; i < utxos.length; i++) {
+        if(i == 0 && coin !== ""){
+            //separate utxo by : and get the value
+            const value = coin.split(":")[2]
+            if (value === bitcoin.Fee.DustLimit) {
+                // Don't spend dust outputs, could be SLP token, which isn't supported yet
+                continue
+            }
+            requiredInput += bitcoin.Fee.InputP2PKH
+            totalInput += parseInt(value)
+            if (totalInput === requiredInput ||
+                totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.Fee.DustLimit) {
+                inputs.push(coin)
+                break
+            }
+            break
+        }
         const utxo = utxos[i]
         if (utxo.value === bitcoin.Fee.DustLimit) {
             // Don't spend dust outputs, could be SLP token, which isn't supported yet
