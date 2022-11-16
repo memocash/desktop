@@ -5,7 +5,6 @@ import {DirectTx} from "../../tx/direct_tx";
 
 const CreateDirectTransaction = async (wallet,coin, outputs, setModal,onDone, beatHash="", requirePassword) => {
     const utxos = GetUtxosRef().current.value
-    console.log(utxos)
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]

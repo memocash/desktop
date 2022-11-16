@@ -1,6 +1,6 @@
 const ListenNewTxs = ({wallet, setLastUpdate}) => {
     const query = `
-        subscription($address: String!) {
+        subscription($addresses: [String!]) {
             addresses(addresses: $addresses) {
                 hash
                 seen
@@ -26,7 +26,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
         }
         `
     const handler = async (tx) => {
-        await window.electron.saveTransactions([tx.address])
+        await window.electron.saveTransactions([tx.addresses])
         await window.electron.generateHistory(wallet.addresses)
         if (typeof setLastUpdate === "function") {
             setLastUpdate((new Date()).toISOString())
