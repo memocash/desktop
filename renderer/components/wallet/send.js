@@ -30,6 +30,9 @@ const Send = ({setModal}) => {
     const onClickMax = () => {
         amountRef.current.value = maxValueRef.current
     }
+    const onClickCoin = async () =>{
+        setMaxValue(Math.max(0, await GetMaxValue(coinRef.current.value)))
+    }
     const formSubmit = async (e) => {
         e.preventDefault()
         if (maxValueRef.current < bitcoin.Fee.DustLimit) {
@@ -89,6 +92,7 @@ const Send = ({setModal}) => {
                 <label>
                     <span className={form.span}>Coin Output (defaults to largest):</span>
                     <input className={form.input} ref={coinRef} type="text"/>
+                    <input type="button" value={"Set Coin"} onClick={onClickCoin}/>
                 </label>
             </p>
             <p>
