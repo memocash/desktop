@@ -3,7 +3,7 @@ import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {GetUtxosRef} from "../../util/utxos";
 import {CreateDirectTransaction} from "./create_direct_tx";
 
-const CreateTransactionWithPreview = async (wallet, coin,outputs, beatHash = "") => {
+const CreateTransactionWithPreview = async (wallet,outputs, beatHash = "",coin = "") => {
     const utxos = GetUtxosRef().current.value
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
@@ -57,7 +57,7 @@ const CreateTransactionWithPreview = async (wallet, coin,outputs, beatHash = "")
 
 const CreateTransaction = async (wallet, outputs, setModal, onDone, beatHash = "", requirePassword=false) => {
     if(wallet.settings.DirectTx){
-        await CreateDirectTransaction(wallet, outputs, setModal,onDone, beatHash, requirePassword)
+        await CreateDirectTransaction(wallet, outputs, setModal,onDone,requirePassword, beatHash)
     }
     else{
         await CreateTransactionWithPreview(wallet, outputs, beatHash)

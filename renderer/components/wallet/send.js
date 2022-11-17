@@ -60,9 +60,9 @@ const Send = ({setModal}) => {
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
         if (e.type == "submit") {
-            await CreateTransactionWithPreview(wallet, coinRef.current.value, [{script: outputScript, value: amount}])
+            await CreateTransactionWithPreview(wallet, [{script: outputScript, value: amount}],"",coinRef.current.value)
         } else if (e.type == "click") {
-            await CreateDirectTransaction(wallet, coinRef.current.value,[{script: outputScript, value: amount}], setModal,null, "", true)
+            await CreateDirectTransaction(wallet,[{script: outputScript, value: amount}], setModal,null, true, "",coinRef.current.value)
         }
     }
 
