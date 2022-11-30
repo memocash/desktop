@@ -7,6 +7,25 @@ const path = require("path");
 const fsOriginal = require("fs");
 
 module.exports = {
+    removeAddresses: async (addressList) => {
+        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
+        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
+        if (password && password.length){
+            walletJson = decryptWallet(walletJson, password)
+        }
+        const wallet = JSON.parse(walletJson)
+        if (!wallet.addresses){
+            wallet.addresses = []
+        }
+        const newAddresses = wallet.addresses.filter(address => !addressList.includes(address))
+        wallet.addresses = [... new Set(newAddresses)]
+        let contents = JSON.stringify(wallet)
+        if (password && password.length){
+            contents = CryptoJS.AES.encrypt(contents, password).toString()
+        }
+        await fsOriginal.writeFileSync(filename, contents)
+        await ipcRenderer.send(Handlers.StoreWallet,wallet, filename,password)
+    },
     addAddresses: async (addressList) => {
         const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
         let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
@@ -19,6 +38,25 @@ module.exports = {
         }
         wallet.addresses.push(...addressList)
         wallet.addresses = [...new Set(wallet.addresses)]
+        let contents = JSON.stringify(wallet)
+        if (password && password.length) {
+            contents = CryptoJS.AES.encrypt(contents, password).toString()
+        }
+        await fsOriginal.writeFileSync(filename, contents)
+        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
+    },
+    removeKeys: async (keyList) => {
+        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
+        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
+        if (password && password.length) {
+            walletJson = decryptWallet(walletJson, password)
+        }
+        const wallet = JSON.parse(walletJson)
+        if (!wallet.keys) {
+            wallet.keys = []
+        }
+        const newKeys = wallet.keys.filter(key => !keyList.includes(key))
+        wallet.keys = [...new Set(newKeys)]
         let contents = JSON.stringify(wallet)
         if (password && password.length) {
             contents = CryptoJS.AES.encrypt(contents, password).toString()

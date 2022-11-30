@@ -27,7 +27,7 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
         <div>
             {modalWindow === Modals.Seed && <SeedModal onClose={onClose}/>}
             {modalWindow === Modals.Key && <KeyModal onClose={onClose} modalProps={modalProps}/>}
-            {modalWindow === Modals.Address && <AddressModal onClose={onClose} setLastUpdate={setLastUpdate}/>}
+            {modalWindow === Modals.Address && <AddressModal onClose={onClose} setLastUpdate={setLastUpdate} setModal={setModal}/>}
             {modalWindow === Modals.Settings && <SettingsModal onClose={onClose} setLastUpdate={setLastUpdate} setModal={setModal}/>}
             {modalWindow === Modals.Password && <GetPassword onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileFind && <Find setModal={setModal}/>}
