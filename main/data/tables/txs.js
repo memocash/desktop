@@ -5,6 +5,9 @@ const SaveTransactions = async (conf, transactions) => {
         return
     }
     for (let i = 0; i < transactions.length; i++) {
+        if (transactions[i] === undefined) {
+            continue
+        }
         await Insert(conf, "txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
         await Insert(conf, "tx_seens", "INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
             transactions[i].hash, transactions[i].seen])
