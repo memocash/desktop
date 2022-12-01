@@ -14,6 +14,8 @@ import RoomFollowers from "./modals/chat/room_followers";
 import RoomFollowing from "./modals/chat/room_following";
 import NetworkView from "./modals/network_view";
 import GetPassword from "./modals/get_password";
+import remove from "./modals/remove";
+import RemoveModal from "./modals/remove";
 
 const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     useEffect(() => {
@@ -23,11 +25,13 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
         setModal(Modals.None)
     }
     const basic = {setModal, onClose, setChatRoom}
+    const removeBasic = {onClose, setLastUpdate, setModal}
     return (
         <div>
             {modalWindow === Modals.Seed && <SeedModal onClose={onClose}/>}
             {modalWindow === Modals.Key && <KeyModal onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.Address && <AddressModal onClose={onClose} setLastUpdate={setLastUpdate} setModal={setModal}/>}
+            {modalWindow === Modals.Remove && <RemoveModal basic={removeBasic} modalProps={modalProps}/>}
             {modalWindow === Modals.Settings && <SettingsModal onClose={onClose} setLastUpdate={setLastUpdate} setModal={setModal}/>}
             {modalWindow === Modals.Password && <GetPassword onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ProfileFind && <Find setModal={setModal}/>}

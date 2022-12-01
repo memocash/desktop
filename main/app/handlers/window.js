@@ -17,7 +17,7 @@ const WindowHandlers = () => {
         }
         return GetStorage(e.sender.id)[key]
     })
-    ipcMain.handle(Handlers.RightClickMenu, (e, address) => {
+    ipcMain.handle(Handlers.RightClickMenu, (e, address,key) => {
         const win = GetWindow(e.sender.id)
         const menu = new Menu()
         menu.append(new MenuItem({
@@ -26,6 +26,12 @@ const WindowHandlers = () => {
                 win.webContents.send(Listeners.DisplayModal, Modals.Key, {address})
             },
         }))
+        menu.append(new MenuItem({
+            label: "Remove address",
+            click: () => {
+                win.webContents.send(Listeners.DisplayModal, Modals.Remove, {address})
+            }
+        },))
         menu.popup({window: win})
     })
     ipcMain.handle(Handlers.CoinsMenu, async (e, hash, index,value,address) => {
