@@ -33,7 +33,12 @@ const PostReply = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
             Buffer.from(txHash, "hex").reverse(),
             Buffer.from(message),
         ])
-        await CreateTransaction(await GetWallet(), [{script: replyOpReturnOutput}])
+        let wallet = await GetWallet()
+        await CreateTransaction(wallet, [{script: replyOpReturnOutput}], setModal)
+        if(wallet.settings.DirectTx && await window.electron.getPassword())
+        {
+            return
+        }
         setModal(Modals.Post, {txHash})
     }
     return (

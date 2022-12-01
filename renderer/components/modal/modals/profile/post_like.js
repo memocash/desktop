@@ -23,6 +23,7 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
         setPost(post)
     }, [txHash])
     useEffect(async () => {
+        console.log("like updated")
         setMaxValue(Math.max(0, await GetMaxValue()))
     }, [utxosRef])
     const formLikeSubmit = async (e) => {
@@ -44,9 +45,11 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
         let outputs = [{script: likeOpReturnOutput}]
         if (tip > 0) {
             outputs.push({value: tip, script: address.toOutputScript(postRef.current.address)})
+            await CreateTransaction(wallet, outputs, setModal, () => setModal(Modals.Post, {txHash}), "", true)
         }
-        await CreateTransaction(wallet, outputs)
-        setModal(Modals.Post, {txHash})
+        else{
+            await CreateTransaction(wallet, outputs, setModal, () => setModal(Modals.Post, {txHash}))
+        }
     }
     return (
         <Modal onClose={onClose}>

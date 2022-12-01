@@ -20,6 +20,7 @@ const Handlers = {
     SetWindowStorage: "set-window-storage",
     GetWindowStorage: "get-window-storage",
     RightClickMenu: "right-click-menu",
+    CoinsMenu: "coins-menu",
     BrowserWindowFocus: "browser-window-focus",
     OpenFileDialog: "open-file-dialog",
     ShowMessageDialog: "show-message-dialog",

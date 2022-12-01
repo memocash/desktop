@@ -7,7 +7,7 @@ import {useRef} from "react";
 import styles from "../../../../styles/modal.module.css"
 import profile from "../../../../styles/profile.module.css";
 
-const SetPic = ({onClose}) => {
+const SetPic = ({onClose, setModal}) => {
     const setPicRef = useRef()
     const formSetPicSubmit = async (e) => {
         e.preventDefault()
@@ -27,7 +27,7 @@ const SetPic = ({onClose}) => {
         if (recentSetPic && !recentSetPic.block_hash) {
             beatHash = recentSetPic.tx_hash
         }
-        await CreateTransaction(wallet, [{script: picOpReturnOutput}], beatHash)
+        await CreateTransaction(wallet, [{script: picOpReturnOutput}],setModal, null, beatHash)
     }
     return (
         <Modal onClose={onClose}>

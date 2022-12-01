@@ -1,5 +1,6 @@
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 import GetWallet from "./wallet";
+import {useReferredState} from "./state";
 
 let utxosRef
 
@@ -8,12 +9,15 @@ const GetUtxosRef = () => {
 }
 
 const Utxos = ({lastUpdate}) => {
-    utxosRef = useRef([])
+    const [_, utxos,setUtxos] = useReferredState([])
+    useEffect(() => {
+        utxosRef = utxos
+    },[])
     useEffect(async () => {
         const wallet = await GetWallet()
-        utxosRef.current.value = await window.electron.getUtxos(wallet.addresses)
-        utxosRef.current.value.sort((a, b) => {
-            return b.value - a.value
+        utxos.current.value = await window.electron.getUtxos(wallet.addresses)
+        utxos.current.value.sort((a, b) => {
+             return b.value - a.value
         })
     }, [lastUpdate])
     return (<></>)

@@ -7,7 +7,7 @@ import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {useRef} from "react";
 
-const PostCreate = ({onClose}) => {
+const PostCreate = ({onClose, setModal}) => {
     const postInputRef = useRef()
     const formPostSubmit = async (e) => {
         e.preventDefault()
@@ -22,7 +22,10 @@ const PostCreate = ({onClose}) => {
             Buffer.from(post),
         ])
         const wallet = await GetWallet()
-        await CreateTransaction(wallet, [{script: postOpReturnOutput}])
+        await CreateTransaction(wallet, [{script: postOpReturnOutput}], setModal)
+        if(!wallet.settings.DirectTx || !(await window.electron.getPassword())){
+            onClose()
+        }
     }
     return (
         <Modal onClose={onClose}>

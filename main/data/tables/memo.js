@@ -24,6 +24,9 @@ const GetProfileInfo = async (conf, addresses) => {
         "   ON (max_following.address = profiles.address) " +
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const results = await Select(conf, "profiles", query, [...addresses, ...addresses, ...addresses])
+    if(!results[0].address){
+        results[0].address = addresses[0]
+    }
     if (!results || !results.length) {
         return undefined
     }

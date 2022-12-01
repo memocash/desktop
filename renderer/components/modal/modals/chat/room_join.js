@@ -6,7 +6,7 @@ import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 
-const RoomJoin = ({onClose, modalProps: {room, leave = false}}) => {
+const RoomJoin = ({onClose, modalProps: {room, leave = false}, setModal}) => {
     const formJoinRoomSubmit = async (e) => {
         e.preventDefault()
         let prefix = bitcoin.Prefix.ChatFollow
@@ -24,8 +24,10 @@ const RoomJoin = ({onClose, modalProps: {room, leave = false}}) => {
         if (recentFollowRoom && !recentFollowRoom.block_hash) {
             beatHash = recentFollowRoom.tx_hash
         }
-        await CreateTransaction(wallet, [{script: joinRoomOpReturnOutput}], beatHash)
-        onClose()
+        await CreateTransaction(wallet, [{script: joinRoomOpReturnOutput}],setModal, null, beatHash)
+        if(!wallet.settings.DirectTx || !(await window.electron.getPassword())){
+            onClose()
+        }
     }
     return (
         <Modal onClose={onClose}>

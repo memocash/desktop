@@ -6,6 +6,9 @@ import profile from "../../../../styles/profile.module.css";
 import {ListenPosts, UpdatePosts} from "../../../wallet/update/index";
 
 const PostModal = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
+    if(!txHash){
+        return null
+    }
     const [post, setPost] = useState({})
     const [txHashes, setTxHashes] = useState([])
     const [lastUpdate, setLastUpdate] = useState(null)

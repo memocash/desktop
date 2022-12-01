@@ -20,13 +20,14 @@ const Addresses = ({lastUpdate}) => {
         addressesDiv.current.addEventListener("contextmenu", (e) => {
             e.preventDefault()
             let address
+            let key
             for (let i = 0; i < e.path.length; i++) {
                 if (e.path[i].nodeName === "DIV") {
                     address = e.path[i].dataset.address
                     break
                 }
             }
-            window.electron.rightClickMenu(address)
+            window.electron.rightClickMenu(address,key)
         })
         window.electron.walletLoaded()
     }, [])

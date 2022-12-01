@@ -7,7 +7,7 @@ import {useRef} from "react";
 import profile from "../../../../styles/profile.module.css"
 import styles from "../../../../styles/modal.module.css"
 
-const SetName = ({onClose}) => {
+const SetName = ({onClose, setModal}) => {
     const setNameRef = useRef()
     const formSetNameSubmit = async (e) => {
         e.preventDefault()
@@ -27,7 +27,8 @@ const SetName = ({onClose}) => {
         if (recentSetName && !recentSetName.block_hash) {
             beatHash = recentSetName.tx_hash
         }
-        await CreateTransaction(wallet, [{script: nameOpReturnOutput}], beatHash)
+        await CreateTransaction(wallet, [{script: nameOpReturnOutput}],setModal,null, beatHash)
+        console.log((await window.electron.getRecentSetName(wallet.addresses)))
     }
     return (
         <Modal onClose={onClose}>

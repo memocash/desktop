@@ -4,13 +4,16 @@ import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import {CreateTransaction} from "./snippets/create_tx";
+import {CreateTransaction, CreateTransactionWithPreview} from "./snippets/create_tx";
 import {GetMaxValue} from "../util/send";
 import {GetUtxosRef} from "../util/utxos";
+import {Info} from "../tx/info";
+import {CreateDirectTransaction} from "./snippets/create_direct_tx";
 
-const Send = () => {
+const Send = ({setModal}) => {
     const payToRef = useRef("")
     const messageRef = useRef("")
+    const coinRef = useRef("")
     const amountRef = useRef(0)
     const utxosRef = GetUtxosRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
@@ -27,6 +30,9 @@ const Send = () => {
     const onClickMax = () => {
         amountRef.current.value = maxValueRef.current
     }
+    const onClickCoin = async () =>{
+        setMaxValue(Math.max(0, await GetMaxValue(coinRef.current.value)))
+    }
     const formSubmit = async (e) => {
         e.preventDefault()
         if (maxValueRef.current < bitcoin.Fee.DustLimit) {
@@ -36,6 +42,7 @@ const Send = () => {
         const payTo = payToRef.current.value
         const message = messageRef.current.value
         const amount = parseInt(amountRef.current.value)
+        const coin = coinRef.current.value
         try {
             address.fromBase58Check(payTo)
         } catch (err) {
@@ -52,8 +59,13 @@ const Send = () => {
         }
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
-        await CreateTransaction(wallet, [{script: outputScript, value: amount}])
+        if (e.type == "submit") {
+            await CreateTransactionWithPreview(wallet, [{script: outputScript, value: amount}],"",coinRef.current.value)
+        } else if (e.type == "click") {
+            await CreateDirectTransaction(wallet,[{script: outputScript, value: amount}], setModal,null, true, "",coinRef.current.value)
+        }
     }
+
     return (
         <form onSubmit={formSubmit}>
             <p>
@@ -77,7 +89,15 @@ const Send = () => {
                 </label>
             </p>
             <p>
+                <label>
+                    <span className={form.span}>Coin Output (defaults to largest):</span>
+                    <input className={form.input} ref={coinRef} type="text"/>
+                    <input type="button" value={"Set Coin"} onClick={onClickCoin}/>
+                </label>
+            </p>
+            <p>
                 <input type="submit" value="Preview"/>
+                <input type="button" value="Sign and Broadcast" onClick={formSubmit}/>
             </p>
         </form>
     )
