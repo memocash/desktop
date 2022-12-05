@@ -87,12 +87,14 @@ const GenerateHistory = async (conf, addresses) => {
 const GetWalletInfo = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
+        "   outputs.address, " +
         "   COUNT(DISTINCT (outputs.hash || outputs.`index`)) AS output_count, " +
         "   IFNULL(SUM(CASE WHEN inputs.hash IS NULL THEN 1 ELSE 0 END), 0) AS utxo_count, " +
         "   IFNULL(SUM(CASE WHEN inputs.hash IS NULL THEN outputs.value ELSE 0 END), 0) AS balance " +
         "FROM outputs " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
-        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "GROUP BY outputs.address "
     return Select(conf, "outputs-wallet-info", query, addresses)
 }
 
