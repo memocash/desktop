@@ -29,11 +29,6 @@ const ShowMenu = (win, newWindow, wallet) => {
             {label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:"},
             {label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:"}
         ]
-    },{
-        label: "Settings",
-        submenu:[
-            {label: "Preferences", click: () => win.webContents.send(Listeners.DisplayModal, Modals.Settings)}
-        ]
     }, {
         label: "Wallet",
         submenu: [
@@ -62,7 +57,7 @@ const ShowMenu = (win, newWindow, wallet) => {
     }, {
         label: "Tools",
         submenu: [
-            {label: "Preferences"},
+            {label: "Preferences", click: () => win.webContents.send(Listeners.DisplayModal, Modals.Settings)},
             {label: "Network"},
             {
                 label: "Edit Addresses",

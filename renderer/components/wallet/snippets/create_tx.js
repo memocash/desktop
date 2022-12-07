@@ -29,6 +29,7 @@ const CreateTransactionWithPreview = async (wallet,outputs, beatHash = "",coin =
             }
             break
         }
+
         const utxo = utxos[i]
         if (utxo.value === bitcoin.Fee.DustLimit) {
             // Don't spend dust outputs, could be SLP token, which isn't supported yet
@@ -41,6 +42,10 @@ const CreateTransactionWithPreview = async (wallet,outputs, beatHash = "",coin =
             totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.Fee.DustLimit) {
             break
         }
+    }
+    if(totalInput < requiredInput){
+        window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
+        return
     }
     const changeAddress = wallet.addresses[0]
     const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH

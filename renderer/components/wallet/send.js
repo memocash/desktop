@@ -7,7 +7,6 @@ import {useReferredState} from "../util/state";
 import {CreateTransaction, CreateTransactionWithPreview} from "./snippets/create_tx";
 import {GetMaxValue} from "../util/send";
 import {GetUtxosRef} from "../util/utxos";
-import {Info} from "../tx/info";
 import {CreateDirectTransaction} from "./snippets/create_direct_tx";
 
 const Send = ({setModal}) => {
