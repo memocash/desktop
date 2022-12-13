@@ -22,7 +22,7 @@ const History = ({lastUpdate}) => {
     const historyDiv = useRef()
     useEffect(async () => {
         const wallet = await GetWallet()
-        let txs = await window.electron.getTransactions(wallet.addresses)
+        let txs = await window.electron.getTransactions(wallet.addresses.concat(wallet.changeList))
         let balance = 0
         for (let i = txs.length - 1; i >= 0; i--) {
             balance += txs[i].value

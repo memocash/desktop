@@ -15,7 +15,7 @@ const Utxos = ({lastUpdate}) => {
     },[])
     useEffect(async () => {
         const wallet = await GetWallet()
-        utxos.current.value = await window.electron.getUtxos(wallet.addresses)
+        utxos.current.value = await window.electron.getUtxos(wallet.addresses.concat(wallet.changeList))
         utxos.current.value.sort((a, b) => {
              return b.value - a.value
         })
