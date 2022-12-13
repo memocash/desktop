@@ -19,5 +19,17 @@ const GetAddresses = (seedPhrase, keyList) => {
     }
     return addressList
 }
+const GetChangeAddresses = (seedPhrase) => {
+    let changeList = []
+    if (seedPhrase && seedPhrase.length) {
+        const seed = mnemonicToSeedSync(seedPhrase)
+        const node = fromSeed(seed)
+        for (let i = 0; i < 20; i++) {
+            const change = node.derivePath("m/44'/0'/0'/1/" + i)
+            changeList.push(ECPair.fromWIF(change.toWIF()).getAddress())
+        }
+    }
+    return changeList
+}
 
-export default GetAddresses
+export {GetAddresses, GetChangeAddresses}
