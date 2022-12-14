@@ -22,6 +22,10 @@ const GetWallet = async () => {
         await window.electron.addChangeList(changeList)
         wallet = await window.electron.getWallet()
     }
+    if(!wallet.seed || !wallet.seed.length){
+        await window.electron.addChangeList([])
+        wallet = await window.electron.getWallet()
+    }
     return wallet
 }
 
