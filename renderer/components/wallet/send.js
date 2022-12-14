@@ -62,8 +62,8 @@ const Send = ({setModal}) => {
         if (message && message.length) {
             const sendOpReturnOutput = script.compile([
                 opcodes.OP_RETURN,
-                Buffer.from(bitcoin.GetPkHashFromAddress(payTo), "hex"),
                 Buffer.from(bitcoin.Prefix.Send, "hex"),
+                Buffer.from(bitcoin.GetPkHashFromAddress(payTo), "hex"),
                 Buffer.from(message),
             ])
             outputScripts.unshift({script: sendOpReturnOutput, value: 0})        }
