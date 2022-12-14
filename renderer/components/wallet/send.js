@@ -1,5 +1,5 @@
 import {useEffect, useRef} from "react";
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {address, opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
@@ -58,10 +58,19 @@ const Send = ({setModal}) => {
         }
         const wallet = await GetWallet()
         const outputScript = address.toOutputScript(payTo)
+        let outputScripts = [{script: outputScript, value: amount}]
+        if (message && message.length) {
+            const sendOpReturnOutput = script.compile([
+                opcodes.OP_RETURN,
+                Buffer.from(bitcoin.GetPkHashFromAddress(payTo), "hex"),
+                Buffer.from(bitcoin.Prefix.Send, "hex"),
+                Buffer.from(message),
+            ])
+            outputScripts.unshift({script: sendOpReturnOutput, value: 0})        }
         if (e.type == "submit") {
-            await CreateTransactionWithPreview(wallet, [{script: outputScript, value: amount}],"",coinRef.current.value)
+            await CreateTransactionWithPreview(wallet, outputScripts,"",coinRef.current.value)
         } else if (e.type == "click") {
-            await CreateDirectTransaction(wallet,[{script: outputScript, value: amount}], setModal,null, true, "",coinRef.current.value)
+            await CreateDirectTransaction(wallet,outputScripts, setModal,null, true, "",coinRef.current.value)
         }
     }
 
