@@ -21,24 +21,23 @@ const Addresses = ({lastUpdate}) => {
         addressesDiv.current.addEventListener("contextmenu", (e) => {
             e.preventDefault()
             let address
-            let key
             for (let i = 0; i < e.path.length; i++) {
                 if (e.path[i].nodeName === "DIV") {
                     address = e.path[i].dataset.address
                     break
                 }
             }
-            window.electron.rightClickMenu(address,key)
+            window.electron.rightClickMenu(address)
         })
         window.electron.walletLoaded()
     }, [])
     useEffect(async () => {
         const wallet = await GetWallet()
         try {
-            const balances = await loadBalance(wallet.addresses)
+            const balances = await window.electron.getWalletInfo(wallet.addresses)
             let changeBalances = []
             if(wallet.changeList && wallet.changeList.length) {
-                changeBalances = await loadBalance(wallet.changeList)
+                changeBalances = await window.electron.getWalletInfo(wallet.changeList)
                 for (let i = 0; i < changeBalances.length; i++) {
                     changeBalances[i].index = i
                 }
@@ -52,21 +51,6 @@ const Addresses = ({lastUpdate}) => {
             console.log(e)
         }
     }, [lastUpdate])
-
-    const loadBalance = async (addresses) => {
-        const query = `
-    query ($addresses: [String!]) {
-        addresses(addresses: $addresses) {
-            address
-            balance
-        }
-    }
-    `
-        let data = await window.electron.graphQL(query, {
-            addresses: addresses,
-        })
-        return data.data.addresses
-    }
     const keyDownHandler = async (e) => {
         let selectedAddress = selectedAddressRef.current
         if (!selectedAddress || !selectedAddress.length) {

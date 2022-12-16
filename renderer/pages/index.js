@@ -20,6 +20,7 @@ const Index = () => {
     const [keyList, setKeyList] = useState([])
     const [addressList, setAddressList] = useState([])
     const networkValueRef = useRef()
+    const [_, setCalledPush] = useState(false)
     const generateSeedPhrase = () => {
         const mnemonic = generateMnemonic()
         setSeedPhrase(mnemonic)
@@ -58,6 +59,15 @@ const Index = () => {
                 break
             }
         }
+        let calledPushLatest
+        setCalledPush(latest => {
+            calledPushLatest = latest
+            return latest
+        });
+        if (calledPushLatest) {
+            return
+        }
+        setCalledPush(true)
         await router.push("/wallet")
     }
     return (
