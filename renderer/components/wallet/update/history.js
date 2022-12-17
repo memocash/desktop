@@ -1,15 +1,16 @@
 import {Status} from "../../util/connect"
 
 const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
-    const recentAddresses = await window.electron.getRecentAddressTransactions(wallet.addresses)
-    let addresses = new Array(wallet.addresses.length)
-    for (let i = 0; i < wallet.addresses.length; i++) {
+    let addressList = wallet.addresses.concat(wallet.changeList)
+    const recentAddresses = await window.electron.getRecentAddressTransactions(addressList)
+    let addresses = new Array(addressList.length)
+    for (let i = 0; i < addressList.length; i++) {
         addresses[i] = {
-            address: wallet.addresses[i],
+            address: addressList[i],
             hash: "", index: 0, height: 0,
         }
         for (let j = 0; j < recentAddresses.length; j++) {
-            if (!recentAddresses[j].address === wallet.addresses[i]) {
+            if (!recentAddresses[j].address === addressList[i]) {
                 continue
             }
             addresses[i].height = recentAddresses[j].height - 1
@@ -73,7 +74,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
         }
         await window.electron.saveTransactions(txs)
     }
-    await window.electron.generateHistory(wallet.addresses)
+    await window.electron.generateHistory(addressList)
     if (typeof setLastUpdate === "function") {
         setLastUpdate((new Date()).toISOString())
     }

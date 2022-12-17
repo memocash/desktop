@@ -42,6 +42,10 @@ const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, require
             break
         }
     }
+    if(totalInput < requiredInput){
+        window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
+        return
+    }
     const changeAddress = wallet.addresses[0]
     const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
     let outputStrings = []

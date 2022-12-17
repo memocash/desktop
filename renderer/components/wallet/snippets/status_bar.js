@@ -8,7 +8,7 @@ const StatusBar = ({connected, lastUpdate, setModal}) => {
     const [info, setInfo] = useState({})
     useEffect(async () => {
         const wallet = await window.electron.getWallet()
-        const info = await window.electron.getWalletInfo(wallet.addresses)
+        const info = await window.electron.getWalletInfo(wallet.addresses.concat(wallet.changeList))
         if (info.length) {
             setInfo(info[0])
         }

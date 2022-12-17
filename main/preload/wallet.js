@@ -45,6 +45,25 @@ module.exports = {
         await fsOriginal.writeFileSync(filename, contents)
         await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
     },
+    addChangeList: async (changeList) => {
+        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
+        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
+        if (password && password.length) {
+            walletJson = decryptWallet(walletJson, password)
+        }
+        const wallet = JSON.parse(walletJson)
+        if (!wallet.changeList) {
+            wallet.changeList = []
+        }
+        wallet.changeList.push(...changeList)
+        wallet.changeList = [...new Set(wallet.changeList)]
+        let contents = JSON.stringify(wallet)
+        if (password && password.length) {
+            contents = CryptoJS.AES.encrypt(contents, password).toString()
+        }
+        await fsOriginal.writeFileSync(filename, contents)
+        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
+    },
     removeKeys: async (keyList) => {
         const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
         let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})

@@ -15,7 +15,8 @@ const Update = ({setConnected, setLastUpdate}) => {
         walletRef.current = wallet
         await RecentBlock()
         await UpdateHistory({wallet, setConnected, setLastUpdate})
-        await UpdateMemoHistory({addresses: wallet.addresses, setLastUpdate})
+        await UpdateMemoHistory({addresses: wallet.addresses.concat(wallet.changeList), setLastUpdate})
+
     }, [])
     useEffect(() => {
         if (!walletRef.current) {
@@ -23,7 +24,7 @@ const Update = ({setConnected, setLastUpdate}) => {
         }
         const closeNewTxs = ListenNewTxs({wallet: walletRef.current, setLastUpdate})
         const closeNewMemos = ListenNewMemos({wallet: walletRef.current, setLastUpdate})
-        const closeBlocks = ListenBlocks({addresses: walletRef.current.addresses, setLastUpdate, setConnected})
+        const closeBlocks = ListenBlocks({addresses: walletRef.current.addresses.concat(walletRef.current.changeList), setLastUpdate, setConnected})
         return () => {
             closeNewTxs()
             closeNewMemos()

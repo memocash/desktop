@@ -28,6 +28,7 @@ const Prefix = {
     ChatPost: "6d0c",
     ChatFollow: "6d0d",
     ChatUnfollow: "6d0e",
+    Send: "6d24",
 }
 
 const Utf8ByteLength = (str) => {

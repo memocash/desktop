@@ -12,6 +12,7 @@ const Column = {
 
 const Addresses = ({lastUpdate}) => {
     const [addresses, addressesRef, setAddresses] = useReferredState([])
+    const [changeList, changeListRef, setChangeList] = useReferredState([])
     const [sortCol, setSortCol] = useState(Column.Index)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [selectedAddress, selectedAddressRef, setSelectedAddress] = useReferredState("")
@@ -33,11 +34,19 @@ const Addresses = ({lastUpdate}) => {
     useEffect(async () => {
         const wallet = await GetWallet()
         try {
-            const info = await window.electron.getWalletInfo(wallet.addresses)
-            for (let i = 0; i < info.length; i++) {
-                info[i].index = i
+            const balances = await window.electron.getWalletInfo(wallet.addresses)
+            let changeBalances = []
+            if(wallet.changeList && wallet.changeList.length) {
+                changeBalances = await window.electron.getWalletInfo(wallet.changeList)
+                for (let i = 0; i < changeBalances.length; i++) {
+                    changeBalances[i].index = i
+                }
             }
-            setAddresses(info)
+            for (let i = 0; i < balances.length; i++) {
+                balances[i].index = i
+            }
+            setAddresses(balances)
+            setChangeList(changeBalances)
         } catch (e) {
             console.log(e)
         }
@@ -48,6 +57,7 @@ const Addresses = ({lastUpdate}) => {
             return
         }
         const addresses = addressesRef.current
+        const changeList = changeListRef.current
         switch (e.key) {
             case "ArrowUp":
                 for (let i = 1; i < addresses.length; i++) {
@@ -56,11 +66,23 @@ const Addresses = ({lastUpdate}) => {
                         break
                     }
                 }
+                for (let i = 1; i < changeList.length; i++) {
+                    if (changeList[i].address === selectedAddress) {
+                        selectedAddress = changeList[i - 1].address
+                        break
+                    }
+                }
                 break
             case "ArrowDown":
                 for (let i = 0; i < addresses.length - 1; i++) {
                     if (addresses[i].address === selectedAddress) {
                         selectedAddress = addresses[i + 1].address
+                        break
+                    }
+                }
+                for (let i = 0; i < changeList.length - 1; i++) {
+                    if (changeList[i].address === selectedAddress) {
+                        selectedAddress = changeList[i + 1].address
                         break
                     }
                 }
@@ -135,9 +157,29 @@ const Addresses = ({lastUpdate}) => {
                         </div>
                     )
                 })}
+                {!changeList.length ?
+                    <p className={styles.message}>No Change Addresses</p>
+                    :<div className={[styles.row, styles.rowTitle].join(" ")}>
+                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
+                                  col={Column.Index} title={"Id"}/>
+                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
+                                  col={Column.Address} title={"Change Address"}/>
+                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
+                                  col={Column.Balance} title={"Balance"}/>
+                    </div>
+                }
+                {changeList.map((address, i) => {
+                    return (
+                        <div key={i} data-address={address.address} onClick={(e) => clickRow(e, address.address)}
+                             className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}>
+                            <span>{address.index}</span>
+                            <span className={styles.itemAddress}>{address.address}</span>
+                            <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
+                        </div>
+                    )
+                })}
             </div>
-        </div>
-    )
+        </div>)
 }
 
 export default Addresses
