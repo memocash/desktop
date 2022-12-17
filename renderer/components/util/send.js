@@ -1,27 +1,25 @@
 import bitcoin from "./bitcoin";
-import {GetUtxosRef} from "./utxos";
+import {GetUtxos} from "./utxos";
 
-const GetMaxValue = async (coin="") => {
+const GetMaxValue = async (coin = "") => {
     return new Promise(async (resolve) => {
-        const check = (coin="") => {
-            if (coin.toString() === "") {
-                const utxosRef = GetUtxosRef()
-                if (!utxosRef.current.value) {
+        const check = (coin = "") => {
+            let totalUtxoValue = -bitcoin.Fee.Base - bitcoin.Fee.OutputP2PKH
+            const coinStr = coin.toString()
+            if (coinStr === "") {
+                const utxos = GetUtxos()
+                if (!utxos) {
                     setTimeout(check, 100)
                     return
                 }
-                let totalUtxoValue = -bitcoin.Fee.Base - bitcoin.Fee.OutputP2PKH
-                for (let i = 0; i < utxosRef.current.value.length; i++) {
-                    totalUtxoValue += utxosRef.current.value[i].value - bitcoin.Fee.InputP2PKH
+                for (let i = 0; i < utxos.length; i++) {
+                    totalUtxoValue += utxos[i].value - bitcoin.Fee.InputP2PKH
                 }
-                resolve(totalUtxoValue)
-            }
-            else{
-                let totalUtxoValue = -bitcoin.Fee.Base - bitcoin.Fee.OutputP2PKH
-                const value = coin.toString().split(":")[2]
+            } else {
+                const value = coinStr.split(":")[2]
                 totalUtxoValue += parseInt(value) - bitcoin.Fee.InputP2PKH
-                resolve(totalUtxoValue)
             }
+            resolve(totalUtxoValue)
         }
         check(coin)
     })

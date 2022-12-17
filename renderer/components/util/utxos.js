@@ -1,29 +1,37 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect} from "react";
 import GetWallet from "./wallet";
-import {useReferredState} from "./state";
 
-let utxosRef
+let utxos
+let utxosSetters = []
 
-const GetUtxosRef = () => {
-    return utxosRef
+/** @param {function} setter */
+const AddUtxoSetter = (setter) => {
+    utxosSetters.push(setter)
+    if (utxos) {
+        setter(utxos)
+    }
+}
+
+const GetUtxos = () => {
+    return utxos
 }
 
 const Utxos = ({lastUpdate}) => {
-    const [_, utxos,setUtxos] = useReferredState([])
-    useEffect(() => {
-        utxosRef = utxos
-    },[])
     useEffect(async () => {
         const wallet = await GetWallet()
-        utxos.current.value = await window.electron.getUtxos(wallet.addresses.concat(wallet.changeList))
-        utxos.current.value.sort((a, b) => {
-             return b.value - a.value
+        utxos = await window.electron.getUtxos(wallet.addresses)
+        utxos.sort((a, b) => {
+            return b.value - a.value
         })
+        for (let i = 0; i < utxosSetters.length; i++) {
+            utxosSetters[i](utxos)
+        }
     }, [lastUpdate])
     return (<></>)
 }
 
 export {
-    GetUtxosRef,
+    AddUtxoSetter,
+    GetUtxos,
     Utxos,
 }

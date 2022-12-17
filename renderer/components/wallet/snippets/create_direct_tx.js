@@ -1,10 +1,10 @@
 import bitcoin from "../../util/bitcoin";
 import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import {GetUtxosRef} from "../../util/utxos";
+import {GetUtxos} from "../../util/utxos";
 import {DirectTx} from "../../tx/direct_tx";
 
-const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, requirePassword,beatHash="", coin="") => {
-    const utxos = GetUtxosRef().current.value
+const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requirePassword, beatHash = "", coin = "") => {
+    const utxos = GetUtxos()
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
@@ -13,7 +13,7 @@ const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, require
     let totalInput = 0
     let inputs = []
     for (let i = 0; i < utxos.length; i++) {
-        if(i == 0 && coin !== ""){
+        if (i === 0 && coin !== "") {
             //separate utxo by : and get the value
             const value = coin.split(":")[2]
             if (value === bitcoin.Fee.DustLimit) {
@@ -42,7 +42,7 @@ const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, require
             break
         }
     }
-    if(totalInput < requiredInput){
+    if (totalInput < requiredInput) {
         window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
         return
     }
@@ -56,7 +56,7 @@ const CreateDirectTransaction = async (wallet, outputs, setModal,onDone, require
     if (change > 0) {
         outputStrings.push(address.toOutputScript(changeAddress).toString("hex") + ":" + change)
     }
-    await DirectTx(inputs, outputStrings, beatHash, setModal, onDone,requirePassword)
+    await DirectTx(inputs, outputStrings, beatHash, setModal, onDone, requirePassword)
 }
 
 export {

@@ -10,10 +10,9 @@ import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {GetMaxValue} from "../../../util/send";
 import {useReferredState} from "../../../util/state";
 import {Modals} from "../../../../../main/common/util";
-import {GetUtxosRef} from "../../../util/utxos";
+import {AddUtxoSetter} from "../../../util/utxos";
 
 const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
-    const utxosRef = GetUtxosRef()
     const [post, postRef, setPost] = useReferredState({})
     const tipInputRef = useRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
@@ -22,10 +21,9 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
     }, [txHash])
-    useEffect(async () => {
-        console.log("like updated")
+    useEffect(() => AddUtxoSetter(async () => {
         setMaxValue(Math.max(0, await GetMaxValue()))
-    }, [utxosRef])
+    }), [])
     const formLikeSubmit = async (e) => {
         e.preventDefault()
         const tip = tipInputRef.current.value

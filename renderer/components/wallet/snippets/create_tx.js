@@ -1,10 +1,10 @@
 import bitcoin from "../../util/bitcoin";
 import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import {GetUtxosRef} from "../../util/utxos";
+import {GetUtxos} from "../../util/utxos";
 import {CreateDirectTransaction} from "./create_direct_tx";
 
-const CreateTransactionWithPreview = async (wallet,outputs, beatHash = "",coin = "") => {
-    const utxos = GetUtxosRef().current.value
+const CreateTransactionWithPreview = async (wallet, outputs, beatHash = "", coin = "") => {
+    const utxos = GetUtxos()
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
@@ -13,7 +13,7 @@ const CreateTransactionWithPreview = async (wallet,outputs, beatHash = "",coin =
     let totalInput = 0
     let inputs = []
     for (let i = 0; i < utxos.length; i++) {
-        if(i == 0 && coin !== "") {
+        if (i === 0 && coin !== "") {
             //separate utxo by : and get the value
             const value = coin.split(":")[2]
             if (value === bitcoin.Fee.DustLimit) {
@@ -43,7 +43,7 @@ const CreateTransactionWithPreview = async (wallet,outputs, beatHash = "",coin =
             break
         }
     }
-    if(totalInput < requiredInput){
+    if (totalInput < requiredInput) {
         window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
         return
     }
@@ -60,11 +60,10 @@ const CreateTransactionWithPreview = async (wallet,outputs, beatHash = "",coin =
     await window.electron.openPreviewSend({inputs, outputs: outputStrings, beatHash})
 }
 
-const CreateTransaction = async (wallet, outputs, setModal, onDone, beatHash = "", requirePassword=false) => {
-    if(wallet.settings.DirectTx){
-        await CreateDirectTransaction(wallet, outputs, setModal,onDone,requirePassword, beatHash)
-    }
-    else{
+const CreateTransaction = async (wallet, outputs, setModal, onDone, beatHash = "", requirePassword = false) => {
+    if (wallet.settings.DirectTx) {
+        await CreateDirectTransaction(wallet, outputs, setModal, onDone, requirePassword, beatHash)
+    } else {
         await CreateTransactionWithPreview(wallet, outputs, beatHash)
     }
 }

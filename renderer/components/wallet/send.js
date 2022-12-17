@@ -4,21 +4,21 @@ import form from "../../styles/form.module.css"
 import bitcoin from "../util/bitcoin";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import {CreateTransaction, CreateTransactionWithPreview} from "./snippets/create_tx";
+import {CreateTransactionWithPreview} from "./snippets/create_tx";
 import {GetMaxValue} from "../util/send";
-import {GetUtxosRef} from "../util/utxos";
+import {AddUtxoSetter} from "../util/utxos";
 import {CreateDirectTransaction} from "./snippets/create_direct_tx";
 
 const Send = ({setModal}) => {
-    const payToRef = useRef("")
-    const messageRef = useRef("")
-    const coinRef = useRef("")
-    const amountRef = useRef(0)
-    const utxosRef = GetUtxosRef()
+    const payToRef = useRef()
+    const messageRef = useRef()
+    const coinRef = useRef()
+    const amountRef = useRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
-    useEffect(async () => {
-        setMaxValue(Math.max(0, await GetMaxValue()))
-    }, [utxosRef])
+    useEffect(() => AddUtxoSetter(async () => {
+        const maxValue = await GetMaxValue()
+        setMaxValue(Math.max(0, maxValue))
+    }), [])
     const onAmountChange = (e) => {
         let {value, min, max} = e.target;
         if (!value) {
@@ -26,10 +26,10 @@ const Send = ({setModal}) => {
         }
         e.target.value = Math.max(Number(min), Math.min(Number(max), Number(value)));
     }
-    const onClickMax = () => {
+    const onClickMax = async () => {
         amountRef.current.value = maxValueRef.current
     }
-    const onClickCoin = async () =>{
+    const onClickCoin = async () => {
         setMaxValue(Math.max(0, await GetMaxValue(coinRef.current.value)))
     }
     const formSubmit = async (e) => {
@@ -41,7 +41,6 @@ const Send = ({setModal}) => {
         const payTo = payToRef.current.value
         const message = messageRef.current.value
         const amount = parseInt(amountRef.current.value)
-        const coin = coinRef.current.value
         try {
             address.fromBase58Check(payTo)
         } catch (err) {
@@ -66,14 +65,14 @@ const Send = ({setModal}) => {
                 Buffer.from(bitcoin.GetPkHashFromAddress(payTo), "hex"),
                 Buffer.from(message),
             ])
-            outputScripts.unshift({script: sendOpReturnOutput, value: 0})        }
-        if (e.type == "submit") {
-            await CreateTransactionWithPreview(wallet, outputScripts,"",coinRef.current.value)
-        } else if (e.type == "click") {
-            await CreateDirectTransaction(wallet,outputScripts, setModal,null, true, "",coinRef.current.value)
+            outputScripts.unshift({script: sendOpReturnOutput, value: 0})
+        }
+        if (e.type === "submit") {
+            await CreateTransactionWithPreview(wallet, outputScripts, "", coinRef.current.value)
+        } else if (e.type === "click") {
+            await CreateDirectTransaction(wallet, outputScripts, setModal, null, true, "", coinRef.current.value)
         }
     }
-
     return (
         <form onSubmit={formSubmit}>
             <p>
@@ -105,7 +104,7 @@ const Send = ({setModal}) => {
             </p>
             <p>
                 <input type="submit" value="Preview"/>
-                <input type="button" value="Sign and Broadcast" onClick={formSubmit}/>
+                <button onClick={formSubmit}>Sign and Broadcast</button>
             </p>
         </form>
     )
