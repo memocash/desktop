@@ -36,7 +36,7 @@ const Addresses = ({lastUpdate}) => {
         try {
             const balances = await window.electron.getWalletInfo(wallet.addresses)
             let changeBalances = []
-            if(wallet.changeList && wallet.changeList.length) {
+            if (wallet.changeList && wallet.changeList.length) {
                 changeBalances = await window.electron.getWalletInfo(wallet.changeList)
                 for (let i = 0; i < changeBalances.length; i++) {
                     changeBalances[i].index = i
@@ -136,7 +136,8 @@ const Addresses = ({lastUpdate}) => {
                  onKeyDown={keyDownHandler} tabIndex={-1}
                  ref={addressesDiv}>
                 {!addresses.length ?
-                    <p className={styles.message}>Generating addresses, please wait...</p>
+                    (!changeList.length ?
+                        <p className={styles.message}>Generating addresses, please wait...</p> : <></>)
                     :
                     <div className={[styles.row, styles.rowTitle].join(" ")}>
                         <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
@@ -158,8 +159,8 @@ const Addresses = ({lastUpdate}) => {
                     )
                 })}
                 {!changeList.length ?
-                    <p className={styles.message}>No Change Addresses</p>
-                    :<div className={[styles.row, styles.rowTitle].join(" ")}>
+                    <></>
+                    : <div className={[styles.row, styles.rowTitle].join(" ")}>
                         <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
                                   col={Column.Index} title={"Id"}/>
                         <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
