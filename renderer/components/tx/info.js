@@ -12,6 +12,8 @@ import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 import {setTx} from "./direct_tx";
+import {toBase58Check} from "@bitcoin-dot-com/bitcoincashjs2-lib/src/address";
+import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
 const Info = () => {
     const router = useRouter()
@@ -27,6 +29,21 @@ const Info = () => {
     const transactionIdEleRef = useRef()
     const [showPasswordForSign, setShowPasswordForSign] = useState(false)
     const [_, beatHashRef, setBeatHash] = useReferredState("")
+    //take this prefix table and re-write it with keys and values swapped
+    const Prefix = {
+        "6d01": "SetName",
+        "6d02": "PostMemo",
+        "6d03": "ReplyMemo",
+        "6d04": "LikeMemo",
+        "6d05": "SetProfile",
+        "6d06": "Follow",
+        "6d07": "Unfollow",
+        "6d0a": "SetPic",
+        "6d0c": "ChatPost",
+        "6d0d": "ChatFollow",
+        "6d0e": "ChatUnfollow",
+    }
+
     useEffect(async () => {
         if (!router || !router.query) {
             return
@@ -80,7 +97,15 @@ const Info = () => {
                 try {
                     outputAddress = bitcoin.address.fromOutputScript(scriptBuffer)
                 } catch (e) {
-                    outputAddress = "unknown: nonstandard"
+                    let outputString = bscript.toASM(scriptBuffer)
+                    if (outputString.startsWith("OP_RETURN ")) {
+                        const outputPrefix = outputString.split(" ")[1]
+                        const prefixAction = Prefix[outputPrefix]
+                        outputAddress = "OP_RETURN: " + prefixAction
+                    }
+                    else{
+                        outputAddress = "unknown: nonstandard"
+                    }
                 }
                 tx.outputs.push({
                     address: outputAddress,

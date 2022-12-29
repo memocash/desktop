@@ -5,7 +5,22 @@ import {useReferredState} from "../util/state";
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
 import {Modals} from "../../../main/common/util"
+import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
+import {toBase58Check} from "@bitcoin-dot-com/bitcoincashjs2-lib/src/address";
 
+const Prefix = {
+    "6d01": "SetName",
+    "6d02": "PostMemo",
+    "6d03": "ReplyMemo",
+    "6d04": "LikeMemo",
+    "6d05": "SetProfile",
+    "6d06": "Follow",
+    "6d07": "Unfollow",
+    "6d0a": "SetPic",
+    "6d0c": "ChatPost",
+    "6d0d": "ChatFollow",
+    "6d0e": "ChatUnfollow",
+}
 const setTx = async (outer_transaction,setModal) => {
     const wallet = await GetWallet()
     if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
@@ -152,7 +167,15 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
             try {
                 outputAddress = bitcoin.address.fromOutputScript(scriptBuffer)
             } catch (e) {
-                outputAddress = "unknown: nonstandard"
+                let outputString = bscript.toASM(scriptBuffer)
+                if (outputString.startsWith("OP_RETURN ")) {
+                    const outputPrefix = outputString.split(" ")[1]
+                    const prefixAction = Prefix[outputPrefix]
+                    outputAddress = "OP_RETURN: " + prefixAction
+                }
+                else{
+                    outputAddress = "unknown: nonstandard"
+                }
             }
             tx.outputs.push({
                 address: outputAddress,
