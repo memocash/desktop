@@ -34,16 +34,10 @@ const Addresses = ({lastUpdate}) => {
     useEffect(async () => {
         const wallet = await GetWallet()
         try {
-            const balances = await window.electron.getWalletInfo(wallet.addresses)
+            const balances = await getBalances(wallet.addresses)
             let changeBalances = []
             if (wallet.changeList && wallet.changeList.length) {
-                changeBalances = await window.electron.getWalletInfo(wallet.changeList)
-                for (let i = 0; i < changeBalances.length; i++) {
-                    changeBalances[i].index = i
-                }
-            }
-            for (let i = 0; i < balances.length; i++) {
-                balances[i].index = i
+                changeBalances = await getBalances(wallet.changeList)
             }
             setAddresses(balances)
             setChangeList(changeBalances)
@@ -51,6 +45,24 @@ const Addresses = ({lastUpdate}) => {
             console.log(e)
         }
     }, [lastUpdate])
+    const getBalances = async (addresses) => {
+        const balances = await window.electron.getWalletInfo(addresses)
+        let allBalances = []
+            for (let i = 0; i < addresses.length; i++) {
+                let balance = 0
+                for (let j = 0; j < balances.length; j++) {
+                    if (balances[j].address === addresses[i]) {
+                        balance = balances[i].balance
+                    }
+                }
+                allBalances.push({
+                    address: addresses[i],
+                    index: i,
+                    balance: balance,
+                })
+            }
+        return allBalances
+    }
     const keyDownHandler = async (e) => {
         let selectedAddress = selectedAddressRef.current
         if (!selectedAddress || !selectedAddress.length) {
