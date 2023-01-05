@@ -26,7 +26,6 @@ const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
         if (exited) {
             return
         }
-        console.log("GraphQL block subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenBlocks({addresses, setLastUpdate, setConnected})
         }, 2000)

@@ -65,7 +65,6 @@ const ListenNewMemos = ({wallet, setLastUpdate}) => {
         if (exited) {
             return
         }
-        console.log("GraphQL memo listener subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenNewMemos({wallet, setLastUpdate})
         }, 2000)

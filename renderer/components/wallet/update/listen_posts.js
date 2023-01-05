@@ -29,7 +29,6 @@ const ListenPosts = ({txHashes, setLastUpdate}) => {
         if (exited) {
             return
         }
-        console.log("GraphQL posts listener subscribe close, reconnecting in 2 seconds!", txHashes)
         setTimeout(() => {
             close = ListenPosts({txHashes, setLastUpdate})
         }, 2000)

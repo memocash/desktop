@@ -87,7 +87,6 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
         if (exited) {
             return
         }
-        console.log("GraphQL chat posts subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenChatPosts({names, setLastUpdate})
         }, 2000)
@@ -124,7 +123,6 @@ const ListenChatFollows = ({addresses, setLastUpdate}) => {
         if (exited) {
             return
         }
-        console.log("GraphQL chat follows subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenChatFollows({addresses, setLastUpdate})
         }, 2000)

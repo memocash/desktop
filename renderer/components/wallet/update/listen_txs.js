@@ -37,7 +37,6 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
         if (exited) {
             return
         }
-        console.log("GraphQL new tx listener subscribe close, reconnecting in 2 seconds!")
         setTimeout(() => {
             close = ListenNewTxs({wallet, setLastUpdate})
         }, 2000)
