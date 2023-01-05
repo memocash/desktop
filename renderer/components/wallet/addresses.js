@@ -52,7 +52,7 @@ const Addresses = ({lastUpdate}) => {
                 let balance = 0
                 for (let j = 0; j < balances.length; j++) {
                     if (balances[j].address === addresses[i]) {
-                        balance = balances[i].balance
+                        balance = balances[j].balance
                     }
                 }
                 allBalances.push({

@@ -9,9 +9,17 @@ const StatusBar = ({connected, lastUpdate, setModal}) => {
     useEffect(async () => {
         const wallet = await window.electron.getWallet()
         const info = await window.electron.getWalletInfo(wallet.addresses.concat(wallet.changeList))
-        if (info.length) {
-            setInfo(info[0])
+        let allInfo = {
+            balance: 0,
+            output_count: 0,
+            utxo_count: 0,
         }
+        for (let i = 0; i < info.length; i++) {
+            allInfo.balance += info[i].balance
+            allInfo.output_count += info[i].output_count
+            allInfo.utxo_count += info[i].utxo_count
+        }
+        setInfo(allInfo)
     }, [lastUpdate])
     let statusStyle
     switch (connected) {
