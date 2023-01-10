@@ -14,9 +14,9 @@
   "author": "Memo Technology, Inc.",
   "license": "Apache-2.0",
   "devDependencies": {
-    "electron": "^19.0.8",
-    "electron-builder": "^23.1.0",
-    "electron-packager": "^15.5.1",
+    "electron": "^22.0.0",
+    "electron-builder": "^23.6.0",
+    "electron-packager": "^17.1.1",
     "electron-rebuild": "^3.2.8",
     "next": "^12.2.2",
     "react": "^17.0.2",
