@@ -102,7 +102,7 @@ const GetRecentAddressTransactions = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   outputs.address, " +
-        "   MAX(blocks.height) AS height " +
+        "   MAX(blocks.timestamp) AS timestamp " +
         "FROM outputs " +
         "JOIN block_txs ON (block_txs.tx_hash = outputs.hash) " +
         "JOIN blocks on (blocks.hash = block_txs.block_hash) " +

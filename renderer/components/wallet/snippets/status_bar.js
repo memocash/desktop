@@ -39,7 +39,7 @@ const StatusBar = ({connected, lastUpdate, setModal}) => {
                 {(connected === Status.Connected) && <>
                     Balance: {info.balance ? info.balance.toLocaleString() : 0} satoshis
                     ({info.output_count ? info.output_count.toLocaleString() : 0} outputs,
-                    {info.utxo_count ? info.utxo_count.toLocaleString() : 0} utxos)
+                    {} {info.utxo_count ? info.utxo_count.toLocaleString() : 0} utxos)
                 </>}
                 {(connected === Status.NotConnected) && <>Loading...</>}
                 {(connected === Status.Disconnected) && <>Disconnected</>}
