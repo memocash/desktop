@@ -35,7 +35,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
             }
             let maxHash, maxStart
             for (let j = 0; j < data[name].txs.length; j++) {
-                txs.push(data[name].txs[j].tx)
+                txs.push(data[name].txs[j])
                 if (data[name].txs[j].blocks && (maxStart === undefined ||
                     data[name].txs[j].blocks[0].timestamp >= maxStart)) {
                     if (maxStart === undefined || data[name].txs[j].blocks[0].timestamp > maxStart) {

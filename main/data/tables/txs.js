@@ -9,8 +9,10 @@ const SaveTransactions = async (conf, transactions) => {
             continue
         }
         await Insert(conf, "txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
-        await Insert(conf, "tx_seens", "INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
-            transactions[i].hash, transactions[i].seen])
+        if (transactions[i].seen.substr(0, 2) === "20") {
+            await Insert(conf, "tx_seens", "INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
+                transactions[i].hash, transactions[i].seen])
+        }
         await Insert(conf, "tx_raws", "INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
             transactions[i].hash, Buffer.from(transactions[i].raw, "hex")])
         for (let j = 0; j < transactions[i].inputs.length; j++) {
