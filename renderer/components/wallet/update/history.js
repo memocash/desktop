@@ -7,13 +7,13 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
     for (let i = 0; i < addressList.length; i++) {
         addresses[i] = {
             address: addressList[i],
-            hash: "", index: 0, height: 0,
+            hash: "", timestamp: null,
         }
         for (let j = 0; j < recentAddresses.length; j++) {
             if (!recentAddresses[j].address === addressList[i]) {
                 continue
             }
-            addresses[i].height = recentAddresses[j].height - 1
+            addresses[i].timestamp = recentAddresses[j].timestamp - 1
         }
     }
     for (let i = 0; i < 100 && addresses.length; i++) {
@@ -28,31 +28,30 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
         }
         let txs = []
         for (let name in data) {
-            if (data[name].outputs == null) {
+            if (data[name].txs == null) {
                 console.log("ERROR: null outputs for address: " + data[name].address)
                 console.log(data[name])
                 continue
             }
-            let maxHash, maxHashIndex, maxHeight
-            for (let j = 0; j < data[name].outputs.length; j++) {
-                txs.push(data[name].outputs[j].tx)
-                if (data[name].outputs[j].tx.blocks && (maxHeight === undefined ||
-                    data[name].outputs[j].tx.blocks[0].height >= maxHeight)) {
-                    if (maxHeight === undefined || data[name].outputs[j].tx.blocks[0].height > maxHeight) {
-                        maxHeight = data[name].outputs[j].tx.blocks[0].height
+            let maxHash, maxStart
+            for (let j = 0; j < data[name].txs.length; j++) {
+                txs.push(data[name].txs[j])
+                if (data[name].txs[j].blocks && (maxStart === undefined ||
+                    data[name].txs[j].blocks[0].timestamp >= maxStart)) {
+                    if (maxStart === undefined || data[name].txs[j].blocks[0].timestamp > maxStart) {
+                        maxStart = data[name].txs[j].blocks[0].timestamp
                         maxHash = undefined
                     }
-                    if (maxHash === undefined || data[name].outputs[j].tx.hash > maxHash) {
-                        maxHash = data[name].outputs[j].tx.hash
-                        maxHashIndex = data[name].outputs[j].index
+                    if (maxHash === undefined || data[name].txs[j].hash > maxHash) {
+                        maxHash = data[name].txs[j].hash
                     }
                 }
-                for (let h = 0; h < data[name].outputs[j].tx.outputs.length; h++) {
-                    if (!data[name].outputs[j].tx.outputs[h].spends) {
+                for (let h = 0; h < data[name].txs[j].outputs.length; h++) {
+                    if (!data[name].txs[j].outputs[h].spends) {
                         continue
                     }
-                    for (let k = 0; k < data[name].outputs[j].tx.outputs[h].spends.length; k++) {
-                        txs.push(data[name].outputs[j].tx.outputs[h].spends[k].tx)
+                    for (let k = 0; k < data[name].txs[j].outputs[h].spends.length; k++) {
+                        txs.push(data[name].txs[j].outputs[h].spends[k].tx)
                     }
                 }
             }
@@ -60,16 +59,15 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
                 if (data[name].address !== addresses[i].address) {
                     continue
                 }
-                if (data[name].outputs.length < 1000) {
+                if (data[name].txs.length < 1000) {
                     addresses.splice(i, 1)
                     i--
                     continue
                 }
                 addresses[i].hash = maxHash
-                addresses[i].index = maxHashIndex
-                addresses[i].height = maxHeight
-                console.log("looping address: " + addresses[i].address + ", height: " + addresses[i].height,
-                    ", hashIndex: " + addresses[i].hash + ":" + addresses[i].index)
+                addresses[i].start = maxStart
+                console.log("looping address: " + addresses[i].address + ", start: " + addresses[i].start,
+                    ", hash: " + addresses[i].hash)
             }
         }
         await window.electron.saveTransactions(txs)
@@ -86,65 +84,57 @@ const loadOutputs = async ({addresses}) => {
     let paramsStrings = []
     let subQueries = []
     for (let i = 0; i < addresses.length; i++) {
-        paramsStrings.push(`$address${i}: String!, $start${i}: HashIndex, $height${i}: Int`)
+        paramsStrings.push(`$address${i}: String!, $start${i}: Date, $tx${i}: String`)
         variables["address" + i] = addresses[i].address
-        variables["start" + i] = addresses[i].hash.length ? JSON.stringify({
-            hash: addresses[i].hash,
-            index: addresses[i].index,
-        }) : null
-        variables["height" + i] = addresses[i].height
+        variables["start" + i] = addresses[i].timestamp
+        variables["tx" + i] = addresses[i].hash
         subQueries.push(`
         address${i}: address(address: $address${i}) {
             address
-            outputs(start: $start${i}, height: $height${i}) {
+            txs(start: $start${i}, tx: $tx${i}) {
                 hash
-                index
-                amount
-                tx {
-                    hash
-                    seen
-                    raw
-                    inputs {
-                        index
-                        prev_hash
-                        prev_index
+                seen
+                raw
+                inputs {
+                    index
+                    prev_hash
+                    prev_index
+                }
+                outputs {
+                    index
+                    amount
+                    lock {
+                        address
                     }
-                    outputs {
-                        index
-                        amount
-                        lock {
-                            address
-                        }
-                        spends {
-                            tx {
+                    spends {
+                        tx {
+                            hash
+                            seen
+                            raw
+                            inputs {
+                                index
+                                prev_hash
+                                prev_index
+                            }
+                            outputs {
+                                index
+                                amount
+                                lock {
+                                    address
+                                }
+                            }
+                            blocks {
                                 hash
-                                seen
-                                raw
-                                inputs {
-                                    index
-                                    prev_hash
-                                    prev_index
-                                }
-                                outputs {
-                                    index
-                                    amount
-                                    lock {
-                                        address
-                                    }
-                                }
-                                blocks {
-                                    hash
-                                    timestamp
-                                    height
-                                }
+                                timestamp
+                                height
                             }
                         }
                     }
-                    blocks {
-                        hash
-                        timestamp
-                        height
-                    }
+                }
+                blocks {
+                    hash
+                    timestamp
+                    height
                 }
             }
         }
