@@ -60,10 +60,11 @@ const ShowMenu = (win, newWindow, wallet) => {
             {label: "Preferences", click: () => win.webContents.send(Listeners.DisplayModal, Modals.Settings)},
             {label: "Network"},
             {
-                label: "Edit Addresses",
+                label: "Edit Addresses/Keys",
                 click: () => {
                     win.webContents.send(Listeners.DisplayModal, Modals.Address)
-                }
+                },
+                enabled: !wallet.seed || wallet.seed.length === 0,
             }
         ]
     }, {

@@ -18,7 +18,7 @@ const Addresses = ({lastUpdate}) => {
     const [selectedAddress, selectedAddressRef, setSelectedAddress] = useReferredState("")
     const addressesDiv = useRef()
     useEffect(async () => {
-        addressesDiv.current.addEventListener("contextmenu", (e) => {
+        addressesDiv.current.addEventListener("contextmenu", async (e) => {
             e.preventDefault()
             let address
             for (let i = 0; i < e.path.length; i++) {
@@ -27,7 +27,8 @@ const Addresses = ({lastUpdate}) => {
                     break
                 }
             }
-            window.electron.rightClickMenu(address)
+            const wallet = await GetWallet()
+            await window.electron.rightClickMenu(address, wallet)
         })
         window.electron.walletLoaded()
     }, [])
@@ -48,19 +49,19 @@ const Addresses = ({lastUpdate}) => {
     const getBalances = async (addresses) => {
         const balances = await window.electron.getWalletInfo(addresses)
         let allBalances = []
-            for (let i = 0; i < addresses.length; i++) {
-                let balance = 0
-                for (let j = 0; j < balances.length; j++) {
-                    if (balances[j].address === addresses[i]) {
-                        balance = balances[j].balance
-                    }
+        for (let i = 0; i < addresses.length; i++) {
+            let balance = 0
+            for (let j = 0; j < balances.length; j++) {
+                if (balances[j].address === addresses[i]) {
+                    balance = balances[j].balance
                 }
-                allBalances.push({
-                    address: addresses[i],
-                    index: i,
-                    balance: balance,
-                })
             }
+            allBalances.push({
+                address: addresses[i],
+                index: i,
+                balance: balance,
+            })
+        }
         return allBalances
     }
     const keyDownHandler = async (e) => {

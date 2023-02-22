@@ -1,6 +1,14 @@
 const {ipcMain, Menu, MenuItem, app, dialog} = require("electron");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
-const {GetMenu, GetStorage, SetStorage, GetWindow, SetNetworkOption, GetNetworkOption} = require("../window");
+const {
+    GetMenu,
+    GetStorage,
+    SetStorage,
+    GetWindow,
+    GetWallet,
+    SetNetworkOption,
+    GetNetworkOption,
+} = require("../window");
 
 const WindowHandlers = () => {
     ipcMain.handle(Handlers.GetWindowId, async (e) => e.sender.id)
@@ -17,7 +25,7 @@ const WindowHandlers = () => {
         }
         return GetStorage(e.sender.id)[key]
     })
-    ipcMain.handle(Handlers.RightClickMenu, (e, address,key) => {
+    ipcMain.handle(Handlers.RightClickMenu, async (e, address, wallet) => {
         const win = GetWindow(e.sender.id)
         const menu = new Menu()
         menu.append(new MenuItem({
@@ -30,11 +38,12 @@ const WindowHandlers = () => {
             label: "Remove address",
             click: () => {
                 win.webContents.send(Listeners.DisplayModal, Modals.Remove, {address})
-            }
+            },
+            enabled: !wallet.seed || wallet.seed.length === 0,
         },))
         menu.popup({window: win})
     })
-    ipcMain.handle(Handlers.CoinsMenu, async (e, hash, index,value,address) => {
+    ipcMain.handle(Handlers.CoinsMenu, async (e, hash, index, value, address) => {
         const win = GetWindow(e.sender.id)
         const clipboard = require("electron").clipboard
         const menu = new Menu()

@@ -8,8 +8,8 @@ module.exports = {
     getWindowStorage: (key) => ipcRenderer.invoke(Handlers.GetWindowStorage, key),
     listenDisplayModal: (handler) => ipcRenderer.on(Listeners.DisplayModal, handler),
     openFileDialog: async () => await ipcRenderer.invoke(Handlers.OpenFileDialog),
-    rightClickMenu: (address) => ipcRenderer.invoke(Handlers.RightClickMenu, address),
-    coinsMenu: (hash, index,value, address) => ipcRenderer.invoke(Handlers.CoinsMenu, hash, index,value, address),
+    rightClickMenu: (address, wallet) => ipcRenderer.invoke(Handlers.RightClickMenu, address, wallet),
+    coinsMenu: (hash, index, value, address) => ipcRenderer.invoke(Handlers.CoinsMenu, hash, index, value, address),
     setWindowStorage: (key, value) => ipcRenderer.send(Handlers.SetWindowStorage, key, value),
     showMessageDialog: (message) => ipcRenderer.send(Handlers.ShowMessageDialog, message),
 }
