@@ -1,22 +1,12 @@
 const {Insert, Select} = require("../sqlite")
 
 const SaveTransactions = async (conf, transactions) => {
-    for (i = 0; i < transactions.length; i++) {
-        for (j = 0; j < transactions[i].outputs.length; j++) {
-            if (transactions[i].outputs[j].script) {
-                console.log(transactions[i].outputs[j])
-            }
-        }
-    }
     if (!transactions || !transactions.length) {
         return
     }
     for (let i = 0; i < transactions.length; i++) {
         if (transactions[i] === undefined) {
             continue
-        }
-        if (transactions[i].outputs.script === undefined) {
-            transactions[i].outputs.script = ""
         }
         await Insert(conf, "txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
         if (transactions[i].seen.substr(0, 2) === "20") {

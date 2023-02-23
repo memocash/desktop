@@ -20,7 +20,6 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
         let data
         try {
             data = await loadOutputs({addresses})
-            console.log("Data", data)
         } catch (e) {
             setConnected(Status.Disconnected)
             console.log("Error connecting to index server")

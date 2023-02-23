@@ -107,7 +107,6 @@ const Definitions = [
     )`,
     `history (
         address CHAR,
-        script BLOB,
         hash CHAR,
         value INT,
         height INT,

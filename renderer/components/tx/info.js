@@ -10,7 +10,6 @@ import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 import {setTx} from "./direct_tx";
-import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
 const Info = () => {
     const router = useRouter()
@@ -42,8 +41,15 @@ const Info = () => {
     }
 
     const GetOutputScriptInfo = (script) => {
+        const scriptBuffer = Buffer.from(script, "hex")
+        try {
+            const outputAddress = bitcoin.address.fromOutputScript(scriptBuffer)
+            return outputAddress
+        } catch (e) {
+            //ignore
+        }
+        script = scriptBuffer.toString("hex")
         let info = ""
-        console.log(script)
         if (script.substr(0, 4) === "6a02") {
             switch (script.substr(4, 4)) {
                 case "6d01":
@@ -52,7 +58,8 @@ const Info = () => {
                     return "Memo post: " + Buffer.from(script.substr(10), "hex")
                 case "6d03":
                     const replyTxHash = script.substr(10, 64).match(/.{2}/g).reverse().join("")
-                    return (<>Memo reply (<Link href={"/tx/" + replyTxHash}><a>{ShortTxHash(replyTxHash)}</a></Link>): {
+                    return (<>Memo reply (<Link
+                        href={"/tx/" + replyTxHash}><a>{ShortTxHash(replyTxHash)}</a></Link>): {
                         "" + Buffer.from(script.substr(76), "hex")}</>)
                 case "6d04":
                     if (script.length < 12) {
@@ -60,7 +67,8 @@ const Info = () => {
                         break
                     }
                     const likeTxHash = script.substr(10).match(/.{2}/g).reverse().join("")
-                    return (<>Memo like: <Link href={"/tx/" + likeTxHash}><a>{ShortTxHash(likeTxHash)}</a></Link></>)
+                    return (<>Memo like: <Link
+                        href={"/tx/" + likeTxHash}><a>{ShortTxHash(likeTxHash)}</a></Link></>)
                 case "6d0a":
                     const picUrl = "" + Buffer.from(script.substr(10), "hex")
                     return (<>Memo profile pic: <Link href={picUrl}><a>{picUrl}</a></Link></>)
@@ -71,7 +79,6 @@ const Info = () => {
                         info = "Bad topic message"
                         break
                     }
-                    console.log("size:", size)
                     return "Memo topic message (" + Buffer.from(script.substr(10, size), "hex") + "): " +
                         Buffer.from(script.substr(10 + size), "hex")
                 case "6d0d":
@@ -132,22 +139,9 @@ const Info = () => {
             }
             for (let i = 0; i < outputStrings.length; i++) {
                 const [outputScript, outputValue] = outputStrings[i].split(":")
-                console.log(outputScript)
                 const scriptBuffer = Buffer.from(outputScript, "hex")
+                const outputAddress = GetOutputScriptInfo(outputScript)
                 const valueInt = parseInt(outputValue)
-                let outputAddress
-                try {
-                    outputAddress = bitcoin.address.fromOutputScript(scriptBuffer)
-                } catch (e) {
-                    let outputString = bscript.toASM(scriptBuffer)
-                    if (outputString.startsWith("OP_RETURN ")) {
-                        const outputPrefix = outputString.split(" ")[1]
-                        const prefixAction = Prefix[outputPrefix]
-                        outputAddress = "OP_RETURN: " + prefixAction
-                    } else {
-                        outputAddress = "unknown: nonstandard"
-                    }
-                }
                 tx.outputs.push({
                     address: outputAddress,
                     value: valueInt,
@@ -172,7 +166,6 @@ const Info = () => {
             return
         }
         const tx = await window.electron.getTransaction(transactionId)
-        console.log(tx)
         const wallet = await GetWallet()
         let amount = 0
         let fee = 0
@@ -324,7 +317,7 @@ const Info = () => {
                         {txInfo.outputs.map((output, i) => {
                             return (
                                 <p key={i} className={output.highlight ? styleTx.input_output_highlight : null}>
-                                    <span>{GetOutputScriptInfo(new Buffer(output.script).toString("hex"))}</span>
+                                    <span>{GetOutputScriptInfo(output.script)}</span>
                                     <span className={styleTx.spanRight}>{output.value.toLocaleString()}</span>
                                 </p>
                             )
