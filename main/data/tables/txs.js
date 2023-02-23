@@ -1,12 +1,22 @@
 const {Insert, Select} = require("../sqlite")
 
 const SaveTransactions = async (conf, transactions) => {
+    for (i = 0; i < transactions.length; i++) {
+        for (j = 0; j < transactions[i].outputs.length; j++) {
+            if (transactions[i].outputs[j].script) {
+                console.log(transactions[i].outputs[j])
+            }
+        }
+    }
     if (!transactions || !transactions.length) {
         return
     }
     for (let i = 0; i < transactions.length; i++) {
         if (transactions[i] === undefined) {
             continue
+        }
+        if (transactions[i].outputs.script === undefined) {
+            transactions[i].outputs.script = ""
         }
         await Insert(conf, "txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
         if (transactions[i].seen.substr(0, 2) === "20") {
@@ -23,9 +33,9 @@ const SaveTransactions = async (conf, transactions) => {
         }
         for (let j = 0; j < transactions[i].outputs.length; j++) {
             await Insert(conf, "outputs",
-                "INSERT OR IGNORE INTO outputs (hash, `index`, address, value) VALUES (?, ?, ?, ?)", [
+                "INSERT OR REPLACE INTO outputs (hash, `index`, address, value, script) VALUES (?, ?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].outputs[j].index,
-                    transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount])
+                    transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount, Buffer.from(transactions[i].outputs[j].script, "hex")])
         }
         if (!transactions[i].blocks) {
             continue
@@ -51,6 +61,7 @@ const GetTransactions = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   hash, " +
+        "   script, " +
         "   timestamp, " +
         "   height, " +
         "   COALESCE((SELECT MAX(height)+1 FROM blocks) - height, 0) AS confirms, " +
@@ -64,9 +75,10 @@ const GetTransactions = async (conf, addresses) => {
 
 const GenerateHistory = async (conf, addresses) => {
     await Insert(conf, "history",
-        "INSERT OR REPLACE INTO history (address, hash, timestamp, height, value) " +
+        "INSERT OR REPLACE INTO history (address, script, hash, timestamp, height, value) " +
         "SELECT " +
         "   outputs.address, " +
+        "   script, " +
         "   txs.hash AS hash, " +
         "   MIN(COALESCE(tx_seens.timestamp, blocks.timestamp)," +
         "   COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp, " +

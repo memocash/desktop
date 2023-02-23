@@ -7,7 +7,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
     for (let i = 0; i < addressList.length; i++) {
         addresses[i] = {
             address: addressList[i],
-            hash: "", timestamp: null,
+            hash: "", timestamp: null
         }
         for (let j = 0; j < recentAddresses.length; j++) {
             if (!recentAddresses[j].address === addressList[i]) {
@@ -20,6 +20,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
         let data
         try {
             data = await loadOutputs({addresses})
+            console.log("Data", data)
         } catch (e) {
             setConnected(Status.Disconnected)
             console.log("Error connecting to index server")
@@ -106,6 +107,7 @@ const loadOutputs = async ({addresses}) => {
                     lock {
                         address
                     }
+                    script
                     spends {
                         tx {
                             hash
@@ -119,6 +121,7 @@ const loadOutputs = async ({addresses}) => {
                             outputs {
                                 index
                                 amount
+                                script
                                 lock {
                                     address
                                 }

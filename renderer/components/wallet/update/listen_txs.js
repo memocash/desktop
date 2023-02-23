@@ -26,6 +26,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
         }
         `
     const handler = async (tx) => {
+        console.log("tx: ", tx)
         await window.electron.saveTransactions([tx.addresses])
         await window.electron.generateHistory(wallet.addresses)
         if (typeof setLastUpdate === "function") {

@@ -11,6 +11,7 @@ const TxQuery = `
         outputs {
             index
             amount
+            script
             lock {
                 address
             }

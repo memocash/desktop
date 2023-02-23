@@ -1,12 +1,9 @@
 import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../util/wallet";
-import {useEffect, useRef, useState} from "react";
-import {useReferredState} from "../util/state";
 import {mnemonicToSeedSync} from "bip39";
 import {fromSeed} from "bip32";
 import {Modals} from "../../../main/common/util"
 import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
-import {toBase58Check} from "@bitcoin-dot-com/bitcoincashjs2-lib/src/address";
 
 const Prefix = {
     "6d01": "SetName",
@@ -21,7 +18,7 @@ const Prefix = {
     "6d0d": "ChatFollow",
     "6d0e": "ChatUnfollow",
 }
-const setTx = async (outer_transaction,setModal) => {
+const setTx = async (outer_transaction, setModal) => {
     const wallet = await GetWallet()
     if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
         window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
@@ -80,7 +77,7 @@ const setTx = async (outer_transaction,setModal) => {
     outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
     const feeRate = outer_transaction.outer_fee / size
     outer_transaction.outer_feeRate = feeRate.toFixed((4))
-    if(setModal){
+    if (setModal) {
         setModal(Modals.None)
     }
 }
@@ -94,10 +91,10 @@ const pushTx = async (outer_txInfo) => {
     console.log("Broadcast successful")
 }
 
-const setAndPushTx = async(outer_transaction, setModal, onDone) => {
+const setAndPushTx = async (outer_transaction, setModal, onDone) => {
     await setTx(outer_transaction, setModal)
     await pushTx(outer_transaction.outer_txInfo)
-    if(typeof onDone == "function"){
+    if (typeof onDone == "function") {
         onDone()
     }
 }
@@ -107,7 +104,7 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         outer_txInfo: {
             inputs: [],
             outputs: []
-            },
+        },
         outer_fee: 0,
         outer_transactionIDEleRef: {
             value: 0
@@ -117,11 +114,10 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         },
         outer_feeRate: 0
     }
-    if(!requirePassword){
+    if (!requirePassword) {
         let wallet = await GetWallet()
         requirePassword = !wallet.settings.SkipPassword
     }
-
 
     if (inputs && inputs.length && outputs && outputs.length) {
         const inputStrings = inputs
@@ -172,8 +168,7 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
                     const outputPrefix = outputString.split(" ")[1]
                     const prefixAction = Prefix[outputPrefix]
                     outputAddress = "OP_RETURN: " + prefixAction
-                }
-                else{
+                } else {
                     outputAddress = "unknown: nonstandard"
                 }
             }
@@ -197,11 +192,12 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         if (!storedPassword || !storedPassword.length || !requirePassword) {
             await setAndPushTx(outer_transaction, setModal, onDone)
         } else {
-            setModal(Modals.Password, {onCorrectPassword:async () => {
+            setModal(Modals.Password, {
+                onCorrectPassword: async () => {
                     await setAndPushTx(outer_transaction, setModal, onDone)
                 }
             })
         }
     }
 }
-export {DirectTx,setTx,pushTx}
+export {DirectTx, setTx, pushTx}

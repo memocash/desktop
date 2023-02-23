@@ -5,14 +5,11 @@ import styleTx from "../../styles/tx.module.css";
 import ShortHash from "../util/txs";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import {mnemonicToSeedSync} from "bip39";
-import {fromSeed} from "bip32";
+import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 import {setTx} from "./direct_tx";
-import {toBase58Check} from "@bitcoin-dot-com/bitcoincashjs2-lib/src/address";
 import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
 const Info = () => {
@@ -42,6 +39,50 @@ const Info = () => {
         "6d0c": "ChatPost",
         "6d0d": "ChatFollow",
         "6d0e": "ChatUnfollow",
+    }
+
+    const GetOutputScriptInfo = (script) => {
+        let info = ""
+        console.log(script)
+        if (script.substr(0, 4) === "6a02") {
+            switch (script.substr(4, 4)) {
+                case "6d01":
+                    return "Memo name: " + Buffer.from(script.substr(10), "hex")
+                case "6d02":
+                    return "Memo post: " + Buffer.from(script.substr(10), "hex")
+                case "6d03":
+                    const replyTxHash = script.substr(10, 64).match(/.{2}/g).reverse().join("")
+                    return (<>Memo reply (<Link href={"/tx/" + replyTxHash}><a>{ShortTxHash(replyTxHash)}</a></Link>): {
+                        "" + Buffer.from(script.substr(76), "hex")}</>)
+                case "6d04":
+                    if (script.length < 12) {
+                        info = "Bad memo like"
+                        break
+                    }
+                    const likeTxHash = script.substr(10).match(/.{2}/g).reverse().join("")
+                    return (<>Memo like: <Link href={"/tx/" + likeTxHash}><a>{ShortTxHash(likeTxHash)}</a></Link></>)
+                case "6d0a":
+                    const picUrl = "" + Buffer.from(script.substr(10), "hex")
+                    return (<>Memo profile pic: <Link href={picUrl}><a>{picUrl}</a></Link></>)
+                case "6d0c":
+                    let size = parseInt(script.substr(8, 2), 16)
+                    size *= 2
+                    if (size + 10 > script.length) {
+                        info = "Bad topic message"
+                        break
+                    }
+                    console.log("size:", size)
+                    return "Memo topic message (" + Buffer.from(script.substr(10, size), "hex") + "): " +
+                        Buffer.from(script.substr(10 + size), "hex")
+                case "6d0d":
+                    return "Memo topic follow: " + Buffer.from(script.substr(8), "hex")
+                case "6d24":
+                    return "Memo direct message: " + Buffer.from(script.substr(52), "hex")
+                case "6d05":
+                    return "Memo profile text: " + Buffer.from(script.substr(10), "hex")
+            }
+        }
+        return "Unknown" + (info.length ? ": " + info : "")
     }
 
     useEffect(async () => {
@@ -91,6 +132,7 @@ const Info = () => {
             }
             for (let i = 0; i < outputStrings.length; i++) {
                 const [outputScript, outputValue] = outputStrings[i].split(":")
+                console.log(outputScript)
                 const scriptBuffer = Buffer.from(outputScript, "hex")
                 const valueInt = parseInt(outputValue)
                 let outputAddress
@@ -102,14 +144,14 @@ const Info = () => {
                         const outputPrefix = outputString.split(" ")[1]
                         const prefixAction = Prefix[outputPrefix]
                         outputAddress = "OP_RETURN: " + prefixAction
-                    }
-                    else{
+                    } else {
                         outputAddress = "unknown: nonstandard"
                     }
                 }
                 tx.outputs.push({
                     address: outputAddress,
                     value: valueInt,
+                    script: outputScript,
                     highlight: isHighlight(outputAddress),
                 })
                 txb.addOutput(scriptBuffer, valueInt)
@@ -130,6 +172,7 @@ const Info = () => {
             return
         }
         const tx = await window.electron.getTransaction(transactionId)
+        console.log(tx)
         const wallet = await GetWallet()
         let amount = 0
         let fee = 0
@@ -243,10 +286,10 @@ const Info = () => {
                 <p>Status: {status}</p>
                 <p>Date: {date}</p>
                 {inputAmount > 0 &&
-                <p>Amount received: {inputAmount.toLocaleString()} satoshis</p>
+                    <p>Amount received: {inputAmount.toLocaleString()} satoshis</p>
                 }
                 {inputAmount < 0 &&
-                <p>Amount spent: {(-inputAmount).toLocaleString()} satoshis</p>
+                    <p>Amount spent: {(-inputAmount).toLocaleString()} satoshis</p>
                 }
                 <p>Size: {size.toLocaleString()} bytes ({signed ? "Signed" : "Unsigned"})</p>
                 <p>Fee: {fee} satoshis ({feeRate} sat/byte)</p>
@@ -281,7 +324,7 @@ const Info = () => {
                         {txInfo.outputs.map((output, i) => {
                             return (
                                 <p key={i} className={output.highlight ? styleTx.input_output_highlight : null}>
-                                    <span>{output.address}</span>
+                                    <span>{GetOutputScriptInfo(new Buffer(output.script).toString("hex"))}</span>
                                     <span className={styleTx.spanRight}>{output.value.toLocaleString()}</span>
                                 </p>
                             )

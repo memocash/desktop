@@ -91,6 +91,7 @@ const Definitions = [
         \`index\` INT,
         address CHAR,
         value INT,
+        script BLOB,
         UNIQUE(hash, \`index\`)
     )`,
     `blocks (
@@ -106,6 +107,7 @@ const Definitions = [
     )`,
     `history (
         address CHAR,
+        script BLOB,
         hash CHAR,
         value INT,
         height INT,
