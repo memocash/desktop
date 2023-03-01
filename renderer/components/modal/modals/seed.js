@@ -32,7 +32,7 @@ const SeedModal = ({onClose}) => {
                         </p>
                         <p className={styles.flex}>
                             <div>Wallet derivation path:</div>
-                            <div>m/44'/145'/0'</div>
+                            <div>m/44'/0'/0'</div>
                         </p>
                         <p className={styles.message}>
                             Please save these 12 words on paper (order is important). Additionally, save the derivation

@@ -25,7 +25,8 @@ const SaveTransactions = async (conf, transactions) => {
             await Insert(conf, "outputs",
                 "INSERT OR REPLACE INTO outputs (hash, `index`, address, value, script) VALUES (?, ?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].outputs[j].index,
-                    transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount, Buffer.from(transactions[i].outputs[j].script, "hex")])
+                    transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount,
+                    Buffer.from(transactions[i].outputs[j].script, "hex")])
         }
         if (!transactions[i].blocks) {
             continue
@@ -51,7 +52,6 @@ const GetTransactions = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   hash, " +
-        "   script, " +
         "   timestamp, " +
         "   height, " +
         "   COALESCE((SELECT MAX(height)+1 FROM blocks) - height, 0) AS confirms, " +
@@ -65,10 +65,9 @@ const GetTransactions = async (conf, addresses) => {
 
 const GenerateHistory = async (conf, addresses) => {
     await Insert(conf, "history",
-        "INSERT OR REPLACE INTO history (address, script, hash, timestamp, height, value) " +
+        "INSERT OR REPLACE INTO history (address, hash, timestamp, height, value) " +
         "SELECT " +
         "   outputs.address, " +
-        "   script, " +
         "   txs.hash AS hash, " +
         "   MIN(COALESCE(tx_seens.timestamp, blocks.timestamp)," +
         "   COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp, " +

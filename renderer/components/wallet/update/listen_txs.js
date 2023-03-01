@@ -13,6 +13,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
                 outputs {
                     index
                     amount
+                    script
                     lock {
                         address
                     }
