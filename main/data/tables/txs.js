@@ -33,9 +33,9 @@ const SaveTransactions = async (conf, transactions) => {
         }
         for (let j = 0; j < transactions[i].blocks.length; j++) {
             await Insert(conf, "blocks", "INSERT OR IGNORE INTO blocks (hash, timestamp, height) VALUES (?, ?, ?)", [
-                transactions[i].blocks[j].hash, transactions[i].blocks[j].timestamp, transactions[i].blocks[j].height])
+                transactions[i].blocks[j].block.hash, transactions[i].blocks[j].block.timestamp, transactions[i].blocks[j].block.height])
             await Insert(conf, "block_txs", "INSERT OR IGNORE INTO block_txs (block_hash, tx_hash) VALUES (?, ?)", [
-                transactions[i].blocks[j].hash, transactions[i].hash])
+                transactions[i].blocks[j].block.hash, transactions[i].hash])
         }
     }
 }

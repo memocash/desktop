@@ -37,9 +37,9 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
             for (let j = 0; j < data[name].txs.length; j++) {
                 txs.push(data[name].txs[j])
                 if (data[name].txs[j].blocks && (maxStart === undefined ||
-                    data[name].txs[j].blocks[0].timestamp >= maxStart)) {
-                    if (maxStart === undefined || data[name].txs[j].blocks[0].timestamp > maxStart) {
-                        maxStart = data[name].txs[j].blocks[0].timestamp
+                    data[name].txs[j].blocks[0].block.timestamp >= maxStart)) {
+                    if (maxStart === undefined || data[name].txs[j].blocks[0].block.timestamp > maxStart) {
+                        maxStart = data[name].txs[j].blocks[0].block.timestamp
                         maxHash = undefined
                     }
                     if (maxHash === undefined || data[name].txs[j].hash > maxHash) {
@@ -126,17 +126,21 @@ const loadOutputs = async ({addresses}) => {
                                 }
                             }
                             blocks {
-                                hash
-                                timestamp
-                                height
+                                block {
+                                    hash
+                                    timestamp
+                                    height
+                                }
                             }
                         }
                     }
                 }
                 blocks {
-                    hash
-                    timestamp
-                    height
+                    block {
+                        hash
+                        timestamp
+                        height
+                    }
                 }
             }
         }

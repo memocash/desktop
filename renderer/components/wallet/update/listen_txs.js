@@ -19,9 +19,11 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
                     }
                 }
                 blocks {
-                    hash
-                    timestamp
-                    height
+                    block {
+                        hash
+                        timestamp
+                        height
+                    }
                 }
             }
         }

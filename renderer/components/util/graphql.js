@@ -17,9 +17,11 @@ const TxQuery = `
             }
         }
         blocks {
-            hash
-            timestamp
-            height
+            block {
+                hash
+                timestamp
+                height
+            }
         }
     }
     `
