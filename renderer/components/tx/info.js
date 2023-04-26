@@ -5,7 +5,7 @@ import styleTx from "../../styles/tx.module.css";
 import ShortHash from "../util/txs";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin, {networks} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
@@ -60,9 +60,9 @@ const Info = () => {
                 case Prefix.SetProfile:
                     return "Memo profile text: " + Buffer.from(script.substr(10), "hex")
                 case Prefix.Follow:
-                    return "Memo follow: " + Buffer.from(script.substr(10), "hex")
+                    return "Memo follow: " + bitcoin.address.toBase58Check(Buffer.from(script.substr(10, 40), "hex"), networks.bitcoin.pubKeyHash)
                 case Prefix.Unfollow:
-                    return "Memo unfollow: " + Buffer.from(script.substr(10), "hex")
+                    return "Memo unfollow: " + bitcoin.address.toBase58Check(Buffer.from(script.substr(10, 40), "hex"), networks.bitcoin.pubKeyHash)
                 case Prefix.SetPic:
                     const picUrl = "" + Buffer.from(script.substr(10), "hex")
                     return (<>Memo profile pic: <Link href={picUrl}><a>{picUrl}</a></Link></>)
@@ -75,6 +75,7 @@ const Info = () => {
                     }
                     return "Memo topic message (" + Buffer.from(script.substr(10, size), "hex") + "): " +
                         Buffer.from(script.substr(10 + size), "hex")
+                //Not sure if these next two are correct
                 case Prefix.ChatFollow:
                     return "Memo topic follow: " + Buffer.from(script.substr(8), "hex")
                 case Prefix.ChatUnfollow:
