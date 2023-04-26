@@ -10,6 +10,8 @@ import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 import {setTx} from "./direct_tx";
+import Link from "next/link";
+import {Prefix} from "../util/bitcoin";
 
 const Info = () => {
     const router = useRouter()
@@ -25,20 +27,6 @@ const Info = () => {
     const transactionIdEleRef = useRef()
     const [showPasswordForSign, setShowPasswordForSign] = useState(false)
     const [_, beatHashRef, setBeatHash] = useReferredState("")
-    //take this prefix table and re-write it with keys and values swapped
-    const Prefix = {
-        "6d01": "SetName",
-        "6d02": "PostMemo",
-        "6d03": "ReplyMemo",
-        "6d04": "LikeMemo",
-        "6d05": "SetProfile",
-        "6d06": "Follow",
-        "6d07": "Unfollow",
-        "6d0a": "SetPic",
-        "6d0c": "ChatPost",
-        "6d0d": "ChatFollow",
-        "6d0e": "ChatUnfollow",
-    }
 
     const GetOutputScriptInfo = (script) => {
         const scriptBuffer = Buffer.from(script, "hex")
@@ -52,27 +40,33 @@ const Info = () => {
         let info = ""
         if (script.substr(0, 4) === "6a02") {
             switch (script.substr(4, 4)) {
-                case "6d01":
+                case Prefix.SetName:
                     return "Memo name: " + Buffer.from(script.substr(10), "hex")
-                case "6d02":
+                case Prefix.PostMemo:
                     return "Memo post: " + Buffer.from(script.substr(10), "hex")
-                case "6d03":
+                case Prefix.ReplyMemo:
                     const replyTxHash = script.substr(10, 64).match(/.{2}/g).reverse().join("")
                     return (<>Memo reply (<Link
-                        href={"/tx/" + replyTxHash}><a>{ShortTxHash(replyTxHash)}</a></Link>): {
+                        href={"/tx?txHash=" + replyTxHash}><a>{ShortHash(replyTxHash)}</a></Link>): {
                         "" + Buffer.from(script.substr(76), "hex")}</>)
-                case "6d04":
+                case Prefix.LikeMemo:
                     if (script.length < 12) {
                         info = "Bad memo like"
                         break
                     }
                     const likeTxHash = script.substr(10).match(/.{2}/g).reverse().join("")
                     return (<>Memo like: <Link
-                        href={"/tx/" + likeTxHash}><a>{ShortTxHash(likeTxHash)}</a></Link></>)
-                case "6d0a":
+                        href={"/tx?txHash=" + likeTxHash}><a>{ShortHash(likeTxHash)}</a></Link></>)
+                case Prefix.SetProfile:
+                    return "Memo profile text: " + Buffer.from(script.substr(10), "hex")
+                case Prefix.Follow:
+                    return "Memo follow: " + Buffer.from(script.substr(10), "hex")
+                case Prefix.Unfollow:
+                    return "Memo unfollow: " + Buffer.from(script.substr(10), "hex")
+                case Prefix.SetPic:
                     const picUrl = "" + Buffer.from(script.substr(10), "hex")
                     return (<>Memo profile pic: <Link href={picUrl}><a>{picUrl}</a></Link></>)
-                case "6d0c":
+                case Prefix.ChatPost:
                     let size = parseInt(script.substr(8, 2), 16)
                     size *= 2
                     if (size + 10 > script.length) {
@@ -81,12 +75,12 @@ const Info = () => {
                     }
                     return "Memo topic message (" + Buffer.from(script.substr(10, size), "hex") + "): " +
                         Buffer.from(script.substr(10 + size), "hex")
-                case "6d0d":
+                case Prefix.ChatFollow:
                     return "Memo topic follow: " + Buffer.from(script.substr(8), "hex")
-                case "6d24":
+                case Prefix.ChatUnfollow:
+                    return "Memo topic unfollow: " + Buffer.from(script.substr(8), "hex")
+                case Prefix.Send:
                     return "Memo direct message: " + Buffer.from(script.substr(52), "hex")
-                case "6d05":
-                    return "Memo profile text: " + Buffer.from(script.substr(10), "hex")
             }
         }
         return "Unknown" + (info.length ? ": " + info : "")

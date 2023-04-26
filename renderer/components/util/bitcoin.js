@@ -16,7 +16,7 @@ const Fee = {
     },
 }
 
-const Prefix = {
+export const Prefix = {
     SetName: "6d01",
     PostMemo: "6d02",
     ReplyMemo: "6d03",
