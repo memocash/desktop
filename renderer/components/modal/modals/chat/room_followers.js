@@ -17,11 +17,11 @@ const RoomFollowers = ({basic: {setModal, onClose}, modalProps: {room}}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const follows = await window.electron.getChatRoomFollows({room})
         console.log(follows)
         setFollows(follows)
-    }, [room])
+    })()}, [room])
     const sortFollows = (field) => {
         let desc = sortDescRef.current
         if (sortColRef.current === field) {

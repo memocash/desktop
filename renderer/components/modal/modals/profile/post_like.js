@@ -16,11 +16,11 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
     const [post, postRef, setPost] = useReferredState({})
     const tipInputRef = useRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const {addresses} = await window.electron.getWallet()
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
-    }, [txHash])
+    })()}, [txHash])
     useEffect(() => AddUtxoSetter(async () => {
         setMaxValue(Math.max(0, await GetMaxValue()))
     }), [])

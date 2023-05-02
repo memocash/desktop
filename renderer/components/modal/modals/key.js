@@ -11,7 +11,7 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
     const [loading, setLoading] = useState(true)
     const [displayAddress, setDisplayAddress] = useState("Finding address...")
     const [wif, setWif] = useState("")
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const wallet = await window.electron.getWallet()
         const storedPassword = await window.electron.getPassword()
         let changeAddress = false
@@ -62,7 +62,7 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
             setDisplayAddress(wallet.addresses[0])
             setWif("Wallet does not have private keys")
         }
-    }, [address])
+    })()}, [address])
     const onCorrectPassword = () => {
         setShowKey(true)
     }

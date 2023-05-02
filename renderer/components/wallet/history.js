@@ -20,7 +20,7 @@ const History = ({lastUpdate}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const historyDiv = useRef()
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const wallet = await GetWallet()
         let txs = await window.electron.getTransactions(wallet.addresses.concat(wallet.changeList))
         let balance = 0
@@ -30,7 +30,7 @@ const History = ({lastUpdate}) => {
         }
         setTxs(txs)
         setLoaded(true)
-    }, [lastUpdate])
+    })()}, [lastUpdate])
     const keyDownHandler = async (e) => {
         let selectedTxHash = selectedTxHashRef.current
         if (!selectedTxHash || !selectedTxHash.length) {

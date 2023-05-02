@@ -13,12 +13,12 @@ const NetworkConfiguration = ({setPane}) => {
     const serverRef = useRef()
     const formRef = useRef()
     const [invalidServerError, setInvalidServerError] = useState("")
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const networkOptions = await GetNetworkOptions()
         setNetworkOptions(networkOptions)
         setNetwork(networkOptions[0])
         selectValueRef.current.value = networkOptions[0].Id
-    }, [])
+    })()}, [])
     useEffect(() => {
         resetForm()
     }, [network])

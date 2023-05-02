@@ -17,7 +17,7 @@ const GetUtxos = () => {
 }
 
 const Utxos = ({lastUpdate}) => {
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const wallet = await GetWallet()
         utxos = await window.electron.getUtxos(wallet.addresses)
         utxos.sort((a, b) => {
@@ -26,7 +26,7 @@ const Utxos = ({lastUpdate}) => {
         for (let i = 0; i < utxosSetters.length; i++) {
             utxosSetters[i](utxos)
         }
-    }, [lastUpdate])
+    })()}, [lastUpdate])
     return (<></>)
 }
 

@@ -92,7 +92,7 @@ const Info = () => {
         return "Unknown" + (info.length ? ": " + info : "")
     }
 
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         if (!router || !router.query) {
             return
         }
@@ -160,8 +160,8 @@ const Info = () => {
             transactionIdEleRef.current.value = txBuild.getId()
             setBeatHash(beatHash)
         }
-    }, [router])
-    useEffect(async () => {
+    })()}, [router])
+    useEffect(() => {(async () => {
         if (!transactionId.length || !signedRef.current) {
             return
         }
@@ -211,7 +211,7 @@ const Info = () => {
         }
         setDate(date)
         setSigned(true)
-    }, [transactionId])
+    })()}, [transactionId])
     const clickTx = async (txHash) => {
         await window.electron.openTransaction({txHash})
     }

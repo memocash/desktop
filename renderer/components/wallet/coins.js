@@ -21,7 +21,7 @@ const Coins = ({lastUpdate}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Height)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const coinsDiv = useRef()
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const wallet = await GetWallet()
         const coins = await window.electron.getCoins(wallet.addresses.concat(wallet.changeList))
         for (let i = 0; i < coins.length; i++) {
@@ -32,7 +32,7 @@ const Coins = ({lastUpdate}) => {
         setCoins(coins)
         setLoaded(true)
         sortCoins()
-    }, [lastUpdate])
+    })()}, [lastUpdate])
     const sortCoins = (field) => {
         let desc = sortDescRef.current
         if (!field || !field.length) {

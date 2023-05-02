@@ -5,7 +5,7 @@ import {Modals} from "../../../../main/common/util";
 
 const ContentHeader = ({isFollowingRoom, room, setModal}) => {
     const [numFollowers, setNumFollowers] = useState(0)
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         if (!room || !room.length) {
             setNumFollowers(0)
             return
@@ -14,7 +14,7 @@ const ContentHeader = ({isFollowingRoom, room, setModal}) => {
         if (numFollowers.length) {
             setNumFollowers(numFollowers[0].count)
         }
-    }, [room])
+    })()}, [room])
     const clickOpenJoinModal = () => setModal(Modals.ChatRoomJoin, {room})
     const clickOpenLeaveModal = () => setModal(Modals.ChatRoomJoin, {room, leave: true})
     const clickRoomFollowers = () => {

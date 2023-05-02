@@ -15,7 +15,7 @@ const Memo = ({lastUpdate, setModal}) => {
     })
     const [walletAddresses, setWalletAddresses] = useState([])
     const utxosRef = useRef([])
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const wallet = await GetWallet()
         setWalletAddresses(wallet.addresses)
         const profileInfo = await window.electron.getProfileInfo(wallet.addresses)
@@ -30,7 +30,7 @@ const Memo = ({lastUpdate, setModal}) => {
         utxosRef.current.value.sort((a, b) => {
             return b.value - a.value
         })
-    }, [lastUpdate])
+    })()}, [lastUpdate])
     const clickEditName = () => setModal(Modals.ProfileSetName, {utxosRef})
     const clickEditProfile = () => setModal(Modals.ProfileSetText, {utxosRef})
     const clickEditPic = () => setModal(Modals.ProfileSetPic, {utxosRef})

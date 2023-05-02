@@ -12,11 +12,11 @@ import {Modals} from "../../../../../main/common/util";
 const PostReply = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
     const [post, setPost] = useState({})
     const messageInputRef = useRef()
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const {addresses} = await window.electron.getWallet()
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
-    }, [txHash])
+    })()}, [txHash])
     const formReplySubmit = async (e) => {
         e.preventDefault()
         const message = messageInputRef.current.value

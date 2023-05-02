@@ -6,14 +6,14 @@ import Password from "./password";
 const SeedModal = ({onClose}) => {
     const [showSeed, setShowSeed] = useState(false)
     const [seedPhrase, setSeedPhrase] = useState("")
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const {seed} = await window.electron.getWallet()
         setSeedPhrase(seed)
         const storedPassword = await window.electron.getPassword()
         if (!storedPassword || !storedPassword.length) {
             setShowSeed(true)
         }
-    }, [])
+    })()}, [])
     const onCorrectPassword = () => {
         setShowSeed(true)
     }

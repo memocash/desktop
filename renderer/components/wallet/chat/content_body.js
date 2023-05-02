@@ -18,7 +18,7 @@ const ContentBody = ({lastUpdate, room, setModal}) => {
         }, 10000);
         return () => clearInterval(interval);
     }, [])
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const userAddresses = (await GetWallet()).addresses
         const posts = await window.electron.getChatPosts({room, userAddresses})
         setPosts(posts)
@@ -27,7 +27,7 @@ const ContentBody = ({lastUpdate, room, setModal}) => {
             txHashes.push(posts[i].tx_hash)
         }
         setTxHashes(txHashes)
-    }, [lastUpdate, lastUpdatePosts, room])
+    })()}, [lastUpdate, lastUpdatePosts, room])
     useEffect(() => {
         if (!txHashes || !txHashes.length) {
             return

@@ -11,7 +11,7 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
     const walletInput = useRef()
     const passwordInput = useRef()
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const existingWallets = await window.electron.getExistingWalletFiles()
         let suggestedName = "default_wallet"
         if (await window.electron.getWindowId() !== 1 && existingWallets.includes(suggestedName)) {
@@ -24,7 +24,7 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         }
         walletInput.current.value = suggestedName
         await fileChangeHandler()
-    }, [])
+    })()}, [])
     const onCreateWallet = (pathToWallet) => {
         setFilePath(pathToWallet)
         setPane(Panes.Step2SelectType)

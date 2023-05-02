@@ -4,16 +4,16 @@ import {ListenChatFollows, ListenChatPosts, UpdateChat, UpdateChatFollows} from 
 
 const Update = ({followsRef, room, setFollows, setIsFollowingRoom, setLastUpdate}) => {
     const [lastUpdateFollows, setLastUpdateFollows] = useState(null)
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const {addresses} = await GetWallet()
         const follows = await window.electron.getChatFollows({addresses})
         setFollows(follows)
         checkIsFollowing()
-    }, [lastUpdateFollows])
-    useEffect(async () => {
+    })()}, [lastUpdateFollows])
+    useEffect(() => {(async () => {
         const {addresses} = await GetWallet()
         await UpdateChatFollows({addresses, setLastUpdate: setLastUpdateFollows});
-    }, [])
+    })()}, [])
     useEffect(() => {
         let closeSocketFollows
         (async () => {

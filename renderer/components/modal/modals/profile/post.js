@@ -12,7 +12,7 @@ const PostModal = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
     const [post, setPost] = useState({})
     const [txHashes, setTxHashes] = useState([])
     const [lastUpdate, setLastUpdate] = useState(null)
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const post = await loadPost()
         let txHashes = [post.tx_hash]
         if (post.parent) {
@@ -26,7 +26,7 @@ const PostModal = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
         setTxHashes(txHashes)
         await UpdatePosts({txHashes})
         await loadPost()
-    }, [txHash, lastUpdate])
+    })()}, [txHash, lastUpdate])
     useEffect(() => {
         if (!txHashes || !txHashes.length) {
             return

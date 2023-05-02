@@ -10,7 +10,7 @@ const ProfileInfoLight = ({setModal, address, children}) => {
         pic: "",
     })
     const [picData, setPicData] = useState([])
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const profileInfo = await window.electron.getProfileInfo([address])
         if (profileInfo === undefined) {
             return
@@ -20,7 +20,7 @@ const ProfileInfoLight = ({setModal, address, children}) => {
             const picData = await window.electron.getPic(profileInfo.pic)
             setPicData(picData)
         }
-    }, [address])
+    })()}, [address])
     return (
         <div className={profile.header_modal}>
             <div className={profile.pic}>

@@ -20,13 +20,13 @@ const PostLikes = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [likes, likesRef, setLikes] = useReferredState([])
     const [post, setPost] = useState({})
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const likes = await window.electron.getLikes(txHash)
         setLikes(likes)
         const {addresses} = await window.electron.getWallet()
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
-    }, [txHash])
+    })()}, [txHash])
     const sortLikes = (field) => {
         let desc = sortDescRef.current
         if (sortColRef.current === field) {

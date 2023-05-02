@@ -17,7 +17,7 @@ const Addresses = ({lastUpdate}) => {
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [selectedAddress, selectedAddressRef, setSelectedAddress] = useReferredState("")
     const addressesDiv = useRef()
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         addressesDiv.current.addEventListener("contextmenu", async (e) => {
             e.preventDefault()
             let address
@@ -31,8 +31,8 @@ const Addresses = ({lastUpdate}) => {
             await window.electron.rightClickMenu(address, wallet)
         })
         window.electron.walletLoaded()
-    }, [])
-    useEffect(async () => {
+    })()}, [])
+    useEffect(() => {(async () => {
         const wallet = await GetWallet()
         try {
             const balances = await getBalances(wallet.addresses)
@@ -45,7 +45,7 @@ const Addresses = ({lastUpdate}) => {
         } catch (e) {
             console.log(e)
         }
-    }, [lastUpdate])
+    })()}, [lastUpdate])
     const getBalances = async (addresses) => {
         const balances = await window.electron.getWalletInfo(addresses)
         let allBalances = []

@@ -37,10 +37,10 @@ const CreateWindow = async () => {
         minHeight: 400,
         title: "Memo",
         webPreferences: {
-            nodeIntegration: false,
-            preload: path.join(__dirname, "../preload/index.js")
+            nodeIntegration: true,
+            preload: path.join(__dirname, "..", "preload", "index.js")
         },
-        icon: path.join(__dirname, "assets/memo-logo-small.icns"),
+        icon: path.join(__dirname, "assets", "memo-logo-small.icns"),
     })
     win.webContents.setWindowOpenHandler(({url}) => {
         shell.openExternal(url);

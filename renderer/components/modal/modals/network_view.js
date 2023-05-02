@@ -3,10 +3,10 @@ import {useEffect, useState} from "react";
 
 const NetworkView = ({onClose}) => {
     const [network, setNetwork] = useState({})
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const network = await window.electron.getWindowNetwork()
         setNetwork(network)
-    }, [])
+    })()}, [])
     return (
         <Modal onClose={onClose}>
             <h3>Network Info</h3>

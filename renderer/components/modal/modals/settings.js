@@ -9,12 +9,12 @@ const SettingsModal = ({onClose, setLastUpdate, setModal}) => {
     const [skipPassword, setSkipPassword] = useState(true)
     const [enableSkipPassword, setEnableSkipPassword] = useState(false)
     const [initialSkipPassword, setInitialSkipPassword] = useState(true)
-    useEffect(async  () => {
+    useEffect(() => {(async () => {
         let wallet = await GetWallet()
         setDirectTx(wallet.settings.DirectTx)
         setSkipPassword(wallet.settings.SkipPassword)
         setInitialSkipPassword(wallet.settings.SkipPassword)
-    },[])
+    })()},[])
 
     const toggleSkipPassword = () => {
         if(skipPassword) {

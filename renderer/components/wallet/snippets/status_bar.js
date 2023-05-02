@@ -6,7 +6,7 @@ import {Status} from "../../util/connect"
 
 const StatusBar = ({connected, lastUpdate, setModal}) => {
     const [info, setInfo] = useState({})
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const wallet = await window.electron.getWallet()
         const info = await window.electron.getWalletInfo(wallet.addresses.concat(wallet.changeList))
         let allInfo = {
@@ -20,7 +20,7 @@ const StatusBar = ({connected, lastUpdate, setModal}) => {
             allInfo.utxo_count += info[i].utxo_count
         }
         setInfo(allInfo)
-    }, [lastUpdate])
+    })()}, [lastUpdate])
     let statusStyle
     switch (connected) {
         case Status.Connected:

@@ -17,7 +17,7 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         if (showFollowers) {
             const followers = await window.electron.getFollowers(addresses)
             setFollows(followers)
@@ -25,7 +25,7 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
             const following = await window.electron.getFollowing(addresses)
             setFollows(following)
         }
-    }, [addresses])
+    })()}, [addresses])
     const clickTxLink = async (txHash) => {
         await window.electron.openTransaction({txHash})
     }

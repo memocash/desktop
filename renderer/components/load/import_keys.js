@@ -6,7 +6,7 @@ const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
     const [error, setError] = useState("")
     const privateKeyList = useRef()
     const handleClickNext = () => {
-        const list = privateKeyList.current.value.split("\n")
+        let list = privateKeyList.current.value.split("\n")
         list = [...new Set(list)]
         let keyList = [], addressList = []
         for (let i = 0; i < list.length; i++) {

@@ -24,7 +24,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
     const [picData, setPicData] = useState(undefined)
     const [isSelf, setIsSelf] = useState(true)
     const [roomsFollowingCount, setRoomsFollowingCount] = useState(0)
-    useEffect(async () => {
+    useEffect(() => {(async () => {
         const profileInfo = await window.electron.getProfileInfo([address])
         if (profileInfo === undefined) {
             return
@@ -47,8 +47,8 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         const posts = await window.electron.getPosts({addresses: [address], userAddresses: wallet.addresses})
         setPosts(posts)
-    }, [lastUpdate, lastProfileUpdate])
-    useEffect(async () => {
+    })()}, [lastUpdate, lastProfileUpdate])
+    useEffect(() => {(async () => {
         await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
         let txHashes = []
         for (let i = 0; i < posts.length; i++) {
@@ -59,7 +59,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         if (roomsFollowingCount.length) {
             setRoomsFollowingCount(roomsFollowingCount[0].count)
         }
-    }, [address])
+    })()}, [address])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
             opcodes.OP_RETURN,
