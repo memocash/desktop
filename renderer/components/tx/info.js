@@ -231,6 +231,7 @@ const Info = () => {
     }
     const onCorrectPassword = async () => {
         setShowPasswordForSign(false)
+        const feeRate = feeRef.current / size
         let outer_transaction = {
             outer_size: size,
             outer_txInfo: txInfoRef.current,
@@ -246,7 +247,6 @@ const Info = () => {
         setSize(outer_transaction.outer_size)
         setTxInfo(txInfoRef.current)
         transactionIdEleRef.current.value = outer_transaction.outer_transactionIDEleRef.value
-        const feeRate = outer_transaction.outer_feeRate
         setFeeRate(feeRate)
         setSigned(true)
     }

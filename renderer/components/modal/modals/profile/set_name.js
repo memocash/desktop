@@ -28,7 +28,6 @@ const SetName = ({onClose, setModal}) => {
             beatHash = recentSetName.tx_hash
         }
         await CreateTransaction(wallet, [{script: nameOpReturnOutput}],setModal,null, beatHash)
-        console.log((await window.electron.getRecentSetName(wallet.addresses)))
     }
     return (
         <Modal onClose={onClose}>

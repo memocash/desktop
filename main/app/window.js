@@ -60,10 +60,10 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         minHeight: 300,
         title: "Transaction",
         webPreferences: {
-            nodeIntegration: false,
-            preload: path.join(__dirname, "../preload/index.js"),
+            nodeIntegration: true,
+            preload: path.join(__dirname, "..", "preload", "index.js")
         },
-        icon: path.join(__dirname, "assets/memo-logo-small.icns"),
+        icon: path.join(__dirname, "assets", "memo-logo-small.icns"),
     })
     if (txWindows[winId] === undefined) {
         txWindows[winId] = []
