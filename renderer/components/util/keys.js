@@ -1,6 +1,5 @@
 const {mnemonicToSeedSync} = require("bip39");
 const {fromSeed} = require("bip32");
-const {ECPair} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
 
 const GetKeys = (seedPhrase) => {
     let keyList = []

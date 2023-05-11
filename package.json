@@ -25,8 +25,8 @@
   },
   "dependencies": {
     "@bitcoin-dot-com/bitcoincashjs2-lib": "^4.1.0",
-    "better-sqlite3": "8.3.0",
-    "bip32": "^4.0.0",
+    "better-sqlite3": "^8.3.0",
+    "bip32": "^2.0.5",
     "bip39": "^3.0.4",
     "crypto-js": "^4.1.1",
     "electron-is-dev": "^2.0.0",
