@@ -21,10 +21,20 @@ const Addresses = ({lastUpdate}) => {
         addressesDiv.current.addEventListener("contextmenu", async (e) => {
             e.preventDefault()
             let address
-            for (let i = 0; i < e.path.length; i++) {
-                if (e.path[i].nodeName === "DIV") {
+            for (let i = 0; e.path && i < e.path.length; i++) {
+                if (e.path[i].dataset && e.path[i].dataset.address) {
                     address = e.path[i].dataset.address
                     break
+                }
+            }
+            if (address === undefined) {
+                let node = e.target
+                while (node !== null) {
+                    if (node.dataset && node.dataset.address) {
+                        address = node.dataset.address
+                        break
+                    }
+                    node = node.parentNode
                 }
             }
             const wallet = await GetWallet()
