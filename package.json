@@ -28,7 +28,7 @@
     "better-sqlite3": "^8.4.0",
     "bip32": "^2.0.5",
     "bip39": "^3.0.4",
-    "crypto-js": "^4.1.1",
+    "crypto-js": "^4.2.0",
     "electron-is-dev": "^2.0.0",
     "electron-next": "^3.1.5",
     "node-gyp": "^9.3.1",
