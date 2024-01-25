@@ -65,7 +65,7 @@ const setTx = async (outer_transaction, setModal) => {
             break
         }
         const txHash = txBuild.getId()
-        if (txHash < outer_transaction.outer_beatHash.current) {
+        if (txHash > outer_transaction.outer_beatHash.current) {
             break
         }
         tx.locktime = lockTime
