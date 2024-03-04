@@ -16,7 +16,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "electron": "24.8.5",
-    "electron-builder": "^24.3.0",
+    "electron-builder": "^24.13.3",
     "electron-packager": "^17.1.1",
     "electron-rebuild": "^3.2.8",
     "next": "^13.5.4",
