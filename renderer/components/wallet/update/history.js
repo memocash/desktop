@@ -84,7 +84,7 @@ const loadOutputs = async ({addresses}) => {
     let paramsStrings = []
     let subQueries = []
     for (let i = 0; i < addresses.length; i++) {
-        paramsStrings.push(`$address${i}: String!, $start${i}: Date, $tx${i}: String`)
+        paramsStrings.push(`$address${i}: Address!, $start${i}: Date, $tx${i}: Hash`)
         variables["address" + i] = addresses[i].address
         variables["start" + i] = addresses[i].timestamp
         variables["tx" + i] = addresses[i].hash

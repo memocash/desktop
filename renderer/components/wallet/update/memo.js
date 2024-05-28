@@ -2,7 +2,7 @@ import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql
 
 const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
     const query = `
-    query ($addresses: [String!]) {
+    query ($addresses: [Address!]) {
         profiles(addresses: $addresses) {
             lock {
                 address

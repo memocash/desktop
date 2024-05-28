@@ -1,6 +1,6 @@
 const ListenNewTxs = ({wallet, setLastUpdate}) => {
     const query = `
-        subscription($addresses: [String!]) {
+        subscription($addresses: [Address!]) {
             addresses(addresses: $addresses) {
                 hash
                 seen

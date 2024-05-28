@@ -25,7 +25,7 @@ const SaveTransactions = async (conf, transactions) => {
             await Insert(conf, "outputs",
                 "INSERT OR REPLACE INTO outputs (hash, `index`, address, value, script) VALUES (?, ?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].outputs[j].index,
-                    transactions[i].outputs[j].lock.address, transactions[i].outputs[j].amount,
+                    transactions[i].outputs[j].lock ? transactions[i].outputs[j].lock.address : "unknown", transactions[i].outputs[j].amount,
                     Buffer.from(transactions[i].outputs[j].script, "hex")])
         }
         if (!transactions[i].blocks) {

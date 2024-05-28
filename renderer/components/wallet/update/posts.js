@@ -2,7 +2,7 @@ import {LikesQuery, PostFields, TxQuery} from "../../util/graphql";
 
 const UpdatePosts = async ({txHashes, setLastUpdate}) => {
     const query = `
-        query($txHashes: [String!]) {
+        query($txHashes: [Hash!]) {
             posts(txHashes: $txHashes) {
                 tx_hash
                 text

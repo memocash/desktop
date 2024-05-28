@@ -1,6 +1,6 @@
 const ListenNewMemos = ({wallet, setLastUpdate}) => {
     const query = `
-        subscription($addresses: [String!]) {
+        subscription($addresses: [Address!]) {
             profiles(addresses: $addresses) {
                 lock {
                     address

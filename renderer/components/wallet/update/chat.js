@@ -2,7 +2,7 @@ import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql
 
 const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
     const query = `
-    query ($addresses: [String!]) {
+    query ($addresses: [Address!]) {
         profiles(addresses: $addresses) {
             rooms {
                 name
@@ -100,7 +100,7 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
 
 const ListenChatFollows = ({addresses, setLastUpdate}) => {
     const query = `
-        subscription($addresses: [String!]) {
+        subscription($addresses: [Address!]) {
             room_follows(addresses: $addresses) {
                 name
                 tx_hash
