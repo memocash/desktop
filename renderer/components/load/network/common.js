@@ -3,7 +3,7 @@ const NetworkOptions = [
         Name: "BCH",
         Ruleset: "bch",
         DatabaseFile: "~/.memo/memo.db",
-        Server: "http://127.0.0.1:26771",
+        Server: "https://graph.cash",
         Id: "bch",
     },
     {

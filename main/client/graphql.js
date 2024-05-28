@@ -1,4 +1,5 @@
-const http = require("http")
+const http = require("http");
+const https = require("https");
 const WebSocket = require('ws');
 
 const sockets = {}
@@ -64,7 +65,11 @@ const GraphQL = async ({network, query, variables}) => {
         variables: variables,
     })
     return new Promise((resolve, reject) => {
-        const request = http.request(network.Server + "/graphql", {
+        let schema = http;
+        if (network.Server.startsWith("https")) {
+            schema = https;
+        }
+        const request = schema.request(network.Server + "/graphql", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
