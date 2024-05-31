@@ -76,7 +76,7 @@ const getSelectQuery = ({join = "", userAddresses, where}) => {
 }
 
 const SaveMemoPosts = async (conf, posts) => {
-    const replies = posts.map(post => post.replies).flat()
+    const replies = posts.map(post => post.replies).flat().filter(v => v) // filter removes nulls
     let parents = []
     let parentChildren = []
     for (let i = 0; i < posts.length; i++) {
