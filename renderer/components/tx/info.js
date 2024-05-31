@@ -10,6 +10,7 @@ import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 import {setTx} from "./direct_tx";
+import Link from "next/link";
 
 const Info = () => {
     const router = useRouter()
@@ -59,7 +60,7 @@ const Info = () => {
                 case "6d03":
                     const replyTxHash = script.substr(10, 64).match(/.{2}/g).reverse().join("")
                     return (<>Memo reply (<Link
-                        href={"/tx/" + replyTxHash}><a>{ShortTxHash(replyTxHash)}</a></Link>): {
+                        href={"/tx/" + replyTxHash}>{ShortHash(replyTxHash)}</Link>): {
                         "" + Buffer.from(script.substr(76), "hex")}</>)
                 case "6d04":
                     if (script.length < 12) {
@@ -68,10 +69,10 @@ const Info = () => {
                     }
                     const likeTxHash = script.substr(10).match(/.{2}/g).reverse().join("")
                     return (<>Memo like: <Link
-                        href={"/tx/" + likeTxHash}><a>{ShortTxHash(likeTxHash)}</a></Link></>)
+                        href={"/tx/" + likeTxHash}>{ShortHash(likeTxHash)}</Link></>)
                 case "6d0a":
                     const picUrl = "" + Buffer.from(script.substr(10), "hex")
-                    return (<>Memo profile pic: <Link href={picUrl}><a>{picUrl}</a></Link></>)
+                    return (<>Memo profile pic: <Link href={picUrl}>{picUrl}</Link></>)
                 case "6d0c":
                     let size = parseInt(script.substr(8, 2), 16)
                     size *= 2
