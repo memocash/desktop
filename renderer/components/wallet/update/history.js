@@ -10,10 +10,10 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
             hash: "", timestamp: null
         }
         for (let j = 0; j < recentAddresses.length; j++) {
-            if (!recentAddresses[j].address === addressList[i]) {
+            if (recentAddresses[j].address !== addressList[i]) {
                 continue
             }
-            addresses[i].timestamp = recentAddresses[j].timestamp - 1
+            addresses[i].timestamp = recentAddresses[j].timestamp
         }
     }
     for (let i = 0; i < 100 && addresses.length; i++) {
@@ -65,7 +65,7 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
                     continue
                 }
                 addresses[i].hash = maxHash
-                addresses[i].start = maxStart
+                addresses[i].timestamp = maxStart
                 console.log("looping address: " + addresses[i].address + ", start: " + addresses[i].start,
                     ", hash: " + addresses[i].hash)
             }
