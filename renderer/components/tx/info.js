@@ -40,6 +40,10 @@ const Info = () => {
         "6d0d": "ChatFollow",
         "6d0e": "ChatUnfollow",
     }
+    const txLink = async (e, txHash) => {
+        e.preventDefault()
+        await window.electron.openTransaction({txHash})
+    }
 
     const GetOutputScriptInfo = (script) => {
         const scriptBuffer = Buffer.from(script, "hex")
@@ -54,24 +58,24 @@ const Info = () => {
         if (script.substr(0, 4) === "6a02") {
             switch (script.substr(4, 4)) {
                 case "6d01":
-                    return "Memo name: " + Buffer.from(script.substr(10), "hex")
+                    return "Memo name: " + Buffer.from(script.substr(script.length > 160 ? 12 : 10), "hex")
                 case "6d02":
-                    return "Memo post: " + Buffer.from(script.substr(10), "hex")
+                    return "Memo post: " + Buffer.from(script.substr(script.length > 160 ? 12 : 10), "hex")
                 case "6d03":
                     const replyTxHash = script.substr(10, 64).match(/.{2}/g).reverse().join("")
-                    return (<>Memo reply (<Link
-                        href={"/tx/" + replyTxHash}>{ShortHash(replyTxHash)}</Link>): {
-                        "" + Buffer.from(script.substr(76), "hex")}</>)
+                    return (<>Memo reply (<Link onClick={(e) => txLink(e, replyTxHash)}
+                        href={"/tx?txHash=" + replyTxHash}>{ShortHash(replyTxHash)}</Link>): {
+                        "" + Buffer.from(script.substr(script.length > 226 ? 78 : 76), "hex")}</>)
                 case "6d04":
                     if (script.length < 12) {
                         info = "Bad memo like"
                         break
                     }
                     const likeTxHash = script.substr(10).match(/.{2}/g).reverse().join("")
-                    return (<>Memo like: <Link
-                        href={"/tx/" + likeTxHash}>{ShortHash(likeTxHash)}</Link></>)
+                    return (<>Memo like: <Link onClick={(e) => txLink(e, likeTxHash)}
+                        href={"/tx?txHash=" + likeTxHash}>{ShortHash(likeTxHash)}</Link></>)
                 case "6d0a":
-                    const picUrl = "" + Buffer.from(script.substr(10), "hex")
+                    const picUrl = "" + Buffer.from(script.substr(script.length > 160 ? 12 : 10), "hex")
                     return (<>Memo profile pic: <Link href={picUrl}>{picUrl}</Link></>)
                 case "6d0c":
                     let size = parseInt(script.substr(8, 2), 16)
@@ -87,7 +91,7 @@ const Info = () => {
                 case "6d24":
                     return "Memo direct message: " + Buffer.from(script.substr(52), "hex")
                 case "6d05":
-                    return "Memo profile text: " + Buffer.from(script.substr(10), "hex")
+                    return "Memo profile text: " + Buffer.from(script.substr(script.length > 160 ? 12 : 10), "hex")
             }
         }
         return "Unknown" + (info.length ? ": " + info : "")
@@ -292,11 +296,6 @@ const Info = () => {
                 <div className={styleTx.input_output_head}>Inputs ({txInfo.inputs.length})</div>
                 <div className={styleTx.input_output_box}>
                     <div className={styleTx.input_output_grid}>
-                        {!txInfo.inputs.length && <p>
-                            <span>0437cd...a597c9:0</span>
-                            <span>1MCgBDVXTwfEKYtu2PtPHBif5BpthvBrHJ</span>
-                            <span>5,000,000,000</span>
-                        </p>}
                         {txInfo.inputs.map((input, i) => {
                             return (
                                 <p key={i} className={input.highlight ? styleTx.input_output_highlight : null}>
