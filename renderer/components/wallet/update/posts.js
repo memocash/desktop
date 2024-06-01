@@ -1,6 +1,9 @@
 import {LikesQuery, PostFields, TxQuery} from "../../util/graphql";
 
 const UpdatePosts = async ({txHashes, setLastUpdate}) => {
+    if (!txHashes || !txHashes.length) {
+        return
+    }
     const query = `
         query($txHashes: [Hash!]) {
             posts(txHashes: $txHashes) {

@@ -17,6 +17,8 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         name: "",
         profile: "",
         pic: "",
+        num_following: 0,
+        num_followers: 0,
     })
     const [lastProfileUpdate, setLastProfileUpdate] = useState(false)
     const [posts, setPosts] = useState([])
@@ -90,22 +92,14 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                     <p>Address: {address}</p>
                     <p>
                         <button title={"Following"} onClick={() => setModal(Modals.Following, {address})}>
-                            <BsPerson/>
-                            <BsArrowRight/>
-                            {" "}
-                            {profileInfo.num_following}
+                            {profileInfo.num_following} Following
                         </button>
                         <button title={"Followers"} onClick={() => setModal(Modals.Followers, {address})}>
-                            <BsPerson/>
-                            <BsArrowLeft/>
-                            {" "}
-                            {profileInfo.num_followers}
+                            {profileInfo.num_followers} Followers
                         </button>
                         <button title={"Chat Rooms Following"}
                                 onClick={() => setModal(Modals.ChatRoomFollowing, {address})}>
-                            <BsPeople/>
-                            {" "}
-                            {roomsFollowingCount}
+                            {roomsFollowingCount} Rooms
                         </button>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>}

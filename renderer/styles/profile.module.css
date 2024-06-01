@@ -30,6 +30,7 @@
 
 .info button {
     cursor: pointer;
+    margin-bottom: 2px;
 }
 
 .info button svg {
