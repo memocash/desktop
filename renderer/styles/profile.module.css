@@ -252,6 +252,12 @@
     margin-right: 2px;
 }
 
+.selected {
+    box-shadow: 0 0 2px 2px #5b9920;
+    font-weight: bold;
+    background-color: #5b9920;
+}
+
 .room_link {
     font-weight: normal;
     margin-left: 5px;
@@ -381,4 +387,13 @@
 
 .replies .post {
     border-left: 20px solid #ddd;
+}
+
+.post_list {
+    border-top: 1px solid #ccc;
+    display: grid;
+    max-width: 100%;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    outline: none;
 }
