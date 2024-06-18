@@ -34,6 +34,6 @@
     "node-gyp": "^9.3.1",
     "react-icons": "^4.4.0",
     "react-linkify": "^1.0.0-alpha",
-    "ws": "^8.5.0"
+    "ws": "^8.17.1"
   }
 }
