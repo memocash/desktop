@@ -5,8 +5,6 @@ import styles from "../../../styles/modal.module.css"
 import GetWallet from "../../util/wallet"
 import {GetAddresses} from "../../util/addresses"
 import {Modals} from "../../../../main/common/util/modals";
-import {mnemonicToSeedSync} from "bip39";
-import {fromSeed} from "bip32";
 import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
 const RemoveModal = ({basic: {onClose, setLastUpdate, setModal}, modalProps:{address}}) => {

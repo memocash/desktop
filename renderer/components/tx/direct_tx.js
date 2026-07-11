@@ -1,9 +1,12 @@
 import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../util/wallet";
 import {mnemonicToSeedSync} from "bip39";
-import {fromSeed} from "bip32";
+import {BIP32Factory} from "bip32";
+import * as ecc from "tiny-secp256k1";
 import {Modals} from "../../../main/common/util"
 import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
+
+const bip32 = BIP32Factory(ecc)
 
 const Prefix = {
     "6d01": "SetName",
@@ -27,7 +30,7 @@ const setTx = async (outer_transaction, setModal) => {
     let getKey
     if (wallet.seed && wallet.keys.length == 0) {
         const seed = mnemonicToSeedSync(wallet.seed)
-        const node = fromSeed(seed)
+        const node = bip32.fromSeed(seed)
         getKey = (address) => {
             for (let i = 0; i < wallet.addresses.length; i++) {
                 if (address === wallet.addresses[i]) {
