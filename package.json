@@ -31,10 +31,14 @@
     "crypto-js": "^4.2.0",
     "electron-is-dev": "^2.0.0",
     "electron-next": "^3.1.5",
-    "node-gyp": "^9.3.1",
+    "node-gyp": "^13.0.1",
     "react-icons": "^4.4.0",
     "react-linkify": "^1.0.0-alpha",
     "tiny-secp256k1": "^2.2.4",
     "ws": "^8.21.0"
+  },
+  "overrides": {
+    "linkify-it": "^5.0.2",
+    "postcss": "^8.5.19"
   }
 }
