@@ -60,7 +60,7 @@ const WalletLoaded = () => {
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}
                    setModal={setModal}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
-                    <Memo lastUpdate={lastUpdate} setModal={setModal}/></Page>
+                    <Memo lastUpdate={lastUpdate} setModal={setModal} setChatRoom={setChatRoom}/></Page>
                 <Page tab={tab} page={Tabs.Chat} shown={shownRef}>
                     <Chat setModal={setModal} room={room} setRoom={setRoom}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>

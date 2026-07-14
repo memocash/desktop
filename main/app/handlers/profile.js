@@ -1,6 +1,6 @@
 const {ipcMain} = require("electron");
 const {
-    GetFollowers, GetFollowing, GetLikes, GetPost, GetPostParent, GetPostReplies, GetPosts, GetProfileInfo,
+    GetFollowers, GetFollowing, GetLikes, GetNewPosts, GetPost, GetPostParent, GetPostReplies, GetPosts, GetProfileInfo,
     GetRecentFollow, GetRecentSetName, GetRecentSetPic, GetRecentSetProfile, GetRoomPosts, GetChatFollows,
     GetRecentRoomFollow, GetRoomFollowCount, GetRoomFollows, GetAddressesRoomFollowCount,
 } = require("../../data/tables");
@@ -26,6 +26,7 @@ const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetFollowing, async (e, addresses) => GetFollowing(eConf(e), addresses))
     ipcMain.handle(Handlers.GetFollowers, async (e, addresses) => GetFollowers(eConf(e), addresses))
     ipcMain.handle(Handlers.GetLikes, async (e, txHash) => GetLikes(eConf(e), txHash))
+    ipcMain.handle(Handlers.GetNewPosts, async (e, {userAddresses}) => GetNewPosts({conf: eConf(e), userAddresses}))
     ipcMain.handle(Handlers.GetPost, async (e, {txHash, userAddresses}) =>
         GetPost({conf: eConf(e), txHash, userAddresses}))
     ipcMain.handle(Handlers.GetPosts, async (e, {addresses, userAddresses}) =>

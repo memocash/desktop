@@ -1,17 +1,19 @@
 import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
-import {BsFile, BsFiles, BsPencil, BsPencilSquare, BsPeople, BsPerson} from "react-icons/bs";
+import {BsFiles, BsGlobe, BsPencil, BsPencilSquare, BsPeople, BsPerson} from "react-icons/bs";
 import FollowList from "./memo/follow_list";
 import {Modals} from "../../../main/common/util";
 import PostList from "./memo/post_list";
+import NewPostList from "./memo/new_post_list";
 
 const Tabs = {
     Posts: "posts",
+    Feed: "feed",
     Following: "following",
 }
 
-const Memo = ({lastUpdate, setModal}) => {
+const Memo = ({lastUpdate, setModal, setChatRoom}) => {
     const [tab, setTab] = useState(Tabs.Posts)
     const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
@@ -65,6 +67,9 @@ const Memo = ({lastUpdate, setModal}) => {
                         <button title={"View Newest Posts"} className={tab === Tabs.Posts ? profile.selected : null}
                                 onClick={() => setTab(Tabs.Posts)}>
                             <BsFiles/></button>
+                        <button title={"View Feed (All Users)"} className={tab === Tabs.Feed ? profile.selected : null}
+                                onClick={() => setTab(Tabs.Feed)}>
+                            <BsGlobe/></button>
                         <button title={"View Following"} className={tab === Tabs.Following ? profile.selected : null}
                                 onClick={() => setTab(Tabs.Following)}>
                             <BsPeople/></button>
@@ -76,6 +81,8 @@ const Memo = ({lastUpdate, setModal}) => {
                 </div>
             </div>
             {tab === Tabs.Posts ? <PostList setModal={setModal} lastUpdate={lastUpdate}/> : null}
+            {tab === Tabs.Feed ?
+                <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}/> : null}
             {tab === Tabs.Following ? <FollowList addresses={walletAddresses} setModal={setModal}/> : null}
         </div>
     )

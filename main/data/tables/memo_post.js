@@ -7,6 +7,13 @@ const GetPosts = async ({conf, addresses, userAddresses}) => {
     return await Select(conf, "memo_posts-multi", query, [...userAddresses, ...addresses])
 }
 
+// Newest posts from everyone, not just the wallet's own addresses or who it
+// follows. The local table only holds what's been synced, so UpdateNewPosts
+// (posts_newest) is what actually pulls in strangers' posts before this reads.
+const GetNewPosts = async ({conf, userAddresses}) => {
+    return await Select(conf, "memo_posts-new", getSelectQuery({userAddresses, where: "1"}), [...userAddresses])
+}
+
 const GetPost = async ({conf, txHash, userAddresses}) => {
     const results = await Select(conf, "memo_posts", getSelectQuery({where: "memo_posts.tx_hash = ?", userAddresses}),
         [...userAddresses, txHash])
@@ -128,6 +135,7 @@ const SaveMemoPosts = async (conf, posts) => {
 }
 
 module.exports = {
+    GetNewPosts,
     GetPost,
     GetPosts,
     GetPostParent,

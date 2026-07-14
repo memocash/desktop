@@ -13,6 +13,7 @@ const Handlers = {
     GetFollowers: "get-followers",
     GetFollowing: "get-following",
     GetLikes: "get-likes",
+    GetNewPosts: "get-new-posts",
     GetPost: "get-post",
     GetPosts: "get-posts",
     GetPostParent: "get-post-parent",

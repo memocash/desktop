@@ -397,3 +397,8 @@
     overflow-y: auto;
     outline: none;
 }
+
+.post_list .noPosts {
+    padding: 10px;
+    text-align: center;
+}
