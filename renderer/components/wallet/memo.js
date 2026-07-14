@@ -75,7 +75,7 @@ const Memo = ({lastUpdate, setModal}) => {
                     </p>
                 </div>
             </div>
-            {tab === Tabs.Posts ? <PostList setModal={setModal}/> : null}
+            {tab === Tabs.Posts ? <PostList setModal={setModal} lastUpdate={lastUpdate}/> : null}
             {tab === Tabs.Following ? <FollowList addresses={walletAddresses} setModal={setModal}/> : null}
         </div>
     )

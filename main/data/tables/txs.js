@@ -9,19 +9,24 @@ const SaveTransactions = async (conf, transactions) => {
             continue
         }
         await Insert(conf, "txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
-        if (transactions[i].seen.substr(0, 2) === "20") {
+        if (transactions[i].seen && transactions[i].seen.substr(0, 2) === "20") {
             await Insert(conf, "tx_seens", "INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
                 transactions[i].hash, transactions[i].seen])
         }
-        await Insert(conf, "tx_raws", "INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
-            transactions[i].hash, Buffer.from(transactions[i].raw, "hex")])
-        for (let j = 0; j < transactions[i].inputs.length; j++) {
+        // Callers may pass a trimmed tx (just hash/seen, e.g. for timestamp-only
+        // sync) without raw/inputs/outputs/blocks - skip those sections rather
+        // than crash on the missing fields.
+        if (transactions[i].raw !== undefined) {
+            await Insert(conf, "tx_raws", "INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
+                transactions[i].hash, Buffer.from(transactions[i].raw, "hex")])
+        }
+        for (let j = 0; j < (transactions[i].inputs || []).length; j++) {
             await Insert(conf, "inputs",
                 "INSERT OR IGNORE INTO inputs (hash, `index`, prev_hash, prev_index) VALUES (?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].inputs[j].index,
                     transactions[i].inputs[j].prev_hash, transactions[i].inputs[j].prev_index])
         }
-        for (let j = 0; j < transactions[i].outputs.length; j++) {
+        for (let j = 0; j < (transactions[i].outputs || []).length; j++) {
             await Insert(conf, "outputs",
                 "INSERT OR REPLACE INTO outputs (hash, `index`, address, value, script) VALUES (?, ?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].outputs[j].index,

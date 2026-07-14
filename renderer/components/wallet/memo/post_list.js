@@ -3,7 +3,7 @@ import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import Post from "./post";
 
-const PostList = ({setModal}) => {
+const PostList = ({setModal, lastUpdate}) => {
     const [posts, setPosts] = useState([])
     useEffect(() => {
         (async () => {
@@ -11,7 +11,7 @@ const PostList = ({setModal}) => {
             const posts = await window.electron.getPosts({addresses: wallet.addresses, userAddresses: wallet.addresses})
             setPosts(posts)
         })()
-    }, []);
+    }, [lastUpdate]);
     return (
         <div className={profile.post_list}>
             {posts.map((post) =>

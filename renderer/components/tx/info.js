@@ -195,8 +195,14 @@ const Info = () => {
         }
         setTxInfo(tx)
         setInputAmount(amount)
-        setSize(tx.raw.length)
-        if (!missingInputs) {
+        // tx.raw can be missing here: posts synced via the trimmed profile
+        // DetailsQuery are saved with just {hash, seen} until UpdatePosts
+        // backfills the full tx, so a click on "View Transaction" can land
+        // in that window.
+        if (tx.raw) {
+            setSize(tx.raw.length)
+        }
+        if (!missingInputs && tx.raw) {
             setFee(fee)
             const feeRate = fee / tx.raw.length
             setFeeRate(feeRate.toFixed(4))
@@ -221,6 +227,9 @@ const Info = () => {
         await window.electron.openTransaction({txHash})
     }
     const clickCopyRaw = () => {
+        if (!txInfoRef.current.raw) {
+            return
+        }
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
     const clickSign = async () => {
@@ -256,6 +265,9 @@ const Info = () => {
         setSigned(true)
     }
     const clickBroadcast = async () => {
+        if (!txInfoRef.current.raw) {
+            return
+        }
         const query = `
     mutation ($raw: String!) {
         broadcast(raw: $raw)
@@ -326,10 +338,10 @@ const Info = () => {
                 </div>
             </div>
             <div className={styleTx.footer}>
-                <span><button onClick={clickCopyRaw}>Copy</button></span>
+                {txInfo.raw && <span><button onClick={clickCopyRaw}>Copy</button></span>}
                 &nbsp;
                 {!signed && <span><button onClick={clickSign}>Sign</button></span>}
-                {signed && <span><button onClick={clickBroadcast}>Broadcast</button></span>}
+                {signed && txInfo.raw && <span><button onClick={clickBroadcast}>Broadcast</button></span>}
                 <span className={styleTx.footerRight}>
                         <button onClick={clickClose}>Close</button></span>
             </div>

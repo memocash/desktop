@@ -32,6 +32,15 @@ const UpdatePosts = async ({txHashes, setLastUpdate}) => {
     }
 }
 
+// UpdateMemoHistory's posts query only fetches tx_hash/text/tx.seen (see
+// update/memo.js) - likes/replies/raw need this separate backfill for
+// whatever's currently in the local post list.
+const BackfillPosts = async ({addresses, userAddresses, setLastUpdate}) => {
+    const posts = await window.electron.getPosts({addresses, userAddresses})
+    await UpdatePosts({txHashes: posts.map(post => post.tx_hash), setLastUpdate})
+}
+
 export {
     UpdatePosts,
+    BackfillPosts,
 }

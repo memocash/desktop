@@ -1,9 +1,6 @@
 const {mnemonicToSeedSync} = require("bip39");
-const {BIP32Factory} = require("bip32");
-import * as ecc from "tiny-secp256k1";
+import bip32 from "./bip32";
 const {ECPair} = require("@bitcoin-dot-com/bitcoincashjs2-lib");
-
-const bip32 = BIP32Factory(ecc)
 
 const GetAddresses = (seedPhrase, keyList) => {
     let addressList = []

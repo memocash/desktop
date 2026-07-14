@@ -1,12 +1,9 @@
 import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../util/wallet";
 import {mnemonicToSeedSync} from "bip39";
-import {BIP32Factory} from "bip32";
-import * as ecc from "tiny-secp256k1";
+import bip32 from "../util/bip32";
 import {Modals} from "../../../main/common/util"
 import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
-
-const bip32 = BIP32Factory(ecc)
 
 const Prefix = {
     "6d01": "SetName",
