@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
-import {BsFiles, BsGlobe, BsPencil, BsPencilSquare, BsPeople, BsPerson} from "react-icons/bs";
+import {BsFiles, BsFire, BsGlobe, BsPencil, BsPencilSquare, BsPeople, BsPerson} from "react-icons/bs";
 import FollowList from "./memo/follow_list";
 import {Modals} from "../../../main/common/util";
 import PostList from "./memo/post_list";
@@ -10,6 +10,7 @@ import NewPostList from "./memo/new_post_list";
 const Tabs = {
     Posts: "posts",
     Feed: "feed",
+    Ranked: "ranked",
     Following: "following",
 }
 
@@ -70,6 +71,10 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
                         <button title={"View Feed (All Users)"} className={tab === Tabs.Feed ? profile.selected : null}
                                 onClick={() => setTab(Tabs.Feed)}>
                             <BsGlobe/></button>
+                        <button title={"View Ranked Feed (Likes / Replies / Recency)"}
+                                className={tab === Tabs.Ranked ? profile.selected : null}
+                                onClick={() => setTab(Tabs.Ranked)}>
+                            <BsFire/></button>
                         <button title={"View Following"} className={tab === Tabs.Following ? profile.selected : null}
                                 onClick={() => setTab(Tabs.Following)}>
                             <BsPeople/></button>
@@ -83,6 +88,8 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
             {tab === Tabs.Posts ? <PostList setModal={setModal} lastUpdate={lastUpdate}/> : null}
             {tab === Tabs.Feed ?
                 <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}/> : null}
+            {tab === Tabs.Ranked ?
+                <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate} ranked/> : null}
             {tab === Tabs.Following ? <FollowList addresses={walletAddresses} setModal={setModal}/> : null}
         </div>
     )

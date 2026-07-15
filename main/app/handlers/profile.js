@@ -26,7 +26,8 @@ const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetFollowing, async (e, addresses) => GetFollowing(eConf(e), addresses))
     ipcMain.handle(Handlers.GetFollowers, async (e, addresses) => GetFollowers(eConf(e), addresses))
     ipcMain.handle(Handlers.GetLikes, async (e, txHash) => GetLikes(eConf(e), txHash))
-    ipcMain.handle(Handlers.GetNewPosts, async (e, {userAddresses}) => GetNewPosts({conf: eConf(e), userAddresses}))
+    ipcMain.handle(Handlers.GetNewPosts, async (e, {userAddresses, ranked}) =>
+        GetNewPosts({conf: eConf(e), userAddresses, ranked}))
     ipcMain.handle(Handlers.GetPost, async (e, {txHash, userAddresses}) =>
         GetPost({conf: eConf(e), txHash, userAddresses}))
     ipcMain.handle(Handlers.GetPosts, async (e, {addresses, userAddresses}) =>
