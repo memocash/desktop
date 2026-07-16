@@ -1,6 +1,11 @@
 const {BrowserWindow, screen, shell} = require("electron");
 const path = require("path");
+const isDev = require("electron-is-dev");
 const menu = require("../menu");
+
+// Dev loads the Next dev server; prod loads the static export served over the
+// app:// protocol (see main/index.js). The rest of the URL is identical.
+const AppUrl = isDev ? "http://localhost:8000" : "app://-";
 
 const wallets = {}
 const storage = {}
@@ -48,7 +53,7 @@ const CreateWindow = async () => {
     });
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     windows[win.webContents.id] = win
-    await win.loadURL("http://localhost:8000")
+    await win.loadURL(AppUrl + "/")
     windowNumber++
 }
 
@@ -77,7 +82,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     if (!txHash || !txHash.length) {
         params = {inputs, outputs, beatHash}
     }
-    await win.loadURL("http://localhost:8000/tx?" + (new URLSearchParams(params)).toString())
+    await win.loadURL(AppUrl + "/tx?" + (new URLSearchParams(params)).toString())
 }
 
 const eConf = (e) => GetNetworkOption(e.sender.id)

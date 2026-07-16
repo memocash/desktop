@@ -1,6 +1,7 @@
 /dist
 /node_modules
 /renderer/.next
+/renderer/out
 .DS_Store
 /memo.db
 /.next/
