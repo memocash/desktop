@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
+import {FormatTokenAmount} from "../util/slp";
 import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
 
@@ -9,6 +10,7 @@ const Column = {
     Address: "address",
     Value: "value",
     Height: "height",
+    Token: "slp_ticker",
     Output: "hash",
 }
 
@@ -23,7 +25,7 @@ const Coins = ({lastUpdate}) => {
     const coinsDiv = useRef()
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
-        const coins = await window.electron.getCoins(wallet.addresses.concat(wallet.changeList))
+        const coins = await window.electron.getCoins(wallet.addresses.concat(wallet.changeList, wallet.slpList || []))
         for (let i = 0; i < coins.length; i++) {
             if (!coins[i].height) {
                 coins[i].height = UnconfirmedValue
@@ -69,6 +71,16 @@ const Coins = ({lastUpdate}) => {
     const getCoinOutput = (coin) => {
         return coin.hash + ":" + coin.index
     }
+    const getCoinToken = (coin) => {
+        if (coin.slp_baton_token_hash) {
+            return "Baton: " + (coin.slp_ticker || ShortHash(coin.slp_baton_token_hash))
+        }
+        if (coin.slp_token_hash) {
+            return FormatTokenAmount(coin.slp_amount, coin.slp_decimals) + " " +
+                (coin.slp_ticker || ShortHash(coin.slp_token_hash))
+        }
+        return ""
+    }
     const rightClick = (e, hash, index, value, address) => {
         e.preventDefault()
         window.electron.coinsMenu(hash, index,value, address)
@@ -111,7 +123,7 @@ const Coins = ({lastUpdate}) => {
         const scrollTop = cur.parentNode.scrollTop
         const hashPrefix = selectedOutput.substr(0, 5)
         for (let i = 1; i < cur.childNodes.length; i++) {
-            if (cur.childNodes[i].childNodes[3].innerText.substr(0, 5) === hashPrefix) {
+            if (cur.childNodes[i].childNodes[4].innerText.substr(0, 5) === hashPrefix) {
                 const offsetTop = cur.childNodes[i].childNodes[0].offsetTop
                 if (offsetTop < scrollTop + 60) {
                     cur.parentNode.scrollTop = offsetTop - 60
@@ -125,7 +137,7 @@ const Coins = ({lastUpdate}) => {
         setSelectedOutput(selectedOutput)
     }
     return (
-        <div className={styles.wrapper} onKeyDown={keyDownHandler} ref={coinsDiv}>
+        <div className={[styles.wrapper, styles.wrapper5Even].join(" ")} onKeyDown={keyDownHandler} ref={coinsDiv}>
             {!coins.length ?
                 <p className={styles.message}>{loaded ? <>No coins</> : <>Loading...</>}</p>
                 :
@@ -137,6 +149,8 @@ const Coins = ({lastUpdate}) => {
                     <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
                               col={Column.Height} title={"Height"}/>
                     <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
+                              col={Column.Token} title={"Token"}/>
+                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
                               col={Column.Output} title={"Output"}/>
                 </div>
             }
@@ -147,6 +161,7 @@ const Coins = ({lastUpdate}) => {
                         <span>{coin.address}</span>
                         <span className={styles.itemValue}>{coin.value.toLocaleString()}</span>
                         <span className={styles.itemValue}>{coin.height.toLocaleString()}</span>
+                        <span title={coin.slp_token_hash || coin.slp_baton_token_hash}>{getCoinToken(coin)}</span>
                         <span title={coin.hash + ":" + coin.index} onContextMenu={(e) => rightClick(e,coin.hash, coin.index, coin.value, coin.address)}>{ShortHash(coin.hash)}:{coin.index}</span>
                     </div>
                 )

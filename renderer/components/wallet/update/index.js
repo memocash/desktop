@@ -3,7 +3,8 @@ import UpdateHistory from "./history";
 import ListenNewTxs from "./listen_txs";
 import {ListenBlocks, RecentBlock} from "./block";
 import UpdateMemoHistory from "./memo";
-import {UpdatePosts} from "./posts";
+import UpdateSlp from "./slp";
+import {BackfillPosts, UpdateNewPosts, UpdatePosts} from "./posts";
 import ListenPosts from "./listen_posts";
 
 export {
@@ -11,6 +12,8 @@ export {
     UpdateChatFollows,
     UpdateHistory,
     UpdatePosts,
+    UpdateNewPosts,
+    BackfillPosts,
     RecentBlock,
     ListenChatFollows,
     ListenChatPosts,
@@ -18,4 +21,5 @@ export {
     ListenBlocks,
     ListenPosts,
     UpdateMemoHistory,
+    UpdateSlp,
 }

@@ -1,5 +1,5 @@
 import Frame, {Tabs} from "../components/wallet/frame";
-import {Addresses, Chat, Coins, History, Memo, Receive, Send, Update} from "../components/wallet";
+import {Addresses, Chat, Coins, History, Memo, Receive, Send, Tokens, Update} from "../components/wallet";
 import {useEffect, useRef, useState} from "react";
 import {Status} from "../components/util/connect"
 import ModalViewer from "../components/modal/viewer";
@@ -60,7 +60,7 @@ const WalletLoaded = () => {
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}
                    setModal={setModal}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
-                    <Memo lastUpdate={lastUpdate} setModal={setModal}/></Page>
+                    <Memo lastUpdate={lastUpdate} setModal={setModal} setChatRoom={setChatRoom}/></Page>
                 <Page tab={tab} page={Tabs.Chat} shown={shownRef}>
                     <Chat setModal={setModal} room={room} setRoom={setRoom}/></Page>
                 <Page tab={tab} page={Tabs.History} shown={shownRef}><History lastUpdate={lastUpdate}/></Page>
@@ -68,6 +68,7 @@ const WalletLoaded = () => {
                 <Page tab={tab} page={Tabs.Receive} shown={shownRef}><Receive/></Page>
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>
+                <Page tab={tab} page={Tabs.Tokens} shown={shownRef}><Tokens lastUpdate={lastUpdate} setModal={setModal}/></Page>
             </Frame>
             <ModalViewer setLastUpdate={setLastUpdate} setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}
                          setChatRoom={setChatRoom}/>

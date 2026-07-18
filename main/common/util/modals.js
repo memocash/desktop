@@ -23,6 +23,7 @@ const Modals = {
     ProfileSetText: "profile-set-text",
     ProfileView: "profile-view",
     Seed: "seed",
+    TokenSend: "token-send",
 }
 
 module.exports = {

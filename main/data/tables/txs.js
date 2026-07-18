@@ -1,4 +1,5 @@
 const {Insert, Select} = require("../sqlite")
+const {SaveSlpOutput} = require("./slp")
 
 const SaveTransactions = async (conf, transactions) => {
     if (!transactions || !transactions.length) {
@@ -9,24 +10,36 @@ const SaveTransactions = async (conf, transactions) => {
             continue
         }
         await Insert(conf, "txs", "INSERT OR IGNORE INTO txs (hash) VALUES (?)", [transactions[i].hash])
-        if (transactions[i].seen.substr(0, 2) === "20") {
+        if (transactions[i].seen && transactions[i].seen.substr(0, 2) === "20") {
             await Insert(conf, "tx_seens", "INSERT OR IGNORE INTO tx_seens (hash, timestamp) VALUES (?, ?)", [
                 transactions[i].hash, transactions[i].seen])
         }
-        await Insert(conf, "tx_raws", "INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
-            transactions[i].hash, Buffer.from(transactions[i].raw, "hex")])
-        for (let j = 0; j < transactions[i].inputs.length; j++) {
+        // Callers may pass a trimmed tx (just hash/seen, e.g. for timestamp-only
+        // sync) without raw/inputs/outputs/blocks - skip those sections rather
+        // than crash on the missing fields.
+        if (transactions[i].raw !== undefined) {
+            await Insert(conf, "tx_raws", "INSERT OR IGNORE INTO tx_raws (hash, raw) VALUES (?, ?)", [
+                transactions[i].hash, Buffer.from(transactions[i].raw, "hex")])
+        }
+        for (let j = 0; j < (transactions[i].inputs || []).length; j++) {
             await Insert(conf, "inputs",
                 "INSERT OR IGNORE INTO inputs (hash, `index`, prev_hash, prev_index) VALUES (?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].inputs[j].index,
                     transactions[i].inputs[j].prev_hash, transactions[i].inputs[j].prev_index])
         }
-        for (let j = 0; j < transactions[i].outputs.length; j++) {
+        for (let j = 0; j < (transactions[i].outputs || []).length; j++) {
             await Insert(conf, "outputs",
                 "INSERT OR REPLACE INTO outputs (hash, `index`, address, value, script) VALUES (?, ?, ?, ?, ?)", [
                     transactions[i].hash, transactions[i].outputs[j].index,
                     transactions[i].outputs[j].lock ? transactions[i].outputs[j].lock.address : "unknown", transactions[i].outputs[j].amount,
                     Buffer.from(transactions[i].outputs[j].script, "hex")])
+            await SaveSlpOutput(conf, transactions[i].hash, transactions[i].outputs[j])
+        }
+        if (transactions[i].outputs && transactions[i].outputs.length) {
+            // Sync queries include SLP fields on outputs, so this tx doesn't
+            // need the SLP backfill check.
+            await Insert(conf, "slp_checks", "INSERT OR IGNORE INTO slp_checks (hash) VALUES (?)", [
+                transactions[i].hash])
         }
         if (!transactions[i].blocks) {
             continue
@@ -160,8 +173,15 @@ const GetTransaction = async (conf, txHash) => {
 
 const GetUtxos = async (conf, addresses) => {
     const query = "" +
-        "SELECT outputs.* FROM outputs " +
+        "SELECT " +
+        "   outputs.*, " +
+        "   slp_outputs.token_hash AS slp_token_hash, " +
+        "   slp_outputs.amount AS slp_amount, " +
+        "   slp_batons.token_hash AS slp_baton_token_hash " +
+        "FROM outputs " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
+        "LEFT JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
+        "LEFT JOIN slp_batons ON (slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index`) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL"
     return Select(conf, "outputs-utxos", query, addresses)

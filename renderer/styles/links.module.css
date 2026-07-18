@@ -1,0 +1,12 @@
+.image_link {
+    display: block;
+    margin: 5px 0;
+}
+
+.image {
+    display: block;
+    max-width: 100%;
+    max-height: 400px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}

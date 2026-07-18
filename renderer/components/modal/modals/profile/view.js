@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import profile from "../../../../styles/profile.module.css";
 import styles from "../../../../styles/modal.module.css"
@@ -8,7 +8,7 @@ import {Modals} from "../../../../../main/common/util"
 import Post from "../../../wallet/memo/post";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import Links from "../../../wallet/snippets/links";
-import {UpdateMemoHistory, UpdatePosts} from "../../../wallet/update/index";
+import {BackfillPosts, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
 import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
 
@@ -26,14 +26,24 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
     const [picData, setPicData] = useState(undefined)
     const [isSelf, setIsSelf] = useState(true)
     const [roomsFollowingCount, setRoomsFollowingCount] = useState(0)
+    // UpdateMemoHistory/UpdatePosts can call setLastProfileUpdate several times
+    // in quick succession as each sync phase lands, re-firing this effect each
+    // time with no cancellation. Guard against an earlier-started run (e.g. one
+    // that takes an extra getPic hop) finishing after a later, faster one and
+    // clobbering its fresher state.
+    const fetchSeqRef = useRef(0)
     useEffect(() => {(async () => {
+        const seq = ++fetchSeqRef.current
         const profileInfo = await window.electron.getProfileInfo([address])
-        if (profileInfo === undefined) {
+        if (profileInfo === undefined || seq !== fetchSeqRef.current) {
             return
         }
         setProfileInfo(profileInfo)
         if (profileInfo.pic !== undefined) {
             const picData = await window.electron.getPic(profileInfo.pic)
+            if (seq !== fetchSeqRef.current) {
+                return
+            }
             setPicData(picData)
         }
         const wallet = await GetWallet()
@@ -44,19 +54,19 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                 break
             }
         }
-        setIsSelf(isSelf)
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
-        setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         const posts = await window.electron.getPosts({addresses: [address], userAddresses: wallet.addresses})
+        if (seq !== fetchSeqRef.current) {
+            return
+        }
+        setIsSelf(isSelf)
+        setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         setPosts(posts)
     })()}, [lastUpdate, lastProfileUpdate])
     useEffect(() => {(async () => {
         await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
-        let txHashes = []
-        for (let i = 0; i < posts.length; i++) {
-            txHashes.push(posts[i].tx_hash)
-        }
-        await UpdatePosts({txHashes, setLastUpdate: setLastProfileUpdate})
+        const wallet = await GetWallet()
+        await BackfillPosts({addresses: [address], userAddresses: wallet.addresses, setLastUpdate: setLastProfileUpdate})
         const roomsFollowingCount = await window.electron.getAddressesRoomFollowCount({addresses: [address]})
         if (roomsFollowingCount.length) {
             setRoomsFollowingCount(roomsFollowingCount[0].count)

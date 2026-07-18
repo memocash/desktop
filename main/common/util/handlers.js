@@ -13,6 +13,7 @@ const Handlers = {
     GetFollowers: "get-followers",
     GetFollowing: "get-following",
     GetLikes: "get-likes",
+    GetNewPosts: "get-new-posts",
     GetPost: "get-post",
     GetPosts: "get-posts",
     GetPostParent: "get-post-parent",
@@ -30,6 +31,7 @@ const Handlers = {
     GetWallet: "get-wallet",
     WalletLoaded: "wallet-loaded",
     GetWalletInfo: "get-wallet-info",
+    GenerateWallet: "generate-wallet",
     GraphQL: "graphql",
     GraphQLSubscribe: "graphql-subscribe",
     GraphQLSubscribeClose: "graphql-subscribe-close",
@@ -51,6 +53,10 @@ const Handlers = {
     GetTransaction: "get-transaction",
     GetCoins: "get-coins",
     GetRecentAddresses: "get-recent-addresses",
+    GetAddressTokenBalances: "get-address-token-balances",
+    GetTokenBalances: "get-token-balances",
+    GetUncheckedSlpTxs: "get-unchecked-slp-txs",
+    SaveSlp: "save-slp",
 }
 
 const Listeners = {

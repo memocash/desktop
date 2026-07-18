@@ -2,8 +2,8 @@ import {Status} from "../../util/connect"
 
 const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
     const query = `
-        subscription() {
-            blocks() {
+        subscription {
+            blocks {
                 hash
                 timestamp
                 height
@@ -39,8 +39,8 @@ const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
 
 const RecentBlock = async () => {
     const query = `
-        query () {
-            block_newest() {
+        query {
+            block_newest {
                 hash
                 timestamp
                 height

@@ -1,7 +1,7 @@
 import {Status} from "../../util/connect"
 
 const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
-    let addressList = wallet.addresses.concat(wallet.changeList)
+    let addressList = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
     const recentAddresses = await window.electron.getRecentAddressTransactions(addressList)
     let addresses = new Array(addressList.length)
     for (let i = 0; i < addressList.length; i++) {
@@ -107,6 +107,29 @@ const loadOutputs = async ({addresses}) => {
                         address
                     }
                     script
+                    slp {
+                        amount
+                        token_hash
+                        genesis {
+                            hash
+                            token_type
+                            decimals
+                            ticker
+                            name
+                            doc_url
+                        }
+                    }
+                    slp_baton {
+                        token_hash
+                        genesis {
+                            hash
+                            token_type
+                            decimals
+                            ticker
+                            name
+                            doc_url
+                        }
+                    }
                     spends {
                         tx {
                             hash
@@ -123,6 +146,29 @@ const loadOutputs = async ({addresses}) => {
                                 script
                                 lock {
                                     address
+                                }
+                                slp {
+                                    amount
+                                    token_hash
+                                    genesis {
+                                        hash
+                                        token_type
+                                        decimals
+                                        ticker
+                                        name
+                                        doc_url
+                                    }
+                                }
+                                slp_baton {
+                                    token_hash
+                                    genesis {
+                                        hash
+                                        token_type
+                                        decimals
+                                        ticker
+                                        name
+                                        doc_url
+                                    }
                                 }
                             }
                             blocks {

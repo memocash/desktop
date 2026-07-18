@@ -7,6 +7,15 @@ const GetPosts = async ({conf, addresses, userAddresses}) => {
     return await Select(conf, "memo_posts-multi", query, [...userAddresses, ...addresses])
 }
 
+// Newest posts from everyone, not just the wallet's own addresses or who it
+// follows. The local table only holds what's been synced, so UpdateNewPosts
+// (posts_newest) is what actually pulls in strangers' posts before this reads.
+// ranked reorders the same pool by relevance (see RankedOrder) instead of time.
+const GetNewPosts = async ({conf, userAddresses, ranked}) => {
+    const orderBy = ranked ? RankedOrder : NewestOrder
+    return await Select(conf, "memo_posts-new", getSelectQuery({userAddresses, where: "1", orderBy}), [...userAddresses])
+}
+
 const GetPost = async ({conf, txHash, userAddresses}) => {
     const results = await Select(conf, "memo_posts", getSelectQuery({where: "memo_posts.tx_hash = ?", userAddresses}),
         [...userAddresses, txHash])
@@ -40,16 +49,42 @@ const GetRoomPosts = async ({conf, room, userAddresses}) => {
         [...userAddresses, room])
 }
 
-const getSelectQuery = ({join = "", userAddresses, where}) => {
+// A post's effective time: prefer whichever of block/seen is earlier, but fall
+// back to the other when one is missing. Shared by the SELECT (as the timestamp
+// column) and by RankedOrder's recency term, which can't use the "timestamp"
+// alias - inside an expression SQLite reads it as the ambiguous real column on
+// blocks/tx_seens rather than the output alias.
+const timestampSelect = "" +
+    "MIN(" +
+    "   COALESCE(blocks.timestamp, tx_seens.timestamp), " +
+    "   COALESCE(tx_seens.timestamp, blocks.timestamp)" +
+    ")"
+
+const NewestOrder = "timestamp DESC"
+
+// Ranked feed: newest-first stays the baseline, but engagement lifts a post
+// above strictly-newer neighbours. Hacker-News-style gravity decay keeps it
+// recency-dominant (an old post can't win on likes alone), while the "1 +" base
+// means a brand-new post with no engagement still ranks purely on recency.
+// Likes are run through ln() because a few posts have thousands of them and a
+// linear weight would let one old like-magnet dominate; replies are far rarer
+// (single digits here) and weighted higher as the stronger signal. like_count /
+// reply_count reference the SELECT aliases, which is unambiguous - no real
+// column has those names, unlike timestamp above.
+const RankWeightLike = 1.5
+const RankWeightReply = 2.5
+const RankGravity = 1.5
+const RankedOrder = "" +
+    "(1 + " + RankWeightLike + " * ln(1 + like_count) + " + RankWeightReply + " * reply_count) " +
+    "/ pow((julianday('now') - julianday(" + timestampSelect + ")) * 24 + 2, " + RankGravity + ") DESC"
+
+const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}) => {
     return "" +
         "SELECT " +
         "   memo_posts.*, " +
         "   profile_names.name, " +
         "   images.data AS pic, " +
-        "   MIN(" +
-        "       COALESCE(blocks.timestamp, tx_seens.timestamp), " +
-        "       COALESCE(tx_seens.timestamp, blocks.timestamp)" +
-        "   ) AS timestamp, " +
+        "   " + timestampSelect + " AS timestamp, " +
         "   COUNT(DISTINCT memo_replies.child_tx_hash) AS reply_count, " +
         "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count, " +
         "   SUM(CASE WHEN memo_likes.address IN (" +
@@ -71,7 +106,7 @@ const getSelectQuery = ({join = "", userAddresses, where}) => {
         join + " " +
         "WHERE " + where + " " +
         "GROUP BY memo_posts.tx_hash " +
-        "ORDER BY timestamp DESC " +
+        "ORDER BY " + orderBy + " " +
         "LIMIT 50 "
 }
 
@@ -128,6 +163,7 @@ const SaveMemoPosts = async (conf, posts) => {
 }
 
 module.exports = {
+    GetNewPosts,
     GetPost,
     GetPosts,
     GetPostParent,

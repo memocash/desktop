@@ -42,7 +42,7 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
             setError("Error, cannot add addresses directly to a wallet with keys")
             return
         } else if (wallet.keys.length > 0) {
-            const convertedKeys = GetAddresses("", keys)
+            const convertedKeys = GetAddresses(keys)
             await window.electron.addAddresses(convertedKeys)
             await window.electron.addKeys(keys)
         } else {
@@ -60,7 +60,7 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
             setError("Error, cannot remove addresses directly from a wallet with keys")
             return
         } else if (wallet.keys.length > 0) {
-            const convertedKeys = GetAddresses("", keys)
+            const convertedKeys = GetAddresses(keys)
             await window.electron.removeAddresses(convertedKeys)
             await window.electron.removeKeys(keys)
         } else {

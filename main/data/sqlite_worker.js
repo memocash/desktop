@@ -58,11 +58,29 @@ const GetDb = async () => {
 
 const SetDb = async (db) => {
     _db = database(db.replace("~", homedir))
-    for (let i = 0; i < Definitions.length; i++) {
-        const create = _db.prepare("CREATE TABLE IF NOT EXISTS " + Definitions[i])
-        await create.run()
-    }
+    const statements = Definitions.map(d => "CREATE TABLE IF NOT EXISTS " + d).concat(Indexes)
+    _db.transaction(() => {
+        for (const statement of statements) {
+            _db.prepare(statement).run()
+        }
+    })()
 }
+
+// These columns are joined/filtered on constantly (wallet balance, post lists,
+// follow lists) but aren't covered by the UNIQUE constraints above, which only
+// index their own leading columns. Without these, every one of those queries
+// does a full table scan, and since better-sqlite3 runs synchronously in a
+// single worker thread, a slow scan stalls every other pending DB call behind it.
+const Indexes = [
+    "CREATE INDEX IF NOT EXISTS idx_outputs_address ON outputs (address)",
+    "CREATE INDEX IF NOT EXISTS idx_inputs_prev ON inputs (prev_hash, prev_index)",
+    "CREATE INDEX IF NOT EXISTS idx_block_txs_tx_hash ON block_txs (tx_hash)",
+    "CREATE INDEX IF NOT EXISTS idx_memo_likes_post_tx_hash ON memo_likes (post_tx_hash)",
+    "CREATE INDEX IF NOT EXISTS idx_memo_replies_child_tx_hash ON memo_replies (child_tx_hash)",
+    "CREATE INDEX IF NOT EXISTS idx_memo_follows_address ON memo_follows (address)",
+    "CREATE INDEX IF NOT EXISTS idx_memo_follows_follow_address ON memo_follows (follow_address)",
+    "CREATE INDEX IF NOT EXISTS idx_memo_chat_follow_address ON memo_chat_follow (address)",
+]
 
 const Definitions = [
     `txs (
@@ -179,5 +197,31 @@ const Definitions = [
         unfollow INT,
         tx_hash CHAR,
         UNIQUE(tx_hash)
+    )`,
+    `slp_outputs (
+        hash CHAR,
+        \`index\` INT,
+        token_hash CHAR,
+        amount INT,
+        UNIQUE(hash, \`index\`)
+    )`,
+    `slp_batons (
+        hash CHAR,
+        \`index\` INT,
+        token_hash CHAR,
+        UNIQUE(hash, \`index\`)
+    )`,
+    `slp_geneses (
+        hash CHAR,
+        token_type INT,
+        decimals INT,
+        ticker CHAR,
+        name CHAR,
+        doc_url CHAR,
+        UNIQUE(hash)
+    )`,
+    `slp_checks (
+        hash CHAR,
+        UNIQUE(hash)
     )`,
 ]

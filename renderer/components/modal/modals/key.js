@@ -3,7 +3,7 @@ import Modal from "../modal"
 import styles from "../../../styles/modal.module.css"
 import Password from "./password";
 import {mnemonicToSeedSync} from "bip39";
-import {fromSeed} from "bip32";
+import bip32 from "../../util/bip32";
 import {useReferredState} from "../../util/state";
 
 const KeyModal = ({onClose, modalProps: {address}}) => {
@@ -42,8 +42,8 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
         }
         if (wallet.seed) {
             const seed = mnemonicToSeedSync(wallet.seed)
-            const node = fromSeed(seed)
-            let path = "m/44'/0'/0'/0/" + addressId
+            const node = bip32.fromSeed(seed)
+            let path
             if (!changeAddress) {
                 path = "m/44'/0'/0'/0/" + addressId
                 setDisplayAddress(wallet.addresses[addressId])

@@ -1,7 +1,7 @@
 import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../util/wallet";
 import {mnemonicToSeedSync} from "bip39";
-import {fromSeed} from "bip32";
+import bip32 from "../util/bip32";
 import {Modals} from "../../../main/common/util"
 import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
@@ -22,26 +22,36 @@ const setTx = async (outer_transaction, setModal) => {
     const wallet = await GetWallet()
     if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
         window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
-        return
+        return false
     }
-    let getKey
-    if (wallet.seed && wallet.keys.length == 0) {
-        const seed = mnemonicToSeedSync(wallet.seed)
-        const node = fromSeed(seed)
-        getKey = (address) => {
-            for (let i = 0; i < wallet.addresses.length; i++) {
-                if (address === wallet.addresses[i]) {
-                    const child = node.derivePath("m/44'/0'/0'/0/" + i)
-                    return ECPair.fromWIF(child.toWIF())
-                }
+    // Seed wallets store their external-path WIFs in wallet.keys, so stored
+    // keys and seed derivation aren't either/or: change and SLP path keys are
+    // only reachable through the seed. Check both.
+    let node
+    if (wallet.seed && wallet.seed.length) {
+        node = bip32.fromSeed(mnemonicToSeedSync(wallet.seed))
+    }
+    const derivedLists = [
+        {addresses: wallet.addresses || [], path: "m/44'/0'/0'/0/"},
+        {addresses: wallet.changeList || [], path: "m/44'/0'/0'/1/"},
+        {addresses: wallet.slpList || [], path: "m/44'/245'/0'/0/"},
+    ]
+    const getKey = (address) => {
+        const keys = wallet.keys || []
+        for (let i = 0; i < keys.length; i++) {
+            const key = ECPair.fromWIF(keys[i])
+            if (address === key.getAddress()) {
+                return key
             }
         }
-    } else {
-        getKey = (address) => {
-            for (let i = 0; i < wallet.keys.length; i++) {
-                const key = ECPair.fromWIF(wallet.keys[i])
-                if (address === key.getAddress()) {
-                    return key
+        if (!node) {
+            return undefined
+        }
+        for (let j = 0; j < derivedLists.length; j++) {
+            const {addresses, path} = derivedLists[j]
+            for (let i = 0; i < addresses.length; i++) {
+                if (address === addresses[i]) {
+                    return ECPair.fromWIF(node.derivePath(path + i).toWIF())
                 }
             }
         }
@@ -55,8 +65,8 @@ const setTx = async (outer_transaction, setModal) => {
             const input = outer_transaction.outer_txInfo.inputs[i]
             const key = getKey(input.output.address)
             if (key === undefined) {
-                console.log("Unable to find key for input address: " + input.output.address)
-                return
+                window.electron.showMessageDialog("Unable to find key for input address: " + input.output.address)
+                return false
             }
             txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
         }
@@ -80,7 +90,16 @@ const setTx = async (outer_transaction, setModal) => {
     if (setModal) {
         setModal(Modals.None)
     }
+    return true
 }
+// GraphQL rejections are arrays of {message}, other failures are Errors.
+const FormatTxError = (e) => {
+    if (Array.isArray(e)) {
+        return e.map(err => err && err.message ? err.message : JSON.stringify(err)).join(", ")
+    }
+    return e && e.message ? e.message : String(e)
+}
+
 const pushTx = async (outer_txInfo) => {
     const query = `
     mutation ($raw: String!) {
@@ -92,8 +111,15 @@ const pushTx = async (outer_txInfo) => {
 }
 
 const setAndPushTx = async (outer_transaction, setModal, onDone) => {
-    await setTx(outer_transaction, setModal)
-    await pushTx(outer_transaction.outer_txInfo)
+    if (!await setTx(outer_transaction, setModal)) {
+        return
+    }
+    try {
+        await pushTx(outer_transaction.outer_txInfo)
+    } catch (e) {
+        window.electron.showMessageDialog("Error broadcasting transaction: " + FormatTxError(e))
+        return
+    }
     if (typeof onDone == "function") {
         onDone()
     }
@@ -128,9 +154,10 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         }
         let txb = new bitcoin.TransactionBuilder()
         const wallet = await GetWallet()
+        const walletAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
         const isHighlight = (address) => {
-            for (let i = 0; i < wallet.addresses.length; i++) {
-                if (address === wallet.addresses[i]) {
+            for (let i = 0; i < walletAddresses.length; i++) {
+                if (address === walletAddresses[i]) {
                     return true
                 }
             }
@@ -200,4 +227,4 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         }
     }
 }
-export {DirectTx, setTx, pushTx}
+export {DirectTx, setTx, pushTx, FormatTxError}
