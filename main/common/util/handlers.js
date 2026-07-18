@@ -31,6 +31,7 @@ const Handlers = {
     GetWallet: "get-wallet",
     WalletLoaded: "wallet-loaded",
     GetWalletInfo: "get-wallet-info",
+    GenerateWallet: "generate-wallet",
     GraphQL: "graphql",
     GraphQLSubscribe: "graphql-subscribe",
     GraphQLSubscribeClose: "graphql-subscribe-close",

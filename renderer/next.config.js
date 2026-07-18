@@ -13,7 +13,19 @@ module.exports = {
     // plain <img> tags, so mark images unoptimized to keep the export happy.
     images: {unoptimized: true},
     webpack: (config) => {
+        // tiny-secp256k1's browser build loads its 1.24MB WASM asynchronously
+        // (the synchronous node loader would exceed the renderer main thread's
+        // 4KB sync-compile limit), so async WebAssembly is required.
         config.experiments = {...config.experiments, asyncWebAssembly: true}
+        // asyncWebAssembly generates async/await glue around the WASM module. Without
+        // declaring that the target supports async functions, webpack warns the code
+        // "may cause runtime errors" and the ecc module can fail to initialize, which
+        // leaves bip32 unusable and hangs address generation. Electron's Chromium
+        // renderer supports async functions, so declare it.
+        config.output = {
+            ...config.output,
+            environment: {...config.output?.environment, asyncFunction: true},
+        }
         return config
     },
 }

@@ -78,5 +78,8 @@
   "overrides": {
     "linkify-it": "^5.0.2",
     "postcss": "^8.5.19"
-  }
+  },
+  "trustedDependencies": [
+    "electron"
+  ]
 }

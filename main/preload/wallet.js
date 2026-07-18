@@ -163,6 +163,7 @@ module.exports = {
     },
     getPassword: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).password,
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
+    generateWallet: async (seed, keys) => ipcRenderer.invoke(Handlers.GenerateWallet, seed, keys),
     getWallet: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).wallet,
     getWalletFile: async (walletName) => await fs.readFile(getPathForWallet(walletName), {encoding: "utf8"}),
     setWallet: async (wallet, filename, password) =>

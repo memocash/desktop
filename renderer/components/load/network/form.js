@@ -10,12 +10,16 @@ const NetworkForm = ({setPane, networkValueRef}) => {
     const selectRef = useRef()
     useEffect(() => {(async () => {
         const networkOptions = await GetNetworkOptions()
-        setNetworkOptions(networkOptions)
         if (!networkValueRef.current || !networkValueRef.current.length) {
             networkValueRef.current = (await GetDefaultNetwork()).Id
         }
-        selectRef.current.value = networkValueRef.current
+        setNetworkOptions(networkOptions)
     })()}, [])
+    useEffect(() => {
+        if (selectRef.current) {
+            selectRef.current.value = networkValueRef.current
+        }
+    }, [networkOptions])
     const onSelectChange = (e) => {
         if (e.target.value === EditOption) {
             e.target.value = networkValueRef.current

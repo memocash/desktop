@@ -5,3 +5,6 @@
 .DS_Store
 /memo.db
 /.next/
+bun.lock
+/.claude
+/.idea

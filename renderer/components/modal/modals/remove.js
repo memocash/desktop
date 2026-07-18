@@ -30,7 +30,7 @@ const RemoveModal = ({basic: {onClose, setLastUpdate, setModal}, modalProps:{add
                     key = current_key.toWIF()
                 }
             }
-            const convertedKeys = GetAddresses("", [key])
+            const convertedKeys = GetAddresses([key])
             await window.electron.removeAddresses(convertedKeys)
             await window.electron.removeKeys([key])
         } else{
