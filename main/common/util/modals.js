@@ -23,6 +23,8 @@ const Modals = {
     ProfileSetText: "profile-set-text",
     ProfileView: "profile-view",
     Seed: "seed",
+    TokenCreate: "token-create",
+    TokenMint: "token-mint",
     TokenSend: "token-send",
 }
 

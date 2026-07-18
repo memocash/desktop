@@ -78,6 +78,28 @@ const GetAddressTokenBalances = (conf, addresses) => {
     return Select(conf, "slp-address-token-balances", query, addresses)
 }
 
+// Unspent mint batons held by the wallet, grouped by token. Used to enable
+// minting for tokens the wallet controls a baton for, including tokens with no
+// token balance (batons live in slp_batons, not slp_outputs).
+const GetTokenBatons = (conf, addresses) => {
+    const query = "" +
+        "SELECT " +
+        "   slp_batons.token_hash, " +
+        "   slp_geneses.ticker, " +
+        "   slp_geneses.name, " +
+        "   slp_geneses.decimals, " +
+        "   slp_geneses.token_type, " +
+        "   COUNT(*) AS baton_count " +
+        "FROM outputs " +
+        "JOIN slp_batons ON (slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index`) " +
+        "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
+        "LEFT JOIN slp_geneses ON (slp_geneses.hash = slp_batons.token_hash) " +
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "AND inputs.hash IS NULL " +
+        "GROUP BY slp_batons.token_hash "
+    return Select(conf, "slp-token-batons", query, addresses)
+}
+
 const GetTokenBalances = (conf, addresses) => {
     const query = "" +
         "SELECT " +
@@ -102,6 +124,7 @@ module.exports = {
     GetAddressTokenBalances,
     GetSlpGenesis,
     GetTokenBalances,
+    GetTokenBatons,
     GetUncheckedSlpTxs,
     SaveSlp,
     SaveSlpOutput,

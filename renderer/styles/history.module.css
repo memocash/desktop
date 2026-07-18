@@ -17,6 +17,10 @@
     grid-template-columns: repeat(5, minmax(max-content, 1fr));
 }
 
+.wrapper6Even {
+    grid-template-columns: repeat(6, minmax(max-content, 1fr));
+}
+
 .wrapper .message {
     padding: 5px;
     margin: 0;

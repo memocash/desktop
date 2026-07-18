@@ -26,6 +26,11 @@
     max-width: 350px;
 }
 
+/* For modals with labeled form rows (200px span + 300px input). */
+.rootWide {
+    max-width: 520px;
+}
+
 .root input[type="password"] {
     margin-left: 8px;
 }

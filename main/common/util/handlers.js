@@ -55,6 +55,7 @@ const Handlers = {
     GetRecentAddresses: "get-recent-addresses",
     GetAddressTokenBalances: "get-address-token-balances",
     GetTokenBalances: "get-token-balances",
+    GetTokenBatons: "get-token-batons",
     GetUncheckedSlpTxs: "get-unchecked-slp-txs",
     GetSlpGenesis: "get-slp-genesis",
     SaveSlp: "save-slp",

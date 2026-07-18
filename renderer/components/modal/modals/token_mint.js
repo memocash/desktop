@@ -1,31 +1,22 @@
 import {useRef, useState} from "react"
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib"
 import Modal from "../modal"
 import styles from "../../../styles/modal.module.css"
 import form from "../../../styles/form.module.css"
 import GetWallet from "../../util/wallet"
 import ShortHash from "../../util/txs"
-import {FormatTokenAmount, FormatTokenAmountPlain, ParseTokenAmount} from "../../util/slp"
-import {CreateSlpTransaction} from "../../wallet/snippets/create_slp_tx"
+import {FormatTokenAmount, ParseTokenAmount} from "../../util/slp"
+import {CreateSlpMintTransaction} from "../../wallet/snippets/create_slp_tx"
 
-const TokenSendModal = ({onClose, setModal, modalProps: {token}}) => {
-    const payToRef = useRef()
+const MaxTokenAmount = 2n ** 64n - 1n
+
+const TokenMintModal = ({onClose, setModal, modalProps: {token}}) => {
     const amountRef = useRef()
+    const keepBatonRef = useRef()
     const [error, setError] = useState("")
-    const onClickMax = () => {
-        amountRef.current.value = FormatTokenAmountPlain(token.amount, token.decimals)
-    }
     const formSubmit = async (e) => {
         e.preventDefault()
-        const payTo = payToRef.current.value
-        try {
-            address.fromBase58Check(payTo)
-        } catch (err) {
-            setError("Unable to parse address: " + err.toString())
-            return
-        }
         const amount = ParseTokenAmount(amountRef.current.value, token.decimals)
-        if (amount === null || amount <= 0n) {
+        if (amount === null || amount <= 0n || amount > MaxTokenAmount) {
             setError("Invalid amount" + (token.decimals ?
                 " (max " + token.decimals + " decimal places)" : " (token has no decimal places)"))
             return
@@ -33,9 +24,10 @@ const TokenSendModal = ({onClose, setModal, modalProps: {token}}) => {
         setError("")
         const wallet = await GetWallet()
         const preview = e.type === "submit"
-        const created = await CreateSlpTransaction({
-            wallet, token, payTo, amount, setModal,
-            onDone: onClose, preview,
+        const created = await CreateSlpMintTransaction({
+            wallet, token, amount,
+            keepBaton: keepBatonRef.current.checked,
+            setModal, onDone: onClose, preview,
         })
         if (created && preview) {
             onClose()
@@ -45,24 +37,26 @@ const TokenSendModal = ({onClose, setModal, modalProps: {token}}) => {
         <Modal onClose={onClose}>
             <div className={[styles.root, styles.rootWide].join(" ")}>
                 <div className={styles.header}>
-                    <h2>Send {token.ticker || ShortHash(token.token_hash)}</h2>
+                    <h2>Mint {token.ticker || ShortHash(token.token_hash)}</h2>
                 </div>
                 <p title={token.token_hash}>
                     {token.name ? token.name + " - " : ""}
-                    Balance: {FormatTokenAmount(token.amount, token.decimals)} {token.ticker}
+                    Balance: {FormatTokenAmount(token.amount || 0, token.decimals)} {token.ticker}
                 </p>
+                <p>Mints new supply to your wallet using the mint baton.</p>
                 <form onSubmit={formSubmit}>
                     <p>
                         <label>
-                            <span className={form.span}>Pay to:</span>
-                            <input className={form.input} ref={payToRef} type="text" autoFocus spellCheck="false"/>
+                            <span className={form.span}>Amount to mint:</span>
+                            <input className={form.input_small} ref={amountRef} type="text" autoFocus
+                                   spellCheck="false"/>
                         </label>
                     </p>
                     <p>
                         <label>
-                            <span className={form.span}>Amount:</span>
-                            <input className={form.input_small} ref={amountRef} type="text" spellCheck="false"/>
-                            <input type="button" value={"Max"} onClick={onClickMax}/>
+                            <span className={form.span}>Keep mint baton:</span>
+                            <input ref={keepBatonRef} type="checkbox" defaultChecked={true}/>
+                            <i> (uncheck to permanently end minting)</i>
                         </label>
                     </p>
                     <p>
@@ -76,4 +70,4 @@ const TokenSendModal = ({onClose, setModal, modalProps: {token}}) => {
     )
 }
 
-export default TokenSendModal
+export default TokenMintModal

@@ -12,6 +12,7 @@ const Column = {
     Name: "name",
     Amount: "amount",
     UtxoCount: "utxo_count",
+    Baton: "baton_count",
     Token: "token_hash",
 }
 
@@ -23,7 +24,19 @@ const Tokens = ({lastUpdate, setModal}) => {
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
-        const tokens = await window.electron.getTokenBalances(wallet.addresses.concat(wallet.changeList, wallet.slpList || []))
+        const addresses = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
+        const tokens = await window.electron.getTokenBalances(addresses)
+        // Merge in mint batons: mark tokens the wallet can mint, and include
+        // tokens where the wallet only holds a baton and no balance.
+        const batons = await window.electron.getTokenBatons(addresses)
+        for (let i = 0; i < batons.length; i++) {
+            const token = tokens.find(token => token.token_hash === batons[i].token_hash)
+            if (token) {
+                token.baton_count = batons[i].baton_count
+            } else {
+                tokens.push({...batons[i], amount: 0, utxo_count: 0})
+            }
+        }
         setTokens(tokens)
         setLoaded(true)
         sortTokens()
@@ -56,19 +69,36 @@ const Tokens = ({lastUpdate, setModal}) => {
     const openSend = (token) => {
         setModal(Modals.TokenSend, {token})
     }
+    const getSelected = () => tokensRef.current.find(token => token.token_hash === selectedTokenRef.current)
     const clickSend = () => {
-        const token = tokensRef.current.find(token => token.token_hash === selectedTokenRef.current)
+        const token = getSelected()
         if (token) {
             openSend(token)
         }
+    }
+    const clickMint = () => {
+        const token = getSelected()
+        if (token && token.baton_count) {
+            setModal(Modals.TokenMint, {token})
+        }
+    }
+    const selectedHasBaton = () => {
+        const token = tokens.find(token => token.token_hash === selectedToken)
+        return !!(token && token.baton_count)
     }
     return (
         <div>
             <p>
                 <input type="button" value={"Send"} disabled={!selectedToken.length} onClick={clickSend}
                        title={"Select a token to send (or double-click a row)"}/>
+                {" "}
+                <input type="button" value={"Mint"} disabled={!selectedHasBaton()} onClick={clickMint}
+                       title={"Mint new supply (requires a mint baton for the selected token)"}/>
+                {" "}
+                <input type="button" value={"Create Token"} onClick={() => setModal(Modals.TokenCreate)}
+                       title={"Create a new SLP token"}/>
             </p>
-            <div className={[styles.wrapper, styles.wrapper5Even].join(" ")}>
+            <div className={[styles.wrapper, styles.wrapper6Even].join(" ")}>
             {!tokens.length ?
                 <p className={styles.message}>{loaded ? <>No tokens</> : <>Loading...</>}</p>
                 :
@@ -82,6 +112,8 @@ const Tokens = ({lastUpdate, setModal}) => {
                     <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
                               col={Column.UtxoCount} title={"UTXOs"}/>
                     <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
+                              col={Column.Baton} title={"Baton"}/>
+                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
                               col={Column.Token} title={"Token"}/>
                 </div>
             }
@@ -94,6 +126,8 @@ const Tokens = ({lastUpdate, setModal}) => {
                         <span>{token.name}</span>
                         <span className={styles.itemValue}>{FormatTokenAmount(token.amount, token.decimals)}</span>
                         <span className={styles.itemValue}>{token.utxo_count.toLocaleString()}</span>
+                        <span className={styles.itemValue} title={"Mint batons in wallet"}>
+                            {token.baton_count ? "✓" : ""}</span>
                         <span title={token.token_hash}>{ShortHash(token.token_hash)}</span>
                     </div>
                 )
