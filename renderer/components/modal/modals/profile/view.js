@@ -8,7 +8,7 @@ import {Modals} from "../../../../../main/common/util"
 import Post from "../../../wallet/memo/post";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import Links from "../../../wallet/snippets/links";
-import {BackfillPosts, UpdateMemoHistory} from "../../../wallet/update/index";
+import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
 import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
 
@@ -26,6 +26,11 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
     const [picData, setPicData] = useState(undefined)
     const [isSelf, setIsSelf] = useState(true)
     const [roomsFollowingCount, setRoomsFollowingCount] = useState(0)
+    // The viewed address plus every address actively linked to it (memo
+    // identity protocol) - profile info, posts, follows and rooms are all
+    // aggregated across the cluster. Viewed address stays first so its own
+    // name/profile/pic win in GetProfileInfo's merge.
+    const [addresses, setAddresses] = useState([address])
     // UpdateMemoHistory/UpdatePosts can call setLastProfileUpdate several times
     // in quick succession as each sync phase lands, re-firing this effect each
     // time with no cancellation. Guard against an earlier-started run (e.g. one
@@ -34,7 +39,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
     const fetchSeqRef = useRef(0)
     useEffect(() => {(async () => {
         const seq = ++fetchSeqRef.current
-        const profileInfo = await window.electron.getProfileInfo([address])
+        const profileInfo = await window.electron.getProfileInfo(addresses)
         if (profileInfo === undefined || seq !== fetchSeqRef.current) {
             return
         }
@@ -49,25 +54,33 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         const wallet = await GetWallet()
         let isSelf = false
         for (const walletAddress of wallet.addresses) {
-            if (walletAddress === address) {
+            if (addresses.includes(walletAddress)) {
                 isSelf = true
                 break
             }
         }
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
-        const posts = await window.electron.getPosts({addresses: [address], userAddresses: wallet.addresses})
+        const posts = await window.electron.getPosts({addresses, userAddresses: wallet.addresses})
         if (seq !== fetchSeqRef.current) {
             return
         }
         setIsSelf(isSelf)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         setPosts(posts)
-    })()}, [lastUpdate, lastProfileUpdate])
+    })()}, [lastUpdate, lastProfileUpdate, addresses])
     useEffect(() => {(async () => {
-        await UpdateMemoHistory({addresses: [address], setLastUpdate: setLastProfileUpdate})
+        // Resolve the linked-address cluster before the rest of the sync so
+        // history/posts cover every member. On network failure fall back to
+        // whatever links are already in the local db.
+        let linked = await SyncProfileLinks({address}).catch(async (e) => {
+            console.log("SyncProfileLinks failed", e)
+            return await window.electron.getLinkedAddresses([address])
+        })
+        setAddresses(linked)
+        await UpdateMemoHistory({addresses: linked, setLastUpdate: setLastProfileUpdate})
         const wallet = await GetWallet()
-        await BackfillPosts({addresses: [address], userAddresses: wallet.addresses, setLastUpdate: setLastProfileUpdate})
-        const roomsFollowingCount = await window.electron.getAddressesRoomFollowCount({addresses: [address]})
+        await BackfillPosts({addresses: linked, userAddresses: wallet.addresses, setLastUpdate: setLastProfileUpdate})
+        const roomsFollowingCount = await window.electron.getAddressesRoomFollowCount({addresses: linked})
         if (roomsFollowingCount.length) {
             setRoomsFollowingCount(roomsFollowingCount[0].count)
         }
@@ -100,11 +113,21 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                         <Links>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</Links>
                     </p>
                     <p>Address: {address}</p>
+                    {addresses.length > 1 && <p>
+                        Linked: {addresses.filter(linkedAddress => linkedAddress !== address)
+                        .map((linkedAddress, i) => <span key={i}>
+                            {i > 0 ? ", " : ""}
+                            <a className={profile.txLink}
+                               onClick={() => setModal(Modals.ProfileView, {address: linkedAddress})}>
+                                {linkedAddress}
+                            </a>
+                        </span>)}
+                    </p>}
                     <p>
-                        <button title={"Following"} onClick={() => setModal(Modals.Following, {address})}>
+                        <button title={"Following"} onClick={() => setModal(Modals.Following, {address, addresses})}>
                             {profileInfo.num_following} Following
                         </button>
-                        <button title={"Followers"} onClick={() => setModal(Modals.Followers, {address})}>
+                        <button title={"Followers"} onClick={() => setModal(Modals.Followers, {address, addresses})}>
                             {profileInfo.num_followers} Followers
                         </button>
                         <button title={"Chat Rooms Following"}

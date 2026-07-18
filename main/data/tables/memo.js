@@ -3,6 +3,13 @@ const {SaveTransactions} = require("./txs");
 const {SaveMemoPosts} = require("./memo_post");
 const {MaxFollows} = require("../common/memo_follow");
 
+// Returns a single merged profile for a set of addresses (a wallet's addresses,
+// or a linked-address cluster). Rows are grouped per address and merged in JS
+// so name/profile/pic selection is deterministic: without the GROUP BY, SQLite
+// picks the bare columns from an arbitrary row, which showed "Name not set"
+// for a linked profile whenever the row picked happened to be a member that
+// never set a name. Merge order follows the passed address order, so callers
+// put the viewed address first - its own name wins over a linked member's.
 const GetProfileInfo = async (conf, addresses) => {
     const maxFollowersWhere = "follow_address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const maxFollowingWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
@@ -22,22 +29,107 @@ const GetProfileInfo = async (conf, addresses) => {
         "   ON (max_followers.follow_address = profiles.address) " +
         "LEFT JOIN (" + MaxFollows(maxFollowingWhere) + ") max_following " +
         "   ON (max_following.address = profiles.address) " +
-        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "GROUP BY profiles.address"
     const results = await Select(conf, "profiles", query, [...addresses, ...addresses, ...addresses])
-    if(!results[0].address){
-        results[0].address = addresses[0]
+    const merged = {
+        address: addresses[0],
+        name: null,
+        profile: null,
+        pic: null,
+        num_followers: 0,
+        num_following: 0,
     }
-    if (!results || !results.length) {
-        return undefined
+    const rowsByAddress = {}
+    for (const row of results) {
+        rowsByAddress[row.address] = row
     }
-    return results[0]
+    for (const address of addresses) {
+        const row = rowsByAddress[address]
+        if (!row) {
+            continue
+        }
+        merged.num_followers += row.num_followers
+        merged.num_following += row.num_following
+        if (!merged.name && row.name) {
+            merged.name = row.name
+        }
+        if (!merged.profile && row.profile) {
+            merged.profile = row.profile
+        }
+        if (!merged.pic && row.pic) {
+            merged.pic = row.pic
+        }
+    }
+    return merged
+}
+
+// Expands a set of addresses to every address transitively linked to it. A link
+// is active when a request has an accept from the requested parent and that
+// accept has no revoke from either side of the link (revoking a specific accept
+// leaves a later re-accept of the same request active).
+const GetLinkedAddresses = async (conf, addresses) => {
+    let cluster = [...new Set(addresses)]
+    for (let i = 0; i < 10; i++) {
+        const inList = "(" + Array(cluster.length).fill("?").join(", ") + ") "
+        const query = "" +
+            "SELECT " +
+            "   link_requests.address AS child_address, " +
+            "   link_requests.parent_address AS parent_address " +
+            "FROM link_requests " +
+            "JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
+            "   AND link_accepts.address = link_requests.parent_address) " +
+            "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
+            "   AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+            "WHERE link_revokes.tx_hash IS NULL " +
+            "   AND (link_requests.address IN " + inList + "OR link_requests.parent_address IN " + inList + ")"
+        const results = await Select(conf, "linked-addresses", query, [...cluster, ...cluster])
+        const known = new Set(cluster)
+        for (const row of results) {
+            known.add(row.child_address)
+            known.add(row.parent_address)
+        }
+        if (known.size === cluster.length) {
+            break
+        }
+        cluster = [...cluster, ...[...known].filter(address => !cluster.includes(address))]
+    }
+    return cluster
 }
 
 const SaveMemoProfiles = async (conf, profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
-        let {lock, name, profile, pic, following, followers, posts} = profiles[i]
-        if (!lock || !lock.address || (!name && !profile && !pic)) {
+        let {lock, name, profile, pic, following, followers, posts, link_requests, link_accepts, link_revokes} =
+            profiles[i]
+        if (!lock || !lock.address) {
+            continue
+        }
+        // Link data is saved before the profile-fields guard below: an address
+        // that only ever linked itself (e.g. a fresh parent address) has no
+        // name/profile/pic but its links still need to resolve.
+        if (link_requests && link_requests.length) {
+            await Insert(conf, "link_requests",
+                "INSERT OR REPLACE INTO link_requests (tx_hash, address, parent_address, message) " +
+                "VALUES " + Array(link_requests.length).fill("(?, ?, ?, ?)").join(", "),
+                link_requests.map(request => [
+                    request.tx_hash, request.address, request.parent_address, request.message]).flat())
+        }
+        if (link_accepts && link_accepts.length) {
+            await Insert(conf, "link_accepts",
+                "INSERT OR REPLACE INTO link_accepts (tx_hash, address, request_tx_hash, message) " +
+                "VALUES " + Array(link_accepts.length).fill("(?, ?, ?, ?)").join(", "),
+                link_accepts.map(accept => [
+                    accept.tx_hash, accept.address, accept.request_tx_hash, accept.message]).flat())
+        }
+        if (link_revokes && link_revokes.length) {
+            await Insert(conf, "link_revokes",
+                "INSERT OR REPLACE INTO link_revokes (tx_hash, address, accept_tx_hash, message) " +
+                "VALUES " + Array(link_revokes.length).fill("(?, ?, ?, ?)").join(", "),
+                link_revokes.map(revoke => [
+                    revoke.tx_hash, revoke.address, revoke.accept_tx_hash, revoke.message]).flat())
+        }
+        if (!name && !profile && !pic) {
             continue
         }
         saveProfiles.push({lock, name, profile, pic})
@@ -205,6 +297,7 @@ const SavePic = async (conf, url, data) => {
 }
 
 module.exports = {
+    GetLinkedAddresses,
     GetProfileInfo,
     SaveMemoProfiles,
     GetRecentSetName,

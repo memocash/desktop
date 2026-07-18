@@ -3,7 +3,7 @@ import {Modals} from "../../../../../main/common/util";
 import {BsPerson} from "react-icons/bs";
 import {useEffect, useState} from "react";
 
-const ProfileInfoLight = ({setModal, address, children}) => {
+const ProfileInfoLight = ({setModal, address, addresses, children}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
         profile: "",
@@ -11,7 +11,8 @@ const ProfileInfoLight = ({setModal, address, children}) => {
     })
     const [picData, setPicData] = useState([])
     useEffect(() => {(async () => {
-        const profileInfo = await window.electron.getProfileInfo([address])
+        const profileInfo = await window.electron.getProfileInfo(
+            (addresses && addresses.length) ? addresses : [address])
         if (profileInfo === undefined) {
             return
         }

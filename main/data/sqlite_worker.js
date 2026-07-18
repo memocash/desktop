@@ -80,6 +80,8 @@ const Indexes = [
     "CREATE INDEX IF NOT EXISTS idx_memo_follows_address ON memo_follows (address)",
     "CREATE INDEX IF NOT EXISTS idx_memo_follows_follow_address ON memo_follows (follow_address)",
     "CREATE INDEX IF NOT EXISTS idx_memo_chat_follow_address ON memo_chat_follow (address)",
+    "CREATE INDEX IF NOT EXISTS idx_link_accepts_request_tx_hash ON link_accepts (request_tx_hash)",
+    "CREATE INDEX IF NOT EXISTS idx_link_revokes_accept_tx_hash ON link_revokes (accept_tx_hash)",
 ]
 
 const Definitions = [
@@ -223,5 +225,26 @@ const Definitions = [
     `slp_checks (
         hash CHAR,
         UNIQUE(hash)
+    )`,
+    `link_requests (
+        tx_hash CHAR,
+        address CHAR,
+        parent_address CHAR,
+        message CHAR,
+        UNIQUE(tx_hash)
+    )`,
+    `link_accepts (
+        tx_hash CHAR,
+        address CHAR,
+        request_tx_hash CHAR,
+        message CHAR,
+        UNIQUE(tx_hash)
+    )`,
+    `link_revokes (
+        tx_hash CHAR,
+        address CHAR,
+        accept_tx_hash CHAR,
+        message CHAR,
+        UNIQUE(tx_hash)
     )`,
 ]
