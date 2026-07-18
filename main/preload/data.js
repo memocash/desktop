@@ -9,6 +9,7 @@ module.exports = {
     getAddressTokenBalances: async (addresses) => ipcRenderer.invoke(Handlers.GetAddressTokenBalances, addresses),
     getTokenBalances: async (addresses) => ipcRenderer.invoke(Handlers.GetTokenBalances, addresses),
     getTransactions: async (addresses) => ipcRenderer.invoke(Handlers.GetTransactions, addresses),
+    getSlpGenesis: async (hash) => ipcRenderer.invoke(Handlers.GetSlpGenesis, hash),
     getUncheckedSlpTxs: async (addresses) => ipcRenderer.invoke(Handlers.GetUncheckedSlpTxs, addresses),
     getUtxos: async (addresses) => ipcRenderer.invoke(Handlers.GetUtxos, addresses),
     saveSlp: async (txs) => await ipcRenderer.invoke(Handlers.SaveSlp, txs),

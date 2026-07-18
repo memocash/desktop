@@ -129,7 +129,7 @@ const GetRecentAddressTransactions = async (conf, addresses) => {
 }
 
 const GetTransaction = async (conf, txHash) => {
-    const outputs = await Select(conf, "transaction-outputs", "SELECT * FROM outputs WHERE hash = ?", [txHash])
+    const outputs = await Select(conf, "transaction-outputs", "SELECT * FROM outputs WHERE hash = ? ORDER BY `index`", [txHash])
     const inputs = await Select(conf, "transaction-inputs", "SELECT * FROM inputs WHERE hash = ?", [txHash])
     if (inputs.length > 0) {
         let inputOutputsWhere = []

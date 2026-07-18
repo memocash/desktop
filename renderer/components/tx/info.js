@@ -10,7 +10,59 @@ import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 import {FormatTxError, setTx} from "./direct_tx";
+import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
 import Link from "next/link";
+
+// Annotates a tx's outputs with SLP info parsed from its OP_RETURN: a label
+// for the OP_RETURN output itself, and per-output notes showing which dust
+// outputs carry tokens or the mint baton. Works for both unsigned previews
+// and synced transactions; ticker/decimals come from the local genesis table
+// when available, otherwise raw base-unit amounts and a short token hash are
+// shown.
+const annotateSlp = async (tx) => {
+    // Synced outputs carry their vout in .index; preview outputs are already
+    // in vout order.
+    const outputAt = (vout) => tx.outputs.find((output, i) =>
+        output.index !== undefined ? output.index === vout : i === vout)
+    const opReturn = outputAt(0)
+    if (!opReturn || !opReturn.script) {
+        return
+    }
+    const slp = ParseSlpScript(opReturn.script)
+    if (!slp) {
+        return
+    }
+    let genesis
+    if (slp.txType === "GENESIS") {
+        genesis = {ticker: slp.ticker, name: slp.name, decimals: slp.decimals}
+    } else {
+        genesis = await window.electron.getSlpGenesis(slp.tokenHash)
+    }
+    const ticker = genesis && genesis.ticker && genesis.ticker.length ? genesis.ticker :
+        slp.tokenHash ? ShortHash(slp.tokenHash) : "token"
+    const decimals = genesis ? genesis.decimals : 0
+    opReturn.slpLabel = "SLP " + slp.txType + ": " + ticker +
+        (genesis && genesis.name && genesis.name !== ticker ? " (" + genesis.name + ")" : "")
+    opReturn.slpTokenHash = slp.tokenHash
+    const note = (amount) => FormatTokenAmount(amount, decimals) + " " + ticker
+    if (slp.txType === "SEND") {
+        for (let i = 0; i < slp.amounts.length; i++) {
+            const output = outputAt(i + 1)
+            if (output && slp.amounts[i] !== null) {
+                output.slpNote = note(slp.amounts[i])
+            }
+        }
+    } else {
+        const mintOutput = outputAt(1)
+        if (mintOutput && slp.amounts[0] !== null) {
+            mintOutput.slpNote = note(slp.amounts[0])
+        }
+        const batonOutput = slp.batonVout >= 2 ? outputAt(slp.batonVout) : undefined
+        if (batonOutput) {
+            batonOutput.slpNote = "Mint baton: " + ticker
+        }
+    }
+}
 
 const Info = () => {
     const router = useRouter()
@@ -115,9 +167,10 @@ const Info = () => {
             }
             let txb = new bitcoin.TransactionBuilder()
             const wallet = await GetWallet()
+            const walletAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
             const isHighlight = (address) => {
-                for (let i = 0; i < wallet.addresses.length; i++) {
-                    if (address === wallet.addresses[i]) {
+                for (let i = 0; i < walletAddresses.length; i++) {
+                    if (address === walletAddresses[i]) {
                         return true
                     }
                 }
@@ -160,6 +213,7 @@ const Info = () => {
             const buf = txBuild.toBuffer()
             tx.raw = buf
             setSize(buf.length)
+            await annotateSlp(tx)
             setTxInfo(tx)
             setFee(fee)
             transactionIdEleRef.current.value = txBuild.getId()
@@ -172,6 +226,7 @@ const Info = () => {
         }
         const tx = await window.electron.getTransaction(transactionId)
         const wallet = await GetWallet()
+        const walletAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
         let amount = 0
         let fee = 0
         let missingInputs = false
@@ -180,19 +235,20 @@ const Info = () => {
                 missingInputs = true
                 continue
             }
-            if (wallet.addresses.indexOf(tx.inputs[i].output.address) > -1) {
+            if (walletAddresses.indexOf(tx.inputs[i].output.address) > -1) {
                 amount -= tx.inputs[i].output.value
                 tx.inputs[i].highlight = true
             }
             fee += tx.inputs[i].output.value
         }
         for (let i = 0; i < tx.outputs.length; i++) {
-            if (wallet.addresses.indexOf(tx.outputs[i].address) > -1) {
+            if (walletAddresses.indexOf(tx.outputs[i].address) > -1) {
                 amount += tx.outputs[i].value
                 tx.outputs[i].highlight = true
             }
             fee -= tx.outputs[i].value
         }
+        await annotateSlp(tx)
         setTxInfo(tx)
         setInputAmount(amount)
         // tx.raw can be missing here: posts synced via the trimmed profile
@@ -336,7 +392,10 @@ const Info = () => {
                         {txInfo.outputs.map((output, i) => {
                             return (
                                 <p key={i} className={output.highlight ? styleTx.input_output_highlight : null}>
-                                    <span>{GetOutputScriptInfo(output.script)}</span>
+                                    <span title={output.slpTokenHash}>
+                                        {output.slpLabel || GetOutputScriptInfo(output.script)}
+                                        {output.slpNote && <> ({output.slpNote})</>}
+                                    </span>
                                     <span className={styleTx.spanRight}>{output.value.toLocaleString()}</span>
                                 </p>
                             )

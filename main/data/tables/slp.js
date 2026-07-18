@@ -54,6 +54,11 @@ const GetUncheckedSlpTxs = (conf, addresses) => {
     return Select(conf, "slp-unchecked-txs", query, addresses)
 }
 
+const GetSlpGenesis = async (conf, hash) => {
+    const rows = await Select(conf, "slp-genesis", "SELECT * FROM slp_geneses WHERE hash = ?", [hash])
+    return rows && rows.length ? rows[0] : undefined
+}
+
 const GetAddressTokenBalances = (conf, addresses) => {
     const query = "" +
         "SELECT " +
@@ -95,6 +100,7 @@ const GetTokenBalances = (conf, addresses) => {
 
 module.exports = {
     GetAddressTokenBalances,
+    GetSlpGenesis,
     GetTokenBalances,
     GetUncheckedSlpTxs,
     SaveSlp,
