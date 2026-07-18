@@ -53,7 +53,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
         `
     const handler = async (tx) => {
         await window.electron.saveTransactions([tx.addresses])
-        await window.electron.generateHistory(wallet.addresses)
+        await window.electron.generateHistory(wallet.addresses.concat(wallet.slpList || []))
         if (typeof setLastUpdate === "function") {
             setLastUpdate((new Date()).toISOString())
         }
@@ -67,7 +67,8 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
             close = ListenNewTxs({wallet, setLastUpdate})
         }, 2000)
     }
-    let close = window.electron.listenGraphQL({query, variables: {addresses: wallet.addresses}, handler, onclose})
+    let close = window.electron.listenGraphQL({
+        query, variables: {addresses: wallet.addresses.concat(wallet.slpList || [])}, handler, onclose})
     return () => {
         exited = true
         close()

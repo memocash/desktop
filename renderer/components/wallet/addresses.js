@@ -1,8 +1,10 @@
-import {useEffect, useRef, useState} from "react";
+import {Fragment, useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import styles from "../../styles/history.module.css";
+import {FormatTokenAmount} from "../util/slp";
 import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
+import ShortHash from "../util/txs";
 
 const Column = {
     Index: "index",
@@ -13,6 +15,8 @@ const Column = {
 const Addresses = ({lastUpdate}) => {
     const [addresses, addressesRef, setAddresses] = useReferredState([])
     const [changeList, changeListRef, setChangeList] = useReferredState([])
+    const [slpList, setSlpList] = useState([])
+    const [slpTokens, setSlpTokens] = useState({})
     const [sortCol, setSortCol] = useState(Column.Index)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [selectedAddress, selectedAddressRef, setSelectedAddress] = useReferredState("")
@@ -50,8 +54,22 @@ const Addresses = ({lastUpdate}) => {
             if (wallet.changeList && wallet.changeList.length) {
                 changeBalances = await getBalances(wallet.changeList)
             }
+            let slpBalances = []
+            let tokensByAddress = {}
+            if (wallet.slpList && wallet.slpList.length) {
+                slpBalances = await getBalances(wallet.slpList)
+                const addressTokens = await window.electron.getAddressTokenBalances(wallet.slpList)
+                for (let i = 0; i < addressTokens.length; i++) {
+                    if (!tokensByAddress[addressTokens[i].address]) {
+                        tokensByAddress[addressTokens[i].address] = []
+                    }
+                    tokensByAddress[addressTokens[i].address].push(addressTokens[i])
+                }
+            }
             setAddresses(balances)
             setChangeList(changeBalances)
+            setSlpList(slpBalances)
+            setSlpTokens(tokensByAddress)
         } catch (e) {
             console.log(e)
         }
@@ -200,6 +218,42 @@ const Addresses = ({lastUpdate}) => {
                             <span className={styles.itemAddress}>{address.address}</span>
                             <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
                         </div>
+                    )
+                })}
+                {!slpList.length ?
+                    <></>
+                    : <div className={[styles.row, styles.rowTitle].join(" ")}>
+                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
+                                  col={Column.Index} title={"Id"}/>
+                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
+                                  col={Column.Address} title={"SLP Address"}/>
+                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
+                                  col={Column.Balance} title={"Balance"}/>
+                    </div>
+                }
+                {slpList.map((address, i) => {
+                    return (
+                        <Fragment key={i}>
+                            <div data-address={address.address} onClick={(e) => clickRow(e, address.address)}
+                                 className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}>
+                                <span>{address.index}</span>
+                                <span className={styles.itemAddress}>{address.address}</span>
+                                <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
+                            </div>
+                            {(slpTokens[address.address] || []).map((token, j) => {
+                                return (
+                                    <div key={j} className={styles.row}>
+                                        <span/>
+                                        <span title={token.token_hash} style={{paddingLeft: "30px"}}>
+                                            {token.ticker || ShortHash(token.token_hash)}{token.name ? " (" + token.name + ")" : ""}
+                                        </span>
+                                        <span className={styles.itemValue}>
+                                            {FormatTokenAmount(token.amount, token.decimals)}
+                                        </span>
+                                    </div>
+                                )
+                            })}
+                        </Fragment>
                     )
                 })}
             </div>

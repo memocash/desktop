@@ -12,7 +12,7 @@ const {
     GetNewPosts, GetPost, GetPosts, GetPostParent, GetPostReplies, GetRoomPosts, SaveMemoPosts,
 } = require("./memo_post")
 const {GetCoins} = require("./outputs")
-const {GetTokenBalances, GetUncheckedSlpTxs, SaveSlp} = require("./slp")
+const {GetAddressTokenBalances, GetTokenBalances, GetUncheckedSlpTxs, SaveSlp} = require("./slp")
 const {
     GenerateHistory, GetRecentAddressTransactions, GetTransaction, GetTransactions, GetUtxos, GetWalletInfo, SaveBlock,
     SaveTransactions
@@ -20,6 +20,7 @@ const {
 
 module.exports = {
     GenerateHistory,
+    GetAddressTokenBalances,
     GetAddressesRoomFollowCount,
     GetChatFollows,
     GetCoins,

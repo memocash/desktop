@@ -16,7 +16,7 @@ const Update = ({setConnected, setLastUpdate}) => {
         await RecentBlock()
         await UpdateHistory({wallet, setConnected, setLastUpdate})
         const addresses = wallet.addresses.concat(wallet.changeList)
-        await UpdateSlp({addresses, setLastUpdate})
+        await UpdateSlp({addresses: addresses.concat(wallet.slpList || []), setLastUpdate})
         await UpdateMemoHistory({addresses, setLastUpdate})
         await BackfillPosts({addresses, userAddresses: wallet.addresses, setLastUpdate})
     })()}, [])
@@ -26,7 +26,8 @@ const Update = ({setConnected, setLastUpdate}) => {
         }
         const closeNewTxs = ListenNewTxs({wallet: walletRef.current, setLastUpdate})
         const closeNewMemos = ListenNewMemos({wallet: walletRef.current, setLastUpdate})
-        const closeBlocks = ListenBlocks({addresses: walletRef.current.addresses.concat(walletRef.current.changeList), setLastUpdate, setConnected})
+        const closeBlocks = ListenBlocks({addresses: walletRef.current.addresses.concat(
+            walletRef.current.changeList, walletRef.current.slpList || []), setLastUpdate, setConnected})
         return () => {
             closeNewTxs()
             closeNewMemos()

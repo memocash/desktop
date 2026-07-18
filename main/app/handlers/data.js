@@ -4,7 +4,7 @@ const {Handlers} = require("../../common/util");
 const {
     SaveTransactions, SaveBlock, GenerateHistory, GetTransactions, GetUtxos, GetTransaction,
     GetRecentAddressTransactions, SaveMemoProfiles, GetPic, GetCoins, SaveChatRoom, SaveChatRoomFollows, SaveMemoPosts,
-    GetTokenBalances, GetUncheckedSlpTxs, SaveSlp
+    GetAddressTokenBalances, GetTokenBalances, GetUncheckedSlpTxs, SaveSlp
 } = require("../../data/tables");
 const {eConf} = require("../window");
 
@@ -18,6 +18,7 @@ const DataHandlers = () => {
     ipcMain.handle(Handlers.GetUtxos, async (e, addresses) => GetUtxos(eConf(e), addresses))
     ipcMain.handle(Handlers.GetCoins, async (e, addresses) => GetCoins(eConf(e), addresses))
     ipcMain.handle(Handlers.GetRecentAddresses, async (e, addresses) => GetRecentAddressTransactions(eConf(e), addresses))
+    ipcMain.handle(Handlers.GetAddressTokenBalances, async (e, addresses) => GetAddressTokenBalances(eConf(e), addresses))
     ipcMain.handle(Handlers.GetTokenBalances, async (e, addresses) => GetTokenBalances(eConf(e), addresses))
     ipcMain.handle(Handlers.GetUncheckedSlpTxs, async (e, addresses) => GetUncheckedSlpTxs(eConf(e), addresses))
     ipcMain.handle(Handlers.SaveSlp, async (e, txs) => await SaveSlp(eConf(e), txs))

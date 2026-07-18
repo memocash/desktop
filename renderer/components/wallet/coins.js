@@ -25,7 +25,7 @@ const Coins = ({lastUpdate}) => {
     const coinsDiv = useRef()
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
-        const coins = await window.electron.getCoins(wallet.addresses.concat(wallet.changeList))
+        const coins = await window.electron.getCoins(wallet.addresses.concat(wallet.changeList, wallet.slpList || []))
         for (let i = 0; i < coins.length; i++) {
             if (!coins[i].height) {
                 coins[i].height = UnconfirmedValue

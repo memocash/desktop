@@ -13,6 +13,7 @@ import RoomJoin from "./modals/chat/room_join";
 import RoomFollowers from "./modals/chat/room_followers";
 import RoomFollowing from "./modals/chat/room_following";
 import NetworkView from "./modals/network_view";
+import TokenSendModal from "./modals/token_send";
 import GetPassword from "./modals/get_password";
 import remove from "./modals/remove";
 import RemoveModal from "./modals/remove";
@@ -52,6 +53,7 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
             {modalWindow === Modals.ChatRoomLoad && <RoomLoad onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
             {modalWindow === Modals.NetworkView && <NetworkView onClose={onClose}/>}
+            {modalWindow === Modals.TokenSend && <TokenSendModal onClose={onClose} setModal={setModal} modalProps={modalProps}/>}
         </div>
     )
 }

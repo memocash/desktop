@@ -54,6 +54,25 @@ const GetUncheckedSlpTxs = (conf, addresses) => {
     return Select(conf, "slp-unchecked-txs", query, addresses)
 }
 
+const GetAddressTokenBalances = (conf, addresses) => {
+    const query = "" +
+        "SELECT " +
+        "   outputs.address, " +
+        "   slp_outputs.token_hash, " +
+        "   slp_geneses.ticker, " +
+        "   slp_geneses.name, " +
+        "   slp_geneses.decimals, " +
+        "   SUM(slp_outputs.amount) AS amount " +
+        "FROM outputs " +
+        "JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
+        "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
+        "LEFT JOIN slp_geneses ON (slp_geneses.hash = slp_outputs.token_hash) " +
+        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "AND inputs.hash IS NULL " +
+        "GROUP BY outputs.address, slp_outputs.token_hash "
+    return Select(conf, "slp-address-token-balances", query, addresses)
+}
+
 const GetTokenBalances = (conf, addresses) => {
     const query = "" +
         "SELECT " +
@@ -75,6 +94,7 @@ const GetTokenBalances = (conf, addresses) => {
 }
 
 module.exports = {
+    GetAddressTokenBalances,
     GetTokenBalances,
     GetUncheckedSlpTxs,
     SaveSlp,

@@ -53,6 +53,7 @@ const Handlers = {
     GetTransaction: "get-transaction",
     GetCoins: "get-coins",
     GetRecentAddresses: "get-recent-addresses",
+    GetAddressTokenBalances: "get-address-token-balances",
     GetTokenBalances: "get-token-balances",
     GetUncheckedSlpTxs: "get-unchecked-slp-txs",
     SaveSlp: "save-slp",

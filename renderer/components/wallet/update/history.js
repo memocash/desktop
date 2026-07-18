@@ -1,7 +1,7 @@
 import {Status} from "../../util/connect"
 
 const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
-    let addressList = wallet.addresses.concat(wallet.changeList)
+    let addressList = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
     const recentAddresses = await window.electron.getRecentAddressTransactions(addressList)
     let addresses = new Array(addressList.length)
     for (let i = 0; i < addressList.length; i++) {

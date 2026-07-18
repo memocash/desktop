@@ -7,11 +7,12 @@ const GetWallet = async () => {
     const needsKeys = wallet.seed && wallet.seed.length && (!wallet.keys || !wallet.keys.length)
     const needsAddresses = !wallet.addresses || !wallet.addresses.length
     const needsChangeList = wallet.seed && wallet.seed.length && (!wallet.changeList || !wallet.changeList.length)
-    if (needsKeys || needsAddresses || needsChangeList) {
+    const needsSlpList = wallet.seed && wallet.seed.length && (!wallet.slpList || !wallet.slpList.length)
+    if (needsKeys || needsAddresses || needsChangeList || needsSlpList) {
         // Derivation runs in a worker thread (see main/app/handlers/addressWorker.js)
         // so it doesn't lock the UI. A single call derives keys, addresses, and the
-        // change list together from the seed.
-        const {keys, addresses, changeList} = await window.electron.generateWallet(wallet.seed, wallet.keys)
+        // change and SLP lists together from the seed.
+        const {keys, addresses, changeList, slpList} = await window.electron.generateWallet(wallet.seed, wallet.keys)
         if (needsKeys) {
             await window.electron.addKeys(keys)
             wallet = await window.electron.getWallet()
@@ -22,6 +23,10 @@ const GetWallet = async () => {
         }
         if (needsChangeList) {
             await window.electron.addChangeList(changeList)
+            wallet = await window.electron.getWallet()
+        }
+        if (needsSlpList) {
+            await window.electron.addSlpList(slpList)
             wallet = await window.electron.getWallet()
         }
     }
