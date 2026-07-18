@@ -107,6 +107,29 @@ const loadOutputs = async ({addresses}) => {
                         address
                     }
                     script
+                    slp {
+                        amount
+                        token_hash
+                        genesis {
+                            hash
+                            token_type
+                            decimals
+                            ticker
+                            name
+                            doc_url
+                        }
+                    }
+                    slp_baton {
+                        token_hash
+                        genesis {
+                            hash
+                            token_type
+                            decimals
+                            ticker
+                            name
+                            doc_url
+                        }
+                    }
                     spends {
                         tx {
                             hash
@@ -123,6 +146,29 @@ const loadOutputs = async ({addresses}) => {
                                 script
                                 lock {
                                     address
+                                }
+                                slp {
+                                    amount
+                                    token_hash
+                                    genesis {
+                                        hash
+                                        token_type
+                                        decimals
+                                        ticker
+                                        name
+                                        doc_url
+                                    }
+                                }
+                                slp_baton {
+                                    token_hash
+                                    genesis {
+                                        hash
+                                        token_type
+                                        decimals
+                                        ticker
+                                        name
+                                        doc_url
+                                    }
                                 }
                             }
                             blocks {

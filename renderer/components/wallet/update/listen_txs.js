@@ -17,6 +17,29 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
                     lock {
                         address
                     }
+                    slp {
+                        amount
+                        token_hash
+                        genesis {
+                            hash
+                            token_type
+                            decimals
+                            ticker
+                            name
+                            doc_url
+                        }
+                    }
+                    slp_baton {
+                        token_hash
+                        genesis {
+                            hash
+                            token_type
+                            decimals
+                            ticker
+                            name
+                            doc_url
+                        }
+                    }
                 }
                 blocks {
                     block {

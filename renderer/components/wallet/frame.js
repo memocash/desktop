@@ -7,6 +7,7 @@ export const Tabs = {
     Receive: "receive",
     Addresses: "addresses",
     Coins: "coins",
+    Tokens: "tokens",
     Memo: "memo",
     Chat: "chat",
 }
@@ -28,6 +29,7 @@ const Frame = ({selected, clicked, children, connected, lastUpdate, setModal}) =
         //"Receive": Tabs.Receive,
         "Addresses": Tabs.Addresses,
         "Coins": Tabs.Coins,
+        "Tokens": Tabs.Tokens,
     }
     return (
         <div className={tabs.container}>

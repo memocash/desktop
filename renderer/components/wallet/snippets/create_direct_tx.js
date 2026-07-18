@@ -15,9 +15,14 @@ const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requir
     for (let i = 0; i < utxos.length; i++) {
         if (i === 0 && coin !== "") {
             //separate utxo by : and get the value
-            const value = coin.split(":")[2]
-            if (value === bitcoin.Fee.DustLimit) {
-                // Don't spend dust outputs, could be SLP token, which isn't supported yet
+            const [coinHash, coinIndex, value] = coin.split(":")
+            const coinUtxo = utxos.find(u => u.hash === coinHash && u.index === parseInt(coinIndex))
+            if (coinUtxo && (coinUtxo.slp_token_hash || coinUtxo.slp_baton_token_hash)) {
+                // Don't spend SLP token outputs or mint batons, would burn the tokens
+                continue
+            }
+            if (parseInt(value) === bitcoin.Fee.DustLimit) {
+                // Don't spend dust outputs, could be an SLP token that hasn't been checked yet
                 continue
             }
             requiredInput += bitcoin.Fee.InputP2PKH
@@ -30,8 +35,12 @@ const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requir
             break
         }
         const utxo = utxos[i]
+        if (utxo.slp_token_hash || utxo.slp_baton_token_hash) {
+            // Don't spend SLP token outputs or mint batons, would burn the tokens
+            continue
+        }
         if (utxo.value === bitcoin.Fee.DustLimit) {
-            // Don't spend dust outputs, could be SLP token, which isn't supported yet
+            // Don't spend dust outputs, could be an SLP token that hasn't been checked yet
             continue
         }
         inputs.push([utxo.hash, utxo.index, utxo.value, utxo.address].join(":"))

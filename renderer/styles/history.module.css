@@ -13,6 +13,10 @@
     grid-template-columns: 32px repeat(4, minmax(max-content, 1fr));
 }
 
+.wrapper5Even {
+    grid-template-columns: repeat(5, minmax(max-content, 1fr));
+}
+
 .wrapper .message {
     padding: 5px;
     margin: 0;

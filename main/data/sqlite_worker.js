@@ -198,4 +198,30 @@ const Definitions = [
         tx_hash CHAR,
         UNIQUE(tx_hash)
     )`,
+    `slp_outputs (
+        hash CHAR,
+        \`index\` INT,
+        token_hash CHAR,
+        amount INT,
+        UNIQUE(hash, \`index\`)
+    )`,
+    `slp_batons (
+        hash CHAR,
+        \`index\` INT,
+        token_hash CHAR,
+        UNIQUE(hash, \`index\`)
+    )`,
+    `slp_geneses (
+        hash CHAR,
+        token_type INT,
+        decimals INT,
+        ticker CHAR,
+        name CHAR,
+        doc_url CHAR,
+        UNIQUE(hash)
+    )`,
+    `slp_checks (
+        hash CHAR,
+        UNIQUE(hash)
+    )`,
 ]

@@ -4,6 +4,7 @@ import History from "./history";
 import Send from "./send";
 import Receive from "./receive";
 import Coins from "./coins";
+import Tokens from "./tokens";
 import Update from "./update.js";
 import Memo from "./memo.js";
 
@@ -14,6 +15,7 @@ export {
     Send,
     Receive,
     Coins,
+    Tokens,
     Update,
     Memo,
 }
