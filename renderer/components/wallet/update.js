@@ -1,7 +1,7 @@
 import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
-import {BackfillPosts, ListenBlocks, ListenNewTxs, RecentBlock, SyncAliases, SyncProfileLinks, UpdateHistory, UpdateMemoHistory,
-    UpdateSlp} from "./update/index.js";
+import {BackfillPosts, ListenBlocks, ListenNewTxs, ListenPosts, RecentBlock, SyncAliases, SyncProfileLinks, UpdateHistory,
+    UpdateMemoHistory, UpdateSlp} from "./update/index.js";
 import ListenNewMemos from "./update/listen_memo";
 
 const Update = ({setConnected, setLastUpdate}) => {
@@ -40,10 +40,27 @@ const Update = ({setConnected, setLastUpdate}) => {
             addresses: linkedRef.current || undefined, setLastUpdate})
         const closeBlocks = ListenBlocks({addresses: walletRef.current.addresses.concat(
             walletRef.current.changeList, walletRef.current.slpList || []), setLastUpdate, setConnected})
+        // Likes and replies aren't wallet transactions - they land on the liked
+        // or replied-to post, so ListenNewTxs never sees them and their
+        // notifications only appeared on the next manual refresh. Subscribe to
+        // the wallet's own posts so a new like/reply pushes the updated post,
+        // saves it, and re-triggers the notification fetch live.
+        let closeOwnPosts = () => {}
+        let cancelled = false
+        ;(async () => {
+            const addresses = walletRef.current.addresses
+            const posts = await window.electron.getPosts({addresses, userAddresses: addresses})
+            if (cancelled || !posts.length) {
+                return
+            }
+            closeOwnPosts = ListenPosts({txHashes: posts.map(post => post.tx_hash), setLastUpdate})
+        })()
         return () => {
             closeNewTxs()
             closeNewMemos()
             closeBlocks()
+            cancelled = true
+            closeOwnPosts()
         }
 
     }, [walletRef.current])
