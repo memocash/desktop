@@ -10,6 +10,7 @@ export const Tabs = {
     Tokens: "tokens",
     Memo: "memo",
     Chat: "chat",
+    Notifications: "notifications",
 }
 
 const Tab = ({selected, name, clicked, title}) => {
@@ -24,6 +25,7 @@ const Frame = ({selected, clicked, children, connected, lastUpdate, setModal}) =
     const tabTitles = {
         "Memo": Tabs.Memo,
         "Chat": Tabs.Chat,
+        "Notifications": Tabs.Notifications,
         "History": Tabs.History,
         "Send": Tabs.Send,
         //"Receive": Tabs.Receive,

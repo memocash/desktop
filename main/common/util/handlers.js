@@ -19,6 +19,7 @@ const Handlers = {
     GetWalletLinks: "get-wallet-links",
     GetAddressAliases: "get-address-aliases",
     GetNewPosts: "get-new-posts",
+    GetNotifications: "get-notifications",
     GetPost: "get-post",
     GetPosts: "get-posts",
     GetPostParent: "get-post-parent",

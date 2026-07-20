@@ -7,6 +7,7 @@ import Coins from "./coins";
 import Tokens from "./tokens";
 import Update from "./update.js";
 import Memo from "./memo.js";
+import Notifications from "./notifications.js";
 
 export {
     Addresses,
@@ -18,4 +19,5 @@ export {
     Tokens,
     Update,
     Memo,
+    Notifications,
 }

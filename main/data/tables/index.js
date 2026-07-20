@@ -9,6 +9,7 @@ const {
 } = require("./memo_chat")
 const {GetFollowing, GetFollowers, GetRecentFollow} = require("./memo_follow")
 const {GetLikes} = require("./memo_like")
+const {GetNotifications} = require("./notifications")
 const {
     GetNewPosts, GetPost, GetPosts, GetPostParent, GetPostReplies, GetRoomPosts, SaveMemoPosts,
 } = require("./memo_post")
@@ -33,6 +34,7 @@ module.exports = {
     GetLikes,
     GetLinkedAddresses,
     GetNewPosts,
+    GetNotifications,
     GetPotentialLinkRequests,
     GetPic,
     GetPicExists,
