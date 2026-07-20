@@ -2,7 +2,7 @@ import Modal from "../../modal";
 import styles from "../../../../styles/modal.module.css";
 import profile from "../../../../styles/profile.module.css";
 import {address, opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import {useEffect, useRef} from "react";
+import {useEffect, useMemo, useRef} from "react";
 import Post from "../../../wallet/memo/post";
 import bitcoin from "../../../util/bitcoin";
 import GetWallet from "../../../util/wallet";
@@ -16,29 +16,29 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
     const [post, postRef, setPost] = useReferredState({})
     const tipInputRef = useRef()
     const [maxValue, maxValueRef, setMaxValue] = useReferredState(0)
+    const likeOpReturnOutput = useMemo(() => script.compile([
+        opcodes.OP_RETURN,
+        Buffer.from(bitcoin.Prefix.LikeMemo, "hex"),
+        Buffer.from(txHash, "hex").reverse(),
+    ]), [txHash])
     useEffect(() => {(async () => {
         const {addresses} = await window.electron.getWallet()
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
     })()}, [txHash])
     useEffect(() => AddUtxoSetter(async () => {
-        setMaxValue(Math.max(0, await GetMaxValue()))
-    }), [])
+        setMaxValue(Math.max(0, await GetMaxValue("", [likeOpReturnOutput])))
+    }), [likeOpReturnOutput])
     const formLikeSubmit = async (e) => {
         e.preventDefault()
         const tip = tipInputRef.current.value
-        if (tip && tip > maxValueRef.current.value) {
-            window.electron.showMessageDialog("Tip too high (max: " + maxValueRef.current.value + ")")
+        if (tip && tip > maxValueRef.current) {
+            window.electron.showMessageDialog("Tip too high (max: " + maxValueRef.current + ")")
             return
         } else if (tip > 0 && tip < bitcoin.Fee.DustLimit) {
             window.electron.showMessageDialog("Tip too low (min: " + bitcoin.Fee.DustLimit + ")")
             return
         }
-        const likeOpReturnOutput = script.compile([
-            opcodes.OP_RETURN,
-            Buffer.from(bitcoin.Prefix.LikeMemo, "hex"),
-            Buffer.from(txHash, "hex").reverse(),
-        ])
         const wallet = await GetWallet()
         let outputs = [{script: likeOpReturnOutput}]
         if (tip > 0) {
