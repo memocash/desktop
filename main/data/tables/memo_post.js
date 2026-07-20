@@ -79,11 +79,60 @@ const RankedOrder = "" +
     "/ pow((julianday('now') - julianday(" + timestampSelect + ")) * 24 + 2, " + RankGravity + ") DESC"
 
 const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}) => {
-    return "" +
+    // Resolve author metadata through active profile links. This mirrors the
+    // profile view's merge semantics: fields on the posting address win, then
+    // a field from another address in its transitive linked-address cluster is
+    // used. Name and pic are selected independently because linked profiles
+    // commonly split those fields across addresses.
+    const linkedAuthors = "" +
+        "WITH RECURSIVE active_profile_links(address, linked_address) AS (" +
+        "   SELECT link_requests.address, link_requests.parent_address " +
+        "   FROM link_requests " +
+        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
+        "       AND link_accepts.address = link_requests.parent_address) " +
+        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
+        "       AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "   WHERE link_revokes.tx_hash IS NULL " +
+        "   UNION " +
+        "   SELECT link_requests.parent_address, link_requests.address " +
+        "   FROM link_requests " +
+        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
+        "       AND link_accepts.address = link_requests.parent_address) " +
+        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
+        "       AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "   WHERE link_revokes.tx_hash IS NULL" +
+        "), linked_author_addresses(origin, address) AS (" +
+        "   SELECT DISTINCT address, address FROM memo_posts " +
+        "   UNION " +
+        "   SELECT linked_author_addresses.origin, active_profile_links.linked_address " +
+        "   FROM linked_author_addresses " +
+        "   JOIN active_profile_links " +
+        "       ON (active_profile_links.address = linked_author_addresses.address)" +
+        ") "
+    const authorName = "(" +
+        "SELECT profile_names.name " +
+        "FROM linked_author_addresses " +
+        "JOIN profiles ON (profiles.address = linked_author_addresses.address) " +
+        "JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
+        "WHERE linked_author_addresses.origin = memo_posts.address " +
+        "ORDER BY (linked_author_addresses.address = memo_posts.address) DESC, " +
+        "   linked_author_addresses.address ASC LIMIT 1" +
+        ")"
+    const authorPic = "(" +
+        "SELECT images.data " +
+        "FROM linked_author_addresses " +
+        "JOIN profiles ON (profiles.address = linked_author_addresses.address) " +
+        "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
+        "JOIN images ON (images.url = profile_pics.pic) " +
+        "WHERE linked_author_addresses.origin = memo_posts.address " +
+        "ORDER BY (linked_author_addresses.address = memo_posts.address) DESC, " +
+        "   linked_author_addresses.address ASC LIMIT 1" +
+        ")"
+    return linkedAuthors +
         "SELECT " +
         "   memo_posts.*, " +
-        "   profile_names.name, " +
-        "   images.data AS pic, " +
+        "   " + authorName + " AS name, " +
+        "   " + authorPic + " AS pic, " +
         "   " + timestampSelect + " AS timestamp, " +
         "   COUNT(DISTINCT memo_replies.child_tx_hash) AS reply_count, " +
         "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count, " +
@@ -96,10 +145,6 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
         "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
         "LEFT JOIN tx_seens ON (tx_seens.hash = memo_posts.tx_hash) " +
-        "LEFT JOIN profiles ON (profiles.address = memo_posts.address) " +
-        "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
-        "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
-        "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "LEFT JOIN memo_replies ON (memo_replies.parent_tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN memo_likes ON (memo_likes.post_tx_hash = memo_posts.tx_hash) " +
         "LEFT JOIN memo_chat_post ON (memo_chat_post.tx_hash = memo_posts.tx_hash) " +
