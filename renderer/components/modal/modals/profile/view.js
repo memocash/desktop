@@ -7,6 +7,7 @@ import GetWallet from "../../../util/wallet";
 import {Modals} from "../../../../../main/common/util"
 import Post from "../../../wallet/memo/post";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
+import {SendLinkAccept, SendLinkRequest, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
 import Links from "../../../wallet/snippets/links";
 import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
@@ -147,37 +148,11 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         }
         await CreateTransaction(wallet, [{script: followOpReturnOutput}], setModal, null, beatHash)
     }
-    // Link scripts verified byte-for-byte against Jason's on-chain link txs
-    // (request 8553916d..., accept cb38deb2..., revoke 09cb74d4...): request
-    // pushes the parent's pkhash, accept/revoke push the referenced tx hash in
-    // display order. The optional trailing message push is omitted.
-    const clickLinkRequest = async () => {
-        const requestOpReturnOutput = script.compile([
-            opcodes.OP_RETURN,
-            Buffer.from(bitcoin.Prefix.LinkRequest, "hex"),
-            Buffer.from(bitcoin.GetPkHashFromAddress(address), "hex"),
-        ])
-        const wallet = await GetWallet()
-        await CreateTransaction(wallet, [{script: requestOpReturnOutput}], setModal)
-    }
-    const clickLinkAccept = async ({requestTxHash, walletAddress}) => {
-        const acceptOpReturnOutput = script.compile([
-            opcodes.OP_RETURN,
-            Buffer.from(bitcoin.Prefix.LinkAccept, "hex"),
-            Buffer.from(requestTxHash, "hex"),
-        ])
-        const wallet = await GetWallet()
-        await CreateTransaction(wallet, [{script: acceptOpReturnOutput}], setModal, null, "", false, walletAddress)
-    }
-    const clickLinkRevoke = async ({acceptTxHash, walletAddress}) => {
-        const revokeOpReturnOutput = script.compile([
-            opcodes.OP_RETURN,
-            Buffer.from(bitcoin.Prefix.LinkRevoke, "hex"),
-            Buffer.from(acceptTxHash, "hex"),
-        ])
-        const wallet = await GetWallet()
-        await CreateTransaction(wallet, [{script: revokeOpReturnOutput}], setModal, null, "", false, walletAddress)
-    }
+    const clickLinkRequest = () => SendLinkRequest({parentAddress: address, setModal})
+    const clickLinkAccept = ({requestTxHash, walletAddress}) =>
+        SendLinkAccept({requestTxHash, walletAddress, setModal})
+    const clickLinkRevoke = ({acceptTxHash, walletAddress}) =>
+        SendLinkRevoke({acceptTxHash, walletAddress, setModal})
     return (
         <Modal onClose={onClose}>
             <div className={profile.header_modal}>

@@ -1,5 +1,6 @@
 import Find from "./find";
 import Following from "./following";
+import Links from "./links";
 import Post from "./post";
 import PostCreate from "./post_create";
 import PostLike from "./post_like";
@@ -13,6 +14,7 @@ import View from "./view";
 export {
     Find,
     Following,
+    Links,
     Post,
     PostCreate,
     PostLike,

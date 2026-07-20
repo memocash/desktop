@@ -1,3 +1,5 @@
+import bitcoin from "../../util/bitcoin";
+
 const LinksQuery = `
     query ($addresses: [Address!]) {
         profiles(addresses: $addresses) {
@@ -63,12 +65,13 @@ const SyncProfileLinks = async ({addresses}) => {
                 candidates.add(request.parent_address)
             }
         }
+        // Revoked accepts' requests are resolved too - the link is inactive,
+        // but without the request row a parent-side revoked link would be
+        // invisible locally (nothing to list in the Links modal, no re-accept).
         const unknownRequests = new Set()
         for (const profile of profiles) {
             for (const accept of profile.link_accepts || []) {
-                const revoked = (profile.link_revokes || []).some(
-                    revoke => revoke.accept_tx_hash === accept.tx_hash)
-                if (!revoked && !requestTxHashes.has(accept.request_tx_hash)) {
+                if (!requestTxHashes.has(accept.request_tx_hash)) {
                     unknownRequests.add(accept.request_tx_hash)
                 }
             }
@@ -91,6 +94,51 @@ const SyncProfileLinks = async ({addresses}) => {
             candidate => !synced.has(candidate))
     }
     return await window.electron.getLinkedAddresses(addresses)
+}
+
+// Discovers incoming link requests that name one of the wallet's addresses as
+// parent. The server never returns link_requests on the parent's profile -
+// they only appear on the child's - so without this a request from an unknown
+// address would stay invisible until its profile happened to be viewed.
+// Request txs typically pay the parent, which lands them in the wallet's
+// synced tx history; scan those for request scripts naming a wallet pkhash,
+// resolve each sender via the server, and save the senders' link data so the
+// requests show up as pending.
+const DiscoverLinkRequests = async ({addresses}) => {
+    const potentials = await window.electron.getPotentialLinkRequests()
+    if (!potentials || !potentials.length) {
+        return
+    }
+    const walletPkHashes = {}
+    for (const address of addresses) {
+        walletPkHashes[Buffer.from(bitcoin.GetPkHashFromAddress(address)).toString("hex")] = true
+    }
+    const requestTxHashes = potentials.filter(potential => walletPkHashes[potential.parent_pkhash])
+        .map(potential => potential.tx_hash)
+    if (!requestTxHashes.length) {
+        return
+    }
+    const txData = await window.electron.graphQL(requestSendersQuery(requestTxHashes), {})
+    const senders = new Set()
+    for (const tx of Object.values(txData.data)) {
+        if (!tx || !tx.inputs) {
+            continue
+        }
+        for (const input of tx.inputs) {
+            if (input.output && input.output.lock && input.output.lock.address) {
+                senders.add(input.output.lock.address)
+            }
+        }
+    }
+    if (!senders.size) {
+        return
+    }
+    const data = await window.electron.graphQL(LinksQuery, {addresses: [...senders]})
+    await window.electron.saveMemoProfiles(data.data.profiles || [])
+}
+
+export {
+    DiscoverLinkRequests,
 }
 
 export default SyncProfileLinks

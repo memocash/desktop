@@ -122,6 +122,51 @@ const GetProfileLinks = async (conf, {userAddresses, addresses}) => {
         [...userAddresses, ...addresses, ...userAddresses, ...addresses])
 }
 
+// Every link row touching any of the given addresses, with the display names
+// of both sides when known. Same request/accept/revoke row semantics as
+// GetProfileLinks.
+const GetWalletLinks = async (conf, addresses) => {
+    const inList = "(" + Array(addresses.length).fill("?").join(", ") + ") "
+    const query = "" +
+        "SELECT " +
+        "   link_requests.tx_hash AS request_tx_hash, " +
+        "   link_requests.address AS child_address, " +
+        "   link_requests.parent_address AS parent_address, " +
+        "   link_requests.message AS message, " +
+        "   link_accepts.tx_hash AS accept_tx_hash, " +
+        "   (CASE WHEN link_revokes.tx_hash IS NULL THEN 0 ELSE 1 END) AS revoked, " +
+        "   child_names.name AS child_name, " +
+        "   parent_names.name AS parent_name " +
+        "FROM link_requests " +
+        "LEFT JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
+        "   AND link_accepts.address = link_requests.parent_address) " +
+        "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
+        "   AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "LEFT JOIN profiles child_profiles ON (child_profiles.address = link_requests.address) " +
+        "LEFT JOIN profile_names child_names ON (child_names.tx_hash = child_profiles.name) " +
+        "LEFT JOIN profiles parent_profiles ON (parent_profiles.address = link_requests.parent_address) " +
+        "LEFT JOIN profile_names parent_names ON (parent_names.tx_hash = parent_profiles.name) " +
+        "WHERE link_requests.address IN " + inList + "OR link_requests.parent_address IN " + inList
+    return await Select(conf, "wallet-links", query, [...addresses, ...addresses])
+}
+
+// Locally synced tx outputs that look like link requests (OP_RETURN 6d20 with
+// a 20-byte pkhash push) but have no link_requests row yet. The server never
+// returns link_requests on the parent's profile, so incoming requests are
+// discovered from these: request txs typically pay the parent, which lands
+// them in the wallet's tx history. Callers match parent_pkhash against the
+// wallet's addresses and resolve the sender via the server.
+const GetPotentialLinkRequests = async (conf) => {
+    const query = "" +
+        "SELECT " +
+        "   outputs.hash AS tx_hash, " +
+        "   LOWER(HEX(SUBSTR(outputs.script, 6, 20))) AS parent_pkhash " +
+        "FROM outputs " +
+        "WHERE SUBSTR(outputs.script, 1, 5) = x'6a026d2014' " +
+        "   AND outputs.hash NOT IN (SELECT tx_hash FROM link_requests)"
+    return await Select(conf, "potential-link-requests", query, [])
+}
+
 const SaveMemoProfiles = async (conf, profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
@@ -323,8 +368,10 @@ const SavePic = async (conf, url, data) => {
 
 module.exports = {
     GetLinkedAddresses,
+    GetPotentialLinkRequests,
     GetProfileInfo,
     GetProfileLinks,
+    GetWalletLinks,
     SaveMemoProfiles,
     GetRecentSetName,
     GetRecentSetProfile,

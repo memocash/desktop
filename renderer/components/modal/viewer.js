@@ -4,7 +4,7 @@ import AddressModal from "./modals/address";
 import SettingsModal from "./modals/settings";
 import {Modals} from "../../../main/common/util";
 import {
-    Find, Following, Post, PostCreate, PostLike, PostLikes, PostReply, SetName, SetPic, SetProfile, View
+    Find, Following, Links, Post, PostCreate, PostLike, PostLikes, PostReply, SetName, SetPic, SetProfile, View
 } from "./modals/profile";
 import Password from "./modals/password";
 import {useEffect} from "react";
@@ -42,6 +42,7 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
             {modalWindow === Modals.ProfileSetText && <SetProfile onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
             {modalWindow === Modals.ProfileSetPic && <SetPic onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
             {modalWindow === Modals.ProfileView && <View basic={basic} modalProps={modalProps}/>}
+            {modalWindow === Modals.Links && <Links basic={basic}/>}
             {modalWindow === Modals.Following && <Following setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.Followers &&
                 <Following setModal={setModal} modalProps={modalProps} showFollowers={true}/>}
