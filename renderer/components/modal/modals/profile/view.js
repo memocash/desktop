@@ -42,11 +42,9 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
     // Link state between the wallet and the viewed profile. walletAddress is
     // the wallet's side of the link - accepts and revokes must be signed by
     // that exact address for the protocol to count them, so it's passed to
-    // CreateTransaction as fromAddress. isWalletAddress (viewed address is
-    // itself in the wallet) starts true so link buttons stay hidden until the
-    // wallet check runs.
+    // CreateTransaction as fromAddress. isSelf starts true so link buttons
+    // stay hidden until the wallet and the viewed linked cluster are checked.
     const [linkState, setLinkState] = useState({status: LinkStatus.None})
-    const [isWalletAddress, setIsWalletAddress] = useState(true)
     // UpdateMemoHistory/UpdatePosts can call setLastProfileUpdate several times
     // in quick succession as each sync phase lands, re-firing this effect each
     // time with no cancellation. Guard against an earlier-started run (e.g. one
@@ -112,7 +110,6 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
             }
         }
         setLinkState(link)
-        setIsWalletAddress(wallet.addresses.includes(address))
         setIsSelf(isSelf)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         setPosts(posts)
@@ -189,13 +186,13 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                         </button>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>}
-                        {!isWalletAddress && linkState.status === LinkStatus.Requested &&
+                        {!isSelf && linkState.status === LinkStatus.Requested &&
                             <button disabled title={"Waiting for this address to accept your link request"}>
                                 Link Requested</button>}
-                        {!isWalletAddress && linkState.status === LinkStatus.Incoming &&
+                        {!isSelf && linkState.status === LinkStatus.Incoming &&
                             <button title={"This address requested to link with your account"}
                                     onClick={() => clickLinkAccept(linkState)}>Accept Link</button>}
-                        {!isWalletAddress && linkState.status === LinkStatus.Active &&
+                        {!isSelf && linkState.status === LinkStatus.Active &&
                             <button title={"Revoke the link between this address and your account"}
                                     onClick={() => clickLinkRevoke(linkState)}>Revoke Link</button>}
                     </p>

@@ -116,7 +116,9 @@ const Links = ({basic: {setModal, onClose}}) => {
                     </div>
                     <div className={css.list}>
                         {activeLinks.map(entry => linkRow(entry, null,
-                            <button onClick={() => clickRevoke(entry)}>Revoke</button>))}
+                            entry.walletIsParent ?
+                                <button onClick={() => clickRevoke(entry)}>Revoke</button> :
+                                <span className={css.status}>Linked</span>))}
                         {!activeLinks.length && <div className={css.empty}>
                             {loading ? "Loading…" : "No active links"}</div>}
                     </div>
