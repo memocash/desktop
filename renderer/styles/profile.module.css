@@ -243,6 +243,11 @@
     font-weight: bold;
 }
 
+.post_header img,
+.profile_link {
+    cursor: pointer;
+}
+
 .header_buttons {
     display: inline-block;
     margin-left: 10px;
