@@ -15,6 +15,7 @@ const Links = ({basic: {setModal, onClose}}) => {
     const [pendingLinks, setPendingLinks] = useState([])
     const [loading, setLoading] = useState(true)
     const addressInputRef = useRef()
+    const messageInputRef = useRef()
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         const addresses = wallet.addresses.concat(wallet.changeList || [])
@@ -66,11 +67,12 @@ const Links = ({basic: {setModal, onClose}}) => {
         acceptTxHash: entry.accept_tx_hash, walletAddress: entry.walletAddress, setModal})
     const clickRequest = async () => {
         const parentAddress = addressInputRef.current.value.trim()
+        const message = messageInputRef.current.value.trim()
         if (!parentAddress.length) {
             return
         }
         try {
-            await SendLinkRequest({parentAddress, setModal})
+            await SendLinkRequest({parentAddress, message, setModal})
         } catch (e) {
             console.log("SendLinkRequest failed", e)
             await window.electron.showMessageDialog("Invalid address: " + parentAddress)
@@ -148,8 +150,12 @@ const Links = ({basic: {setModal, onClose}}) => {
                 <div className={css.request}>
                     <div className={css.requestLabel}>Request a new link</div>
                     <div className={css.requestRow}>
-                        <input ref={addressInputRef} onKeyDown={handleKeyDown} type="text"
-                               placeholder={"Address to link with"}/>
+                        <div className={css.requestFields}>
+                            <input ref={addressInputRef} onKeyDown={handleKeyDown} type="text"
+                                   placeholder={"Address to link with"}/>
+                            <input ref={messageInputRef} onKeyDown={handleKeyDown} type="text"
+                                   placeholder={"Message (optional)"}/>
+                        </div>
                         <button onClick={clickRequest}>Request</button>
                     </div>
                 </div>

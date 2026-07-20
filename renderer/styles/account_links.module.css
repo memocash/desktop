@@ -167,11 +167,21 @@
 }
 
 .requestRow {
+    align-items: center;
     display: flex;
     gap: 8px;
 }
 
-.requestRow input {
+.requestFields {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.requestFields input {
+    box-sizing: border-box;
     flex: 1;
     min-width: 0;
     padding: 5px 8px;

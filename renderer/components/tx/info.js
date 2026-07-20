@@ -208,16 +208,20 @@ const Info = () => {
                     return "Memo topic follow: " + Buffer.from(script.substr(8), "hex")
                 case "6d20": {
                     // Link requests contain the prospective parent's 20-byte
-                    // public-key hash.  Decode it as the same legacy P2PKH
-                    // address format used throughout the wallet.
-                    if (script.substr(8, 2) !== "14" || script.length < 50) {
+                    // public-key hash and may contain a trailing message push.
+                    // Decompile the pushes so both direct and PUSHDATA-encoded
+                    // messages are handled correctly.
+                    const chunks = bitcoin.script.decompile(scriptBuffer)
+                    if (!chunks || !Buffer.isBuffer(chunks[2]) || chunks[2].length !== 20 ||
+                        (chunks[3] !== undefined && !Buffer.isBuffer(chunks[3]))) {
                         info = "Bad link request"
                         break
                     }
-                    const parentPkHash = Buffer.from(script.substr(10, 40), "hex")
                     const parentAddress = bitcoin.address.toBase58Check(
-                        parentPkHash, bitcoin.networks.bitcoin.pubKeyHash)
-                    return "Memo link request: " + parentAddress
+                        chunks[2], bitcoin.networks.bitcoin.pubKeyHash)
+                    const message = chunks[3] ? chunks[3].toString("utf8") : ""
+                    return "Memo link request: " + parentAddress +
+                        (message.length ? " — Message: " + message : "")
                 }
                 case "6d21": {
                     if (script.substr(8, 2) !== "20" || script.length < 74) {
