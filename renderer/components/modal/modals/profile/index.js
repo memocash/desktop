@@ -1,6 +1,7 @@
 import Find from "./find";
 import Following from "./following";
 import Links from "./links";
+import Aliases from "./aliases";
 import Post from "./post";
 import PostCreate from "./post_create";
 import PostLike from "./post_like";
@@ -12,6 +13,7 @@ import SetProfile from "./set_profile"
 import View from "./view";
 
 export {
+    Aliases,
     Find,
     Following,
     Links,

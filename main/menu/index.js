@@ -57,6 +57,12 @@ const ShowMenu = (win, newWindow, wallet) => {
                     win.webContents.send(Listeners.DisplayModal, Modals.Links)
                 }
             },
+            {
+                label: "Aliases",
+                click: () => {
+                    win.webContents.send(Listeners.DisplayModal, Modals.Aliases)
+                }
+            },
             {label: "Show Addresses"},
             {label: "Show Coins"},
         ]

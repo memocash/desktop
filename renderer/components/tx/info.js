@@ -243,6 +243,17 @@ const Info = () => {
                 }
                 case "6d24":
                     return "Memo direct message: " + Buffer.from(script.substr(52), "hex")
+                case "6d26": {
+                    const chunks = bitcoin.script.decompile(scriptBuffer)
+                    if (!chunks || !Buffer.isBuffer(chunks[2]) || chunks[2].length !== 20 ||
+                        !Buffer.isBuffer(chunks[3]) || !chunks[3].length) {
+                        info = "Bad address alias"
+                        break
+                    }
+                    const aliasAddress = bitcoin.address.toBase58Check(
+                        chunks[2], bitcoin.networks.bitcoin.pubKeyHash)
+                    return "Memo address alias: " + aliasAddress + " — " + chunks[3].toString("utf8")
+                }
                 case "6d05":
                     return "Memo profile text: " + Buffer.from(script.substr(script.length > 160 ? 12 : 10), "hex")
             }

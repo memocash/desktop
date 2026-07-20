@@ -36,6 +36,8 @@ const Post = ({post, setModal, setChatRoom, isSingle = false}) => {
                         `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
                         "/default-profile.jpg"}/>
                     <span className={profile.profile_link} onClick={clickViewProfile}>{post.name}</span>
+                    {post.alias && post.alias !== post.name ?
+                        <span className={profile.time}> ({post.alias})</span> : null}
                     {" "}
                     <span title={post.timestamp} className={profile.time}>
                         {post.timestamp ? TimeSince(post.timestamp, counter) : "Tx"}

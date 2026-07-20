@@ -16,6 +16,7 @@ module.exports = {
     getLinkedAddresses: (addresses) => ipcRenderer.invoke(Handlers.GetLinkedAddresses, addresses),
     getPotentialLinkRequests: () => ipcRenderer.invoke(Handlers.GetPotentialLinkRequests),
     getWalletLinks: (addresses) => ipcRenderer.invoke(Handlers.GetWalletLinks, addresses),
+    getAddressAliases: (addresses) => ipcRenderer.invoke(Handlers.GetAddressAliases, addresses),
     getNewPosts: ({userAddresses, ranked}) => ipcRenderer.invoke(Handlers.GetNewPosts, {userAddresses, ranked}),
     getPost: async ({txHash, userAddresses}) => await ipcRenderer.invoke(Handlers.GetPost, {txHash, userAddresses}),
     getPosts: ({addresses, userAddresses}) => ipcRenderer.invoke(Handlers.GetPosts, {addresses, userAddresses}),
@@ -33,5 +34,6 @@ module.exports = {
     saveChatRoomFollows: async (roomFollows) => await ipcRenderer.invoke(Handlers.SaveChatRoomFollows, roomFollows),
     saveMemoPosts: async (posts) => await ipcRenderer.invoke(Handlers.SaveMemoPosts, posts),
     saveMemoProfiles: async (profiles) => await ipcRenderer.invoke(Handlers.SaveMemoProfiles, profiles),
+    saveAddressAliases: async (aliases) => await ipcRenderer.invoke(Handlers.SaveAddressAliases, aliases),
     saveMemoProfileImages: async (profiles) => await ipcRenderer.invoke(Handlers.SaveMemoProfileImages, profiles),
 }

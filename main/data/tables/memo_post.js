@@ -128,11 +128,25 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
         "ORDER BY (linked_author_addresses.address = memo_posts.address) DESC, " +
         "   linked_author_addresses.address ASC LIMIT 1" +
         ")"
+    const authorAlias = "(" +
+        "SELECT address_aliases.alias " +
+        "FROM address_aliases " +
+        "JOIN linked_author_addresses " +
+        "   ON (linked_author_addresses.address = address_aliases.address) " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = address_aliases.tx_hash) " +
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "LEFT JOIN tx_seens ON (tx_seens.hash = address_aliases.tx_hash) " +
+        "WHERE linked_author_addresses.origin = memo_posts.address " +
+        "AND address_aliases.target_address = memo_posts.address " +
+        "ORDER BY COALESCE(blocks.height, 1000000000) DESC, " +
+        "COALESCE(tx_seens.timestamp, blocks.timestamp) DESC, address_aliases.tx_hash DESC LIMIT 1" +
+        ")"
     return linkedAuthors +
         "SELECT " +
         "   memo_posts.*, " +
         "   " + authorName + " AS name, " +
         "   " + authorPic + " AS pic, " +
+        "   " + authorAlias + " AS alias, " +
         "   " + timestampSelect + " AS timestamp, " +
         "   COUNT(DISTINCT memo_replies.child_tx_hash) AS reply_count, " +
         "   COUNT(DISTINCT memo_likes.like_tx_hash) AS like_count, " +

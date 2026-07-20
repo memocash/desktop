@@ -32,6 +32,7 @@ const Prefix = {
     LinkAccept: "6d21",
     LinkRevoke: "6d22",
     Send: "6d24",
+    SetAlias: "6d26",
 }
 
 const Utf8ByteLength = (str) => {

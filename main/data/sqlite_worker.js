@@ -82,6 +82,7 @@ const Indexes = [
     "CREATE INDEX IF NOT EXISTS idx_memo_chat_follow_address ON memo_chat_follow (address)",
     "CREATE INDEX IF NOT EXISTS idx_link_accepts_request_tx_hash ON link_accepts (request_tx_hash)",
     "CREATE INDEX IF NOT EXISTS idx_link_revokes_accept_tx_hash ON link_revokes (accept_tx_hash)",
+    "CREATE INDEX IF NOT EXISTS idx_address_aliases_target ON address_aliases (target_address)",
 ]
 
 const Definitions = [
@@ -245,6 +246,13 @@ const Definitions = [
         address CHAR,
         accept_tx_hash CHAR,
         message CHAR,
+        UNIQUE(tx_hash)
+    )`,
+    `address_aliases (
+        tx_hash CHAR,
+        address CHAR,
+        target_address CHAR,
+        alias CHAR,
         UNIQUE(tx_hash)
     )`,
 ]

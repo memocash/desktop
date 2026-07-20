@@ -1,6 +1,6 @@
 import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
-import {BackfillPosts, ListenBlocks, ListenNewTxs, RecentBlock, SyncProfileLinks, UpdateHistory, UpdateMemoHistory,
+import {BackfillPosts, ListenBlocks, ListenNewTxs, RecentBlock, SyncAliases, SyncProfileLinks, UpdateHistory, UpdateMemoHistory,
     UpdateSlp} from "./update/index.js";
 import ListenNewMemos from "./update/listen_memo";
 
@@ -26,6 +26,7 @@ const Update = ({setConnected, setLastUpdate}) => {
             return await window.electron.getLinkedAddresses(addresses)
         })
         await UpdateHistory({wallet, setConnected, setLastUpdate})
+        await SyncAliases({addresses: linkedRef.current}).catch(e => console.log("Update: SyncAliases failed", e))
         await UpdateSlp({addresses: addresses.concat(wallet.slpList || []), setLastUpdate})
         await UpdateMemoHistory({addresses: linkedRef.current, setLastUpdate})
         await BackfillPosts({addresses: linkedRef.current, userAddresses: wallet.addresses, setLastUpdate})

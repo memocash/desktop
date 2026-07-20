@@ -9,7 +9,7 @@ import Post from "../../../wallet/memo/post";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {SendLinkAccept, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
 import Links from "../../../wallet/snippets/links";
-import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
+import {BackfillPosts, SyncAliases, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
 import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
 
@@ -123,6 +123,9 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
             return await window.electron.getLinkedAddresses([address])
         })
         setAddresses(linked)
+        await SyncAliases({addresses: linked}).then(() =>
+            setLastProfileUpdate((new Date()).toISOString()))
+            .catch(e => console.log("SyncAliases failed", e))
         await UpdateMemoHistory({addresses: linked, setLastUpdate: setLastProfileUpdate})
         const wallet = await GetWallet()
         await BackfillPosts({addresses: linked, userAddresses: wallet.addresses, setLastUpdate: setLastProfileUpdate})
@@ -158,7 +161,10 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                              "/default-profile.jpg"}/>
                 </div>
                 <div className={profile.info}>
-                    <h2>{profileInfo.name ? profileInfo.name : "Name not set"}</h2>
+                    <h2>{profileInfo.name ? profileInfo.name : "Name not set"}
+                        {profileInfo.alias && profileInfo.alias !== profileInfo.name ?
+                            <span className={profile.time}> ({profileInfo.alias})</span> : null}
+                    </h2>
                     <p className={profile.text}>
                         <Links>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</Links>
                     </p>

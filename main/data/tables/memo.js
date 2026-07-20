@@ -61,6 +61,9 @@ const GetProfileInfo = async (conf, addresses) => {
             merged.pic = row.pic
         }
     }
+    const aliases = await GetAddressAliases(conf, addresses)
+    const viewedAlias = aliases.find(alias => alias.target_address === addresses[0])
+    merged.alias = viewedAlias ? viewedAlias.alias : null
     return merged
 }
 
@@ -148,6 +151,40 @@ const GetWalletLinks = async (conf, addresses) => {
         "LEFT JOIN profile_names parent_names ON (parent_names.tx_hash = parent_profiles.name) " +
         "WHERE link_requests.address IN " + inList + "OR link_requests.parent_address IN " + inList
     return await Select(conf, "wallet-links", query, [...addresses, ...addresses])
+}
+
+const SaveAddressAliases = async (conf, aliases) => {
+    if (!aliases || !aliases.length) {
+        return
+    }
+    await Insert(conf, "address-aliases",
+        "INSERT OR REPLACE INTO address_aliases (tx_hash, address, target_address, alias) VALUES " +
+        Array(aliases.length).fill("(?, ?, ?, ?)").join(", "), aliases.map(value => [
+            value.tx_hash, value.address, value.target_address, value.alias]).flat())
+}
+
+// Aliases are meaningful within the identity that set them. Only aliases
+// signed by an address in the resolved cluster are returned, newest first per
+// target address (unconfirmed aliases sort ahead of confirmed ones).
+const GetAddressAliases = async (conf, addresses) => {
+    const inList = "(" + Array(addresses.length).fill("?").join(", ") + ") "
+    const query = "" +
+        "SELECT address_aliases.* FROM address_aliases " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = address_aliases.tx_hash) " +
+        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+        "LEFT JOIN tx_seens ON (tx_seens.hash = address_aliases.tx_hash) " +
+        "WHERE address_aliases.address IN " + inList +
+        "AND address_aliases.target_address IN " + inList +
+        "ORDER BY COALESCE(blocks.height, 1000000000) DESC, " +
+        "COALESCE(tx_seens.timestamp, blocks.timestamp) DESC, address_aliases.tx_hash DESC"
+    const rows = await Select(conf, "address-aliases", query, [...addresses, ...addresses])
+    const aliases = {}
+    for (const row of rows) {
+        if (!aliases[row.target_address]) {
+            aliases[row.target_address] = row
+        }
+    }
+    return Object.values(aliases)
 }
 
 // Locally synced tx outputs that look like link requests (OP_RETURN 6d20 with
@@ -371,12 +408,14 @@ const SavePic = async (conf, url, data) => {
 }
 
 module.exports = {
+    GetAddressAliases,
     GetLinkedAddresses,
     GetPotentialLinkRequests,
     GetProfileInfo,
     GetProfileLinks,
     GetWalletLinks,
     SaveMemoProfiles,
+    SaveAddressAliases,
     GetRecentSetName,
     GetRecentSetProfile,
     GetRecentSetPic,

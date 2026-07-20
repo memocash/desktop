@@ -20,6 +20,7 @@ const Prefix = {
     "6d20": "LinkRequest",
     "6d21": "LinkAccept",
     "6d22": "LinkRevoke",
+    "6d26": "SetAlias",
 }
 const setTx = async (outer_transaction, setModal) => {
     const wallet = await GetWallet()
