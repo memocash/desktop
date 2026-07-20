@@ -1,0 +1,72 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            target: linux
+            arch: --x64
+            artifacts: |
+              dist/*.AppImage
+              dist/*.deb
+          - name: macOS
+            os: macos-latest
+            target: mac
+            arch: --x64 --arm64
+            artifacts: |
+              dist/*.dmg
+              dist/*.zip
+          - name: Windows
+            os: windows-latest
+            target: win
+            arch: --x64
+            artifacts: |
+              dist/*.exe
+    runs-on: ${{ matrix.os }}
+    env:
+      # Builds are unsigned unless signing secrets are configured (see README).
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build installers
+        run: npm run dist:${{ matrix.target }} -- ${{ matrix.arch }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: memo-${{ matrix.target }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+      - name: Create release and upload installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" release-artifacts/**/* --verify-tag --generate-notes --title "Memo ${TAG#v}"

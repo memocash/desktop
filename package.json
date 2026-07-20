@@ -2,6 +2,8 @@
   "name": "memo",
   "version": "0.0.2",
   "description": "Memo Desktop Application",
+  "desktopName": "Memo",
+  "homepage": "https://memocash.github.io/desktop/",
   "main": "main/index.js",
   "repository": "github.com/memocash/desktop",
   "scripts": {
@@ -20,6 +22,7 @@
   "build": {
     "appId": "cash.memo.desktop",
     "productName": "Memo",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "copyright": "Copyright © Memo Technology, Inc.",
     "files": [
       "main/**/*",
@@ -39,12 +42,13 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     },
     "linux": {
       "category": "Finance",
+      "maintainer": "Memo Technology, Inc. <support@memo.cash>",
+      "syncDesktopName": true,
       "target": [
         "AppImage",
         "deb"
