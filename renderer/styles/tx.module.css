@@ -7,8 +7,8 @@
 }
 
 .input_output_box {
-    background: #fff;
-    border: 1px solid #999;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
     font-size: 12px;
     height: calc((100vh - 245px) / 2);
     overflow-y: auto;
@@ -47,7 +47,7 @@
 }
 
 .input_output_box .input_output_highlight span {
-    background: #9ef18b;
+    background: var(--tx-highlight-bg);
 }
 
 .input_output_box .spanRight {

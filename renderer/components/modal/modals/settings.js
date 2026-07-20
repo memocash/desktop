@@ -9,12 +9,21 @@ const SettingsModal = ({onClose, setLastUpdate, setModal}) => {
     const [skipPassword, setSkipPassword] = useState(true)
     const [enableSkipPassword, setEnableSkipPassword] = useState(false)
     const [initialSkipPassword, setInitialSkipPassword] = useState(true)
+    const [theme, setTheme] = useState("system")
     useEffect(() => {(async () => {
         let wallet = await GetWallet()
         setDirectTx(wallet.settings.DirectTx)
         setSkipPassword(wallet.settings.SkipPassword)
         setInitialSkipPassword(wallet.settings.SkipPassword)
+        setTheme(await window.electron.getTheme())
     })()},[])
+
+    // Appearance is app-global and applied immediately via nativeTheme, so it is
+    // saved on change rather than waiting for the Save button.
+    const changeTheme = async (value) => {
+        setTheme(value)
+        await window.electron.setTheme(value)
+    }
 
     const toggleSkipPassword = () => {
         if(skipPassword) {
@@ -59,6 +68,14 @@ const SettingsModal = ({onClose, setLastUpdate, setModal}) => {
                     <div>
                         <input checked={skipPassword} type="checkbox" id="skipPassword" onChange={toggleSkipPassword}/>
                         <label htmlFor="skipPassword">Skip Password for basic transactions</label>
+                    </div>
+                    <div>
+                        <label htmlFor="theme">Appearance:</label>
+                        {} <select id="theme" value={theme} onChange={(e) => changeTheme(e.target.value)}>
+                            <option value="system">System</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
                     </div>
                     <input type="submit" value="Save"/>
                     <button onClick={onClose}>Close</button>

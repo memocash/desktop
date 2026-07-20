@@ -1,5 +1,5 @@
 .wrapper {
-    background-color: #00000055;
+    background-color: var(--modal-overlay);
     position: fixed;
     top: 0;
     left: 0;
@@ -10,7 +10,7 @@
 
 .modal {
     position: relative;
-    background-color: #EEE;
+    background-color: var(--bg);
     border-radius: 10px;
     padding: 20px;
     top: 50%;

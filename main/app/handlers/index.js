@@ -4,12 +4,14 @@ const {WalletHandlers} = require("./wallet");
 const {WindowHandlers} = require("./window");
 const {WindowTxHandlers} = require("./window_tx");
 const {DataHandlers} = require("./data");
+const {ThemeHandlers} = require("./theme");
 
 module.exports = {
     AllHandlers: () => {
         DataHandlers()
         GraphQLHandlers()
         ProfileHandlers()
+        ThemeHandlers()
         WalletHandlers()
         WindowHandlers()
         WindowTxHandlers()

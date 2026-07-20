@@ -1,4 +1,4 @@
-const {BrowserWindow, screen, shell} = require("electron");
+const {BrowserWindow, nativeTheme, screen, shell} = require("electron");
 const path = require("path");
 const isDev = require("electron-is-dev");
 const menu = require("../menu");
@@ -6,6 +6,10 @@ const menu = require("../menu");
 // Dev loads the Next dev server; prod loads the static export served over the
 // app:// protocol (see main/index.js). The rest of the URL is identical.
 const AppUrl = isDev ? "http://localhost:8000" : "app://-";
+
+// Match the CSS --bg values so the window paints the right base color before
+// the renderer loads (avoids a light flash when opening in dark mode).
+const BackgroundColor = () => nativeTheme.shouldUseDarkColors ? "#1b1c1e" : "#eeeeee"
 
 const wallets = {}
 const storage = {}
@@ -41,6 +45,7 @@ const CreateWindow = async () => {
         minWidth: 600,
         minHeight: 400,
         title: "Memo",
+        backgroundColor: BackgroundColor(),
         webPreferences: {
             nodeIntegration: true,
             preload: path.join(__dirname, "..", "preload", "index.js")
@@ -64,6 +69,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         minWidth: 650,
         minHeight: 300,
         title: "Transaction",
+        backgroundColor: BackgroundColor(),
         webPreferences: {
             nodeIntegration: true,
             preload: path.join(__dirname, "..", "preload", "index.js")

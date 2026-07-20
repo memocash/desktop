@@ -33,7 +33,7 @@
 .wrapper .rowTitle span {
     position: sticky;
     top: 0;
-    border-right: 1px solid #ccc;
+    border-right: 1px solid var(--border);
 }
 
 .wrapper .rowTitle span:last-child {
@@ -43,7 +43,7 @@
 }
 
 .wrapper .rowTitle span {
-    background: #eee;
+    background: var(--bg);
     padding: 5px;
     cursor: default;
 }
@@ -54,12 +54,12 @@
 }
 
 .row:not(.rowTitle):hover span {
-    background: #ccc;
+    background: var(--border);
 }
 
 .row.rowSelected span,
 .row:not(.rowTitle):active span {
-    background: #ddd;
+    background: var(--border-soft);
 }
 
 .itemAddress {

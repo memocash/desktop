@@ -1,5 +1,104 @@
+/*
+ * Theme variables. Light values match the app's original hard-coded colors, so
+ * light mode renders identically to before. Dark values are supplied in the
+ * prefers-color-scheme block below. The active scheme follows the OS, or the
+ * user's override via nativeTheme.themeSource (Settings > Appearance), which is
+ * what makes prefers-color-scheme resolve to the chosen theme in every window.
+ */
+:root {
+    color-scheme: light;
+
+    --bg: #eee;
+    --surface: #fff;
+    --surface-alt: #f9f9f9;
+    --surface-muted: #f5f5f5;
+    --row-hover-faint: #fafafa;
+    --scroll-track: #f1f1f1;
+    --scroll-thumb: #888;
+    --scroll-thumb-hover: #555;
+
+    --color-text: #000;
+    --text-muted: #555;
+    --text-dim: #666;
+    --text-faint: #888;
+    --text-fainter: #999;
+
+    --border-strong: #999;
+    --border: #ccc;
+    --border-soft: #ddd;
+    --border-faint: #f0f0f0;
+    --border-tab: #bbb;
+    --border-button: #9c9c9c;
+
+    --accent: #5b9920;
+    --accent-purple: #705ebb;
+    --danger: #ff0000;
+    --tx-highlight-bg: #9ef18b;
+    --modal-overlay: rgba(0, 0, 0, 0.33);
+
+    --badge-incoming-bg: #e9f2da;
+    --badge-incoming-fg: #4d7a12;
+    --badge-outgoing-bg: #e6eef7;
+    --badge-outgoing-fg: #2b6cb0;
+    --badge-revoked-bg: #f0e0e0;
+    --badge-revoked-fg: #aa3333;
+
+    --button-bg-image: -webkit-linear-gradient(
+            #ffffff 0%, #f6f6f6 30%,
+            #f3f3f3 45%, #ededed 60%,
+            #eeeeee 100%);
+    --button-shadow: rgba(0, 0, 0, 0.20);
+    --button-shadow-active: rgba(0, 0, 0, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+
+        --bg: #1b1c1e;
+        --surface: #26282c;
+        --surface-alt: #2b2d31;
+        --surface-muted: #212226;
+        --row-hover-faint: #303236;
+        --scroll-track: #2b2d31;
+        --scroll-thumb: #555;
+        --scroll-thumb-hover: #777;
+
+        --color-text: #e6e6e6;
+        --text-muted: #b4b4b4;
+        --text-dim: #a6a6a6;
+        --text-faint: #8c8c8c;
+        --text-fainter: #808080;
+
+        --border-strong: #4b4e54;
+        --border: #3a3d42;
+        --border-soft: #34373c;
+        --border-faint: #2e3034;
+        --border-tab: #4b4e54;
+        --border-button: #55585d;
+
+        --accent: #6fb52a;
+        --accent-purple: #8f7fe0;
+        --danger: #ff6b6b;
+        --tx-highlight-bg: #2e5a2a;
+        --modal-overlay: rgba(0, 0, 0, 0.55);
+
+        --badge-incoming-bg: #2a3a1c;
+        --badge-incoming-fg: #a7d46a;
+        --badge-outgoing-bg: #1e3550;
+        --badge-outgoing-fg: #7cb3e8;
+        --badge-revoked-bg: #4a2626;
+        --badge-revoked-fg: #e88888;
+
+        --button-bg-image: -webkit-linear-gradient(#3a3d42 0%, #313337 100%);
+        --button-shadow: rgba(0, 0, 0, 0.5);
+        --button-shadow-active: rgba(0, 0, 0, 0.8);
+    }
+}
+
 body {
-    background: #eee;
+    background: var(--bg);
+    color: var(--color-text);
     margin: 0;
     font-size: 12px;
     padding: 5px;
@@ -10,13 +109,11 @@ button, input[type=submit] {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 12px;
     padding: 3px 10px;
-    border: 1px solid #9C9C9C;
-    background-image: -webkit-linear-gradient(
-            #ffffff 0%, #F6F6F6 30%,
-            #F3F3F3 45%, #EDEDED 60%,
-            #eeeeee 100%);
+    color: var(--color-text);
+    border: 1px solid var(--border-button);
+    background-image: var(--button-bg-image);
     border-radius: 3px;
-    box-shadow: 0 0 1px rgba(0, 0, 0, 0.20);
+    box-shadow: 0 0 1px var(--button-shadow);
 }
 
 button:not(:disabled),
@@ -25,6 +122,6 @@ input[type=submit]:not(:disabled) {
 }
 
 button:active, input[type=submit]:active {
-    border-color: #705ebb;
-    box-shadow: 0 0 1px rgba(0, 0, 0, 0.65);
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 1px var(--button-shadow-active);
 }

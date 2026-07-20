@@ -7,7 +7,7 @@
 .sidebar {
     width: 150px;
     height: 100%;
-    background: #f5f5f5;
+    background: var(--surface-muted);
     display: flex;
     flex-direction: column;
 }
@@ -16,7 +16,7 @@
     width: 100%;
     overflow: auto;
     height: 40px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--border);
 }
 
 .sidebar_header form {
@@ -53,15 +53,15 @@
 }
 
 .sidebar_content::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--scroll-track);
 }
 
 .sidebar_content::-webkit-scrollbar-thumb {
-    background: #888;
+    background: var(--text-faint);
 }
 
 .sidebar_content::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: var(--text-muted);
 }
 
 .sidebar_content ul {
@@ -73,15 +73,15 @@
 .sidebar_content li {
     cursor: pointer;
     padding: 10px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--border);
 }
 
 .sidebar_content li:hover {
-    background: #eee;
+    background: var(--bg);
 }
 
 .sidebar_content li.selected {
-    background: #ddd;
+    background: var(--border-soft);
 }
 
 .sidebar_footer {
@@ -98,7 +98,7 @@
     width: 4px;
     height: 100%;
     cursor: col-resize;
-    border-right: 1px solid #555;
+    border-right: 1px solid var(--text-muted);
 }
 
 .content {
@@ -127,7 +127,7 @@
 .content_header_left a {
     padding: 0 10px;
     margin: 0;
-    color: #555;
+    color: var(--text-muted);
 }
 
 .content_header_buttons {
@@ -144,7 +144,7 @@
     display: flex;
     flex-direction: column-reverse;
     overflow-y: auto;
-    border-top: 1px solid #ccc;
+    border-top: 1px solid var(--border);
 }
 
 .posts .post:last-child {
@@ -155,12 +155,12 @@
     width: calc(100% - 20px);
     overflow-x: auto;
     padding: 5px 10px;
-    border-top: 1px solid #ccc;
+    border-top: 1px solid var(--border);
     flex-shrink: 0;
 }
 
 .posts .post:nth-child(odd) {
-    background: #f5f5f5;
+    background: var(--surface-muted);
 }
 
 .post_header {
@@ -186,7 +186,7 @@
 .post_header .time {
     font-weight: normal;
     font-size: 11px;
-    color: #888;
+    color: var(--text-faint);
 }
 
 .post_header button {
@@ -201,7 +201,7 @@
 
 .sender {
     height: 39px;
-    border-top: 1px solid #555;
+    border-top: 1px solid var(--text-muted);
 }
 
 .sender fieldset {

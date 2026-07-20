@@ -11,7 +11,7 @@
     display: grid;
     width: 100%;
     grid-template-columns: repeat(2, max-content);
-    background: #f9f9f9;
+    background: var(--surface-alt);
 }
 
 .header h2,
@@ -43,7 +43,7 @@
 }
 
 .header_modal {
-    background: #fff;
+    background: var(--surface);
     border-radius: 5px 5px 0 0;
 }
 
@@ -93,10 +93,10 @@
 .posts {
     max-height: calc(100vh - 265px);
     overflow: auto;
-    background: #fff;
+    background: var(--surface);
     min-height: 10px;
     border-radius: 0 0 5px 5px;
-    border-top: 1px solid #f5f5f5;
+    border-top: 1px solid var(--surface-muted);
     margin-top: -1px;
 }
 
@@ -123,7 +123,7 @@
     display: inline-block;
     margin-left: 5px;
     visibility: hidden;
-    color: #555;
+    color: var(--text-muted);
 }
 
 :hover > .editLink {
@@ -132,14 +132,14 @@
 
 .body_modal {
     max-height: calc(100vh - 235px);
-    background: #fff;
+    background: var(--surface);
     border-radius: 0 0 5px 5px;
     padding: 10px;
     overflow: auto;
 }
 
 .followers {
-    border-top: 1px solid #ccc;
+    border-top: 1px solid var(--border);
     display: grid;
     max-width: 100%;
     max-height: calc(100vh - 180px);
@@ -177,7 +177,7 @@
 
 .row:hover > span,
 .row:hover > div {
-    background: #ccc;
+    background: var(--border);
 }
 
 .row > span,
@@ -196,9 +196,9 @@
 
 .row:first-of-type > span,
 .row:first-of-type > div {
-    background: #eee;
+    background: var(--bg);
     padding: 3px 5px;
-    border-right: 1px solid #ccc;
+    border-right: 1px solid var(--border);
     cursor: pointer;
 }
 
@@ -217,13 +217,13 @@
 }
 
 .posts .post:nth-child(2n) {
-    background: #f9f9f9;
+    background: var(--surface-alt);
 }
 
 .post_single {
-    background: #fff;
+    background: var(--surface);
     border-radius: 5px;
-    border: 1px solid #999;
+    border: 1px solid var(--border-strong);
 }
 
 .post_header img {
@@ -253,9 +253,9 @@
 }
 
 .selected {
-    box-shadow: 0 0 2px 2px #5b9920;
+    box-shadow: 0 0 2px 2px var(--accent);
     font-weight: bold;
-    background-color: #5b9920;
+    background-color: var(--accent);
 }
 
 .room_link {
@@ -267,7 +267,7 @@
 .time {
     font-weight: normal;
     font-size: 11px;
-    color: #888;
+    color: var(--text-faint);
 }
 
 .post_body {
@@ -309,8 +309,8 @@
 }
 
 .likes_list {
-    background: #fff;
-    border-top: 1px solid #ccc;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
     display: grid;
     max-width: 100%;
     max-height: calc(100vh - 180px);
@@ -325,8 +325,8 @@
 }
 
 .list_header {
-    background: #fff;
-    border: 1px solid #999;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
     border-radius: 5px;
     padding: 10px;
 }
@@ -343,16 +343,16 @@
     padding: 10px;
     text-align: center;
     grid-column: span 3;
-    background: #fff;
+    background: var(--surface);
     border-radius: 5px;
     border-width: 0 1px 1px;
     border-style: solid;
-    border-color: #999;
+    border-color: var(--border-strong);
     font-weight: bold;
 }
 
 .set_profile {
-    background: #fff;
+    background: var(--surface);
     padding: 10px;
     border-radius: 5px;
 }
@@ -366,31 +366,31 @@
 }
 
 .post_parent_wrapper {
-    background: #ddd;
+    background: var(--border-soft);
     border-radius: 5px;
     padding-left: 20px;
 }
 
 .post_parent_wrapper .post {
-    background: #fff;
+    background: var(--surface);
 }
 
 .post_parent {
     margin-left: -20px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border-soft);
 }
 
 .replies {
-    background: #fff;
-    border-top: 1px solid #ddd;
+    background: var(--surface);
+    border-top: 1px solid var(--border-soft);
 }
 
 .replies .post {
-    border-left: 20px solid #ddd;
+    border-left: 20px solid var(--border-soft);
 }
 
 .post_list {
-    border-top: 1px solid #ccc;
+    border-top: 1px solid var(--border);
     display: grid;
     max-width: 100%;
     max-height: calc(100vh - 180px);
