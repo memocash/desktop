@@ -17,6 +17,9 @@ const Prefix = {
     "6d0c": "ChatPost",
     "6d0d": "ChatFollow",
     "6d0e": "ChatUnfollow",
+    "6d20": "LinkRequest",
+    "6d21": "LinkAccept",
+    "6d22": "LinkRevoke",
 }
 const setTx = async (outer_transaction, setModal) => {
     const wallet = await GetWallet()

@@ -140,6 +140,37 @@ const Info = () => {
                         Buffer.from(script.substr(10 + size), "hex")
                 case "6d0d":
                     return "Memo topic follow: " + Buffer.from(script.substr(8), "hex")
+                case "6d20": {
+                    // Link requests contain the prospective parent's 20-byte
+                    // public-key hash.  Decode it as the same legacy P2PKH
+                    // address format used throughout the wallet.
+                    if (script.substr(8, 2) !== "14" || script.length < 50) {
+                        info = "Bad link request"
+                        break
+                    }
+                    const parentPkHash = Buffer.from(script.substr(10, 40), "hex")
+                    const parentAddress = bitcoin.address.toBase58Check(
+                        parentPkHash, bitcoin.networks.bitcoin.pubKeyHash)
+                    return "Memo link request: " + parentAddress
+                }
+                case "6d21": {
+                    if (script.substr(8, 2) !== "20" || script.length < 74) {
+                        info = "Bad link accept"
+                        break
+                    }
+                    const requestTxHash = script.substr(10, 64)
+                    return (<>Memo link accept: <Link onClick={(e) => txLink(e, requestTxHash)}
+                        href={"/tx?txHash=" + requestTxHash}>{ShortHash(requestTxHash)}</Link></>)
+                }
+                case "6d22": {
+                    if (script.substr(8, 2) !== "20" || script.length < 74) {
+                        info = "Bad link revoke"
+                        break
+                    }
+                    const acceptTxHash = script.substr(10, 64)
+                    return (<>Memo link revoke: <Link onClick={(e) => txLink(e, acceptTxHash)}
+                        href={"/tx?txHash=" + acceptTxHash}>{ShortHash(acceptTxHash)}</Link></>)
+                }
                 case "6d24":
                     return "Memo direct message: " + Buffer.from(script.substr(52), "hex")
                 case "6d05":
