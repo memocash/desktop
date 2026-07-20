@@ -19,13 +19,17 @@ const Links = ({basic: {setModal, onClose}}) => {
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         const addresses = wallet.addresses.concat(wallet.changeList || [])
+        let linkedAddresses
         try {
             await DiscoverLinkRequests({addresses})
-            await SyncProfileLinks({addresses})
+            linkedAddresses = await SyncProfileLinks({addresses})
         } catch (e) {
             console.log("Links modal: sync failed, showing local data", e)
+            linkedAddresses = await window.electron.getLinkedAddresses(addresses)
         }
-        const rows = await window.electron.getWalletLinks(addresses)
+        // Read every edge touching the resolved identity cluster, not only
+        // edges connected directly to an address owned by this wallet.
+        const rows = await window.electron.getWalletLinks(linkedAddresses)
         // Best row per request: an unrevoked accept beats a revoked one beats
         // none (a revoked accept can be superseded by a re-accept).
         const requestRows = {}
@@ -40,12 +44,16 @@ const Links = ({basic: {setModal, onClose}}) => {
         const pending = []
         for (const row of Object.values(requestRows)) {
             const walletIsParent = addresses.includes(row.parent_address)
+            const walletIsChild = addresses.includes(row.child_address)
             const entry = {
                 ...row,
                 walletIsParent,
+                walletIsChild,
+                indirect: !walletIsParent && !walletIsChild,
                 otherAddress: walletIsParent ? row.child_address : row.parent_address,
                 otherName: walletIsParent ? row.child_name : row.parent_name,
-                walletAddress: walletIsParent ? row.parent_address : row.child_address,
+                walletAddress: walletIsParent ? row.parent_address :
+                    (walletIsChild ? row.child_address : undefined),
             }
             if (row.accept_tx_hash && !row.revoked) {
                 active.push(entry)
@@ -82,14 +90,21 @@ const Links = ({basic: {setModal, onClose}}) => {
     // A named account shows the name as the identity and the address beneath;
     // an unnamed one shows the address as the identity with no duplicate line.
     const named = (entry) => entry.otherName && entry.otherName.length
+    const identityLink = (address, name) => <span className={css.name} onClick={() => viewProfile(address)}>
+        {name || address}
+    </span>
     const linkRow = (entry, badge, action) => (
         <div className={css.row} key={entry.request_tx_hash}>
             <div className={css.identity}>
-                <span className={css.name} onClick={() => viewProfile(entry.otherAddress)}>
-                    {named(entry) ? entry.otherName : entry.otherAddress}
-                </span>
+                {entry.indirect ? <>
+                    {identityLink(entry.child_address, entry.child_name)}
+                    <span> &rarr; </span>
+                    {identityLink(entry.parent_address, entry.parent_name)}
+                </> : identityLink(entry.otherAddress, entry.otherName)}
                 <div className={css.sub}>
-                    {named(entry) ? <div>{entry.otherAddress}</div> : null}
+                    {!entry.indirect && named(entry) ? <div>{entry.otherAddress}</div> : null}
+                    {entry.indirect && (entry.child_name || entry.parent_name) ?
+                        <div>{entry.child_address} &rarr; {entry.parent_address}</div> : null}
                     {(entry.message && entry.message.length) ?
                         <span className={css.message}>&ldquo;{entry.message}&rdquo;</span> : null}
                 </div>
@@ -138,6 +153,12 @@ const Links = ({basic: {setModal, onClose}}) => {
                                 return linkRow(entry, badge,
                                     <button onClick={() => clickAccept(entry)}>
                                         {entry.revoked ? "Re-accept" : "Accept"}</button>)
+                            }
+                            if (entry.indirect) {
+                                const badge = <span className={`${css.badge} ${css.badgeOutgoing}`}>
+                                    Chained identity request</span>
+                                return linkRow(entry, badge,
+                                    <span className={css.status}>Awaiting approval</span>)
                             }
                             // Outgoing request from a wallet address.
                             const badge = <span className={`${css.badge} ${css.badgeOutgoing}`}>
