@@ -13,6 +13,72 @@ import {FormatTxError, setTx} from "./direct_tx";
 import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
 import Link from "next/link";
 
+// Include each referenced output so an arbitrary transaction has enough
+// context to show input addresses/values and calculate its fee, even when
+// neither it nor its parents have been synced to the local database yet.
+const TransactionQuery = `
+    query ($hash: Hash!) {
+        tx(hash: $hash) {
+            hash
+            seen
+            raw
+            inputs {
+                index
+                prev_hash
+                prev_index
+                output {
+                    index
+                    amount
+                    script
+                    lock {
+                        address
+                    }
+                }
+            }
+            outputs {
+                index
+                amount
+                script
+                lock {
+                    address
+                }
+            }
+            blocks {
+                block {
+                    hash
+                    timestamp
+                    height
+                }
+            }
+        }
+    }
+    `
+
+const loadTransaction = async (txHash) => {
+    let tx = await window.electron.getTransaction(txHash)
+    if (tx.raw || tx.inputs.length || tx.outputs.length) {
+        return tx
+    }
+
+    const response = await window.electron.graphQL(TransactionQuery, {hash: txHash})
+    const remoteTx = response && response.data && response.data.tx
+    if (!remoteTx) {
+        return tx
+    }
+
+    // GetTransaction resolves input details by joining their previous outputs.
+    // Store lightweight parent records first so that join also works for a tx
+    // fetched outside the wallet's normal address-based sync.
+    const parents = remoteTx.inputs
+        .filter(input => input.output)
+        .map(input => ({
+            hash: input.prev_hash,
+            outputs: [{...input.output, index: input.prev_index}],
+        }))
+    await window.electron.saveTransactions(parents.concat(remoteTx))
+    return await window.electron.getTransaction(txHash)
+}
+
 // Annotates a tx's outputs with SLP info parsed from its OP_RETURN: a label
 // for the OP_RETURN output itself, and per-output notes showing which dust
 // outputs carry tokens or the mint baton. Works for both unsigned previews
@@ -255,7 +321,13 @@ const Info = () => {
         if (!transactionId.length || !signedRef.current) {
             return
         }
-        const tx = await window.electron.getTransaction(transactionId)
+        let tx
+        try {
+            tx = await loadTransaction(transactionId)
+        } catch (e) {
+            console.log("Error loading transaction", e)
+            tx = await window.electron.getTransaction(transactionId)
+        }
         const wallet = await GetWallet()
         const walletAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
         let amount = 0
