@@ -3,8 +3,15 @@ import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {GetUtxos} from "../../util/utxos";
 import {CreateDirectTransaction} from "./create_direct_tx";
 
-const CreateTransactionWithPreview = async (wallet, outputs, beatHash = "", coin = "") => {
-    const utxos = GetUtxos()
+// fromAddress restricts inputs to utxos locked to that address. Link accepts
+// and revokes need it: the protocol attributes them to the signing address,
+// which must be the exact address the link names - funds from another wallet
+// address would make the action invalid.
+const CreateTransactionWithPreview = async (wallet, outputs, beatHash = "", coin = "", fromAddress = "") => {
+    let utxos = GetUtxos()
+    if (fromAddress !== "") {
+        utxos = utxos.filter(utxo => utxo.address === fromAddress)
+    }
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
@@ -53,7 +60,9 @@ const CreateTransactionWithPreview = async (wallet, outputs, beatHash = "", coin
         }
     }
     if (totalInput < requiredInput) {
-        window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
+        window.electron.showMessageDialog(fromAddress !== "" ?
+            "Not enough value on " + fromAddress + " to complete this transaction" :
+            "Not enough value in wallet to complete this transaction")
         return
     }
     const changeAddress = wallet.addresses[0]
@@ -69,11 +78,12 @@ const CreateTransactionWithPreview = async (wallet, outputs, beatHash = "", coin
     await window.electron.openPreviewSend({inputs, outputs: outputStrings, beatHash})
 }
 
-const CreateTransaction = async (wallet, outputs, setModal, onDone, beatHash = "", requirePassword = false) => {
+const CreateTransaction = async (wallet, outputs, setModal, onDone, beatHash = "", requirePassword = false,
+                                 fromAddress = "") => {
     if (wallet.settings.DirectTx) {
-        await CreateDirectTransaction(wallet, outputs, setModal, onDone, requirePassword, beatHash)
+        await CreateDirectTransaction(wallet, outputs, setModal, onDone, requirePassword, beatHash, "", fromAddress)
     } else {
-        await CreateTransactionWithPreview(wallet, outputs, beatHash)
+        await CreateTransactionWithPreview(wallet, outputs, beatHash, "", fromAddress)
     }
 }
 

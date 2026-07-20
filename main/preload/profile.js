@@ -20,6 +20,8 @@ module.exports = {
     getPostParent: ({txHash, userAddresses}) => ipcRenderer.invoke(Handlers.GetPostParent, {txHash, userAddresses}),
     getPostReplies: ({txHash, userAddresses}) => ipcRenderer.invoke(Handlers.GetPostReplies, {txHash, userAddresses}),
     getProfileInfo: (addresses) => ipcRenderer.invoke(Handlers.GetProfileInfo, addresses),
+    getProfileLinks: ({userAddresses, addresses}) =>
+        ipcRenderer.invoke(Handlers.GetProfileLinks, {userAddresses, addresses}),
     getRecentFollow: (addresses, address) => ipcRenderer.invoke(Handlers.GetRecentFollow, addresses, address),
     getRecentRoomFollow: (addresses, room) => ipcRenderer.invoke(Handlers.GetRecentRoomFollow, addresses, room),
     getRecentSetName: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetName, addresses),

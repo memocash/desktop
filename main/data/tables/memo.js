@@ -97,6 +97,31 @@ const GetLinkedAddresses = async (conf, addresses) => {
     return cluster
 }
 
+// Link rows connecting a wallet's addresses to a viewed profile's cluster, in
+// either direction (wallet as child or as parent). One row per request/accept
+// pair; a request can appear in multiple rows when it has both a revoked and a
+// later re-issued accept, so callers decide status per request across rows.
+const GetProfileLinks = async (conf, {userAddresses, addresses}) => {
+    const userIn = "(" + Array(userAddresses.length).fill("?").join(", ") + ") "
+    const viewedIn = "(" + Array(addresses.length).fill("?").join(", ") + ") "
+    const query = "" +
+        "SELECT " +
+        "   link_requests.tx_hash AS request_tx_hash, " +
+        "   link_requests.address AS child_address, " +
+        "   link_requests.parent_address AS parent_address, " +
+        "   link_accepts.tx_hash AS accept_tx_hash, " +
+        "   (CASE WHEN link_revokes.tx_hash IS NULL THEN 0 ELSE 1 END) AS revoked " +
+        "FROM link_requests " +
+        "LEFT JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
+        "   AND link_accepts.address = link_requests.parent_address) " +
+        "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
+        "   AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "WHERE (link_requests.address IN " + userIn + "AND link_requests.parent_address IN " + viewedIn + ") " +
+        "   OR (link_requests.parent_address IN " + userIn + "AND link_requests.address IN " + viewedIn + ")"
+    return await Select(conf, "profile-links", query,
+        [...userAddresses, ...addresses, ...userAddresses, ...addresses])
+}
+
 const SaveMemoProfiles = async (conf, profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
@@ -299,6 +324,7 @@ const SavePic = async (conf, url, data) => {
 module.exports = {
     GetLinkedAddresses,
     GetProfileInfo,
+    GetProfileLinks,
     SaveMemoProfiles,
     GetRecentSetName,
     GetRecentSetProfile,

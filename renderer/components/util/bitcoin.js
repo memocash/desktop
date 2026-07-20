@@ -28,6 +28,9 @@ const Prefix = {
     ChatPost: "6d0c",
     ChatFollow: "6d0d",
     ChatUnfollow: "6d0e",
+    LinkRequest: "6d20",
+    LinkAccept: "6d21",
+    LinkRevoke: "6d22",
     Send: "6d24",
 }
 

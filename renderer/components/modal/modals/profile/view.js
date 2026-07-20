@@ -12,6 +12,13 @@ import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../../../walle
 import Modal from "../../modal";
 import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
 
+const LinkStatus = {
+    None: "none",
+    Requested: "requested",
+    Incoming: "incoming",
+    Active: "active",
+}
+
 const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, lastUpdate}}) => {
     const [profileInfo, setProfileInfo] = useState({
         name: "",
@@ -31,6 +38,14 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
     // aggregated across the cluster. Viewed address stays first so its own
     // name/profile/pic win in GetProfileInfo's merge.
     const [addresses, setAddresses] = useState([address])
+    // Link state between the wallet and the viewed profile. walletAddress is
+    // the wallet's side of the link - accepts and revokes must be signed by
+    // that exact address for the protocol to count them, so it's passed to
+    // CreateTransaction as fromAddress. isWalletAddress (viewed address is
+    // itself in the wallet) starts true so link buttons stay hidden until the
+    // wallet check runs.
+    const [linkState, setLinkState] = useState({status: LinkStatus.None})
+    const [isWalletAddress, setIsWalletAddress] = useState(true)
     // UpdateMemoHistory/UpdatePosts can call setLastProfileUpdate several times
     // in quick succession as each sync phase lands, re-firing this effect each
     // time with no cancellation. Guard against an earlier-started run (e.g. one
@@ -61,9 +76,42 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         }
         const recentFollow = await window.electron.getRecentFollow(wallet.addresses, address)
         const posts = await window.electron.getPosts({addresses, userAddresses: wallet.addresses})
+        const linkRows = await window.electron.getProfileLinks({userAddresses: wallet.addresses, addresses})
         if (seq !== fetchSeqRef.current) {
             return
         }
+        // A request appears once per accept row; it's active if any accept is
+        // unrevoked (a revoked accept can be superseded by a re-accept). An
+        // active link wins over pending requests in either direction.
+        const requestRows = {}
+        for (const row of linkRows) {
+            if (!requestRows[row.request_tx_hash] || (row.accept_tx_hash && !row.revoked)) {
+                requestRows[row.request_tx_hash] = row
+            }
+        }
+        let link = {status: LinkStatus.None}
+        for (const row of Object.values(requestRows)) {
+            const walletIsParent = wallet.addresses.includes(row.parent_address)
+            if (row.accept_tx_hash && !row.revoked) {
+                link = {
+                    status: LinkStatus.Active,
+                    acceptTxHash: row.accept_tx_hash,
+                    walletAddress: walletIsParent ? row.parent_address : row.child_address,
+                }
+                break
+            }
+            if (walletIsParent) {
+                link = {
+                    status: LinkStatus.Incoming,
+                    requestTxHash: row.request_tx_hash,
+                    walletAddress: row.parent_address,
+                }
+            } else if (link.status === LinkStatus.None) {
+                link = {status: LinkStatus.Requested}
+            }
+        }
+        setLinkState(link)
+        setIsWalletAddress(wallet.addresses.includes(address))
         setIsSelf(isSelf)
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         setPosts(posts)
@@ -72,7 +120,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         // Resolve the linked-address cluster before the rest of the sync so
         // history/posts cover every member. On network failure fall back to
         // whatever links are already in the local db.
-        let linked = await SyncProfileLinks({address}).catch(async (e) => {
+        let linked = await SyncProfileLinks({addresses: [address]}).catch(async (e) => {
             console.log("SyncProfileLinks failed", e)
             return await window.electron.getLinkedAddresses([address])
         })
@@ -98,6 +146,37 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
             beatHash = recentFollow.tx_hash
         }
         await CreateTransaction(wallet, [{script: followOpReturnOutput}], setModal, null, beatHash)
+    }
+    // Link scripts verified byte-for-byte against Jason's on-chain link txs
+    // (request 8553916d..., accept cb38deb2..., revoke 09cb74d4...): request
+    // pushes the parent's pkhash, accept/revoke push the referenced tx hash in
+    // display order. The optional trailing message push is omitted.
+    const clickLinkRequest = async () => {
+        const requestOpReturnOutput = script.compile([
+            opcodes.OP_RETURN,
+            Buffer.from(bitcoin.Prefix.LinkRequest, "hex"),
+            Buffer.from(bitcoin.GetPkHashFromAddress(address), "hex"),
+        ])
+        const wallet = await GetWallet()
+        await CreateTransaction(wallet, [{script: requestOpReturnOutput}], setModal)
+    }
+    const clickLinkAccept = async ({requestTxHash, walletAddress}) => {
+        const acceptOpReturnOutput = script.compile([
+            opcodes.OP_RETURN,
+            Buffer.from(bitcoin.Prefix.LinkAccept, "hex"),
+            Buffer.from(requestTxHash, "hex"),
+        ])
+        const wallet = await GetWallet()
+        await CreateTransaction(wallet, [{script: acceptOpReturnOutput}], setModal, null, "", false, walletAddress)
+    }
+    const clickLinkRevoke = async ({acceptTxHash, walletAddress}) => {
+        const revokeOpReturnOutput = script.compile([
+            opcodes.OP_RETURN,
+            Buffer.from(bitcoin.Prefix.LinkRevoke, "hex"),
+            Buffer.from(acceptTxHash, "hex"),
+        ])
+        const wallet = await GetWallet()
+        await CreateTransaction(wallet, [{script: revokeOpReturnOutput}], setModal, null, "", false, walletAddress)
     }
     return (
         <Modal onClose={onClose}>
@@ -136,6 +215,18 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                         </button>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>}
+                        {!isWalletAddress && linkState.status === LinkStatus.None &&
+                            <button title={"Request to link this address with your account"}
+                                    onClick={clickLinkRequest}>Request Link</button>}
+                        {!isWalletAddress && linkState.status === LinkStatus.Requested &&
+                            <button disabled title={"Waiting for this address to accept your link request"}>
+                                Link Requested</button>}
+                        {!isWalletAddress && linkState.status === LinkStatus.Incoming &&
+                            <button title={"This address requested to link with your account"}
+                                    onClick={() => clickLinkAccept(linkState)}>Accept Link</button>}
+                        {!isWalletAddress && linkState.status === LinkStatus.Active &&
+                            <button title={"Revoke the link between this address and your account"}
+                                    onClick={() => clickLinkRevoke(linkState)}>Revoke Link</button>}
                     </p>
                 </div>
             </div>

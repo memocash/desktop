@@ -35,8 +35,9 @@ const LinksQuery = `
 const requestSendersQuery = (txHashes) => "query { " + txHashes.map((hash, i) =>
     `t${i}: tx(hash: "${hash}") { hash inputs { output { lock { address } } } } `).join("") + "}"
 
-// Syncs link requests/accepts/revokes for an address's whole linked-address
-// cluster and returns the cluster. Membership can't be resolved in one pass:
+// Syncs link requests/accepts/revokes for the whole linked-address cluster of
+// a set of addresses (a viewed profile, or all of a wallet's addresses) and
+// returns the cluster. Membership can't be resolved in one pass:
 // starting from a child, only its request is visible until the parent's
 // profile (holding the accept and any revoke) is fetched; starting from a
 // parent, the children aren't known until their request txs are resolved. So
@@ -45,9 +46,9 @@ const requestSendersQuery = (txHashes) => "query { " + txHashes.map((hash, i) =>
 // active-link rules (accept matches request's parent, no revoke from either
 // side) live in one place - the GetLinkedAddresses SQL - and the cluster still
 // resolves from the local db when offline.
-const SyncProfileLinks = async ({address}) => {
+const SyncProfileLinks = async ({addresses}) => {
     const synced = new Set()
-    let frontier = [address]
+    let frontier = [...new Set(addresses)]
     for (let i = 0; i < 5 && frontier.length; i++) {
         const data = await window.electron.graphQL(LinksQuery, {addresses: frontier})
         frontier.forEach(frontierAddress => synced.add(frontierAddress))
@@ -85,11 +86,11 @@ const SyncProfileLinks = async ({address}) => {
                 }
             }
         }
-        const linked = await window.electron.getLinkedAddresses([address])
+        const linked = await window.electron.getLinkedAddresses(addresses)
         frontier = [...new Set([...linked, ...candidates])].filter(
             candidate => !synced.has(candidate))
     }
-    return await window.electron.getLinkedAddresses([address])
+    return await window.electron.getLinkedAddresses(addresses)
 }
 
 export default SyncProfileLinks

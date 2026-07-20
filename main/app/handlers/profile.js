@@ -1,8 +1,9 @@
 const {ipcMain} = require("electron");
 const {
     GetFollowers, GetFollowing, GetLikes, GetLinkedAddresses, GetNewPosts, GetPost, GetPostParent, GetPostReplies,
-    GetPosts, GetProfileInfo, GetRecentFollow, GetRecentSetName, GetRecentSetPic, GetRecentSetProfile, GetRoomPosts,
-    GetChatFollows, GetRecentRoomFollow, GetRoomFollowCount, GetRoomFollows, GetAddressesRoomFollowCount,
+    GetPosts, GetProfileInfo, GetProfileLinks, GetRecentFollow, GetRecentSetName, GetRecentSetPic, GetRecentSetProfile,
+    GetRoomPosts, GetChatFollows, GetRecentRoomFollow, GetRoomFollowCount, GetRoomFollows,
+    GetAddressesRoomFollowCount,
 } = require("../../data/tables");
 const {Handlers} = require("../../common/util");
 const {eConf} = require("../window");
@@ -16,6 +17,8 @@ const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetChatRoomFollowCount, async (e, {room}) => GetRoomFollowCount({conf: eConf(e), room}))
     ipcMain.handle(Handlers.GetChatRoomFollows, async (e, {room}) => GetRoomFollows({conf: eConf(e), room}))
     ipcMain.handle(Handlers.GetProfileInfo, async (e, addresses) => GetProfileInfo(eConf(e), addresses))
+    ipcMain.handle(Handlers.GetProfileLinks, async (e, {userAddresses, addresses}) =>
+        GetProfileLinks(eConf(e), {userAddresses, addresses}))
     ipcMain.handle(Handlers.GetRecentRoomFollow, async (e, addresses, room) =>
         GetRecentRoomFollow(eConf(e), addresses, room))
     ipcMain.handle(Handlers.GetRecentSetName, async (e, addresses) => GetRecentSetName(eConf(e), addresses))

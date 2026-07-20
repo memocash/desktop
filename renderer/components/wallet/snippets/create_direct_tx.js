@@ -3,8 +3,14 @@ import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {GetUtxos} from "../../util/utxos";
 import {DirectTx} from "../../tx/direct_tx";
 
-const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requirePassword, beatHash = "", coin = "") => {
-    const utxos = GetUtxos()
+// fromAddress: see CreateTransactionWithPreview - restricts inputs to one
+// address for actions the protocol attributes to the signing address.
+const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requirePassword, beatHash = "", coin = "",
+                                       fromAddress = "") => {
+    let utxos = GetUtxos()
+    if (fromAddress !== "") {
+        utxos = utxos.filter(utxo => utxo.address === fromAddress)
+    }
     let requiredInput = bitcoin.Fee.Base
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
@@ -52,7 +58,9 @@ const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requir
         }
     }
     if (totalInput < requiredInput) {
-        window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
+        window.electron.showMessageDialog(fromAddress !== "" ?
+            "Not enough value on " + fromAddress + " to complete this transaction" :
+            "Not enough value in wallet to complete this transaction")
         return
     }
     const changeAddress = wallet.addresses[0]
