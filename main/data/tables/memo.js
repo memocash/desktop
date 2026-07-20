@@ -199,6 +199,16 @@ const SaveMemoProfiles = async (conf, profiles) => {
                 link_revokes.map(revoke => [
                     revoke.tx_hash, revoke.address, revoke.accept_tx_hash, revoke.message]).flat())
         }
+        // Posts belong to an address even when that address has never set a
+        // name, profile text, or picture. This is common for a newly linked
+        // child address, and skipping here would keep its posts out of both
+        // sides of the merged profile.
+        if (posts && posts.length) {
+            for (let i = 0; i < posts.length; i++) {
+                posts[i].lock = lock
+            }
+            await SaveMemoPosts(conf, posts)
+        }
         if (!name && !profile && !pic) {
             continue
         }
@@ -245,12 +255,6 @@ const SaveMemoProfiles = async (conf, profiles) => {
             await SaveTransactions(conf, followers.map(follow => {
                 return follow.tx
             }))
-        }
-        if (posts && posts.length) {
-            for (let i = 0; i < posts.length; i++) {
-                posts[i].lock = lock
-            }
-            await SaveMemoPosts(conf, posts)
         }
     }
     if (!saveProfiles.length) {
