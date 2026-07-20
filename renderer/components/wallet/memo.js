@@ -62,7 +62,7 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
                         "/default-profile.jpg"}/>
                     <a className={profile.editLink}><BsPencil/></a>
                 </div>
-                <div>
+                <div className={profile.summary}>
                     <h2 onClick={clickEditName}>
                         {profileInfo.name ? profileInfo.name : "Name not set"}
                         <a className={profile.editLink}><BsPencil/></a>
@@ -71,25 +71,26 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
                         {profileInfo.profile ? profileInfo.profile : "Profile not set"}
                         <a className={profile.editLink}><BsPencil/></a>
                     </p>
-                    <p>
+                    <div className={profile.profile_actions} role={"toolbar"}
+                         aria-label={"Profile views and actions"}>
                         <button title={"View Newest Posts"} className={tab === Tabs.Posts ? profile.selected : null}
-                                onClick={() => setTab(Tabs.Posts)}>
-                            <BsFiles/></button>
+                                aria-pressed={tab === Tabs.Posts} onClick={() => setTab(Tabs.Posts)}>
+                            <BsFiles/> Posts</button>
                         <button title={"View Feed (All Users)"} className={tab === Tabs.Feed ? profile.selected : null}
-                                onClick={() => setTab(Tabs.Feed)}>
-                            <BsGlobe/></button>
+                                aria-pressed={tab === Tabs.Feed} onClick={() => setTab(Tabs.Feed)}>
+                            <BsGlobe/> Global feed</button>
                         <button title={"View Ranked Feed (Likes / Replies / Recency)"}
                                 className={tab === Tabs.Ranked ? profile.selected : null}
-                                onClick={() => setTab(Tabs.Ranked)}>
-                            <BsFire/></button>
+                                aria-pressed={tab === Tabs.Ranked} onClick={() => setTab(Tabs.Ranked)}>
+                            <BsFire/> Popular</button>
                         <button title={"View Following"} className={tab === Tabs.Following ? profile.selected : null}
-                                onClick={() => setTab(Tabs.Following)}>
-                            <BsPeople/></button>
+                                aria-pressed={tab === Tabs.Following} onClick={() => setTab(Tabs.Following)}>
+                            <BsPeople/> Following</button>
                         <button title={"View Profile"} onClick={() => setProfile(profileInfo.address)}>
-                            <BsPerson/></button>
-                        <button title={"Create New Post"} onClick={() => createPost()}>
-                            <BsPencilSquare/></button>
-                    </p>
+                            <BsPerson/> View profile</button>
+                        <button className={profile.primary_action} title={"Create New Post"} onClick={() => createPost()}>
+                            <BsPencilSquare/> New post</button>
+                    </div>
                 </div>
             </div>
             {tab === Tabs.Posts ?

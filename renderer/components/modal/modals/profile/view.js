@@ -7,7 +7,7 @@ import GetWallet from "../../../util/wallet";
 import {Modals} from "../../../../../main/common/util"
 import Post from "../../../wallet/memo/post";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
-import {SendLinkAccept, SendLinkRequest, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
+import {SendLinkAccept, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
 import Links from "../../../wallet/snippets/links";
 import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
@@ -148,7 +148,6 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         }
         await CreateTransaction(wallet, [{script: followOpReturnOutput}], setModal, null, beatHash)
     }
-    const clickLinkRequest = () => SendLinkRequest({parentAddress: address, setModal})
     const clickLinkAccept = ({requestTxHash, walletAddress}) =>
         SendLinkAccept({requestTxHash, walletAddress, setModal})
     const clickLinkRevoke = ({acceptTxHash, walletAddress}) =>
@@ -190,9 +189,6 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                         </button>
                         {!isSelf && <button onClick={() => clickFollow(address, isFollowing)}>
                             {isFollowing ? "Unfollow" : "Follow"}</button>}
-                        {!isWalletAddress && linkState.status === LinkStatus.None &&
-                            <button title={"Request to link this address with your account"}
-                                    onClick={clickLinkRequest}>Request Link</button>}
                         {!isWalletAddress && linkState.status === LinkStatus.Requested &&
                             <button disabled title={"Waiting for this address to accept your link request"}>
                                 Link Requested</button>}

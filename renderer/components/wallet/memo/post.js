@@ -49,18 +49,18 @@ const Post = ({post, setModal, setChatRoom, isSingle = false}) => {
                 </div>
                 <div className={profile.post_footer}>
                     <button title={"Like / Tip"} onClick={clickLikeLink}>
-                        {post.has_liked ? <BsHeartFill color={"#d00"}/> : <BsHeart/>} {post.like_count}
+                        {post.has_liked ? <BsHeartFill color={"#d00"}/> : <BsHeart/>} Like {post.like_count}
                         {" "}
-                        <BsCurrencyBitcoin/> {post.tip_total ? post.tip_total.toLocaleString() : 0}</button>
+                        <BsCurrencyBitcoin/> Tips {post.tip_total ? post.tip_total.toLocaleString() : 0}</button>
                     <button title={"Reply"} onClick={clickReplyLink}>
-                        <BsChatLeft/> {post.reply_count}</button>
+                        <BsChatLeft/> Reply {post.reply_count}</button>
                     <button title={"View Post"} onClick={clickViewPost}>
-                        <BsJournalText/></button>
-                    <button title={"Likes List"} onClick={clickLikesLink}><BsListCheck/></button>
+                        <BsJournalText/> View post</button>
+                    <button title={"Likes List"} onClick={clickLikesLink}><BsListCheck/> Likes</button>
                     <button title={"View Profile"} onClick={clickViewProfile}>
-                        <BsPerson/></button>
+                        <BsPerson/> Profile</button>
                     <button title={"View Transaction"} onClick={(e) => openTx(e, post.tx_hash)}>
-                        <BsBoxArrowInUpRight/></button>
+                        <BsBoxArrowInUpRight/> Transaction</button>
                 </div>
             </div>
         </div>
