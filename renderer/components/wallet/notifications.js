@@ -1,6 +1,5 @@
 import {useEffect, useState} from "react"
 import {BsArrowDownCircle, BsBoxArrowInUpRight, BsChatLeft, BsHeart, BsLink45Deg} from "react-icons/bs"
-import GetWallet from "../util/wallet"
 import {TimeSince} from "../util/time"
 import {Modals} from "../../../main/common/util"
 import styles from "../../styles/notifications.module.css"
@@ -11,17 +10,38 @@ const formatTokenAmount = ({amount, decimals}) => {
     return value.toLocaleString(undefined, {maximumFractionDigits: places})
 }
 
-const Notifications = ({lastUpdate, setModal}) => {
-    const [notifications, setNotifications] = useState([])
-    const [loaded, setLoaded] = useState(false)
+// Stable identity for a notification, matching the derived rows in
+// GetNotifications (a coin/token/social event keyed by its transaction).
+export const notificationKey = (notification) =>
+    `${notification.type}-${notification.tx_hash}-${notification.token_hash || ""}`
+
+// Plain-text title/body for a native desktop notification. Mirrors content()
+// below, but without JSX so it can cross the IPC boundary to the main process.
+export const notificationSummary = (notification) => {
+    switch (notification.type) {
+        case "coin":
+            return {title: "Payment received", body: `Received ${Number(notification.amount).toLocaleString()} sats`}
+        case "token":
+            return {title: "Tokens received",
+                body: `Received ${formatTokenAmount(notification)} ${notification.ticker || "tokens"}`}
+        case "reply":
+            return {title: "New reply",
+                body: `${notification.actor_name} replied to your post${notification.text ? `: ${notification.text}` : ""}`}
+        case "like":
+            return {title: "New like", body: `${notification.actor_name} liked your post` +
+                (notification.amount ? ` and tipped ${Number(notification.amount).toLocaleString()} sats` : "")}
+        case "link_request":
+            return {title: "Link request", body: `${notification.actor_name} sent you a link request`}
+        case "link_accept":
+            return {title: "Link accepted", body: `${notification.actor_name} accepted your link request`}
+        default:
+            return {title: "Memo", body: ""}
+    }
+}
+
+const Notifications = ({notifications, loaded, setModal}) => {
     const [counter, setCounter] = useState(0)
 
-    useEffect(() => {(async () => {
-        const wallet = await GetWallet()
-        const addresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
-        setNotifications(await window.electron.getNotifications(addresses))
-        setLoaded(true)
-    })()}, [lastUpdate])
     useEffect(() => {
         const interval = setInterval(() => setCounter(value => value + 1), 10000)
         return () => clearInterval(interval)

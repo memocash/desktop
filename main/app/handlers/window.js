@@ -1,4 +1,4 @@
-const {ipcMain, Menu, MenuItem, app, dialog} = require("electron");
+const {ipcMain, Menu, MenuItem, Notification, app, dialog} = require("electron");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
 const {
     GetMenu,
@@ -75,6 +75,27 @@ const WindowHandlers = () => {
             title: "Memo",
             message: message,
         })
+    })
+    ipcMain.on(Handlers.ShowNotification, (e, {title, body, tab} = {}) => {
+        if (!Notification.isSupported()) {
+            return
+        }
+        const notification = new Notification({title: title || "Memo", body: body || ""})
+        notification.on("click", () => {
+            const win = GetWindow(e.sender.id)
+            if (!win) {
+                return
+            }
+            if (win.isMinimized()) {
+                win.restore()
+            }
+            win.show()
+            win.focus()
+            if (tab) {
+                win.webContents.send(Listeners.SelectTab, tab)
+            }
+        })
+        notification.show()
     })
     ipcMain.handle(Handlers.GetWindowNetwork, async (e) => GetNetworkOption(e.sender.id))
     ipcMain.handle(Handlers.SetWindowNetwork, async (e, networkOption) => SetNetworkOption(e.sender.id, networkOption))

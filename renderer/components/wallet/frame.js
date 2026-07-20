@@ -13,15 +13,16 @@ export const Tabs = {
     Notifications: "notifications",
 }
 
-const Tab = ({selected, name, clicked, title}) => {
+const Tab = ({selected, name, clicked, title, badge}) => {
     return (
         <div className={[tabs.tab, selected === name && tabs.selected].join(" ")}>
-            <a onClick={() => clicked(name)}>{title}</a>
+            <a onClick={() => clicked(name)}>{title}
+                {badge ? <span className={tabs.badge}>{badge > 99 ? "99+" : badge}</span> : null}</a>
         </div>
     )
 }
 
-const Frame = ({selected, clicked, children, connected, lastUpdate, setModal}) => {
+const Frame = ({selected, clicked, children, connected, lastUpdate, setModal, unreadCount}) => {
     const tabTitles = {
         "Memo": Tabs.Memo,
         "Chat": Tabs.Chat,
@@ -37,7 +38,8 @@ const Frame = ({selected, clicked, children, connected, lastUpdate, setModal}) =
         <div className={tabs.container}>
             <div className={tabs.header}>
                 {Object.entries(tabTitles).map(([title, name], index) => {
-                    return (<Tab key={index} selected={selected} clicked={clicked} name={name} title={title}/>)
+                    return (<Tab key={index} selected={selected} clicked={clicked} name={name} title={title}
+                                 badge={name === Tabs.Notifications ? unreadCount : 0}/>)
                 })}
             </div>
             <div className={tabs.body}>

@@ -31,6 +31,7 @@ const Handlers = {
     BrowserWindowFocus: "browser-window-focus",
     OpenFileDialog: "open-file-dialog",
     ShowMessageDialog: "show-message-dialog",
+    ShowNotification: "show-notification",
     GetWindowId: "get-window-id",
     CloseWindow: "close-window",
     StoreWallet: "store-wallet",
@@ -72,6 +73,7 @@ const Handlers = {
 
 const Listeners = {
     DisplayModal: "display-modal",
+    SelectTab: "select-tab",
     GraphQLClosePrefix: "graphql-close-",
     GraphQLDataPrefix: "graphql-data-",
     GraphQLOpenPrefix: "graphql-open-",
