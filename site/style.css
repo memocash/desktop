@@ -41,6 +41,18 @@ article p { min-height: 48px; margin: 0 0 28px; color: var(--muted); }
 .links { display: flex; flex-wrap: wrap; gap: 8px; }
 .links a { padding: 10px 14px; background: var(--accent); color: #151508; border-radius: 8px; font-size: 14px; font-weight: 800; }
 .links a.secondary { background: #292a25; color: var(--ink); }
+
+.screenshots { padding-top: 110px; }
+.section-heading { max-width: 680px; margin-bottom: 36px; }
+.section-heading .eyebrow { margin-bottom: 12px; }
+.section-heading h2 { margin: 0 0 12px; font-size: clamp(34px, 5vw, 55px); line-height: 1; letter-spacing: -.04em; }
+.section-heading > p:last-child { margin: 0; color: var(--muted); font-size: 18px; }
+.screenshot-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+figure { overflow: hidden; margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 70px rgb(0 0 0 / 30%); }
+.window-bar { display: flex; gap: 6px; align-items: center; height: 32px; padding: 0 13px; background: #242520; border-bottom: 1px solid var(--line); }
+.window-bar span { width: 8px; height: 8px; background: #55564f; border-radius: 50%; }
+figure img { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 672; }
+figcaption { padding: 14px 18px 16px; color: var(--muted); font-size: 14px; }
 footer { margin-top: 70px; padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 
 @media (max-width: 760px) {
@@ -48,4 +60,6 @@ footer { margin-top: 70px; padding: 28px 0 40px; border-top: 1px solid var(--lin
   .downloads { grid-template-columns: 1fr; }
   article { min-height: auto; }
   .hero-logo { right: -160px; }
+  .screenshots { padding-top: 80px; }
+  .screenshot-grid { grid-template-columns: 1fr; }
 }
