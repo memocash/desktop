@@ -1,4 +1,6 @@
-const ListenNewMemos = ({wallet, setLastUpdate}) => {
+// addresses widens the subscription beyond the wallet's own addresses (e.g.
+// to include linked addresses); falls back to wallet.addresses when absent.
+const ListenNewMemos = ({wallet, addresses, setLastUpdate}) => {
     const query = `
         subscription($addresses: [Address!]) {
             profiles(addresses: $addresses) {
@@ -66,10 +68,11 @@ const ListenNewMemos = ({wallet, setLastUpdate}) => {
             return
         }
         setTimeout(() => {
-            close = ListenNewMemos({wallet, setLastUpdate})
+            close = ListenNewMemos({wallet, addresses, setLastUpdate})
         }, 2000)
     }
-    let close = window.electron.listenGraphQL({query, variables: {addresses: wallet.addresses}, handler, onclose})
+    let close = window.electron.listenGraphQL({
+        query, variables: {addresses: addresses || wallet.addresses}, handler, onclose})
     return () => {
         exited = true
         close()

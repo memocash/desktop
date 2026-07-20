@@ -27,8 +27,15 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
     const utxosRef = useRef([])
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
-        setWalletAddresses(wallet.addresses)
-        const profileInfo = await window.electron.getProfileInfo(wallet.addresses)
+        // Expand to the wallet's linked-address cluster (already synced to the
+        // local db by the update flow) so the self profile shows name/posts/
+        // follows from linked accounts too. Wallet addresses stay first so the
+        // wallet's own name/profile/pic win the merge. Utxos below stay
+        // wallet-only - linked addresses' funds aren't spendable here.
+        const linked = await window.electron.getLinkedAddresses(
+            wallet.addresses.concat(wallet.changeList || []))
+        setWalletAddresses(linked)
+        const profileInfo = await window.electron.getProfileInfo(linked)
         if (profileInfo !== undefined) {
             setProfileInfo(profileInfo)
             if (profileInfo.pic !== undefined) {
@@ -85,7 +92,8 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
                     </p>
                 </div>
             </div>
-            {tab === Tabs.Posts ? <PostList setModal={setModal} lastUpdate={lastUpdate}/> : null}
+            {tab === Tabs.Posts ?
+                <PostList setModal={setModal} lastUpdate={lastUpdate} addresses={walletAddresses}/> : null}
             {tab === Tabs.Feed ?
                 <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}/> : null}
             {tab === Tabs.Ranked ?

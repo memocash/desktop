@@ -1,10 +1,16 @@
 import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
-import {BackfillPosts, ListenBlocks, ListenNewTxs, RecentBlock, UpdateHistory, UpdateMemoHistory, UpdateSlp} from "./update/index.js";
+import {BackfillPosts, ListenBlocks, ListenNewTxs, RecentBlock, SyncProfileLinks, UpdateHistory, UpdateMemoHistory,
+    UpdateSlp} from "./update/index.js";
 import ListenNewMemos from "./update/listen_memo";
 
 const Update = ({setConnected, setLastUpdate}) => {
     const walletRef = useRef(null);
+    // Wallet addresses expanded with their linked-address cluster, so the memo
+    // sync and profile subscription cover activity from linked accounts too.
+    // Resolved before UpdateHistory's first setLastUpdate re-render so it's
+    // set by the time the listeners effect below runs.
+    const linkedRef = useRef(null);
     useEffect(() => {(async () => {
         window.electron.walletLoaded()
         let wallet = await GetWallet()
@@ -14,18 +20,23 @@ const Update = ({setConnected, setLastUpdate}) => {
         }
         walletRef.current = wallet
         await RecentBlock()
-        await UpdateHistory({wallet, setConnected, setLastUpdate})
         const addresses = wallet.addresses.concat(wallet.changeList)
+        linkedRef.current = await SyncProfileLinks({addresses}).catch(async (e) => {
+            console.log("Update: SyncProfileLinks failed", e)
+            return await window.electron.getLinkedAddresses(addresses)
+        })
+        await UpdateHistory({wallet, setConnected, setLastUpdate})
         await UpdateSlp({addresses: addresses.concat(wallet.slpList || []), setLastUpdate})
-        await UpdateMemoHistory({addresses, setLastUpdate})
-        await BackfillPosts({addresses, userAddresses: wallet.addresses, setLastUpdate})
+        await UpdateMemoHistory({addresses: linkedRef.current, setLastUpdate})
+        await BackfillPosts({addresses: linkedRef.current, userAddresses: wallet.addresses, setLastUpdate})
     })()}, [])
     useEffect(() => {
         if (!walletRef.current) {
             return
         }
         const closeNewTxs = ListenNewTxs({wallet: walletRef.current, setLastUpdate})
-        const closeNewMemos = ListenNewMemos({wallet: walletRef.current, setLastUpdate})
+        const closeNewMemos = ListenNewMemos({wallet: walletRef.current,
+            addresses: linkedRef.current || undefined, setLastUpdate})
         const closeBlocks = ListenBlocks({addresses: walletRef.current.addresses.concat(
             walletRef.current.changeList, walletRef.current.slpList || []), setLastUpdate, setConnected})
         return () => {
