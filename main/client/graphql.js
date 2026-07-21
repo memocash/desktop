@@ -48,6 +48,14 @@ const Subscribe = ({network, id, query, variables, callback, onopen, onclose}) =
             case "ka":
                 break
             case "data":
+                // A subscription payload can carry errors and still arrive as a
+                // "data" message - a null in a non-null field nulls the whole
+                // payload. Log them like the query path does, so a subscription
+                // that silently delivers nothing is visible.
+                if (data.payload.errors && data.payload.errors.length) {
+                    console.log("error with graphql subscription payload")
+                    console.log(data.payload.errors)
+                }
                 callback(data.payload.data)
                 break
             default:
