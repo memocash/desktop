@@ -23,12 +23,17 @@ const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
     setLastUpdate((new Date()).toISOString())
 }
 
+// A room's history runs to thousands of posts, so take only the newest page.
+// 100 is the server's per-page max - a larger limit is clamped to it. "newest"
+// is passed explicitly rather than left to the server default.
+const ChatPostLimit = 100
+
 const UpdateChat = async ({roomName, setLastUpdate}) => {
     const query = `
     query ($room: String!) {
         room(name: $room) {
             name
-            posts {
+            posts(newest: true, limit: ${ChatPostLimit}) {
                 tx_hash
                 text
                 ${TxQuery}
