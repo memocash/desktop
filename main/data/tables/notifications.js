@@ -70,12 +70,15 @@ const GetNotifications = async (conf, addresses) => {
             params: [...addresses, ...addresses],
         },
         {
-            sql: "SELECT 'link_accept' AS type, link_accepts.tx_hash, link_accepts.address AS actor_address, " +
-                actorName("link_accepts.address") + " AS actor_name, NULL AS post_tx_hash, link_accepts.message AS text, " +
+            // An accept is always signed by the parent the request named, so the
+            // actor comes off the request rather than being stored per accept.
+            sql: "SELECT 'link_accept' AS type, link_accepts.tx_hash, link_requests.parent_address AS actor_address, " +
+                actorName("link_requests.parent_address") + " AS actor_name, NULL AS post_tx_hash, " +
+                "link_accepts.message AS text, " +
                 "NULL AS amount, NULL AS token_hash, NULL AS ticker, NULL AS decimals, " +
                 timestamp("link_accepts.tx_hash") + " AS timestamp FROM link_accepts " +
                 "JOIN link_requests ON link_requests.tx_hash = link_accepts.request_tx_hash " +
-                "WHERE link_requests.address IN (" + own + ") AND link_accepts.address NOT IN (" + own + ")",
+                "WHERE link_requests.address IN (" + own + ") AND link_requests.parent_address NOT IN (" + own + ")",
             params: [...addresses, ...addresses],
         },
     ]

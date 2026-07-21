@@ -67,10 +67,40 @@ const GetProfileInfo = async (conf, addresses) => {
     return merged
 }
 
+// Links arrive from the server nested under the request they belong to: a
+// profile returns the requests that address signed, each with the accepts
+// signed by the request's parent, each of those with the revokes signed by
+// either side. That nesting is the only record of who signed an accept or a
+// revoke, so the rows are stored keyed to what they reference and the queries
+// below rely on it rather than re-checking addresses.
+const SaveProfileLinks = async (conf, links) => {
+    if (!links || !links.length) {
+        return
+    }
+    await Insert(conf, "link_requests",
+        "INSERT OR REPLACE INTO link_requests (tx_hash, address, parent_address, message) " +
+        "VALUES " + Array(links.length).fill("(?, ?, ?, ?)").join(", "),
+        links.map(link => [link.tx_hash, link.address, link.parent_address, link.message]).flat())
+    const accepts = links.map(link => link.accepts || []).flat()
+    if (accepts.length) {
+        await Insert(conf, "link_accepts",
+            "INSERT OR REPLACE INTO link_accepts (tx_hash, request_tx_hash, message) " +
+            "VALUES " + Array(accepts.length).fill("(?, ?, ?)").join(", "),
+            accepts.map(accept => [accept.tx_hash, accept.request_tx_hash, accept.message]).flat())
+    }
+    const revokes = accepts.map(accept => accept.revokes || []).flat()
+    if (revokes.length) {
+        await Insert(conf, "link_revokes",
+            "INSERT OR REPLACE INTO link_revokes (tx_hash, accept_tx_hash, message) " +
+            "VALUES " + Array(revokes.length).fill("(?, ?, ?)").join(", "),
+            revokes.map(revoke => [revoke.tx_hash, revoke.accept_tx_hash, revoke.message]).flat())
+    }
+}
+
 // Expands a set of addresses to every address transitively linked to it. A link
-// is active when a request has an accept from the requested parent and that
-// accept has no revoke from either side of the link (revoking a specific accept
-// leaves a later re-accept of the same request active).
+// is active when a request has an accept and that accept has no revoke
+// (revoking a specific accept leaves a later re-accept of the same request
+// active).
 const GetLinkedAddresses = async (conf, addresses) => {
     let cluster = [...new Set(addresses)]
     for (let i = 0; i < 10; i++) {
@@ -80,10 +110,8 @@ const GetLinkedAddresses = async (conf, addresses) => {
             "   link_requests.address AS child_address, " +
             "   link_requests.parent_address AS parent_address " +
             "FROM link_requests " +
-            "JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
-            "   AND link_accepts.address = link_requests.parent_address) " +
-            "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
-            "   AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+            "JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
+            "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
             "WHERE link_revokes.tx_hash IS NULL " +
             "   AND (link_requests.address IN " + inList + "OR link_requests.parent_address IN " + inList + ")"
         const results = await Select(conf, "linked-addresses", query, [...cluster, ...cluster])
@@ -115,10 +143,8 @@ const GetProfileLinks = async (conf, {userAddresses, addresses}) => {
         "   link_accepts.tx_hash AS accept_tx_hash, " +
         "   (CASE WHEN link_revokes.tx_hash IS NULL THEN 0 ELSE 1 END) AS revoked " +
         "FROM link_requests " +
-        "LEFT JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
-        "   AND link_accepts.address = link_requests.parent_address) " +
-        "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
-        "   AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "LEFT JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
+        "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
         "WHERE (link_requests.address IN " + userIn + "AND link_requests.parent_address IN " + viewedIn + ") " +
         "   OR (link_requests.parent_address IN " + userIn + "AND link_requests.address IN " + viewedIn + ")"
     return await Select(conf, "profile-links", query,
@@ -141,10 +167,8 @@ const GetWalletLinks = async (conf, addresses) => {
         "   child_names.name AS child_name, " +
         "   parent_names.name AS parent_name " +
         "FROM link_requests " +
-        "LEFT JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
-        "   AND link_accepts.address = link_requests.parent_address) " +
-        "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
-        "   AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "LEFT JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
+        "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
         "LEFT JOIN profiles child_profiles ON (child_profiles.address = link_requests.address) " +
         "LEFT JOIN profile_names child_names ON (child_names.tx_hash = child_profiles.name) " +
         "LEFT JOIN profiles parent_profiles ON (parent_profiles.address = link_requests.parent_address) " +
@@ -188,8 +212,8 @@ const GetAddressAliases = async (conf, addresses) => {
 }
 
 // Locally synced tx outputs that look like link requests (OP_RETURN 6d20 with
-// a 20-byte pkhash push) but have no link_requests row yet. The server never
-// returns link_requests on the parent's profile, so incoming requests are
+// a 20-byte pkhash push) but have no link_requests row yet. The server only
+// returns a request on its sender's own profile, so incoming requests are
 // discovered from these: request txs typically pay the parent, which lands
 // them in the wallet's tx history. Callers match parent_pkhash against the
 // wallet's addresses and resolve the sender via the server.
@@ -207,35 +231,14 @@ const GetPotentialLinkRequests = async (conf) => {
 const SaveMemoProfiles = async (conf, profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
-        let {lock, name, profile, pic, following, followers, posts, link_requests, link_accepts, link_revokes} =
-            profiles[i]
+        let {lock, name, profile, pic, following, followers, posts, links} = profiles[i]
         if (!lock || !lock.address) {
             continue
         }
         // Link data is saved before the profile-fields guard below: an address
         // that only ever linked itself (e.g. a fresh parent address) has no
         // name/profile/pic but its links still need to resolve.
-        if (link_requests && link_requests.length) {
-            await Insert(conf, "link_requests",
-                "INSERT OR REPLACE INTO link_requests (tx_hash, address, parent_address, message) " +
-                "VALUES " + Array(link_requests.length).fill("(?, ?, ?, ?)").join(", "),
-                link_requests.map(request => [
-                    request.tx_hash, request.address, request.parent_address, request.message]).flat())
-        }
-        if (link_accepts && link_accepts.length) {
-            await Insert(conf, "link_accepts",
-                "INSERT OR REPLACE INTO link_accepts (tx_hash, address, request_tx_hash, message) " +
-                "VALUES " + Array(link_accepts.length).fill("(?, ?, ?, ?)").join(", "),
-                link_accepts.map(accept => [
-                    accept.tx_hash, accept.address, accept.request_tx_hash, accept.message]).flat())
-        }
-        if (link_revokes && link_revokes.length) {
-            await Insert(conf, "link_revokes",
-                "INSERT OR REPLACE INTO link_revokes (tx_hash, address, accept_tx_hash, message) " +
-                "VALUES " + Array(link_revokes.length).fill("(?, ?, ?, ?)").join(", "),
-                link_revokes.map(revoke => [
-                    revoke.tx_hash, revoke.address, revoke.accept_tx_hash, revoke.message]).flat())
-        }
+        await SaveProfileLinks(conf, links)
         // Posts belong to an address even when that address has never set a
         // name, profile text, or picture. This is common for a newly linked
         // child address, and skipping here would keep its posts out of both

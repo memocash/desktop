@@ -88,18 +88,14 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
         "WITH RECURSIVE active_profile_links(address, linked_address) AS (" +
         "   SELECT link_requests.address, link_requests.parent_address " +
         "   FROM link_requests " +
-        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
-        "       AND link_accepts.address = link_requests.parent_address) " +
-        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
-        "       AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
+        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
         "   WHERE link_revokes.tx_hash IS NULL " +
         "   UNION " +
         "   SELECT link_requests.parent_address, link_requests.address " +
         "   FROM link_requests " +
-        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash " +
-        "       AND link_accepts.address = link_requests.parent_address) " +
-        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash " +
-        "       AND link_revokes.address IN (link_requests.address, link_requests.parent_address)) " +
+        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
+        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
         "   WHERE link_revokes.tx_hash IS NULL" +
         "), linked_author_addresses(origin, address) AS (" +
         "   SELECT DISTINCT address, address FROM memo_posts " +
