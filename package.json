@@ -24,6 +24,9 @@
     "productName": "Memo",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "copyright": "Copyright © Memo Technology, Inc.",
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
     "files": [
       "main/**/*",
       "renderer/out/**/*",

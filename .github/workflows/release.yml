@@ -50,6 +50,14 @@ jobs:
         run: npm ci
       - name: Build installers
         run: npm run dist:${{ matrix.target }} -- ${{ matrix.arch }} --publish never
+      - name: Verify arm64 AppImage runtime is self-contained
+        if: matrix.target == 'linux'
+        shell: bash
+        run: |
+          if readelf -d dist/*-arm64.AppImage | grep -q NEEDED; then
+            echo "arm64 AppImage runtime has unexpected shared-library dependencies" >&2
+            exit 1
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: memo-${{ matrix.target }}
