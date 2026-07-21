@@ -6,6 +6,7 @@ const menu = require("../menu");
 // Dev loads the Next dev server; prod loads the static export served over the
 // app:// protocol (see main/index.js). The rest of the URL is identical.
 const AppUrl = isDev ? "http://localhost:8000" : "app://-";
+const AppIcon = path.join(__dirname, "..", "..", "build", "icon.png")
 
 // Match the CSS --bg values so the window paints the right base color before
 // the renderer loads (avoids a light flash when opening in dark mode).
@@ -50,7 +51,7 @@ const CreateWindow = async () => {
             nodeIntegration: true,
             preload: path.join(__dirname, "..", "preload", "index.js")
         },
-        icon: path.join(__dirname, "assets", "memo-logo-small.icns"),
+        icon: AppIcon,
     })
     win.webContents.setWindowOpenHandler(({url}) => {
         shell.openExternal(url);
@@ -74,7 +75,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
             nodeIntegration: true,
             preload: path.join(__dirname, "..", "preload", "index.js")
         },
-        icon: path.join(__dirname, "assets", "memo-logo-small.icns"),
+        icon: AppIcon,
     })
     if (txWindows[winId] === undefined) {
         txWindows[winId] = []

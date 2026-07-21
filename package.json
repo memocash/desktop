@@ -1,6 +1,6 @@
 {
   "name": "memo",
-  "version": "0.0.2",
+  "version": "0.0.2-d",
   "description": "Memo Desktop Application",
   "desktopName": "Memo",
   "homepage": "https://memocash.github.io/desktop/",
@@ -29,6 +29,7 @@
     },
     "files": [
       "main/**/*",
+      "build/icon.png",
       "renderer/out/**/*",
       "package.json"
     ],
@@ -38,6 +39,7 @@
     "publish": null,
     "mac": {
       "category": "public.app-category.finance",
+      "icon": "build/icon.png",
       "target": [
         "dmg",
         "zip"
@@ -50,6 +52,7 @@
     },
     "linux": {
       "category": "Finance",
+      "icon": "build/icon.png",
       "maintainer": "Memo Technology, Inc. <support@memo.cash>",
       "syncDesktopName": true,
       "target": [
