@@ -63,31 +63,7 @@ const SetDb = async (db) => {
         for (const statement of statements) {
             _db.prepare(statement).run()
         }
-        Purge()
     })()
-}
-
-// Link accepts and revokes used to be stored with the address that signed
-// them, fetched one profile at a time, and the queries checked that address to
-// tell a link's own accept/revoke from an unrelated one referencing the same
-// tx. The server now returns them nested under the request they belong to and
-// already restricted to the signing addresses the protocol allows, so the
-// address isn't stored and the queries no longer check it - which would let a
-// row written under the old scheme count as an accept or revoke it never was.
-// Those rows are the ones still carrying an address (databases created since
-// have no such column); drop them and they re-sync on the next profile load.
-const LegacyRows = [
-    ["link_accepts", "address"],
-    ["link_revokes", "address"],
-]
-
-const Purge = () => {
-    for (const [table, column] of LegacyRows) {
-        const columns = _db.prepare("PRAGMA table_info(" + table + ")").all()
-        if (columns.some(tableColumn => tableColumn.name === column)) {
-            _db.prepare("DELETE FROM " + table + " WHERE " + column + " IS NOT NULL").run()
-        }
-    }
 }
 
 // These columns are joined/filtered on constantly (wallet balance, post lists,
