@@ -1,7 +1,7 @@
 const {ipcMain} = require("electron");
 const {
     GetAddressAliases, GetFollowers, GetFollowing, GetLikes, GetLinkedAddresses, GetNewPosts, GetPost, GetPostParent, GetPostReplies,
-    GetPosts, GetPotentialLinkRequests, GetProfileInfo, GetProfileLinks, GetRecentFollow, GetRecentSetName,
+    GetPosts, GetProfileInfo, GetProfileLinks, GetRecentFollow, GetRecentSetName,
     GetRecentSetPic, GetRecentSetProfile, GetRoomPosts, GetChatFollows, GetRecentRoomFollow, GetRoomFollowCount,
     GetRoomFollows, GetAddressesRoomFollowCount, GetWalletLinks, SaveAddressAliases,
 } = require("../../data/tables");
@@ -30,7 +30,6 @@ const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetFollowers, async (e, addresses) => GetFollowers(eConf(e), addresses))
     ipcMain.handle(Handlers.GetLikes, async (e, txHash) => GetLikes(eConf(e), txHash))
     ipcMain.handle(Handlers.GetLinkedAddresses, async (e, addresses) => GetLinkedAddresses(eConf(e), addresses))
-    ipcMain.handle(Handlers.GetPotentialLinkRequests, async (e) => GetPotentialLinkRequests(eConf(e)))
     ipcMain.handle(Handlers.GetWalletLinks, async (e, addresses) => GetWalletLinks(eConf(e), addresses))
     ipcMain.handle(Handlers.GetAddressAliases, async (e, addresses) => GetAddressAliases(eConf(e), addresses))
     ipcMain.handle(Handlers.SaveAddressAliases, async (e, aliases) => SaveAddressAliases(eConf(e), aliases))

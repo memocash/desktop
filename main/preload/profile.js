@@ -14,7 +14,6 @@ module.exports = {
     getPic: (url) => ipcRenderer.invoke(Handlers.GetPic, url),
     getLikes: async (txHash) => await ipcRenderer.invoke(Handlers.GetLikes, txHash),
     getLinkedAddresses: (addresses) => ipcRenderer.invoke(Handlers.GetLinkedAddresses, addresses),
-    getPotentialLinkRequests: () => ipcRenderer.invoke(Handlers.GetPotentialLinkRequests),
     getWalletLinks: (addresses) => ipcRenderer.invoke(Handlers.GetWalletLinks, addresses),
     getAddressAliases: (addresses) => ipcRenderer.invoke(Handlers.GetAddressAliases, addresses),
     getNewPosts: ({userAddresses, ranked}) => ipcRenderer.invoke(Handlers.GetNewPosts, {userAddresses, ranked}),

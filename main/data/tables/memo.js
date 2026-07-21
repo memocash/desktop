@@ -68,11 +68,11 @@ const GetProfileInfo = async (conf, addresses) => {
 }
 
 // Links arrive from the server nested under the request they belong to: a
-// profile returns the requests that address signed, each with the accepts
-// signed by the request's parent, each of those with the revokes signed by
-// either side. That nesting is the only record of who signed an accept or a
-// revoke, so the rows are stored keyed to what they reference and the queries
-// below rely on it rather than re-checking addresses.
+// profile returns the requests it is party to in either direction, each with
+// the accepts signed by the request's parent, each of those with the revokes
+// signed by either side. That nesting is the only record of who signed an
+// accept or a revoke, so the rows are stored keyed to what they reference and
+// the queries below rely on it rather than re-checking addresses.
 const SaveProfileLinks = async (conf, links) => {
     if (!links || !links.length) {
         return
@@ -209,23 +209,6 @@ const GetAddressAliases = async (conf, addresses) => {
         }
     }
     return Object.values(aliases)
-}
-
-// Locally synced tx outputs that look like link requests (OP_RETURN 6d20 with
-// a 20-byte pkhash push) but have no link_requests row yet. The server only
-// returns a request on its sender's own profile, so incoming requests are
-// discovered from these: request txs typically pay the parent, which lands
-// them in the wallet's tx history. Callers match parent_pkhash against the
-// wallet's addresses and resolve the sender via the server.
-const GetPotentialLinkRequests = async (conf) => {
-    const query = "" +
-        "SELECT " +
-        "   outputs.hash AS tx_hash, " +
-        "   LOWER(HEX(SUBSTR(outputs.script, 6, 20))) AS parent_pkhash " +
-        "FROM outputs " +
-        "WHERE SUBSTR(outputs.script, 1, 5) = x'6a026d2014' " +
-        "   AND outputs.hash NOT IN (SELECT tx_hash FROM link_requests)"
-    return await Select(conf, "potential-link-requests", query, [])
 }
 
 const SaveMemoProfiles = async (conf, profiles) => {
@@ -413,7 +396,6 @@ const SavePic = async (conf, url, data) => {
 module.exports = {
     GetAddressAliases,
     GetLinkedAddresses,
-    GetPotentialLinkRequests,
     GetProfileInfo,
     GetProfileLinks,
     GetWalletLinks,

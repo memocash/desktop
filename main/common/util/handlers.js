@@ -15,7 +15,6 @@ const Handlers = {
     GetFollowing: "get-following",
     GetLikes: "get-likes",
     GetLinkedAddresses: "get-linked-addresses",
-    GetPotentialLinkRequests: "get-potential-link-requests",
     GetWalletLinks: "get-wallet-links",
     GetAddressAliases: "get-address-aliases",
     GetNewPosts: "get-new-posts",

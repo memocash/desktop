@@ -6,7 +6,7 @@ import GetWallet from "../../../util/wallet";
 import ShortHash from "../../../util/txs";
 import {Modals} from "../../../../../main/common/util";
 import {SendLinkAccept, SendLinkRequest, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
-import SyncProfileLinks, {DiscoverLinkRequests} from "../../../wallet/update/links";
+import SyncProfileLinks from "../../../wallet/update/links";
 
 // Account links overview: active links (revokable), pending requests in both
 // directions (incoming ones acceptable), and a form to request a new link.
@@ -21,7 +21,6 @@ const Links = ({basic: {setModal, onClose}}) => {
         const addresses = wallet.addresses.concat(wallet.changeList || [])
         let linkedAddresses
         try {
-            await DiscoverLinkRequests({addresses})
             linkedAddresses = await SyncProfileLinks({addresses})
         } catch (e) {
             console.log("Links modal: sync failed, showing local data", e)
