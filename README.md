@@ -47,10 +47,10 @@ each build on its native hosted runner.
    git push origin master v0.0.3
    ```
 
-The `Build and publish release` workflow builds Linux x64, macOS x64 and arm64,
-and Windows x64 artifacts. It then creates a GitHub Release and attaches every
-installer. The landing page reads the latest release from GitHub and displays
-direct download links automatically.
+The `Build and publish release` workflow builds Linux x64 and arm64, macOS x64
+and arm64, and Windows x64 artifacts. It then creates a GitHub Release and
+attaches every installer. The landing page reads the latest release from GitHub
+and displays direct download links automatically.
 
 The default workflow produces **unsigned** binaries. Users will see operating
 system security warnings until code signing is configured. For public

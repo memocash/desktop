@@ -6,9 +6,11 @@ const groups = {
   linux: (name) => name.endsWith(".AppImage") || name.endsWith(".deb"),
 };
 
-const labelFor = (name) => {
+const labelFor = (name, platform) => {
   const type = name.split(".").pop();
-  const arch = name.includes("arm64") ? "Apple silicon" : /x64|x86_64|amd64/.test(name) ? "Intel / x64" : "Download";
+  const arch = name.includes("arm64")
+    ? platform === "mac" ? "Apple silicon" : "ARM64"
+    : /x64|x86_64|amd64/.test(name) ? "Intel / x64" : "Download";
   return `${type} · ${arch}`;
 };
 
@@ -26,7 +28,7 @@ fetch(releaseUrl, { headers: { Accept: "application/vnd.github+json" } })
       container.replaceChildren(...assets.map((asset, index) => {
         const link = document.createElement("a");
         link.href = asset.browser_download_url;
-        link.textContent = labelFor(asset.name);
+        link.textContent = labelFor(asset.name, platform);
         if (index > 0) link.className = "secondary";
         return link;
       }));

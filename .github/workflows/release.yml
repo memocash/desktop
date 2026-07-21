@@ -19,7 +19,7 @@ jobs:
           - name: Linux
             os: ubuntu-latest
             target: linux
-            arch: --x64
+            arch: --x64 --arm64
             artifacts: |
               dist/*.AppImage
               dist/*.deb
