@@ -29,12 +29,12 @@ const ContentHeader = ({isFollowingRoom, room, setModal}) => {
             </div>
             <div className={styles.content_header_buttons}>
                 {isFollowingRoom ? (
-                    <button title={"Leave Room"} onClick={clickOpenLeaveModal}>
-                        <BsDoorOpen/>
+                    <button onClick={clickOpenLeaveModal} disabled={!room.length}>
+                        <BsDoorOpen/> Leave Room
                     </button>
                 ) : (
-                    <button title={"Join Room"} onClick={clickOpenJoinModal}>
-                        <BsDoorOpen/>
+                    <button onClick={clickOpenJoinModal} disabled={!room.length}>
+                        <BsDoorOpen/> Join Room
                     </button>
                 )}
             </div>

@@ -19,7 +19,7 @@ const Sidebar = ({sidebarRef, follows, room, setRoom}) => {
         <div ref={sidebarRef} className={styles.sidebar}>
             <div className={styles.sidebar_header}>
                 <form onSubmit={formLoadRoomSubmit}>
-                    <input ref={roomNameRef} type="text" placeholder={"Room"}/>
+                    <input ref={roomNameRef} type="text" placeholder={"Type a room..."}/>
                 </form>
             </div>
             <div className={styles.sidebar_content}>
