@@ -205,7 +205,15 @@ const Info = () => {
                     return "Memo topic message (" + Buffer.from(script.substr(10, size), "hex") + "): " +
                         Buffer.from(script.substr(10 + size), "hex")
                 case "6d0d":
-                    return "Memo topic follow: " + Buffer.from(script.substr(8), "hex")
+                case "6d0e": {
+                    const chunks = bitcoin.script.decompile(scriptBuffer)
+                    if (!chunks || !Buffer.isBuffer(chunks[2]) || chunks.length !== 3) {
+                        info = "Bad topic " + (script.substr(4, 4) === "6d0d" ? "follow" : "unfollow")
+                        break
+                    }
+                    const action = script.substr(4, 4) === "6d0d" ? "follow" : "unfollow"
+                    return "Memo topic " + action + ": " + chunks[2].toString("utf8")
+                }
                 case "6d20": {
                     // Link requests contain the prospective parent's 20-byte
                     // public-key hash and may contain a trailing message push.
