@@ -4,18 +4,18 @@ import profile from "../../styles/profile.module.css";
 import {BsFiles, BsFire, BsGlobe, BsPencil, BsPencilSquare, BsPeople, BsPerson} from "react-icons/bs";
 import FollowList from "./memo/follow_list";
 import {Modals} from "../../../main/common/util";
-import PostList from "./memo/post_list";
 import NewPostList from "./memo/new_post_list";
+import FeedPostList from "./memo/feed_post_list";
 
 const Tabs = {
-    Posts: "posts",
     Feed: "feed",
+    Global: "global",
     Ranked: "ranked",
     Following: "following",
 }
 
 const Memo = ({lastUpdate, setModal, setChatRoom}) => {
-    const [tab, setTab] = useState(Tabs.Posts)
+    const [tab, setTab] = useState(Tabs.Feed)
     const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
         address: "",
@@ -73,11 +73,12 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
                     </p>
                     <div className={profile.profile_actions} role={"toolbar"}
                          aria-label={"Profile views and actions"}>
-                        <button title={"View Newest Posts"} className={tab === Tabs.Posts ? profile.selected : null}
-                                aria-pressed={tab === Tabs.Posts} onClick={() => setTab(Tabs.Posts)}>
-                            <BsFiles/> Posts</button>
-                        <button title={"View Feed (All Users)"} className={tab === Tabs.Feed ? profile.selected : null}
+                        <button title={"View posts from people you follow"}
+                                className={tab === Tabs.Feed ? profile.selected : null}
                                 aria-pressed={tab === Tabs.Feed} onClick={() => setTab(Tabs.Feed)}>
+                            <BsFiles/> Feed</button>
+                        <button title={"View Feed (All Users)"} className={tab === Tabs.Global ? profile.selected : null}
+                                aria-pressed={tab === Tabs.Global} onClick={() => setTab(Tabs.Global)}>
                             <BsGlobe/> Global feed</button>
                         <button title={"View Ranked Feed (Likes / Replies / Recency)"}
                                 className={tab === Tabs.Ranked ? profile.selected : null}
@@ -93,9 +94,10 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
                     </div>
                 </div>
             </div>
-            {tab === Tabs.Posts ?
-                <PostList setModal={setModal} lastUpdate={lastUpdate} addresses={walletAddresses}/> : null}
             {tab === Tabs.Feed ?
+                <FeedPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}
+                              addresses={walletAddresses}/> : null}
+            {tab === Tabs.Global ?
                 <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}/> : null}
             {tab === Tabs.Ranked ?
                 <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate} ranked/> : null}
