@@ -28,13 +28,16 @@ const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
 // 100 is the server's per-page max - a larger limit is clamped to it. "newest"
 // is passed explicitly rather than left to the server default.
 const ChatPostLimit = 100
+// The room UI and local queries show at most 50 followers, so avoid pulling
+// every follow transaction (including raw inputs and outputs) for busy rooms.
+const ChatFollowerLimit = 50
 
 const UpdateChat = async ({roomName, setLastUpdate}) => {
     const query = `
     query ($room: String!) {
         room(name: $room) {
             name
-            followers {
+            followers(limit: ${ChatFollowerLimit}) {
                 name
                 tx_hash
                 unfollow
