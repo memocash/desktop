@@ -1,7 +1,10 @@
 const {Select} = require("../sqlite")
 const {MaxFollows} = require("../common/memo_follow");
 
-const GetFollowing = async (conf, addresses) => {
+const GetFollowing = async (conf, addresses, {limit = 50} = {}) => {
+    if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1)) {
+        limit = 50
+    }
     const maxFollowsWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
         "SELECT " +
@@ -19,8 +22,10 @@ const GetFollowing = async (conf, addresses) => {
         "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "WHERE max_follows.unfollow = 0 " +
-        "ORDER BY max_follows.timestamp DESC "
-    return await Select(conf, "memo_follows-following", query, addresses)
+        "ORDER BY max_follows.timestamp DESC " +
+        (limit === null ? "" : "LIMIT ? ")
+    const variables = limit === null ? addresses : addresses.concat(limit)
+    return await Select(conf, "memo_follows-following", query, variables)
 }
 
 const GetFollowers = async (conf, addresses) => {

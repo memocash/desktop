@@ -26,7 +26,8 @@ const ProfileHandlers = () => {
     ipcMain.handle(Handlers.GetRecentSetPic, async (e, addresses) => GetRecentSetPic(eConf(e), addresses))
     ipcMain.handle(Handlers.GetRecentFollow, async (e, addresses, address) =>
         GetRecentFollow(eConf(e), addresses, address))
-    ipcMain.handle(Handlers.GetFollowing, async (e, addresses) => GetFollowing(eConf(e), addresses))
+    ipcMain.handle(Handlers.GetFollowing, async (e, addresses, options) =>
+        GetFollowing(eConf(e), addresses, options))
     ipcMain.handle(Handlers.GetFollowers, async (e, addresses) => GetFollowers(eConf(e), addresses))
     ipcMain.handle(Handlers.GetLikes, async (e, txHash) => GetLikes(eConf(e), txHash))
     ipcMain.handle(Handlers.GetLinkedAddresses, async (e, addresses) => GetLinkedAddresses(eConf(e), addresses))

@@ -32,7 +32,7 @@ const DetailsQuery = `
                 address
             }
             ${ProfileFields}
-            posts(newest: true) {
+            posts(newest: true, limit: 50) {
                 tx_hash
                 text
                 tx {

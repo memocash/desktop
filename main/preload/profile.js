@@ -9,7 +9,7 @@ module.exports = {
         await ipcRenderer.invoke(Handlers.GetChatPosts, {room, userAddresses}),
     getChatRoomFollowCount: async ({room}) => await ipcRenderer.invoke(Handlers.GetChatRoomFollowCount, {room}),
     getChatRoomFollows: async ({room}) => await ipcRenderer.invoke(Handlers.GetChatRoomFollows, {room}),
-    getFollowing: (addresses) => ipcRenderer.invoke(Handlers.GetFollowing, addresses),
+    getFollowing: (addresses, options) => ipcRenderer.invoke(Handlers.GetFollowing, addresses, options),
     getFollowers: (addresses) => ipcRenderer.invoke(Handlers.GetFollowers, addresses),
     getPic: (url) => ipcRenderer.invoke(Handlers.GetPic, url),
     getLikes: async (txHash) => await ipcRenderer.invoke(Handlers.GetLikes, txHash),
