@@ -54,7 +54,15 @@ jobs:
         if: matrix.target == 'linux'
         shell: bash
         run: |
-          if readelf -d dist/*-arm64.AppImage | grep -q NEEDED; then
+          set -euo pipefail
+          shopt -s nullglob
+          appimages=(dist/*-arm64.AppImage)
+          if (( ${#appimages[@]} != 1 )); then
+            echo "expected exactly one arm64 AppImage, found ${#appimages[@]}" >&2
+            exit 1
+          fi
+          dynamic_section=$(readelf -d "${appimages[0]}")
+          if grep -q NEEDED <<<"$dynamic_section"; then
             echo "arm64 AppImage runtime has unexpected shared-library dependencies" >&2
             exit 1
           fi
