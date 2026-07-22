@@ -92,13 +92,27 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     await win.loadURL(AppUrl + "/tx?" + (new URLSearchParams(params)).toString())
 }
 
-const eConf = (e) => GetNetworkOption(e.sender.id)
+const DevelopmentDatabaseFile = "~/.memo/memo-dev.db"
+const ProductionDatabaseFile = "~/.memo/memo.db"
+
+// Keep local development isolated from the database used by packaged builds.
+// Resolve this at the main-process boundary instead of persisting the dev path
+// in network.json, which could otherwise make a later packaged run use it too.
+const GetRuntimeNetworkOption = (option) => {
+    if (!isDev || !option || option.DatabaseFile !== ProductionDatabaseFile) {
+        return option
+    }
+    return {...option, DatabaseFile: DevelopmentDatabaseFile}
+}
+
+const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
 module.exports = {
     eConf,
     GetMenu,
     GetNetworkOption,
     GetStorage,
+    GetRuntimeNetworkOption,
     GetWallet,
     GetWindow,
     SetMenu,
