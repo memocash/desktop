@@ -147,12 +147,46 @@
 }
 
 .posts {
+    position: relative;
     width: 100%;
     height: calc(100% - 81px);
     display: flex;
     flex-direction: column-reverse;
     overflow-y: auto;
     border-top: 1px solid var(--border);
+}
+
+.room_loading {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+    background: var(--bg);
+}
+
+.room_loading_spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text-muted);
+    border-radius: 50%;
+    animation: room_loading_spin 0.8s linear infinite;
+}
+
+@keyframes room_loading_spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .room_loading_spinner {
+        animation: none;
+    }
 }
 
 .posts .post:last-child {

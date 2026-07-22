@@ -5,6 +5,7 @@ import {ContentBody, ContentFooter, ContentHeader, Sidebar, Update} from "./chat
 
 const Chat = ({setModal, room, setRoom}) => {
     const [lastUpdate, setLastUpdate] = useState(null);
+    const [loadingRoom, setLoadingRoom] = useState(null);
     const [isFollowingRoom, setIsFollowingRoom] = useState(false);
     const [follows, followsRef, setFollows] = useReferredState([])
     const sidebarRef = useRef()
@@ -41,13 +42,14 @@ const Chat = ({setModal, room, setRoom}) => {
     return (
         <div className={styles.wrapper} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <Update followsRef={followsRef} room={room} setFollows={setFollows} setLastUpdate={setLastUpdate}
-                    setIsFollowingRoom={setIsFollowingRoom}/>
+                    setIsFollowingRoom={setIsFollowingRoom} setLoadingRoom={setLoadingRoom}/>
             <Sidebar sidebarRef={sidebarRef} follows={follows} room={room} setRoom={setRoom}/>
             <div className={styles.sidebar_handle} onMouseDown={handleMouseDown}/>
             <div ref={contentRef} className={styles.content}>
                 <ContentHeader isFollowingRoom={isFollowingRoom} lastUpdate={lastUpdate} room={room}
                                setModal={setModal}/>
-                <ContentBody lastUpdate={lastUpdate} room={room} setModal={setModal}/>
+                <ContentBody isLoading={loadingRoom === room} lastUpdate={lastUpdate} room={room}
+                             setModal={setModal}/>
                 <ContentFooter room={room} setModal={setModal} setRoom={setRoom}/>
             </div>
         </div>

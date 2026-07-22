@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import {ListenChatFollows, ListenChatPosts, UpdateChat, UpdateChatFollows} from "../update/index";
 
-const Update = ({followsRef, room, setFollows, setIsFollowingRoom, setLastUpdate}) => {
+const Update = ({followsRef, room, setFollows, setIsFollowingRoom, setLastUpdate, setLoadingRoom}) => {
     const [lastUpdateFollows, setLastUpdateFollows] = useState(null)
     useEffect(() => {(async () => {
         const {addresses} = await GetWallet()
@@ -24,12 +24,26 @@ const Update = ({followsRef, room, setFollows, setIsFollowingRoom, setLastUpdate
     }, [])
     useEffect(() => {
         if (!room || !room.length) {
+            setLoadingRoom(null)
             return
         }
-        (async () => await UpdateChat({roomName: room, setLastUpdate}))()
+        let active = true
+        setLoadingRoom(room)
+        ;(async () => {
+            try {
+                await UpdateChat({roomName: room, setLastUpdate})
+            } finally {
+                if (active) {
+                    setLoadingRoom((loadingRoom) => loadingRoom === room ? null : loadingRoom)
+                }
+            }
+        })()
         const closeSocket = ListenChatPosts({names: [room], setLastUpdate})
         checkIsFollowing()
-        return () => closeSocket()
+        return () => {
+            active = false
+            closeSocket()
+        }
     }, [room])
     const checkIsFollowing = () => {
         let isFollowingRoom = false

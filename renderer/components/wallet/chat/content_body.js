@@ -7,7 +7,7 @@ import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import {ListenPosts} from "../update/index";
 
-const ContentBody = ({lastUpdate, room, setModal}) => {
+const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
     const [counter, setCounter] = useState(0)
     const [posts, setPosts] = useState([])
     const [txHashes, setTxHashes] = useState([])
@@ -41,6 +41,10 @@ const ContentBody = ({lastUpdate, room, setModal}) => {
     const clickReplyLink = (txHash) => setModal(Modals.PostReply, {txHash})
     return (
         <div className={styles.posts}>
+            {isLoading ? <div className={styles.room_loading} role={"status"} aria-live={"polite"}>
+                <span className={styles.room_loading_spinner}/>
+                Loading room…
+            </div> : null}
             {posts.map((post, index) => {
                 return (
                     <div key={index} className={styles.post}>
