@@ -7,10 +7,9 @@ import Post from "./post";
 // importing undefined from it.
 import {UpdateNewPosts} from "../update/index";
 
-// Unlike PostList (which reads posts the wallet already has locally from its own
-// addresses), this pulls the newest posts network-wide from the server first,
-// then reads them back out of the local db so likes/replies/names render the
-// same way they do everywhere else. ranked reorders that same pool by relevance
+// Pull the newest posts network-wide from the server first, then read them back
+// out of the local db so likes/replies/names render the same way they do
+// everywhere else. ranked reorders that same pool by relevance
 // (likes/replies/recency) instead of strict time - the sync is identical.
 const NewPostList = ({setModal, setChatRoom, lastUpdate, ranked = false}) => {
     const [posts, setPosts] = useState([])
