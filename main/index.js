@@ -1,4 +1,5 @@
-const {app} = require('electron')
+const {app, nativeImage} = require('electron')
+const path = require('path')
 const isDev = require('electron-is-dev')
 const prepareNext = require('electron-next')
 const serve = require('electron-serve')
@@ -17,6 +18,12 @@ if (!isDev) {
 }
 
 app.whenReady().then(async () => {
+    // BrowserWindow's icon option is ignored by macOS. Explicitly set the Dock
+    // icon as well so packaged builds do not retain Electron's runtime icon.
+    if (process.platform === 'darwin') {
+        const iconPath = path.join(__dirname, '..', 'build', 'icon.png')
+        app.dock.setIcon(nativeImage.createFromPath(iconPath))
+    }
     if (isDev) {
         await prepareNext('./renderer')
     }
