@@ -206,12 +206,12 @@ const Info = () => {
                         Buffer.from(script.substr(10 + size), "hex")
                 case "6d0d":
                 case "6d0e": {
+                    const action = script.substr(4, 4) === "6d0d" ? "follow" : "unfollow"
                     const chunks = bitcoin.script.decompile(scriptBuffer)
-                    if (!chunks || !Buffer.isBuffer(chunks[2]) || chunks.length !== 3) {
-                        info = "Bad topic " + (script.substr(4, 4) === "6d0d" ? "follow" : "unfollow")
+                    if (!chunks || chunks.length !== 3 || !Buffer.isBuffer(chunks[2])) {
+                        info = "Bad topic " + action
                         break
                     }
-                    const action = script.substr(4, 4) === "6d0d" ? "follow" : "unfollow"
                     return "Memo topic " + action + ": " + chunks[2].toString("utf8")
                 }
                 case "6d20": {
