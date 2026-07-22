@@ -16,11 +16,42 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
 
     useEffect(() => {
         let active = true
-        const syncFeed = async () => {
+        const refreshFollowing = async () => {
             if (!addresses || !addresses.length) {
                 setFeed({followedAddresses: [], userAddresses: []})
                 setPosts([])
+                setFailed(false)
                 setLoading(false)
+                return
+            }
+            try {
+                const wallet = await GetWallet()
+                const following = await window.electron.getFollowing(addresses, {limit: null})
+                const followedAddresses = [...new Set(following.map(follow => follow.follow_address))]
+                if (!active) {
+                    return
+                }
+                setFeed({followedAddresses, userAddresses: wallet.addresses})
+                if (!followedAddresses.length) {
+                    setFailed(false)
+                    setLoading(false)
+                }
+            } catch (e) {
+                console.log("FeedPostList: following read failed", e)
+                if (active) {
+                    setFailed(true)
+                    setLoading(false)
+                }
+            }
+        }
+        refreshFollowing()
+        return () => { active = false }
+    }, [addressKey, lastUpdate])
+
+    useEffect(() => {
+        let active = true
+        const syncFeed = async () => {
+            if (!feed.followedAddresses.length) {
                 return
             }
             setLoading(true)
@@ -31,18 +62,9 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
                 }
             }
             try {
-                const wallet = await GetWallet()
-                const following = await window.electron.getFollowing(addresses, {limit: null})
-                const followedAddresses = [...new Set(following.map(follow => follow.follow_address))]
-                if (!active) {
-                    return
-                }
-                setFeed({followedAddresses, userAddresses: wallet.addresses})
-                if (followedAddresses.length) {
-                    await UpdateMemoHistory({addresses: followedAddresses, setLastUpdate: notifyUpdate})
-                    await BackfillPosts({addresses: followedAddresses, userAddresses: wallet.addresses,
-                        setLastUpdate: notifyUpdate})
-                }
+                await UpdateMemoHistory({addresses: feed.followedAddresses, setLastUpdate: notifyUpdate})
+                await BackfillPosts({addresses: feed.followedAddresses,
+                    userAddresses: feed.userAddresses, setLastUpdate: notifyUpdate})
             } catch (e) {
                 console.log("FeedPostList: feed sync failed", e)
                 if (active) {
@@ -56,7 +78,7 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
         }
         syncFeed()
         return () => { active = false }
-    }, [addressKey])
+    }, [followedAddressKey, userAddressKey])
 
     useEffect(() => {
         let active = true
@@ -78,11 +100,12 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
             {posts.map(post =>
                 <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom}/>
             )}
-            {failed && <div className={profile.noPosts}>
+            {failed && posts.length > 0 && <div className={profile.noPosts}>
                 Could not refresh feed, showing saved posts
             </div>}
-            {!posts.length && !failed && <div className={profile.noPosts}>
-                {loading ? "Loading feed..." : "No posts from people you follow"}
+            {!posts.length && <div className={profile.noPosts}>
+                {failed ? "Could not load feed" :
+                    loading ? "Loading feed..." : "No posts from people you follow"}
             </div>}
         </div>
     )
