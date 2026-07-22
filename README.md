@@ -52,8 +52,6 @@ and arm64, and Windows x64 artifacts. It then creates a GitHub Release and
 attaches every installer. The landing page reads the latest release from GitHub
 and displays direct download links automatically.
 
-The default workflow produces **unsigned** binaries. Users will see operating
-system security warnings until code signing is configured. For public
-distribution, add an Apple Developer ID certificate and notarization settings
-for macOS, and a code-signing certificate for Windows, following the
-[electron-builder signing documentation](https://www.electron.build/code-signing).
+macOS builds are signed and notarized in CI when the signing secrets are
+configured. Windows binaries remain **unsigned**; users will see SmartScreen
+warnings until a code-signing certificate is added.

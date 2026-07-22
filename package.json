@@ -40,6 +40,11 @@
     "mac": {
       "category": "public.app-category.finance",
       "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": true,
       "target": [
         "dmg",
         "zip"
