@@ -1,5 +1,11 @@
 import {ProfileFields, TxQuery} from "../../util/graphql";
 
+// Index defaults profile collections to 100 rows and caps requests at 5000.
+// Posts only need the 50 rows the local list can display; follow graphs retain
+// the server's standard page size while making the sync bound explicit.
+const ProfilePostLimit = 50
+const ProfileFollowLimit = 100
+
 // Critical info first: name/profile/pic alone is tiny (~500 bytes) and lets the
 // header render immediately, instead of waiting on the much heavier query below.
 const HeaderQuery = `
@@ -32,7 +38,7 @@ const DetailsQuery = `
                 address
             }
             ${ProfileFields}
-            posts(newest: true, limit: 50) {
+            posts(newest: true, limit: ${ProfilePostLimit}) {
                 tx_hash
                 text
                 tx {
@@ -40,7 +46,7 @@ const DetailsQuery = `
                     seen
                 }
             }
-            following {
+            following(limit: ${ProfileFollowLimit}) {
                 tx_hash
                 unfollow
                 ${TxQuery}
@@ -51,7 +57,7 @@ const DetailsQuery = `
                     }
                 }
             }
-            followers {
+            followers(limit: ${ProfileFollowLimit}) {
                 tx_hash
                 unfollow
                 ${TxQuery}
