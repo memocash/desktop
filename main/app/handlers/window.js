@@ -8,6 +8,7 @@ const {
     GetWallet,
     SetNetworkOption,
     GetNetworkOption,
+    GetRuntimeNetworkOption,
 } = require("../window");
 
 const WindowHandlers = () => {
@@ -97,7 +98,8 @@ const WindowHandlers = () => {
         })
         notification.show()
     })
-    ipcMain.handle(Handlers.GetWindowNetwork, async (e) => GetNetworkOption(e.sender.id))
+    ipcMain.handle(Handlers.GetWindowNetwork, async (e) =>
+        GetRuntimeNetworkOption(GetNetworkOption(e.sender.id)))
     ipcMain.handle(Handlers.SetWindowNetwork, async (e, networkOption) => SetNetworkOption(e.sender.id, networkOption))
 }
 

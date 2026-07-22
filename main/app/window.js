@@ -92,7 +92,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     await win.loadURL(AppUrl + "/tx?" + (new URLSearchParams(params)).toString())
 }
 
-const DevelopmentDatabaseFile = "~/.memo/memo-dev.db"
+const DevelopmentDatabaseFile = "~/.memo/memo-local.db"
 const ProductionDatabaseFile = "~/.memo/memo.db"
 
 // Keep local development isolated from the database used by packaged builds.
