@@ -33,6 +33,15 @@ const UpdateChat = async ({roomName, setLastUpdate}) => {
     query ($room: String!) {
         room(name: $room) {
             name
+            followers {
+                name
+                tx_hash
+                unfollow
+                lock {
+                    address
+                }
+                ${TxQuery}
+            }
             posts(newest: true, limit: ${ChatPostLimit}) {
                 tx_hash
                 text

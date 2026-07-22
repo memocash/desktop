@@ -3,7 +3,7 @@ import {BsDoorOpen} from "react-icons/bs";
 import {useEffect, useState} from "react";
 import {Modals} from "../../../../main/common/util";
 
-const ContentHeader = ({isFollowingRoom, room, setModal}) => {
+const ContentHeader = ({isFollowingRoom, lastUpdate, room, setModal}) => {
     const [numFollowers, setNumFollowers] = useState(0)
     useEffect(() => {(async () => {
         if (!room || !room.length) {
@@ -14,7 +14,7 @@ const ContentHeader = ({isFollowingRoom, room, setModal}) => {
         if (numFollowers.length) {
             setNumFollowers(numFollowers[0].count)
         }
-    })()}, [room])
+    })()}, [room, lastUpdate])
     const clickOpenJoinModal = () => setModal(Modals.ChatRoomJoin, {room})
     const clickOpenLeaveModal = () => setModal(Modals.ChatRoomJoin, {room, leave: true})
     const clickRoomFollowers = () => {

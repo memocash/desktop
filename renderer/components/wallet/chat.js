@@ -45,7 +45,8 @@ const Chat = ({setModal, room, setRoom}) => {
             <Sidebar sidebarRef={sidebarRef} follows={follows} room={room} setRoom={setRoom}/>
             <div className={styles.sidebar_handle} onMouseDown={handleMouseDown}/>
             <div ref={contentRef} className={styles.content}>
-                <ContentHeader isFollowingRoom={isFollowingRoom} room={room} setModal={setModal}/>
+                <ContentHeader isFollowingRoom={isFollowingRoom} lastUpdate={lastUpdate} room={room}
+                               setModal={setModal}/>
                 <ContentBody lastUpdate={lastUpdate} room={room} setModal={setModal}/>
                 <ContentFooter room={room} setModal={setModal} setRoom={setRoom}/>
             </div>

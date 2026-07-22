@@ -90,6 +90,7 @@ const GetRoomFollows = async ({conf, room}) => {
 }
 
 const SaveChatRoom = async (conf, room) => {
+    await SaveChatRoomFollows(conf, room.followers)
     if (!room.posts || room.posts.length === 0) {
         return
     }
