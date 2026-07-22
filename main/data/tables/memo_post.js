@@ -1,8 +1,28 @@
 const {Select, Insert} = require("../sqlite");
 const {SaveTransactions} = require("./txs");
 
+const txTimestamp = (hash) => "COALESCE(" +
+    "(SELECT MIN(blocks.timestamp) FROM block_txs JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+    "WHERE block_txs.tx_hash = " + hash + "), " +
+    "(SELECT tx_seens.timestamp FROM tx_seens WHERE tx_seens.hash = " + hash + "))"
+
+const historicallyValid = (address, txHash) => "NOT EXISTS (" +
+    "SELECT 1 FROM link_requests cutoff_request " +
+    "JOIN link_accepts cutoff_accept ON (cutoff_accept.request_tx_hash = cutoff_request.tx_hash) " +
+    "JOIN link_revokes cutoff_revoke ON (cutoff_revoke.accept_tx_hash = cutoff_accept.tx_hash) " +
+    "WHERE cutoff_request.address = " + address + " " +
+    "AND NOT EXISTS (" +
+    "   SELECT 1 FROM link_accepts active_accept " +
+    "   LEFT JOIN link_revokes active_revoke ON (active_revoke.accept_tx_hash = active_accept.tx_hash) " +
+    "   WHERE active_accept.request_tx_hash = cutoff_request.tx_hash " +
+    "   AND active_revoke.tx_hash IS NULL" +
+    ") " +
+    "AND " + txTimestamp(txHash) + " > " + txTimestamp("cutoff_revoke.tx_hash") +
+    ")"
+
 const GetPosts = async ({conf, addresses, userAddresses}) => {
-    const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ")"
+    const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
+        "AND " + historicallyValid("memo_posts.address", "memo_posts.tx_hash")
     const query = getSelectQuery({userAddresses, where})
     return await Select(conf, "memo_posts-multi", query, [...userAddresses, ...addresses])
 }
@@ -79,7 +99,8 @@ const RankedOrder = "" +
     "/ pow((julianday('now') - julianday(" + timestampSelect + ")) * 24 + 2, " + RankGravity + ") DESC"
 
 const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}) => {
-    // Resolve author metadata through active profile links. This mirrors the
+    // Resolve author metadata through accepted profile links. Revoked links
+    // retain fields created before their revoke cutoff.
     // profile view's merge semantics: fields on the posting address win, then
     // a field from another address in its transitive linked-address cluster is
     // used. Name and pic are selected independently because linked profiles
@@ -89,14 +110,10 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
         "   SELECT link_requests.address, link_requests.parent_address " +
         "   FROM link_requests " +
         "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
-        "   WHERE link_revokes.tx_hash IS NULL " +
         "   UNION " +
         "   SELECT link_requests.parent_address, link_requests.address " +
         "   FROM link_requests " +
         "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-        "   LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
-        "   WHERE link_revokes.tx_hash IS NULL" +
         "), linked_author_addresses(origin, address) AS (" +
         "   SELECT DISTINCT address, address FROM memo_posts " +
         "   UNION " +
@@ -111,6 +128,7 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
         "JOIN profiles ON (profiles.address = linked_author_addresses.address) " +
         "JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
         "WHERE linked_author_addresses.origin = memo_posts.address " +
+        "AND " + historicallyValid("linked_author_addresses.address", "profile_names.tx_hash") + " " +
         "ORDER BY (linked_author_addresses.address = memo_posts.address) DESC, " +
         "   linked_author_addresses.address ASC LIMIT 1" +
         ")"
@@ -121,6 +139,7 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
         "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
         "JOIN images ON (images.url = profile_pics.pic) " +
         "WHERE linked_author_addresses.origin = memo_posts.address " +
+        "AND " + historicallyValid("linked_author_addresses.address", "profile_pics.tx_hash") + " " +
         "ORDER BY (linked_author_addresses.address = memo_posts.address) DESC, " +
         "   linked_author_addresses.address ASC LIMIT 1" +
         ")"

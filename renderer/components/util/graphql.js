@@ -25,18 +25,34 @@ const TxQuery = `
         }
     }
     `
+const TxTimeQuery = `
+    tx {
+        hash
+        seen
+        blocks {
+            block {
+                hash
+                timestamp
+                height
+            }
+        }
+    }
+    `
 const ProfileFields = `
     name {
         name
         tx_hash
+        ${TxTimeQuery}
     }
     profile {
         text
         tx_hash
+        ${TxTimeQuery}
     }
     pic {
         pic
         tx_hash
+        ${TxTimeQuery}
     }
     `
 const LikesQuery = `
@@ -67,4 +83,5 @@ export {
     ProfileFields,
     LikesQuery,
     TxQuery,
+    TxTimeQuery,
 }

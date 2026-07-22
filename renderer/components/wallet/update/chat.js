@@ -1,4 +1,5 @@
 import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql";
+import {SyncLinkedProfiles} from "./links";
 
 const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
     const query = `
@@ -64,6 +65,9 @@ const UpdateChat = async ({roomName, setLastUpdate}) => {
         room: roomName,
     })
     await window.electron.saveChatRoom(data.data.room)
+    await SyncLinkedProfiles({addresses: [...new Set(data.data.room.posts
+        .filter(post => post.lock && post.lock.address)
+        .map(post => post.lock.address))]})
     setLastUpdate((new Date()).toISOString())
 }
 
@@ -92,6 +96,9 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
         `
     const handler = async (post) => {
         await window.electron.saveChatRoom({name: post.rooms.room.name, posts: [post.rooms]})
+        if (post.rooms.lock && post.rooms.lock.address) {
+            await SyncLinkedProfiles({addresses: [post.rooms.lock.address]})
+        }
         if (typeof setLastUpdate === "function") {
             setLastUpdate((new Date()).toISOString())
         }

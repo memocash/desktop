@@ -4,6 +4,7 @@ import ListenNewTxs from "./listen_txs";
 import {ListenBlocks, RecentBlock} from "./block";
 import UpdateMemoHistory from "./memo";
 import SyncProfileLinks from "./links";
+import {SyncLinkedProfiles} from "./links";
 import SyncAliases from "./aliases";
 import UpdateSlp from "./slp";
 import {BackfillPosts, UpdateNewPosts, UpdatePosts} from "./posts";
@@ -24,6 +25,7 @@ export {
     ListenPosts,
     UpdateMemoHistory,
     SyncProfileLinks,
+    SyncLinkedProfiles,
     SyncAliases,
     UpdateSlp,
 }

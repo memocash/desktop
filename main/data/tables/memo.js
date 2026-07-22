@@ -3,6 +3,27 @@ const {SaveTransactions} = require("./txs");
 const {SaveMemoPosts} = require("./memo_post");
 const {MaxFollows} = require("../common/memo_follow");
 
+const txTimestamp = (hash) => "COALESCE(" +
+    "(SELECT MIN(blocks.timestamp) FROM block_txs JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
+    "WHERE block_txs.tx_hash = " + hash + "), " +
+    "(SELECT tx_seens.timestamp FROM tx_seens WHERE tx_seens.hash = " + hash + "))"
+
+// A child address contributes records through a revoked link only up to the
+// first revoke. The parent remains the continuing identity, so a revoke does
+// not impose a cutoff on records authored by the parent itself.
+const addressCutoff = (address) => "(" +
+    "SELECT MIN(" + txTimestamp("link_revokes.tx_hash") + ") " +
+    "FROM link_requests " +
+    "JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
+    "JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
+    "WHERE link_requests.address = " + address + " " +
+    "AND NOT EXISTS (" +
+    "   SELECT 1 FROM link_accepts active_accept " +
+    "   LEFT JOIN link_revokes active_revoke ON (active_revoke.accept_tx_hash = active_accept.tx_hash) " +
+    "   WHERE active_accept.request_tx_hash = link_requests.tx_hash " +
+    "   AND active_revoke.tx_hash IS NULL" +
+    "))"
+
 // Returns a single merged profile for a set of addresses (a wallet's addresses,
 // or a linked-address cluster). Rows are grouped per address and merged in JS
 // so name/profile/pic selection is deterministic: without the GROUP BY, SQLite
@@ -19,6 +40,10 @@ const GetProfileInfo = async (conf, addresses) => {
         "   profile_names.name AS name, " +
         "   profile_texts.profile AS profile, " +
         "   profile_pics.pic AS pic, " +
+        "   " + txTimestamp("profiles.name") + " AS name_timestamp, " +
+        "   " + txTimestamp("profiles.profile") + " AS profile_timestamp, " +
+        "   " + txTimestamp("profiles.pic") + " AS pic_timestamp, " +
+        "   " + addressCutoff("profiles.address") + " AS link_cutoff, " +
         "   COUNT(DISTINCT max_followers.tx_hash) AS num_followers, " +
         "   COUNT(DISTINCT max_following.tx_hash) AS num_following " +
         "FROM profiles " +
@@ -51,13 +76,16 @@ const GetProfileInfo = async (conf, addresses) => {
         }
         merged.num_followers += row.num_followers
         merged.num_following += row.num_following
-        if (!merged.name && row.name) {
+        if (!merged.name && row.name && (!row.link_cutoff || !row.name_timestamp ||
+            row.name_timestamp <= row.link_cutoff)) {
             merged.name = row.name
         }
-        if (!merged.profile && row.profile) {
+        if (!merged.profile && row.profile && (!row.link_cutoff || !row.profile_timestamp ||
+            row.profile_timestamp <= row.link_cutoff)) {
             merged.profile = row.profile
         }
-        if (!merged.pic && row.pic) {
+        if (!merged.pic && row.pic && (!row.link_cutoff || !row.pic_timestamp ||
+            row.pic_timestamp <= row.link_cutoff)) {
             merged.pic = row.pic
         }
     }
@@ -81,12 +109,14 @@ const SaveProfileLinks = async (conf, links) => {
         "INSERT OR REPLACE INTO link_requests (tx_hash, address, parent_address, message) " +
         "VALUES " + Array(links.length).fill("(?, ?, ?, ?)").join(", "),
         links.map(link => [link.tx_hash, link.address, link.parent_address, link.message]).flat())
+    await SaveTransactions(conf, links.map(link => link.tx))
     const accepts = links.map(link => link.accepts || []).flat()
     if (accepts.length) {
         await Insert(conf, "link_accepts",
             "INSERT OR REPLACE INTO link_accepts (tx_hash, request_tx_hash, message) " +
             "VALUES " + Array(accepts.length).fill("(?, ?, ?)").join(", "),
             accepts.map(accept => [accept.tx_hash, accept.request_tx_hash, accept.message]).flat())
+        await SaveTransactions(conf, accepts.map(accept => accept.tx))
     }
     const revokes = accepts.map(accept => accept.revokes || []).flat()
     if (revokes.length) {
@@ -94,13 +124,13 @@ const SaveProfileLinks = async (conf, links) => {
             "INSERT OR REPLACE INTO link_revokes (tx_hash, accept_tx_hash, message) " +
             "VALUES " + Array(revokes.length).fill("(?, ?, ?)").join(", "),
             revokes.map(revoke => [revoke.tx_hash, revoke.accept_tx_hash, revoke.message]).flat())
+        await SaveTransactions(conf, revokes.map(revoke => revoke.tx))
     }
 }
 
-// Expands a set of addresses to every address transitively linked to it. A link
-// is active when a request has an accept and that accept has no revoke
-// (revoking a specific accept leaves a later re-accept of the same request
-// active).
+// Expands a set of addresses through every accepted link, including historical
+// links. Revocation is a time boundary for the child address's records; it does
+// not erase the relationship or records that predate the revoke.
 const GetLinkedAddresses = async (conf, addresses) => {
     let cluster = [...new Set(addresses)]
     for (let i = 0; i < 10; i++) {
@@ -111,9 +141,7 @@ const GetLinkedAddresses = async (conf, addresses) => {
             "   link_requests.parent_address AS parent_address " +
             "FROM link_requests " +
             "JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-            "LEFT JOIN link_revokes ON (link_revokes.accept_tx_hash = link_accepts.tx_hash) " +
-            "WHERE link_revokes.tx_hash IS NULL " +
-            "   AND (link_requests.address IN " + inList + "OR link_requests.parent_address IN " + inList + ")"
+            "WHERE link_requests.address IN " + inList + "OR link_requests.parent_address IN " + inList
         const results = await Select(conf, "linked-addresses", query, [...cluster, ...cluster])
         const known = new Set(cluster)
         for (const row of results) {
@@ -240,16 +268,19 @@ const SaveMemoProfiles = async (conf, profiles) => {
             await Insert(conf, "profile_names",
                 "INSERT OR REPLACE INTO profile_names (address, name, tx_hash) VALUES (?, ?, ?)", [
                     lock.address, name.name, name.tx_hash])
+            await SaveTransactions(conf, [name.tx])
         }
         if (profile) {
             await Insert(conf, "profile_texts",
                 "INSERT OR REPLACE INTO profile_texts (address, profile, tx_hash) VALUES (?, ?, ?)", [
                     lock.address, profile.text, profile.tx_hash])
+            await SaveTransactions(conf, [profile.tx])
         }
         if (pic) {
             await Insert(conf, "profile_pics",
                 "INSERT OR REPLACE INTO profile_pics (address, pic, tx_hash) VALUES (?, ?, ?)", [
                     lock.address, pic.pic, pic.tx_hash])
+            await SaveTransactions(conf, [pic.tx])
         }
         if (following && following.length) {
             await Insert(conf, "memo_follows-following",

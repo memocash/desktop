@@ -1,4 +1,5 @@
 import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql";
+import {SyncLinkedProfiles} from "./links";
 
 // Number of newest posts pulled from the server for the feed. GetNewPosts reads
 // back the newest 50 rows locally, so asking for more here would only fetch
@@ -94,6 +95,7 @@ const UpdateNewPosts = async ({setLastUpdate}) => {
     // renders nameless with the default pic.
     const profiles = dedupeProfiles(posts)
     await window.electron.saveMemoProfiles(profiles)
+    await SyncLinkedProfiles({addresses: profiles.map(profile => profile.lock.address)})
     // Room posts go through saveChatRoom instead (it saves the post *and* its
     // room membership, which is what shows the room link on the post).
     const roomPosts = posts.filter(post => post.room && post.room.name)
