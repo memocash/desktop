@@ -1,7 +1,7 @@
 import {useEffect, useRef} from "react";
 import GetWallet from "../util/wallet";
 import {BackfillPosts, ListenBlocks, ListenNewTxs, ListenPosts, RecentBlock, SyncAliases, SyncProfileLinks, UpdateHistory,
-    UpdateMemoDetails, UpdateMemoProfile, UpdateSlp} from "./update/index.js";
+    UpdateMemoDetails, UpdateMemoHistory, UpdateMemoProfile, UpdateSlp} from "./update/index.js";
 import ListenNewMemos from "./update/listen_memo";
 
 const Update = ({setConnected, setLastUpdate, setSyncProgress}) => {
@@ -42,8 +42,22 @@ const Update = ({setConnected, setLastUpdate, setSyncProgress}) => {
         await SyncAliases({addresses: linkedRef.current}).catch(e => console.log("Update: SyncAliases failed", e))
         progress(78, "Loading tokens")
         await UpdateSlp({addresses: addresses.concat(wallet.slpList || []), setLastUpdate})
-        progress(88, "Loading recent posts")
+        progress(86, "Loading your recent posts")
         await BackfillPosts({addresses: linkedRef.current, userAddresses: wallet.addresses, setLastUpdate})
+        progress(90, "Loading the latest feed")
+        const following = await window.electron.getFollowing(linkedRef.current, {limit: null})
+        const followedAddresses = [...new Set(following.map(follow => follow.follow_address))]
+        if (followedAddresses.length) {
+            // The feed component also refreshes itself during normal use, but
+            // startup must await this first refresh so reaching 100% means the
+            // posts revealed behind the overlay are current.
+            await UpdateMemoHistory({addresses: followedAddresses, setLastUpdate})
+            await BackfillPosts({
+                addresses: followedAddresses,
+                userAddresses: wallet.addresses,
+                setLastUpdate,
+            })
+        }
         progress(100, "Wallet ready")
     })().catch(e => {
         console.log("Update: initial wallet sync failed", e)
