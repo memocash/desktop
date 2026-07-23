@@ -1,0 +1,63 @@
+.backdrop {
+    align-items: center;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    position: fixed;
+    z-index: 1000;
+}
+
+.card {
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgb(0 0 0 / 20%);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    max-width: 420px;
+    padding: 32px;
+    text-align: center;
+    width: calc(100% - 48px);
+}
+
+.card h1 {
+    font-size: 22px;
+    margin: 12px 0 4px;
+}
+
+.card p {
+    margin: 4px 0 18px;
+}
+
+.card span {
+    font-variant-numeric: tabular-nums;
+    margin-top: 8px;
+}
+
+.card small {
+    color: var(--color-text-muted, var(--color-text));
+    margin-top: 18px;
+}
+
+.logo {
+    height: 64px;
+    object-fit: contain;
+}
+
+.track {
+    background: var(--surface-muted);
+    border: 1px solid var(--border-tab);
+    border-radius: 6px;
+    height: 10px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.fill {
+    background: var(--accent);
+    height: 100%;
+    transition: width 250ms ease;
+}

@@ -6,6 +6,7 @@ import ModalViewer from "../components/modal/viewer";
 import {Modals} from "../../main/common/util";
 import {Utxos} from "../components/util/utxos";
 import useNotifications from "../components/wallet/use_notifications";
+import styles from "../styles/walletLoading.module.css";
 
 const StorageKeyWalletTab = "wallet-tab"
 
@@ -33,12 +34,17 @@ const WalletLoaded = () => {
     const [lastUpdate, setLastUpdate] = useState("")
     const [connected, setConnected] = useState(Status.NotConnected)
     const [room, setRoom] = useState("")
+    const [syncProgress, setSyncProgress] = useState({
+        active: true,
+        percent: 0,
+        label: "Preparing wallet",
+    })
     const shownRef = useRef([])
     // Whether the Notifications tab is currently open, so incoming activity
     // isn't badged or alerted while the user is already reading it.
     const notificationsActiveRef = useRef(false)
     const {notifications, loaded: notificationsLoaded, unreadCount, markRead} =
-        useNotifications({lastUpdate, activeRef: notificationsActiveRef})
+        useNotifications({lastUpdate, activeRef: notificationsActiveRef, initialSync: syncProgress.active})
     useEffect(() => {(async () => {
         const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.Memo
 
@@ -90,7 +96,20 @@ const WalletLoaded = () => {
             </Frame>
             <ModalViewer setLastUpdate={setLastUpdate} setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}
                          setChatRoom={setChatRoom}/>
-            <Update setConnected={setConnected} setLastUpdate={setLastUpdate}/>
+            <Update setConnected={setConnected} setLastUpdate={setLastUpdate} setSyncProgress={setSyncProgress}/>
+            {syncProgress.active && <div className={styles.backdrop} role="status" aria-live="polite">
+                <div className={styles.card}>
+                    <img src="/memo-logo-large.png" alt="" className={styles.logo}/>
+                    <h1>Loading your wallet</h1>
+                    <p>{syncProgress.label}</p>
+                    <div className={styles.track} role="progressbar" aria-label="Wallet loading progress"
+                         aria-valuemin="0" aria-valuemax="100" aria-valuenow={syncProgress.percent}>
+                        <div className={styles.fill} style={{width: `${syncProgress.percent}%`}}/>
+                    </div>
+                    <span>{syncProgress.percent}%</span>
+                    <small>A wallet with lots of history may take a few minutes.</small>
+                </div>
+            </div>}
         </>
     )
 }

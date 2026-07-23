@@ -98,13 +98,25 @@ const syncProfiles = async ({query, addresses, setLastUpdate, saveImages}) => {
     notifyUpdate(setLastUpdate)
 }
 
+const UpdateMemoProfile = async ({addresses, setLastUpdate}) => {
+    await syncProfiles({query: HeaderQuery, addresses, setLastUpdate, saveImages: true})
+}
+
+const UpdateMemoDetails = async ({addresses, setLastUpdate}) => {
+    await syncProfiles({query: DetailsQuery, addresses, setLastUpdate, saveImages: false})
+}
+
 const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
     await Promise.all([
-        syncProfiles({query: HeaderQuery, addresses, setLastUpdate, saveImages: true})
+        UpdateMemoProfile({addresses, setLastUpdate})
             .catch(e => console.log("UpdateMemoHistory: header sync failed", e)),
-        syncProfiles({query: DetailsQuery, addresses, setLastUpdate, saveImages: false})
+        UpdateMemoDetails({addresses, setLastUpdate})
             .catch(e => console.log("UpdateMemoHistory: details sync failed", e)),
     ])
 }
 
+export {
+    UpdateMemoDetails,
+    UpdateMemoProfile,
+}
 export default UpdateMemoHistory

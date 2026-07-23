@@ -2,7 +2,7 @@ import {ListenChatFollows, ListenChatPosts, UpdateChat, UpdateChatFollows} from 
 import UpdateHistory from "./history";
 import ListenNewTxs from "./listen_txs";
 import {ListenBlocks, RecentBlock} from "./block";
-import UpdateMemoHistory from "./memo";
+import UpdateMemoHistory, {UpdateMemoDetails, UpdateMemoProfile} from "./memo";
 import SyncProfileLinks from "./links";
 import {SyncLinkedProfiles} from "./links";
 import SyncAliases from "./aliases";
@@ -24,6 +24,8 @@ export {
     ListenBlocks,
     ListenPosts,
     UpdateMemoHistory,
+    UpdateMemoDetails,
+    UpdateMemoProfile,
     SyncProfileLinks,
     SyncLinkedProfiles,
     SyncAliases,

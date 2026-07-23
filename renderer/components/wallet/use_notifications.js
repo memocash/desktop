@@ -10,11 +10,15 @@ import {notificationKey, notificationSummary} from "./notifications"
 //
 // activeRef reflects whether the Notifications tab is currently open; the caller
 // keeps it up to date and calls markRead() when the tab is shown.
-const useNotifications = ({lastUpdate, activeRef}) => {
+const useNotifications = ({lastUpdate, activeRef, initialSync}) => {
     const [notifications, setNotifications] = useState([])
     const [loaded, setLoaded] = useState(false)
     const [unreadCount, setUnreadCount] = useState(0)
     const knownRef = useRef(null)
+    // The first fetch after the initial sync completes is also a baseline. This
+    // closes the race where the final database writes finish between the last
+    // in-progress fetch and the sync-complete render.
+    const alertsEnabledRef = useRef(false)
 
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
@@ -22,8 +26,9 @@ const useNotifications = ({lastUpdate, activeRef}) => {
         const list = await window.electron.getNotifications(addresses)
         setNotifications(list)
         setLoaded(true)
-        if (knownRef.current === null) {
+        if (initialSync || !alertsEnabledRef.current) {
             knownRef.current = new Set(list.map(notificationKey))
+            alertsEnabledRef.current = !initialSync
             return
         }
         const fresh = list.filter(notification => !knownRef.current.has(notificationKey(notification)))
@@ -42,7 +47,7 @@ const useNotifications = ({lastUpdate, activeRef}) => {
                 {...notificationSummary(notification), tab: "notifications"}))
         }
         setUnreadCount(count => count + fresh.length)
-    })()}, [lastUpdate])
+    })()}, [lastUpdate, initialSync])
 
     const markRead = useCallback(() => setUnreadCount(0), [])
     return {notifications, loaded, unreadCount, markRead}

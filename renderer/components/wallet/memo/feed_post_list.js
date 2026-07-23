@@ -100,12 +100,14 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
             {posts.map(post =>
                 <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom} isFeedRow/>
             )}
-            {failed && posts.length > 0 && <div className={profile.noPosts}>
+            {loading && !posts.length &&
+                <div className={profile.noPosts}>Loading the latest posts...</div>}
+            {!loading && failed && posts.length > 0 && <div className={profile.noPosts}>
                 Could not refresh feed, showing saved posts
             </div>}
-            {!posts.length && <div className={profile.noPosts}>
+            {!loading && !posts.length && <div className={profile.noPosts}>
                 {failed ? "Could not load feed" :
-                    loading ? "Loading feed..." : "No posts from people you follow"}
+                    "No posts from people you follow"}
             </div>}
         </div>
     )
