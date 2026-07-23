@@ -34,12 +34,12 @@ const NewPostList = ({setModal, setChatRoom, lastUpdate, ranked = false}) => {
     })()}, [lastUpdate, feedUpdate, ranked]);
     return (
         <div className={profile.post_list}>
+            {posts.map((post) =>
+                <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom} isFeedRow/>
+            )}
             {failed && <div className={profile.noPosts}>
                 Could not load new posts, showing saved posts
             </div>}
-            {posts.map((post) =>
-                <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom}/>
-            )}
             {!posts.length && !failed && <div className={profile.noPosts}>
                 {loading ? "Loading new posts..." : "No new posts"}
             </div>}

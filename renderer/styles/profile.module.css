@@ -437,6 +437,10 @@
     outline: none;
 }
 
+.post_list > .feed_post_row:nth-child(even) {
+    background: var(--surface-alt);
+}
+
 .post_list .noPosts {
     padding: 10px;
     text-align: center;

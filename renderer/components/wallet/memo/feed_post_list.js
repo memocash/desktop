@@ -98,7 +98,7 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
     return (
         <div className={profile.post_list}>
             {posts.map(post =>
-                <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom}/>
+                <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom} isFeedRow/>
             )}
             {failed && posts.length > 0 && <div className={profile.noPosts}>
                 Could not refresh feed, showing saved posts

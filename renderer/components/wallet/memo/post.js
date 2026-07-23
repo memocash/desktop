@@ -7,7 +7,7 @@ import {
 import {Modals} from "../../../../main/common/util";
 import {useEffect, useState} from "react";
 
-const Post = ({post, setModal, setChatRoom, isSingle = false}) => {
+const Post = ({post, setModal, setChatRoom, isSingle = false, isFeedRow = false}) => {
     const [counter, setCounter] = useState(0)
     useEffect(() => {
         const interval = setInterval(() => {
@@ -29,7 +29,7 @@ const Post = ({post, setModal, setChatRoom, isSingle = false}) => {
         setModal(Modals.None)
     }
     return (
-        <div className={isSingle ? profile.post_single : null}>
+        <div className={isSingle ? profile.post_single : isFeedRow ? profile.feed_post_row : null}>
             <div className={profile.post}>
                 <div className={profile.post_header}>
                     <img alt={"Pic"} onClick={clickViewProfile} src={(post.pic && post.pic.length) ?
