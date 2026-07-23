@@ -8,6 +8,7 @@ import {TitleCol} from "../../../wallet/snippets/title_col";
 import {useReferredState} from "../../../util/state";
 import {TimeSince} from "../../../util/time";
 import {BsBoxArrowInUpRight} from "react-icons/bs";
+import {SyncLinkedProfiles} from "../../../wallet/update/index.js";
 
 const Column = {
     Name: "name",
@@ -21,7 +22,12 @@ const PostLikes = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
     const [likes, likesRef, setLikes] = useReferredState([])
     const [post, setPost] = useState({})
     useEffect(() => {(async () => {
-        const likes = await window.electron.getLikes(txHash)
+        let likes = await window.electron.getLikes(txHash)
+        // Like payloads contain only the signing address. Fetch its linked
+        // identity and profile fields before reading the display rows again.
+        await SyncLinkedProfiles({addresses: [...new Set(likes.map(like => like.address))]})
+            .catch(e => console.log("Sync liker profiles failed", e))
+        likes = await window.electron.getLikes(txHash)
         setLikes(likes)
         const {addresses} = await window.electron.getWallet()
         const post = await window.electron.getPost({txHash, userAddresses: addresses})

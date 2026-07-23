@@ -2,11 +2,7 @@ const {Select, Insert} = require("../sqlite");
 const {SaveTransactions} = require("./txs");
 const {SaveMemoPosts} = require("./memo_post");
 const {MaxFollows} = require("../common/memo_follow");
-
-const txTimestamp = (hash) => "COALESCE(" +
-    "(SELECT MIN(blocks.timestamp) FROM block_txs JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
-    "WHERE block_txs.tx_hash = " + hash + "), " +
-    "(SELECT tx_seens.timestamp FROM tx_seens WHERE tx_seens.hash = " + hash + "))"
+const {txTimestamp} = require("../common/profile_links");
 
 // A child address contributes records through a revoked link only up to the
 // first revoke. The parent remains the continuing identity, so a revoke does
