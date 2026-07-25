@@ -242,24 +242,16 @@ const SaveMemoProfiles = async (conf, profiles) => {
         if (!lock || !lock.address) {
             continue
         }
-        // Link data is saved before the profile-fields guard below: an address
-        // that only ever linked itself (e.g. a fresh parent address) has no
-        // name/profile/pic but its links still need to resolve.
         await SaveProfileLinks(conf, links)
-        // Posts belong to an address even when that address has never set a
-        // name, profile text, or picture. This is common for a newly linked
-        // child address, and skipping here would keep its posts out of both
-        // sides of the merged profile.
         if (posts && posts.length) {
             for (let i = 0; i < posts.length; i++) {
                 posts[i].lock = lock
             }
             await SaveMemoPosts(conf, posts)
         }
-        if (!name && !profile && !pic) {
-            continue
+        if (name || profile || pic) {
+            saveProfiles.push({lock, name, profile, pic})
         }
-        saveProfiles.push({lock, name, profile, pic})
         if (name) {
             await Insert(conf, "profile_names",
                 "INSERT OR REPLACE INTO profile_names (address, name, tx_hash) VALUES (?, ?, ?)", [
