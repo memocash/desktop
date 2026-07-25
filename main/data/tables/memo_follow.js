@@ -2,14 +2,7 @@ const {Select} = require("../sqlite")
 const {MaxFollows} = require("../common/memo_follow");
 const {historicallyValid} = require("../common/profile_links");
 
-// Every address a followed identity posts as: the followed address plus its
-// transitive accepted-link cluster, keyed back to the address actually
-// followed. The feed expands followed profiles the same way (SyncProfileLinks
-// feeding GetPosts), so without this a profile that posts from a linked
-// address reads as never active here while its posts show up in the feed.
-// Revoked links stay in the cluster - only their post-revoke records drop out,
-// which historicallyValid enforces below.
-const FollowedCluster = (followsWhere) => "" +
+const LinkedCluster = (origin, followsWhere) => "" +
     "WITH RECURSIVE active_profile_links(address, linked_address) AS (" +
     "    SELECT link_requests.address, link_requests.parent_address " +
     "    FROM link_requests " +
@@ -18,14 +11,14 @@ const FollowedCluster = (followsWhere) => "" +
     "    SELECT link_requests.parent_address, link_requests.address " +
     "    FROM link_requests " +
     "    JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-    "), followed_cluster(origin, address) AS (" +
-    "    SELECT DISTINCT memo_follows.follow_address, memo_follows.follow_address " +
+    "), linked_cluster(origin, address) AS (" +
+    "    SELECT DISTINCT " + origin + ", " + origin + " " +
     "    FROM memo_follows " +
     "    WHERE " + followsWhere +
     "    UNION " +
-    "    SELECT followed_cluster.origin, active_profile_links.linked_address " +
-    "    FROM followed_cluster " +
-    "    JOIN active_profile_links ON (active_profile_links.address = followed_cluster.address)" +
+    "    SELECT linked_cluster.origin, active_profile_links.linked_address " +
+    "    FROM linked_cluster " +
+    "    JOIN active_profile_links ON (active_profile_links.address = linked_cluster.address)" +
     ") "
 
 // Most recent post by each followed identity, used as the "last active" signal
@@ -35,18 +28,39 @@ const FollowedCluster = (followsWhere) => "" +
 // block/seen preference as the post lists themselves.
 const LastClusterPosts = "" +
     "SELECT " +
-    "    followed_cluster.origin AS address, " +
+    "    linked_cluster.origin AS address, " +
     "    MAX(MIN(" +
     "        COALESCE(blocks.timestamp, tx_seens.timestamp), " +
     "        COALESCE(tx_seens.timestamp, blocks.timestamp)" +
     "    )) AS timestamp " +
-    "FROM followed_cluster " +
-    "JOIN memo_posts ON (memo_posts.address = followed_cluster.address) " +
+    "FROM linked_cluster " +
+    "JOIN memo_posts ON (memo_posts.address = linked_cluster.address) " +
     "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
     "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
     "LEFT JOIN tx_seens ON (tx_seens.hash = memo_posts.tx_hash) " +
     "WHERE " + historicallyValid("memo_posts.address", "memo_posts.tx_hash") + " " +
-    "GROUP BY followed_cluster.origin "
+    "GROUP BY linked_cluster.origin "
+
+const clusterField = (origin, join, field, txHash) => "(" +
+    "SELECT " + field + " " +
+    "FROM linked_cluster " +
+    "JOIN profiles ON (profiles.address = linked_cluster.address) " +
+    join + " " +
+    "WHERE linked_cluster.origin = " + origin + " " +
+    "AND " + historicallyValid("linked_cluster.address", txHash) + " " +
+    "ORDER BY (linked_cluster.address = " + origin + ") DESC, " +
+    "   linked_cluster.address ASC " +
+    "LIMIT 1" +
+    ")"
+
+const clusterName = (origin) => clusterField(origin,
+    "JOIN profile_names ON (profile_names.tx_hash = profiles.name) ",
+    "profile_names.name", "profile_names.tx_hash")
+
+const clusterPic = (origin, field) => clusterField(origin,
+    "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
+    "JOIN images ON (images.url = profile_pics.pic) ",
+    field, "profile_pics.tx_hash")
 
 const GetFollowing = async (conf, addresses, {limit = 50} = {}) => {
     if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1)) {
@@ -56,23 +70,19 @@ const GetFollowing = async (conf, addresses, {limit = 50} = {}) => {
     const query = "" +
         // The cluster CTE binds its own copy of the wallet addresses, ahead of
         // the ones MaxFollows takes below.
-        FollowedCluster("memo_follows." + addressIn) +
+        LinkedCluster("memo_follows.follow_address", "memo_follows." + addressIn) +
         "SELECT " +
         "   memo_follows.follow_address," +
         "   memo_follows.tx_hash," +
         "   memo_follows.unfollow, " +
-        "   profile_names.name, " +
-        "   profile_pics.pic, " +
-        "   images.data AS pic_data, " +
+        "   " + clusterName("memo_follows.follow_address") + " AS name, " +
+        "   " + clusterPic("memo_follows.follow_address", "profile_pics.pic") + " AS pic, " +
+        "   " + clusterPic("memo_follows.follow_address", "images.data") + " AS pic_data, " +
         "   max_follows.timestamp, " +
         "   last_posts.timestamp AS last_activity " +
         "FROM memo_follows " +
         "JOIN (" + MaxFollows(addressIn) + ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
         "LEFT JOIN (" + LastClusterPosts + ") last_posts ON (last_posts.address = memo_follows.follow_address) " +
-        "LEFT JOIN profiles ON (profiles.address = memo_follows.follow_address) " +
-        "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
-        "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
-        "LEFT JOIN images ON (images.url = profile_pics.pic) " +
         "WHERE max_follows.unfollow = 0 " +
         // Never-active follows have a NULL activity time, which SQLite sorts
         // last under DESC - the limit keeps the most recently active instead.
@@ -83,26 +93,23 @@ const GetFollowing = async (conf, addresses, {limit = 50} = {}) => {
 }
 
 const GetFollowers = async (conf, addresses) => {
-    const maxFollowsWhere = "follow_address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
+    const followAddressIn = "follow_address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
+        LinkedCluster("memo_follows.address", "memo_follows." + followAddressIn) +
         "SELECT " +
         "   memo_follows.address," +
         "   memo_follows.tx_hash," +
         "   memo_follows.unfollow, " +
-        "   profile_names.name, " +
-        "   profile_pics.pic, " +
-        "   images.data AS pic_data, " +
+        "   " + clusterName("memo_follows.address") + " AS name, " +
+        "   " + clusterPic("memo_follows.address", "profile_pics.pic") + " AS pic, " +
+        "   " + clusterPic("memo_follows.address", "images.data") + " AS pic_data, " +
         "   max_follows.timestamp " +
         "FROM memo_follows " +
-        "JOIN (" + MaxFollows(maxFollowsWhere) + ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
-        "LEFT JOIN profiles ON (profiles.address = memo_follows.address) " +
-        "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
-        "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
-        "LEFT JOIN images ON (images.url = profile_pics.pic) " +
+        "JOIN (" + MaxFollows(followAddressIn) + ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
         "WHERE max_follows.unfollow = 0 " +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "
-    return await Select(conf, "memo_follows-followers", query, addresses)
+    return await Select(conf, "memo_follows-followers", query, [...addresses, ...addresses])
 }
 
 const GetRecentFollow = async (conf, addresses, address) => {
