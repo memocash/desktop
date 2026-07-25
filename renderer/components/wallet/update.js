@@ -48,9 +48,9 @@ const Update = ({setConnected, setLastUpdate, setSyncProgress}) => {
         const following = await window.electron.getFollowing(linkedRef.current, {limit: null})
         const followedAddresses = [...new Set(following.map(follow => follow.follow_address))]
         if (followedAddresses.length) {
-            // The feed component also refreshes itself during normal use, but
-            // startup must await this first refresh so reaching 100% means the
-            // posts revealed behind the overlay are current.
+            // Await direct follows so reaching 100% reveals a current baseline.
+            // FeedPostList expands followed identities after startup; doing that
+            // here too would add its sequential link-discovery rounds to launch.
             await UpdateMemoHistory({addresses: followedAddresses, setLastUpdate})
             await BackfillPosts({
                 addresses: followedAddresses,

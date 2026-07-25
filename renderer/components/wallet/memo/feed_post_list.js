@@ -2,24 +2,32 @@ import profile from "../../../styles/profile.module.css";
 import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import Post from "./post";
-import {BackfillPosts, UpdateMemoHistory} from "../update/index";
+import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../update/index";
+
+const addressKeyOf = (addresses) => [...(addresses || [])].sort().join("\0")
 
 const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
     const [posts, setPosts] = useState([])
     const [feedUpdate, setFeedUpdate] = useState("")
     const [loading, setLoading] = useState(true)
     const [failed, setFailed] = useState(false)
-    const [feed, setFeed] = useState({followedAddresses: [], userAddresses: []})
-    const addressKey = [...(addresses || [])].sort().join("\0")
-    const followedAddressKey = [...feed.followedAddresses].sort().join("\0")
-    const userAddressKey = [...feed.userAddresses].sort().join("\0")
+    const [feed, setFeed] = useState({followedAddresses: [], postAddresses: [], userAddresses: []})
+    const addressKey = addressKeyOf(addresses)
+    const followedAddressKey = addressKeyOf(feed.followedAddresses)
+    const postAddressKey = addressKeyOf(feed.postAddresses)
+    const userAddressKey = addressKeyOf(feed.userAddresses)
 
     useEffect(() => {
         let active = true
         const refreshFollowing = async () => {
             if (!addresses || !addresses.length) {
-                setFeed({followedAddresses: [], userAddresses: []})
-                setPosts([])
+                setFeed(current =>
+                    addressKeyOf(current.followedAddresses) === "" &&
+                    addressKeyOf(current.postAddresses) === "" &&
+                    addressKeyOf(current.userAddresses) === ""
+                        ? current
+                        : {followedAddresses: [], postAddresses: [], userAddresses: []})
+                setPosts(current => current.length ? [] : current)
                 setFailed(false)
                 setLoading(false)
                 return
@@ -31,7 +39,14 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
                 if (!active) {
                     return
                 }
-                setFeed({followedAddresses, userAddresses: wallet.addresses})
+                const nextFollowedAddressKey = addressKeyOf(followedAddresses)
+                const nextUserAddressKey = addressKeyOf(wallet.addresses)
+                setFeed(current =>
+                    addressKeyOf(current.followedAddresses) === nextFollowedAddressKey &&
+                    addressKeyOf(current.userAddresses) === nextUserAddressKey
+                        ? current
+                        : {followedAddresses, postAddresses: followedAddresses,
+                            userAddresses: wallet.addresses})
                 if (!followedAddresses.length) {
                     setFailed(false)
                     setLoading(false)
@@ -61,9 +76,21 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
                     setFeedUpdate(value)
                 }
             }
+            let postAddresses = feed.followedAddresses
             try {
-                await UpdateMemoHistory({addresses: feed.followedAddresses, setLastUpdate: notifyUpdate})
-                await BackfillPosts({addresses: feed.followedAddresses,
+                postAddresses = await SyncProfileLinks({addresses: feed.followedAddresses})
+                if (active) {
+                    setFeed(current => ({...current, postAddresses}))
+                }
+            } catch (e) {
+                console.log("FeedPostList: link expansion failed, using followed addresses", e)
+            }
+            if (!active) {
+                return
+            }
+            try {
+                await UpdateMemoHistory({addresses: postAddresses, setLastUpdate: notifyUpdate})
+                await BackfillPosts({addresses: postAddresses,
                     userAddresses: feed.userAddresses, setLastUpdate: notifyUpdate})
             } catch (e) {
                 console.log("FeedPostList: feed sync failed", e)
@@ -83,8 +110,8 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
     useEffect(() => {
         let active = true
         const loadPosts = async () => {
-            const nextPosts = feed.followedAddresses.length ? await window.electron.getPosts({
-                addresses: feed.followedAddresses,
+            const nextPosts = feed.postAddresses.length ? await window.electron.getPosts({
+                addresses: feed.postAddresses,
                 userAddresses: feed.userAddresses,
             }) : []
             if (active) {
@@ -93,7 +120,7 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
         }
         loadPosts().catch(e => console.log("FeedPostList: saved post read failed", e))
         return () => { active = false }
-    }, [followedAddressKey, userAddressKey, lastUpdate, feedUpdate])
+    }, [postAddressKey, userAddressKey, lastUpdate, feedUpdate])
 
     return (
         <div className={profile.post_list}>
