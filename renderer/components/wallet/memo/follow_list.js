@@ -11,11 +11,30 @@ const Column = {
     Address: "address",
     Transaction: "tx_hash",
     Timestamp: "timestamp",
+    LastActivity: "last_activity",
+}
+
+// Rows missing a value (no name set, never posted) stay at the bottom of both
+// directions instead of taking over the top of a descending sort.
+const compareFollows = (a, b, field, desc) => {
+    const aVal = a[field], bVal = b[field]
+    const aEmpty = aVal === null || aVal === undefined || aVal === ""
+    const bEmpty = bVal === null || bVal === undefined || bVal === ""
+    if (aEmpty || bEmpty) {
+        return aEmpty === bEmpty ? 0 : (aEmpty ? 1 : -1)
+    }
+    if (aVal === bVal) {
+        return 0
+    }
+    return (aVal > bVal ? 1 : -1) * (desc ? -1 : 1)
 }
 
 const FollowList = ({addresses, setModal, showFollowers = false}) => {
-    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
-    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
+    // Following comes back ordered by last activity descending, so the initial
+    // sort state has to match what's already on screen.
+    const [sortCol, sortColRef, setSortCol] = useReferredState(
+        showFollowers ? Column.Timestamp : Column.LastActivity)
+    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [follows, followsRef, setFollows] = useReferredState([])
     useEffect(() => {(async () => {
         if (showFollowers) {
@@ -40,21 +59,19 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
         if (field === Column.Address && !showFollowers) {
             sortField = "follow_address"
         }
-        if (desc) {
-            followsRef.current.sort((a, b) => (a[sortField] > b[sortField]) ? 1 : -1)
-        } else {
-            followsRef.current.sort((a, b) => (a[sortField] < b[sortField]) ? 1 : -1)
-        }
+        followsRef.current.sort((a, b) => compareFollows(a, b, sortField, desc))
         setFollows([...followsRef.current])
         setSortDesc(desc)
         setSortCol(field)
     }
     const setProfile = (address) => setModal(Modals.ProfileView, {address})
     return (
-        <div className={profile.followers}>
+        <div className={[profile.followers, showFollowers ? "" : profile.with_activity].join(" ")}>
             <div className={profile.row}>
                 <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                           col={Column.Name} title={"Name"}/>
+                {!showFollowers && <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                                             col={Column.LastActivity} title={"Last Active"}/>}
                 <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
                           col={Column.Transaction} title={"Transaction"}/>
             </div>
@@ -70,6 +87,9 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
                             {(follow.name && follow.name.length) ? follow.name :
                                 (showFollowers ? follow.address : follow.follow_address)}
                         </div>
+                        {!showFollowers && <div title={follow.last_activity || ""}>
+                            {follow.last_activity ? TimeSince(follow.last_activity) : "None"}
+                        </div>}
                         <div>
                             <a className={profile.txLink} onClick={() => clickTxLink(follow.tx_hash)}>
                                 {ShortHash(follow.tx_hash)}

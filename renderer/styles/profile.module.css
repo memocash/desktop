@@ -180,6 +180,11 @@
     outline: none;
 }
 
+/* Following adds a last-active column; followers keep the two-column layout. */
+.followers.with_activity {
+    grid-template-columns: 2fr 1fr 1fr;
+}
+
 .body_modal .followers {
     max-height: calc(100vh - 240px);
 }
@@ -245,7 +250,7 @@
 .followers .noFollowers {
     padding: 10px;
     text-align: center;
-    grid-column: span 3;
+    grid-column: 1 / -1;
 }
 
 .posts .post:nth-child(2n) {

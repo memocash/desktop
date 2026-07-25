@@ -77,6 +77,7 @@ const Indexes = [
     "CREATE INDEX IF NOT EXISTS idx_block_txs_tx_hash ON block_txs (tx_hash)",
     "CREATE INDEX IF NOT EXISTS idx_memo_likes_post_tx_hash ON memo_likes (post_tx_hash)",
     "CREATE INDEX IF NOT EXISTS idx_memo_replies_child_tx_hash ON memo_replies (child_tx_hash)",
+    "CREATE INDEX IF NOT EXISTS idx_memo_posts_address ON memo_posts (address)",
     "CREATE INDEX IF NOT EXISTS idx_memo_follows_address ON memo_follows (address)",
     "CREATE INDEX IF NOT EXISTS idx_memo_follows_follow_address ON memo_follows (follow_address)",
     "CREATE INDEX IF NOT EXISTS idx_memo_chat_follow_address ON memo_chat_follow (address)",
