@@ -146,7 +146,17 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         if (recentFollow && !recentFollow.block_hash) {
             beatHash = recentFollow.tx_hash
         }
-        await CreateTransaction(wallet, [{script: followOpReturnOutput}], setModal, null, beatHash)
+        // The tx flow closes the open modal once the tx is signed, which is
+        // what the form modals (post, set name, ...) want but here would
+        // dismiss the profile being followed. Point the close back at this
+        // profile so it stays up, and so a password prompt shown in between
+        // returns to it instead of leaving nothing behind.
+        const keepProfileOpen = (modal, props) => modal === Modals.None ?
+            setModal(Modals.ProfileView, {address, lastUpdate}) : setModal(modal, props)
+        // The follow won't be in the local db until the memo subscription
+        // saves it, so flip the button on the broadcast that just succeeded.
+        await CreateTransaction(wallet, [{script: followOpReturnOutput}], keepProfileOpen,
+            () => setIsFollowing(!unfollow), beatHash)
     }
     const clickLinkAccept = ({requestTxHash, walletAddress}) =>
         SendLinkAccept({requestTxHash, walletAddress, setModal})
