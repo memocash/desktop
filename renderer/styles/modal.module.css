@@ -22,6 +22,24 @@
     text-align: left;
 }
 
+/* Modals with a scrolling body: the body (.grow) takes the leftover height so
+   the button row stays inside the modal instead of overflowing off-screen. */
+.column {
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.column > * {
+    flex-shrink: 0;
+}
+
+.column > .grow {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+    overflow: auto;
+}
+
 .root {
     max-width: 350px;
 }
@@ -48,7 +66,11 @@
 }
 
 .buttons button {
+    align-items: center;
     cursor: pointer;
+    display: inline-flex;
+    gap: 5px;
+    justify-content: center;
     margin-left: 20px;
 }
 

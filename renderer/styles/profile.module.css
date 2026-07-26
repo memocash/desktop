@@ -114,6 +114,13 @@
     overflow-y: auto;
 }
 
+/* One line per linked address, so a large identity cluster would otherwise
+   grow the header without bound and push the modal's buttons off-screen. */
+.linked {
+    max-height: 45px;
+    overflow-y: auto;
+}
+
 .header_modal .info button {
     margin-right: 2px;
 }

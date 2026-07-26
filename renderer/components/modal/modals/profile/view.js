@@ -11,7 +11,7 @@ import {SendLinkAccept, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
 import Links from "../../../wallet/snippets/links";
 import {BackfillPosts, SyncAliases, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
-import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson} from "react-icons/bs";
+import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson, BsXLg} from "react-icons/bs";
 
 const LinkStatus = {
     None: "none",
@@ -153,7 +153,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
     const clickLinkRevoke = ({acceptTxHash, walletAddress}) =>
         SendLinkRevoke({acceptTxHash, walletAddress, setModal})
     return (
-        <Modal onClose={onClose}>
+        <Modal onClose={onClose} className={styles.column}>
             <div className={profile.header_modal}>
                 <div className={profile.pic}>
                     <img alt={"Profile image"} className={profile.img}
@@ -169,7 +169,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                         <Links>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</Links>
                     </p>
                     <p>Address: {address}</p>
-                    {addresses.length > 1 && <p>
+                    {addresses.length > 1 && <p className={profile.linked}>
                         Linked: {addresses.filter(linkedAddress => linkedAddress !== address)
                         .map((linkedAddress, i) => <span key={i}>
                             {i > 0 ? ", " : ""}
@@ -204,7 +204,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                     </p>
                 </div>
             </div>
-            <div className={profile.posts}>
+            <div className={`${profile.posts} ${styles.grow}`}>
                 {posts.map((post, i) => {
                     return (
                         <Post key={i} post={post} setModal={setModal} setChatRoom={setChatRoom}/>
@@ -212,7 +212,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                 })}
             </div>
             <div className={styles.buttons}>
-                <button onClick={onClose}>Close</button>
+                <button onClick={onClose}><BsXLg/> Close</button>
             </div>
         </Modal>
     )
