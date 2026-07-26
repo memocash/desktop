@@ -57,10 +57,13 @@ const clusterName = (origin) => clusterField(origin,
     "JOIN profile_names ON (profile_names.tx_hash = profiles.name) ",
     "profile_names.name", "profile_names.tx_hash")
 
-const clusterPic = (origin, field) => clusterField(origin,
-    "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
-    "JOIN images ON (images.url = profile_pics.pic) ",
-    field, "profile_pics.tx_hash")
+const clusterPic = (origin) => clusterField(origin,
+    "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) ",
+    "profile_pics.pic", "profile_pics.tx_hash")
+
+const clusterPicData = (origin) => "(" +
+    "SELECT images.data FROM images WHERE images.url = " + clusterPic(origin) +
+    ")"
 
 const GetFollowing = async (conf, addresses, {limit = 50} = {}) => {
     if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1)) {
@@ -76,8 +79,8 @@ const GetFollowing = async (conf, addresses, {limit = 50} = {}) => {
         "   memo_follows.tx_hash," +
         "   memo_follows.unfollow, " +
         "   " + clusterName("memo_follows.follow_address") + " AS name, " +
-        "   " + clusterPic("memo_follows.follow_address", "profile_pics.pic") + " AS pic, " +
-        "   " + clusterPic("memo_follows.follow_address", "images.data") + " AS pic_data, " +
+        "   " + clusterPic("memo_follows.follow_address") + " AS pic, " +
+        "   " + clusterPicData("memo_follows.follow_address") + " AS pic_data, " +
         "   max_follows.timestamp, " +
         "   last_posts.timestamp AS last_activity " +
         "FROM memo_follows " +
@@ -101,8 +104,8 @@ const GetFollowers = async (conf, addresses) => {
         "   memo_follows.tx_hash," +
         "   memo_follows.unfollow, " +
         "   " + clusterName("memo_follows.address") + " AS name, " +
-        "   " + clusterPic("memo_follows.address", "profile_pics.pic") + " AS pic, " +
-        "   " + clusterPic("memo_follows.address", "images.data") + " AS pic_data, " +
+        "   " + clusterPic("memo_follows.address") + " AS pic, " +
+        "   " + clusterPicData("memo_follows.address") + " AS pic_data, " +
         "   max_follows.timestamp " +
         "FROM memo_follows " +
         "JOIN (" + MaxFollows(followAddressIn) + ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +

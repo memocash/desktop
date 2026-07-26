@@ -1,10 +1,11 @@
 import profile from "../../../styles/profile.module.css";
 import ShortHash from "../../util/txs";
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import {TitleCol} from "../snippets/title_col";
 import {useReferredState} from "../../util/state";
 import {TimeSince} from "../../util/time";
 import {Modals} from "../../../../main/common/util";
+import {SyncProfileLinks, UpdateMemoProfile} from "../update/index";
 
 const Column = {
     Name: "name",
@@ -36,15 +37,67 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
         showFollowers ? Column.Timestamp : Column.LastActivity)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [follows, followsRef, setFollows] = useReferredState([])
-    useEffect(() => {(async () => {
-        if (showFollowers) {
-            const followers = await window.electron.getFollowers(addresses)
-            setFollows(followers)
-        } else {
-            const following = await window.electron.getFollowing(addresses)
-            setFollows(following)
+    const syncedRef = useRef(new Set())
+    const addressKey = [...addresses].sort().join("\0")
+    const rowAddress = (follow) => showFollowers ? follow.address : follow.follow_address
+    const sortFieldOf = (col) => (col === Column.Address && !showFollowers) ? "follow_address" : col
+    useEffect(() => {
+        let active = true
+        syncedRef.current = new Set()
+        const readFollows = async () => {
+            const rows = showFollowers
+                ? await window.electron.getFollowers(addresses)
+                : await window.electron.getFollowing(addresses)
+            if (!active) {
+                return []
+            }
+            const sorted = [...rows].sort((a, b) =>
+                compareFollows(a, b, sortFieldOf(sortColRef.current), sortDescRef.current))
+            setFollows(sorted)
+            return sorted
         }
-    })()}, [addresses])
+        const syncProfiles = async (syncAddresses) => {
+            const unsynced = syncAddresses.filter(address => !syncedRef.current.has(address))
+            if (!unsynced.length) {
+                return false
+            }
+            await UpdateMemoProfile({addresses: unsynced, setLastUpdate: () => {}})
+            unsynced.forEach(address => syncedRef.current.add(address))
+            return true
+        }
+        (async () => {
+            let rows = await readFollows()
+            const incomplete = rows.filter(follow => !follow.name || (follow.pic && !follow.pic_data))
+            if (incomplete.length) {
+                const synced = await syncProfiles(incomplete.map(rowAddress))
+                    .catch(e => console.log("FollowList: profile sync failed", e))
+                if (!active) {
+                    return
+                }
+                if (synced) {
+                    rows = await readFollows()
+                }
+            }
+            const undiscovered = rows.filter(follow => !follow.name || !follow.pic).map(rowAddress)
+            if (!undiscovered.length) {
+                return
+            }
+            const linked = await SyncProfileLinks({addresses: undiscovered})
+                .catch(e => {
+                    console.log("FollowList: link sync failed", e)
+                    return []
+                })
+            if (!active || !linked.length) {
+                return
+            }
+            await syncProfiles(linked)
+                .catch(e => console.log("FollowList: linked profile sync failed", e))
+            if (active) {
+                await readFollows()
+            }
+        })().catch(e => console.log("FollowList: follow read failed", e))
+        return () => { active = false }
+    }, [addressKey])
     const clickTxLink = async (txHash) => {
         await window.electron.openTransaction({txHash})
     }
@@ -55,11 +108,7 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
         } else {
             desc = true
         }
-        let sortField = field
-        if (field === Column.Address && !showFollowers) {
-            sortField = "follow_address"
-        }
-        followsRef.current.sort((a, b) => compareFollows(a, b, sortField, desc))
+        followsRef.current.sort((a, b) => compareFollows(a, b, sortFieldOf(field), desc))
         setFollows([...followsRef.current])
         setSortDesc(desc)
         setSortCol(field)
