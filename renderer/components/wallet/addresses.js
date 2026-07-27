@@ -31,12 +31,18 @@ const Column = {
     Balance: "balance",
 }
 
+// The rows a section shows are picked in derivation order and only then
+// sorted, so a sort reorders what is already on screen instead of pulling in
+// different empty addresses from further down the wallet.
+const visibleRows = (addresses, col, desc) => trimEmpty(addresses).sort(
+    (a, b) => ((desc ? a[col] > b[col] : a[col] < b[col]) ? 1 : -1))
+
 const Addresses = ({lastUpdate}) => {
     const [addresses, addressesRef, setAddresses] = useReferredState([])
     const [changeList, changeListRef, setChangeList] = useReferredState([])
     const [slpList, setSlpList] = useState([])
     const [slpTokens, setSlpTokens] = useState({})
-    const [sortCol, setSortCol] = useState(Column.Index)
+    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Index)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [selectedAddress, selectedAddressRef, setSelectedAddress] = useReferredState("")
     const addressesDiv = useRef()
@@ -106,8 +112,10 @@ const Addresses = ({lastUpdate}) => {
         if (!selectedAddress || !selectedAddress.length) {
             return
         }
-        const addresses = addressesRef.current
-        const changeList = changeListRef.current
+        // Arrow keys move between the rows on screen, so they walk the same
+        // trimmed and sorted lists the sections render.
+        const addresses = visibleRows(addressesRef.current, sortColRef.current, sortDescRef.current)
+        const changeList = visibleRows(changeListRef.current, sortColRef.current, sortDescRef.current)
         switch (e.key) {
             case "ArrowUp":
                 for (let i = 1; i < addresses.length; i++) {
@@ -170,14 +178,10 @@ const Addresses = ({lastUpdate}) => {
     }
     // The sort headers are repeated on each section but share one column and
     // direction, so a click re-sorts every section, not just the one clicked.
+    // The lists themselves stay in derivation order; each section sorts the
+    // rows it shows when it renders.
     const sortAddresses = (field) => {
-        const desc = !sortDescRef.current
-        const sorted = (addresses) => [...addresses].sort(
-            (a, b) => ((desc ? a[field] > b[field] : a[field] < b[field]) ? 1 : -1))
-        setAddresses(sorted(addressesRef.current))
-        setChangeList(sorted(changeListRef.current))
-        setSlpList(slpList => sorted(slpList))
-        setSortDesc(desc)
+        setSortDesc(!sortDescRef.current)
         setSortCol(field)
     }
     const sectionProps = {sortAddresses, sortDesc, sortCol, columns, selectedAddress, clickRow, openAddressMenu}
@@ -204,7 +208,7 @@ const Section = ({title, addresses, tokensFor, sortAddresses, sortDesc, sortCol,
     if (!addresses.length) {
         return null
     }
-    const shown = trimEmpty(addresses)
+    const shown = visibleRows(addresses, sortCol, sortDesc)
     return (
         <>
             <div className={[styles.row, styles.rowTitle].join(" ")}>
