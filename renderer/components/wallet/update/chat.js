@@ -20,7 +20,14 @@ const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
     let data = await window.electron.graphQL(query, {
         addresses: addresses,
     })
-    await window.electron.saveChatRoomFollows(data.data.profiles[0].rooms)
+    // Every address gets its own profile in the response, so take all of their
+    // rooms - reading only the first dropped the follows of every address but
+    // one, which for a wallet synced with its linked-address cluster is most of
+    // them. An address with no memo activity comes back without a profile.
+    const rooms = (data.data.profiles || []).map(profile => profile.rooms || []).flat()
+    if (rooms.length) {
+        await window.electron.saveChatRoomFollows(rooms)
+    }
     setLastUpdate((new Date()).toISOString())
 }
 

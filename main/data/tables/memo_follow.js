@@ -84,7 +84,11 @@ const GetFollowing = async (conf, addresses, {limit = 50} = {}) => {
         "   max_follows.timestamp, " +
         "   last_posts.timestamp AS last_activity " +
         "FROM memo_follows " +
-        "JOIN (" + MaxFollows(addressIn) + ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
+        // One row per followed address for the whole identity: two of its
+        // addresses following the same person is one follow, and an unfollow
+        // from either of them ends it.
+        "JOIN (" + MaxFollows(addressIn, "follow_address") +
+        ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
         "LEFT JOIN (" + LastClusterPosts + ") last_posts ON (last_posts.address = memo_follows.follow_address) " +
         "WHERE max_follows.unfollow = 0 " +
         // Never-active follows have a NULL activity time, which SQLite sorts
@@ -108,7 +112,10 @@ const GetFollowers = async (conf, addresses) => {
         "   " + clusterPicData("memo_follows.address") + " AS pic_data, " +
         "   max_follows.timestamp " +
         "FROM memo_follows " +
-        "JOIN (" + MaxFollows(followAddressIn) + ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
+        // Mirror of GetFollowing: one row per follower, whichever of the
+        // followed identity's addresses they followed.
+        "JOIN (" + MaxFollows(followAddressIn, "address") +
+        ") max_follows ON (max_follows.tx_hash = memo_follows.tx_hash) " +
         "WHERE max_follows.unfollow = 0 " +
         "ORDER BY max_follows.timestamp DESC " +
         "LIMIT 50 "

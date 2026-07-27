@@ -3,6 +3,11 @@ const {SaveMemoPosts} = require("./memo_post");
 const {SaveTransactions} = require("./txs");
 const {MaxChatRoomFollows} = require("../common/memo_follow");
 
+// Callers pass a whole linked-address cluster, so resolve each room once for the
+// identity rather than once per address: the cluster's newest follow or unfollow
+// for a room decides whether it's listed, and supplies the row. That both keeps
+// a room joined from two addresses off the list twice and lets an unfollow sent
+// from one address leave a room joined from another.
 const GetChatFollows = async ({conf, addresses}) => {
     const maxFollowsWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
@@ -13,7 +18,7 @@ const GetChatFollows = async ({conf, addresses}) => {
         "   memo_chat_follow.tx_hash, " +
         "   max_follows.timestamp " +
         "FROM memo_chat_follow " +
-        "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
+        "JOIN (" + MaxChatRoomFollows(maxFollowsWhere, "room") +
         ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
         "WHERE max_follows.unfollow = 0 " +
         "ORDER BY max_follows.timestamp DESC " +
@@ -52,13 +57,15 @@ const GetRoomFollowCount = async ({conf, room}) => {
     return await Select(conf, "chat_room_follow-count", query, [room])
 }
 
+// Counts rooms the identity is in, matching the list GetChatFollows returns for
+// the same linked-address cluster.
 const GetAddressesRoomFollowCount = async ({conf, addresses}) => {
     const maxFollowsWhere = "address IN (" + Array(addresses.length).fill("?").join(", ") + ") "
     const query = "" +
         "SELECT " +
         "   COUNT(1) AS count " +
         "FROM memo_chat_follow " +
-        "JOIN (" + MaxChatRoomFollows(maxFollowsWhere) +
+        "JOIN (" + MaxChatRoomFollows(maxFollowsWhere, "room") +
         ") max_follows ON (max_follows.tx_hash = memo_chat_follow.tx_hash) " +
         "WHERE max_follows.unfollow = 0 "
     return await Select(conf, "chat_room_follow-addresses-count", query, addresses)

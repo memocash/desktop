@@ -19,7 +19,10 @@ const RoomFollowing = ({basic: {setModal, setChatRoom}, modalProps: {address}}) 
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
     useEffect(() => {(async () => {
-        const follows = await window.electron.getChatFollows({addresses: [address]})
+        // The profile that opens this modal counts rooms across the linked-address
+        // cluster (and synced it on open), so list them from the cluster too.
+        const linked = await window.electron.getLinkedAddresses([address])
+        const follows = await window.electron.getChatFollows({addresses: linked})
         setFollows(follows)
     })()}, [address])
     const onClose = () => setModal(Modals.None)

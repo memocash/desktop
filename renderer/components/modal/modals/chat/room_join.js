@@ -19,7 +19,12 @@ const RoomJoin = ({onClose, modalProps: {room, leave = false}, setModal}) => {
             Buffer.from(room),
         ])
         const wallet = await GetWallet()
-        const recentFollowRoom = await window.electron.getRecentRoomFollow(wallet.addresses, room)
+        // An unconfirmed join or leave from any of the identity's addresses is
+        // what this one has to sort after, since room membership resolves across
+        // the linked-address cluster. The tx is still signed by the wallet.
+        const linked = await window.electron.getLinkedAddresses(
+            wallet.addresses.concat(wallet.changeList || []))
+        const recentFollowRoom = await window.electron.getRecentRoomFollow(linked, room)
         let beatHash
         if (recentFollowRoom && !recentFollowRoom.block_hash) {
             beatHash = recentFollowRoom.tx_hash
