@@ -1,5 +1,5 @@
 import profile from "../../../styles/profile.module.css";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import GetWallet from "../../util/wallet";
 import Post from "./post";
 import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../update/index";
@@ -7,7 +7,16 @@ import {Loading} from "../../util/loading";
 
 const addressKeyOf = (addresses) => [...(addresses || [])].sort().join("\0")
 
-const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
+// onEmptyState reports whether the feed came out empty - true, false, or null
+// while that has no answer - for callers that pick a view from it (the Memo tab
+// starts an empty feed on Popular instead). Resolving the feed takes three
+// passes: read the follows, sync their posts, read the posts back. `loading`
+// only covers the middle one, so an answer taken between passes is the previous
+// feed's answer - which on a fresh import is "empty" right up until the follows
+// finish downloading. So the passes are counted instead: starting one clears the
+// answer, and only the post read publishes a new one, only once nothing else is
+// still in flight.
+const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses, onEmptyState}) => {
     const [posts, setPosts] = useState([])
     const [feedUpdate, setFeedUpdate] = useState("")
     const [loading, setLoading] = useState(true)
@@ -17,6 +26,41 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
     const followedAddressKey = addressKeyOf(feed.followedAddresses)
     const postAddressKey = addressKeyOf(feed.postAddresses)
     const userAddressKey = addressKeyOf(feed.userAddresses)
+    const pendingRef = useRef(0)
+    // Read at call time rather than closed over, so a pass that started before
+    // the latest render still reports against current values.
+    const emptyStateRef = useRef(onEmptyState)
+    const failedRef = useRef(failed)
+    emptyStateRef.current = onEmptyState
+    failedRef.current = failed
+    // Bumped by whichever pass turns the lights off, so the post read below
+    // always gets the last word - without it a pass that ends after that read
+    // leaves the answer unpublished.
+    const [settleTick, setSettleTick] = useState(0)
+    const mountedRef = useRef(true)
+    const publish = (empty) => emptyStateRef.current && emptyStateRef.current(empty)
+    const trackPass = async (pass) => {
+        pendingRef.current++
+        publish(null)
+        try {
+            await pass()
+        } finally {
+            pendingRef.current--
+            // Whichever pass drains last schedules the read, current or not. A
+            // superseded pass writes nothing itself - it returns early on its
+            // stale `active` flag - but it still has to hand off, because the
+            // pass that replaced it was suppressed by this very count and won't
+            // come back on its own. Only being unmounted ends that duty.
+            if (!pendingRef.current && mountedRef.current) {
+                setSettleTick(tick => tick + 1)
+            }
+        }
+    }
+
+    useEffect(() => {
+        mountedRef.current = true
+        return () => { mountedRef.current = false }
+    }, [])
 
     useEffect(() => {
         let active = true
@@ -60,7 +104,7 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
                 }
             }
         }
-        refreshFollowing()
+        trackPass(refreshFollowing).catch(e => console.log("FeedPostList: following refresh failed", e))
         return () => { active = false }
     }, [addressKey, lastUpdate])
 
@@ -104,7 +148,7 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
                 }
             }
         }
-        syncFeed()
+        trackPass(syncFeed).catch(e => console.log("FeedPostList: feed sync pass failed", e))
         return () => { active = false }
     }, [followedAddressKey, userAddressKey])
 
@@ -115,13 +159,28 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
                 addresses: feed.postAddresses,
                 userAddresses: feed.userAddresses,
             }) : []
-            if (active) {
-                setPosts(nextPosts)
+            if (!active) {
+                return
+            }
+            setPosts(nextPosts)
+            // No addresses yet is not an empty feed, it's a feed that hasn't
+            // been asked about, and a failed sync leaves saved posts that may
+            // not be the whole story - neither is an answer.
+            if (!pendingRef.current && addresses && addresses.length) {
+                publish(failedRef.current ? null : !nextPosts.length)
             }
         }
-        loadPosts().catch(e => console.log("FeedPostList: saved post read failed", e))
+        loadPosts().catch(e => {
+            console.log("FeedPostList: saved post read failed", e)
+            // Same rule as the success path: a read that's been superseded says
+            // nothing, or a late rejection would wipe the answer that replaced
+            // it.
+            if (active) {
+                publish(null)
+            }
+        })
         return () => { active = false }
-    }, [postAddressKey, userAddressKey, lastUpdate, feedUpdate])
+    }, [addressKey, postAddressKey, userAddressKey, lastUpdate, feedUpdate, settleTick])
 
     return (
         <div className={profile.post_list}>

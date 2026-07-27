@@ -96,7 +96,8 @@ const WalletLoaded = () => {
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}
                    setModal={setModal} unreadCount={unreadCount} hiddenTabs={hiddenTabs}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
-                    <Memo lastUpdate={lastUpdate} setModal={setModal} setChatRoom={setChatRoom}/></Page>
+                    <Memo lastUpdate={lastUpdate} setModal={setModal} setChatRoom={setChatRoom}
+                          initialSync={syncProgress.active}/></Page>
                 <Page tab={tab} page={Tabs.Chat} shown={shownRef}>
                     <Chat setModal={setModal} room={room} setRoom={setRoom}/></Page>
                 <Page tab={tab} page={Tabs.Notifications} shown={shownRef}>

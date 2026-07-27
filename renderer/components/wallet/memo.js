@@ -9,13 +9,20 @@ import FeedPostList from "./memo/feed_post_list";
 
 const Tabs = {
     Feed: "feed",
-    Global: "global",
     Ranked: "ranked",
+    Global: "global",
     Following: "following",
 }
 
-const Memo = ({lastUpdate, setModal, setChatRoom}) => {
+const Memo = ({lastUpdate, setModal, setChatRoom, initialSync}) => {
     const [tab, setTab] = useState(Tabs.Feed)
+    // Once the user picks a tab themselves the default below stops applying, so
+    // a late-arriving follow lookup can't pull them off the tab they chose.
+    const tabPickedRef = useRef(false)
+    const selectTab = (next) => {
+        tabPickedRef.current = true
+        setTab(next)
+    }
     const [picData, setPicData] = useState(undefined)
     const [profileInfo, setProfileInfo] = useState({
         address: "",
@@ -24,6 +31,11 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
         pic: "",
     })
     const [walletAddresses, setWalletAddresses] = useState([])
+    // Whether the feed came back with nothing: null whenever that has no answer
+    // yet, which FeedPostList is careful to include every moment it has work in
+    // flight. Acting on anything less would move the user off a feed that was
+    // about to fill in.
+    const [feedEmpty, setFeedEmpty] = useState(null)
     const utxosRef = useRef([])
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
@@ -48,6 +60,20 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
             return b.value - a.value
         })
     })()}, [lastUpdate])
+    // A new account has nothing in its Feed - it follows nobody, or the people
+    // it follows haven't posted - so start it on Popular, where the best of what
+    // Memo has is already waiting. The Feed reports what it resolved to rather
+    // than this asking again: it expands followed identities to their linked
+    // addresses, so its post list is the only thing that answers "is the feed
+    // empty" the same way the screen does. Waiting for the initial sync on top
+    // of that keeps an existing wallet's follows from looking empty just
+    // because they haven't been downloaded yet.
+    useEffect(() => {
+        if (initialSync || tabPickedRef.current || feedEmpty !== true) {
+            return
+        }
+        setTab(Tabs.Ranked)
+    }, [initialSync, feedEmpty])
     const clickEditName = () => setModal(Modals.ProfileSetName, {utxosRef})
     const clickEditProfile = () => setModal(Modals.ProfileSetText, {utxosRef})
     const clickEditPic = () => setModal(Modals.ProfileSetPic, {utxosRef})
@@ -75,17 +101,17 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
                          aria-label={"Profile views and actions"}>
                         <button title={"View posts from people you follow"}
                                 className={tab === Tabs.Feed ? profile.selected : null}
-                                aria-pressed={tab === Tabs.Feed} onClick={() => setTab(Tabs.Feed)}>
+                                aria-pressed={tab === Tabs.Feed} onClick={() => selectTab(Tabs.Feed)}>
                             <BsFiles/> Feed</button>
-                        <button title={"View Feed (All Users)"} className={tab === Tabs.Global ? profile.selected : null}
-                                aria-pressed={tab === Tabs.Global} onClick={() => setTab(Tabs.Global)}>
-                            <BsGlobe/> Global feed</button>
                         <button title={"View Ranked Feed (Likes / Replies / Recency)"}
                                 className={tab === Tabs.Ranked ? profile.selected : null}
-                                aria-pressed={tab === Tabs.Ranked} onClick={() => setTab(Tabs.Ranked)}>
+                                aria-pressed={tab === Tabs.Ranked} onClick={() => selectTab(Tabs.Ranked)}>
                             <BsFire/> Popular</button>
+                        <button title={"View Feed (All Users)"} className={tab === Tabs.Global ? profile.selected : null}
+                                aria-pressed={tab === Tabs.Global} onClick={() => selectTab(Tabs.Global)}>
+                            <BsGlobe/> Global feed</button>
                         <button title={"View Following"} className={tab === Tabs.Following ? profile.selected : null}
-                                aria-pressed={tab === Tabs.Following} onClick={() => setTab(Tabs.Following)}>
+                                aria-pressed={tab === Tabs.Following} onClick={() => selectTab(Tabs.Following)}>
                             <BsPeople/> Following</button>
                         <button title={"View Profile"} onClick={() => setProfile(profileInfo.address)}>
                             <BsPerson/> View profile</button>
@@ -96,11 +122,11 @@ const Memo = ({lastUpdate, setModal, setChatRoom}) => {
             </div>
             {tab === Tabs.Feed ?
                 <FeedPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}
-                              addresses={walletAddresses}/> : null}
-            {tab === Tabs.Global ?
-                <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}/> : null}
+                              addresses={walletAddresses} onEmptyState={setFeedEmpty}/> : null}
             {tab === Tabs.Ranked ?
                 <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate} ranked/> : null}
+            {tab === Tabs.Global ?
+                <NewPostList setModal={setModal} setChatRoom={setChatRoom} lastUpdate={lastUpdate}/> : null}
             {tab === Tabs.Following ? <FollowList addresses={walletAddresses} setModal={setModal}/> : null}
         </div>
     )

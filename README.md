@@ -35,23 +35,3 @@ npm run dist:win   # NSIS installer
 macOS generally cannot produce Windows installers, and Linux cannot produce
 macOS installers, so the repository includes a GitHub Actions matrix that runs
 each build on its native hosted runner.
-
-## Publish a release
-
-1. Update `version` in `package.json` and `package-lock.json` (for example,
-   `npm version 0.0.3 --no-git-tag-version`) and commit the change.
-2. Create and push a matching version tag:
-
-   ```bash
-   git tag v0.0.3
-   git push origin master v0.0.3
-   ```
-
-The `Build and publish release` workflow builds Linux x64 and arm64, macOS x64
-and arm64, and Windows x64 artifacts. It then creates a GitHub Release and
-attaches every installer. The landing page reads the latest release from GitHub
-and displays direct download links automatically.
-
-macOS builds are signed and notarized in CI when the signing secrets are
-configured. Windows binaries remain **unsigned**; users will see SmartScreen
-warnings until a code-signing certificate is added.
