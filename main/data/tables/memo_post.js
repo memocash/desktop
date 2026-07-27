@@ -150,7 +150,10 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
         "   SUM(CASE WHEN memo_likes.address IN (" +
         "       " + Array(userAddresses.length).fill("?").join(", ") + "" +
         "   ) THEN 1 ELSE 0 END) > 0 AS has_liked, " +
-        "   SUM(memo_likes.tip) AS tip_total, " +
+        // A subquery rather than SUM(memo_likes.tip): the memo_replies join (and
+        // a caller's own join) repeats each like row once per reply, which the
+        // counts above dodge with DISTINCT but a plain SUM would multiply.
+        "   (SELECT SUM(tip) FROM memo_likes WHERE memo_likes.post_tx_hash = memo_posts.tx_hash) AS tip_total, " +
         "   memo_chat_post.room " +
         "FROM memo_posts " +
         "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
