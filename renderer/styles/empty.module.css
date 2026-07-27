@@ -1,0 +1,31 @@
+/* Shared by every "nothing here yet" panel. Horizontal auto margins center it
+   in normal flow, and margin auto also centers it in the flex containers it
+   lands in (the chat message list). The grid-column span keeps it full width
+   inside the wallet's grid tables rather than sized to the first column. */
+.empty {
+    color: var(--text-muted);
+    grid-column: 1 / -1;
+    margin: auto;
+    max-width: 360px;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.icon {
+    display: block;
+    font-size: 26px;
+    line-height: 1;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.title {
+    color: var(--color-text);
+    font-size: 15px;
+    margin: 0 0 6px;
+}
+
+.body {
+    line-height: 1.5;
+    margin: 0;
+}

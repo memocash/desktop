@@ -4,6 +4,8 @@ import GetWallet from "../../util/wallet";
 import Post from "./post";
 import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../update/index";
 import {Loading} from "../../util/loading";
+import {EmptyState} from "../../util/empty";
+import {BsExclamationTriangle, BsFiles} from "react-icons/bs";
 
 const addressKeyOf = (addresses) => [...(addresses || [])].sort().join("\0")
 
@@ -191,10 +193,13 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses, onEmptyStat
             {!loading && failed && posts.length > 0 && <div className={profile.noPosts}>
                 Could not refresh feed, showing saved posts
             </div>}
-            {!loading && !posts.length && <div className={profile.noPosts}>
-                {failed ? "Could not load your feed. Check the connection indicator below." :
-                    "Your feed is empty. Follow someone from the Global feed and their posts land here."}
-            </div>}
+            {!loading && !posts.length && (failed ?
+                <EmptyState icon={<BsExclamationTriangle/>} title={"Could not load your feed"}>
+                    Check the connection indicator below and try again.
+                </EmptyState> :
+                <EmptyState icon={<BsFiles/>} title={"Your feed is empty"}>
+                    Posts from people you follow land here. Follow someone from the Global feed to get started.
+                </EmptyState>)}
         </div>
     )
 }

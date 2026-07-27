@@ -171,30 +171,9 @@
     background: var(--bg);
 }
 
-/* The message list is column-reverse, so margin auto is what centers the empty
-   states rather than pinning them to the bottom edge. */
-.no_room {
-    color: var(--text-muted);
-    margin: auto;
-    max-width: 320px;
-    padding: 20px;
-    text-align: center;
-}
-
-.no_room h3 {
-    color: var(--color-text);
-    margin: 0 0 5px;
-}
-
-.no_room p {
-    margin: 0;
-}
-
-.no_room_icon {
-    font-size: 24px;
-    margin-bottom: 10px;
-    opacity: 0.5;
-}
+/* Empty states here come from the shared EmptyState component. The message list
+   is column-reverse, so that component's auto margins are what center them
+   rather than pinning them to the bottom edge. */
 
 .sidebar_label {
     color: var(--text-faint);

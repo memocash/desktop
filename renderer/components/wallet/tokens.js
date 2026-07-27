@@ -8,6 +8,8 @@ import {useReferredState} from "../util/state";
 import {Modals} from "../../../main/common/util";
 import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
+import {EmptyState} from "../util/empty";
+import {BsGem} from "react-icons/bs";
 
 const Column = {
     Ticker: "ticker",
@@ -105,7 +107,9 @@ const Tokens = ({lastUpdate, setModal}) => {
                  style={{gridTemplateColumns: columns.gridTemplateColumns}}>
             {!tokens.length ?
                 (loaded ?
-                    <p className={styles.message}>No tokens. Create one, or receive an SLP token to see it here.</p> :
+                    <EmptyState icon={<BsGem/>} title={"No tokens yet"}>
+                        Tokens you create or receive show up here. Create Token is above.
+                    </EmptyState> :
                     <Loading>Loading tokens...</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>

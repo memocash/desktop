@@ -7,7 +7,8 @@ import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
 import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
-import {BsThreeDots} from "react-icons/bs";
+import {EmptyState} from "../util/empty";
+import {BsCoin, BsThreeDots} from "react-icons/bs";
 
 const Column = {
     Address: "address",
@@ -149,8 +150,9 @@ const Coins = ({lastUpdate}) => {
              }}>
             {!coins.length ?
                 (loaded ?
-                    <p className={styles.message}>No coins. Unspent outputs appear here once the wallet
-                        receives a payment.</p> :
+                    <EmptyState icon={<BsCoin/>} title={"No coins yet"}>
+                        Unspent outputs appear here once this wallet receives a payment.
+                    </EmptyState> :
                     <Loading>Loading coins...</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>

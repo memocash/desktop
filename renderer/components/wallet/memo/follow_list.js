@@ -6,6 +6,8 @@ import {useReferredState} from "../../util/state";
 import {TimeSince} from "../../util/time";
 import {Modals} from "../../../../main/common/util";
 import {SyncProfileLinks, UpdateMemoProfile} from "../update/index";
+import {EmptyState} from "../../util/empty";
+import {BsPeople, BsPersonPlus} from "react-icons/bs";
 
 const Column = {
     Name: "name",
@@ -150,9 +152,13 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
                     </div>
                 )
             })}
-            {!follows || follows.length === 0 && <div className={profile.noFollowers}>
-                {showFollowers ? "Not being followed" : "Not following anyone"}
-            </div>}
+            {!follows.length && (showFollowers ?
+                <EmptyState icon={<BsPeople/>} title={"No followers yet"}>
+                    People who follow this profile show up here.
+                </EmptyState> :
+                <EmptyState icon={<BsPersonPlus/>} title={"Not following anyone"}>
+                    Follow someone from the Global feed and they show up here, with their posts in your feed.
+                </EmptyState>)}
         </div>
     )
 }

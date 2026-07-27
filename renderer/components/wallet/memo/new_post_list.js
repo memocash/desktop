@@ -7,6 +7,8 @@ import Post from "./post";
 // importing undefined from it.
 import {UpdateNewPosts} from "../update/index";
 import {Loading} from "../../util/loading";
+import {EmptyState} from "../../util/empty";
+import {BsExclamationTriangle, BsFire, BsGlobe} from "react-icons/bs";
 
 // Pull the newest posts network-wide from the server first, then read them back
 // out of the local db so likes/replies/names render the same way they do
@@ -38,14 +40,20 @@ const NewPostList = ({setModal, setChatRoom, lastUpdate, ranked = false}) => {
             {posts.map((post) =>
                 <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom} isFeedRow/>
             )}
-            {failed && <div className={profile.noPosts}>
+            {failed && posts.length > 0 && <div className={profile.noPosts}>
                 Could not reach the network, showing saved posts
             </div>}
-            {!posts.length && !failed && (loading ?
+            {!posts.length && (loading ?
                 <Loading>Loading new posts...</Loading> :
-                <div className={profile.noPosts}>
-                    Nothing new right now. Posts from across the network show up here.
-                </div>)}
+                failed ?
+                    // Nothing saved to fall back on, so the banner above would
+                    // be promising posts that aren't there.
+                    <EmptyState icon={<BsExclamationTriangle/>} title={"Could not reach the network"}>
+                        Check the connection indicator below and try again.
+                    </EmptyState> :
+                    <EmptyState icon={ranked ? <BsFire/> : <BsGlobe/>} title={"Nothing here yet"}>
+                        Posts from across the network show up here.
+                    </EmptyState>)}
         </div>
     )
 }

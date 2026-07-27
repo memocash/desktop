@@ -27,4 +27,3 @@
 .time { color: var(--text-muted); font-size: 12px; }
 .open { color: var(--text-muted); }
 .actor { color: var(--accent); }
-.message { margin: 0; padding: 15px; }

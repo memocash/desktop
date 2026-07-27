@@ -6,7 +6,9 @@ import {useReferredState} from "../util/state";
 import {TitleCol} from "./snippets/title_col";
 import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
+import {EmptyState} from "../util/empty";
 import {FormatTimestamp} from "../util/time";
+import {BsClockHistory} from "react-icons/bs";
 
 const Column = {
     Confirms: "confirms",
@@ -122,7 +124,9 @@ const History = ({lastUpdate}) => {
              onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}>
             {!txs.length ?
                 (loaded ?
-                    <p className={styles.message}>No transactions yet. Payments in and out show up here.</p> :
+                    <EmptyState icon={<BsClockHistory/>} title={"No transactions yet"}>
+                        Payments in and out of this wallet show up here.
+                    </EmptyState> :
                     <Loading>Loading transactions...</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>

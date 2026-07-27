@@ -1,7 +1,9 @@
 import {useEffect, useState} from "react"
-import {BsArrowDownCircle, BsBoxArrowInUpRight, BsChatLeft, BsHeart, BsLink45Deg} from "react-icons/bs"
+import {BsArrowDownCircle, BsBell, BsBoxArrowInUpRight, BsChatLeft, BsHeart, BsLink45Deg} from "react-icons/bs"
 import {TimeSince} from "../util/time"
 import {Modals} from "../../../main/common/util"
+import {EmptyState} from "../util/empty"
+import {Loading} from "../util/loading"
 import styles from "../../styles/notifications.module.css"
 
 const formatTokenAmount = ({amount, decimals}) => {
@@ -83,7 +85,11 @@ const Notifications = ({notifications, loaded, setModal}) => {
     }[type])
 
     if (!notifications.length) {
-        return <p className={styles.message}>{loaded ? "No notifications yet" : "Loading…"}</p>
+        return loaded ?
+            <EmptyState icon={<BsBell/>} title={"No notifications yet"}>
+                Replies, likes, tips, and payments to this wallet show up here.
+            </EmptyState> :
+            <Loading>Loading notifications...</Loading>
     }
     return <div className={styles.list}>
         {notifications.map(notification => <button key={`${notification.type}-${notification.tx_hash}-${notification.token_hash || ""}`}

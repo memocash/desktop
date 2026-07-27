@@ -7,6 +7,7 @@ import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import {ListenPosts} from "../update/index";
 import {Spinner} from "../../util/loading";
+import {EmptyState} from "../../util/empty";
 
 const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
     const [counter, setCounter] = useState(0)
@@ -43,12 +44,10 @@ const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
     if (!room || !room.length) {
         return (
             <div className={styles.posts}>
-                <div className={styles.no_room}>
-                    <BsChatLeft className={styles.no_room_icon}/>
-                    <h3>No room selected</h3>
-                    <p>Pick one of your rooms on the left, or type a topic above it to open
-                        any room by name.</p>
-                </div>
+                <EmptyState icon={<BsChatLeft/>} title={"No room selected"}>
+                    Pick one of your rooms on the left, or type a topic above it to open
+                    any room by name.
+                </EmptyState>
             </div>
         )
     }
@@ -58,10 +57,10 @@ const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
                 <Spinner/>
                 Loading room…
             </div> : null}
-            {!isLoading && !posts.length ? <div className={styles.no_room}>
-                <h3>No messages yet</h3>
-                <p>Be the first to post in {room}.</p>
-            </div> : null}
+            {!isLoading && !posts.length ?
+                <EmptyState icon={<BsChatLeft/>} title={"No messages yet"}>
+                    Nobody has posted in {room}. Say something below to start it off.
+                </EmptyState> : null}
             {posts.map((post, index) => {
                 return (
                     <div key={index} className={styles.post}>

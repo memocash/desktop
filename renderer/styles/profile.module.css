@@ -254,12 +254,6 @@
     cursor: pointer;
 }
 
-.followers .noFollowers {
-    padding: 10px;
-    text-align: center;
-    grid-column: 1 / -1;
-}
-
 .posts .post:nth-child(2n) {
     background: var(--surface-alt);
 }
