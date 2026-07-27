@@ -16,14 +16,13 @@ const EmptyAddressesShown = 5
 
 const trimEmpty = (addresses) => {
     let empty = 0
-    const shown = addresses.filter(address => {
+    return addresses.filter(address => {
         if (address.balance) {
             return true
         }
         empty++
         return empty <= EmptyAddressesShown
     })
-    return {shown, hidden: Math.max(0, empty - EmptyAddressesShown)}
 }
 
 const Column = {
@@ -169,15 +168,15 @@ const Addresses = ({lastUpdate}) => {
     const clickWrapper = () => {
         setSelectedAddress("")
     }
+    // The sort headers are repeated on each section but share one column and
+    // direction, so a click re-sorts every section, not just the one clicked.
     const sortAddresses = (field) => {
-        let desc = sortDescRef.current
-        desc = !desc
-        if (desc) {
-            addressesRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
-        } else {
-            addressesRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
-        }
-        setAddresses([...addressesRef.current])
+        const desc = !sortDescRef.current
+        const sorted = (addresses) => [...addresses].sort(
+            (a, b) => ((desc ? a[field] > b[field] : a[field] < b[field]) ? 1 : -1))
+        setAddresses(sorted(addressesRef.current))
+        setChangeList(sorted(changeListRef.current))
+        setSlpList(slpList => sorted(slpList))
         setSortDesc(desc)
         setSortCol(field)
     }
@@ -205,7 +204,7 @@ const Section = ({title, addresses, tokensFor, sortAddresses, sortDesc, sortCol,
     if (!addresses.length) {
         return null
     }
-    const {shown, hidden} = trimEmpty(addresses)
+    const shown = trimEmpty(addresses)
     return (
         <>
             <div className={[styles.row, styles.rowTitle].join(" ")}>
@@ -247,9 +246,6 @@ const Section = ({title, addresses, tokensFor, sortAddresses, sortDesc, sortCol,
                     ))}
                 </Fragment>
             ))}
-            {hidden ? <div className={styles.sectionNote}>
-                {hidden.toLocaleString()} more empty address{hidden === 1 ? "" : "es"} not shown
-            </div> : null}
         </>
     )
 }

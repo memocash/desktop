@@ -106,14 +106,6 @@
     background: var(--accent);
 }
 
-/* Trailing note under a table section, e.g. the count of hidden empty
-   addresses. Spans every column of the grid. */
-.sectionNote {
-    color: var(--text-faint);
-    grid-column: 1 / -1;
-    padding: 5px;
-}
-
 /* Per-row overflow button that opens the same menu as right-clicking the row,
    so the context menu is discoverable. Revealed on row hover. */
 .rowMenu {
