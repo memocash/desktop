@@ -177,9 +177,12 @@
     gap: 15px;
 }
 
+/* The logo is 1000x621, so only the width is pinned; align-self keeps the flex
+   row from stretching it to the height of the text beside it. */
 .about_logo {
     width: 64px;
-    height: 64px;
+    height: auto;
+    align-self: flex-start;
     flex-shrink: 0;
 }
 
