@@ -263,8 +263,23 @@
 }
 
 .sender {
+    position: relative;
     height: 39px;
     border-top: 1px solid var(--text-muted);
+}
+
+/* Floated above the sender bar so a long message is never hidden behind it. */
+.sender_counter {
+    position: absolute;
+    right: 10px;
+    bottom: calc(100% + 5px);
+    z-index: 1;
+    margin: 0;
+    padding: 2px 6px;
+    font-size: 11px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 3px;
 }
 
 .sender fieldset {
