@@ -5,6 +5,9 @@ import ShortHash from "../util/txs";
 import {FormatTokenAmount} from "../util/slp";
 import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
+import {useResizableColumns} from "./snippets/use_columns";
+import {Loading} from "../util/loading";
+import {BsThreeDots} from "react-icons/bs";
 
 const Column = {
     Address: "address",
@@ -23,6 +26,7 @@ const Coins = ({lastUpdate}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Height)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const coinsDiv = useRef()
+    const columns = useResizableColumns(5)
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         const coins = await window.electron.getCoins(wallet.addresses.concat(wallet.changeList, wallet.slpList || []))
@@ -81,9 +85,10 @@ const Coins = ({lastUpdate}) => {
         }
         return ""
     }
-    const rightClick = (e, hash, index, value, address) => {
+    const openCoinMenu = (e, coin) => {
         e.preventDefault()
-        window.electron.coinsMenu(hash, index,value, address)
+        e.stopPropagation()
+        window.electron.coinsMenu(coin.hash, coin.index, coin.value, coin.address)
     }
     const keyDownHandler = async (e) => {
         let selectedOutput = selectedOutputRef.current
@@ -93,7 +98,7 @@ const Coins = ({lastUpdate}) => {
         const coins = coinsRef.current
         switch (e.key) {
             case "ArrowUp":
-                for (let i = 1; i < txs.length; i++) {
+                for (let i = 1; i < coins.length; i++) {
                     if (getCoinOutput(coins[i]) === selectedOutput) {
                         selectedOutput = getCoinOutput(coins[i - 1])
                         break
@@ -102,8 +107,8 @@ const Coins = ({lastUpdate}) => {
                 break
             case "ArrowDown":
                 for (let i = 0; i < coins.length - 1; i++) {
-                    if (getCoinOutput(coins[i]) === selectedTxHash) {
-                        selectedOutput = getCoinOutput([i + 1])
+                    if (getCoinOutput(coins[i]) === selectedOutput) {
+                        selectedOutput = getCoinOutput(coins[i + 1])
                         break
                     }
                 }
@@ -137,32 +142,46 @@ const Coins = ({lastUpdate}) => {
         setSelectedOutput(selectedOutput)
     }
     return (
-        <div className={[styles.wrapper, styles.wrapper5Even].join(" ")} onKeyDown={keyDownHandler} ref={coinsDiv}>
+        <div className={styles.wrapper} style={{gridTemplateColumns: columns.gridTemplateColumns}}
+             onKeyDown={keyDownHandler} ref={(el) => {
+                 coinsDiv.current = el
+                 columns.gridRef.current = el
+             }}>
             {!coins.length ?
-                <p className={styles.message}>{loaded ? <>No coins</> : <>Loading...</>}</p>
+                (loaded ?
+                    <p className={styles.message}>No coins. Unspent outputs appear here once the wallet
+                        receives a payment.</p> :
+                    <Loading>Loading coins...</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol} index={0} columns={columns}
                               col={Column.Address} title={"Address"}/>
-                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol} index={1} columns={columns}
                               col={Column.Value} title={"Value"}/>
-                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol} index={2} columns={columns}
                               col={Column.Height} title={"Height"}/>
-                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol} index={3} columns={columns}
                               col={Column.Token} title={"Token"}/>
-                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol} index={4} columns={columns}
                               col={Column.Output} title={"Output"}/>
+                    <span/>
                 </div>
             }
             {coins.map((coin, i) => {
                 return (
-                    <div key={i} onClick={(e) => clickRow(e, coin.hash)} onDoubleClick={() => doubleClickTx(coin.hash)}
+                    <div key={i} onClick={(e) => clickRow(e, getCoinOutput(coin))}
+                         onDoubleClick={() => doubleClickTx(coin.hash)}
+                         onContextMenu={(e) => openCoinMenu(e, coin)}
                          className={[styles.row, selectedOutput === getCoinOutput(coin) && styles.rowSelected].join(" ")}>
-                        <span>{coin.address}</span>
+                        <span className={styles.itemAddress}>{coin.address}</span>
                         <span className={styles.itemValue}>{coin.value.toLocaleString()}</span>
                         <span className={styles.itemValue}>{coin.height.toLocaleString()}</span>
                         <span title={coin.slp_token_hash || coin.slp_baton_token_hash}>{getCoinToken(coin)}</span>
-                        <span title={coin.hash + ":" + coin.index} onContextMenu={(e) => rightClick(e,coin.hash, coin.index, coin.value, coin.address)}>{ShortHash(coin.hash)}:{coin.index}</span>
+                        <span title={coin.hash + ":" + coin.index}>{ShortHash(coin.hash)}:{coin.index}</span>
+                        <span>
+                            <button className={styles.rowMenu} title={"Coin actions"} aria-label={"Coin actions"}
+                                    onClick={(e) => openCoinMenu(e, coin)}><BsThreeDots/></button>
+                        </span>
                     </div>
                 )
             })}

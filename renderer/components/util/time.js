@@ -27,6 +27,24 @@ const TimeSince = (date) => {
     return Math.floor(seconds) + "s";
 }
 
+// Timestamps come out of the db as ISO strings with an offset
+// ("2026-07-26T16:05:09-07:00"), which is precise but hard to scan in a table.
+// Show it in the user's locale and keep the raw value for the cell's tooltip.
+const FormatTimestamp = (timestamp) => {
+    if (!timestamp) {
+        return "Unknown"
+    }
+    const date = new Date(timestamp)
+    if (isNaN(date.getTime())) {
+        return timestamp
+    }
+    return date.toLocaleString(undefined, {
+        year: "numeric", month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit",
+    })
+}
+
 export {
+    FormatTimestamp,
     TimeSince,
 }

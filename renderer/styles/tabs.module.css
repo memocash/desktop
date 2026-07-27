@@ -75,10 +75,14 @@
     cursor: pointer;
     display: block;
     background: black;
+    background-image: none;
+    border: none;
     border-radius: 100%;
+    box-shadow: none;
     height: 24px;
     width: 24px;
     margin: -2px 0;
+    padding: 0;
 }
 
 .statusOkay {

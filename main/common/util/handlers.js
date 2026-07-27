@@ -32,6 +32,7 @@ const Handlers = {
     ShowMessageDialog: "show-message-dialog",
     ShowNotification: "show-notification",
     GetWindowId: "get-window-id",
+    GetAppInfo: "get-app-info",
     CloseWindow: "close-window",
     StoreWallet: "store-wallet",
     GetWallet: "get-wallet",
@@ -73,6 +74,7 @@ const Handlers = {
 const Listeners = {
     DisplayModal: "display-modal",
     SelectTab: "select-tab",
+    ToggleTab: "toggle-tab",
     GraphQLClosePrefix: "graphql-close-",
     GraphQLDataPrefix: "graphql-data-",
     GraphQLOpenPrefix: "graphql-open-",

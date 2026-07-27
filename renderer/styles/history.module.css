@@ -1,24 +1,11 @@
+/* Column tracks are set inline from useResizableColumns: every real column is
+   sized to its content (or to a dragged pixel width) and a filler track soaks
+   up the remaining width, so values stay next to their row instead of being
+   spread across the window. */
 .wrapper {
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(4, minmax(max-content, 1fr));
     outline: none;
-}
-
-.wrapper3 {
-    grid-template-columns: 32px repeat(2, minmax(max-content, 1fr));
-}
-
-.wrapper5 {
-    grid-template-columns: 32px repeat(4, minmax(max-content, 1fr));
-}
-
-.wrapper5Even {
-    grid-template-columns: repeat(5, minmax(max-content, 1fr));
-}
-
-.wrapper6Even {
-    grid-template-columns: repeat(6, minmax(max-content, 1fr));
 }
 
 .wrapper .message {
@@ -30,35 +17,34 @@
     display: contents;
 }
 
-.wrapper .rowTitle span {
+.wrapper .rowTitle > span {
     position: sticky;
     top: 0;
+    background: var(--bg);
     border-right: 1px solid var(--border);
+    cursor: default;
+    padding: 5px;
 }
 
-.wrapper .rowTitle span:last-child {
-    position: sticky;
-    top: 0;
+.wrapper .rowTitle > span:last-child {
     border-right: none;
 }
 
-.wrapper .rowTitle span {
-    background: var(--bg);
+.wrapper .row > span {
     padding: 5px;
     cursor: default;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.wrapper span {
-    padding: 5px;
-    cursor: default;
-}
-
-.row:not(.rowTitle):hover span {
+.row:not(.rowTitle):hover > span {
     background: var(--border);
 }
 
-.row.rowSelected span,
-.row:not(.rowTitle):active span {
+.row.rowSelected > span,
+.row:not(.rowTitle):active > span {
     background: var(--border-soft);
 }
 
@@ -68,4 +54,89 @@
 
 .itemValue {
     text-align: right;
+}
+
+/* Column heading: the sort control fills the cell, the handle sits on the
+   cell's right edge straddling the divider. */
+.wrapper .rowTitle > span.titleCol {
+    align-items: center;
+    display: flex;
+    overflow: visible;
+    padding: 0;
+}
+
+.titleSort {
+    background: none;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    color: inherit;
+    cursor: pointer;
+    flex: 1;
+    font-size: inherit;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Other grids (profile follow lists, likes) reuse TitleCol inside cells that
+   already carry their own padding, so the cell padding lives here rather than
+   on the button itself. */
+.wrapper .rowTitle .titleSort {
+    padding: 5px;
+}
+
+.titleSort:hover {
+    color: var(--accent);
+}
+
+.titleHandle {
+    align-self: stretch;
+    cursor: col-resize;
+    flex-shrink: 0;
+    margin-right: -3px;
+    width: 5px;
+    z-index: 1;
+}
+
+.titleHandle:hover {
+    background: var(--accent);
+}
+
+/* Trailing note under a table section, e.g. the count of hidden empty
+   addresses. Spans every column of the grid. */
+.sectionNote {
+    color: var(--text-faint);
+    grid-column: 1 / -1;
+    padding: 5px;
+}
+
+/* Per-row overflow button that opens the same menu as right-clicking the row,
+   so the context menu is discoverable. Revealed on row hover. */
+.rowMenu {
+    background: none;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0 4px;
+    visibility: hidden;
+    width: 24px;
+}
+
+.row:hover .rowMenu,
+.rowSelected .rowMenu {
+    visibility: visible;
+}
+
+.rowMenu:hover {
+    color: var(--color-text);
 }

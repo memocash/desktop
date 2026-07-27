@@ -3,6 +3,7 @@ import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import Post from "./post";
 import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../update/index";
+import {Loading} from "../../util/loading";
 
 const addressKeyOf = (addresses) => [...(addresses || [])].sort().join("\0")
 
@@ -127,14 +128,13 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses}) => {
             {posts.map(post =>
                 <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom} isFeedRow/>
             )}
-            {loading && !posts.length &&
-                <div className={profile.noPosts}>Loading the latest posts...</div>}
+            {loading && !posts.length && <Loading>Loading the latest posts...</Loading>}
             {!loading && failed && posts.length > 0 && <div className={profile.noPosts}>
                 Could not refresh feed, showing saved posts
             </div>}
             {!loading && !posts.length && <div className={profile.noPosts}>
-                {failed ? "Could not load feed" :
-                    "No posts from people you follow"}
+                {failed ? "Could not load your feed. Check the connection indicator below." :
+                    "Your feed is empty. Follow someone from the Global feed and their posts land here."}
             </div>}
         </div>
     )

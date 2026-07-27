@@ -19,7 +19,7 @@ const Page = ({tab, page, shown, children}) => {
     return (
         <>
             {includePage && (
-                <div style={style}>
+                <div style={style} id={`panel-${page}`} role="tabpanel" aria-labelledby={`tab-${page}`}>
                     {children}
                 </div>
             )}
@@ -34,6 +34,8 @@ const WalletLoaded = () => {
     const [lastUpdate, setLastUpdate] = useState("")
     const [connected, setConnected] = useState(Status.NotConnected)
     const [room, setRoom] = useState("")
+    // Tabs the user has switched off in View > Show Addresses / Show Coins.
+    const [hiddenTabs, setHiddenTabs] = useState([])
     const [syncProgress, setSyncProgress] = useState({
         active: true,
         percent: 0,
@@ -67,7 +69,19 @@ const WalletLoaded = () => {
     useEffect(() => {
         // Clicking a native notification focuses the window and jumps here.
         window.electron.listenSelectTab((_event, tab) => handleClicked(tab))
+        window.electron.listenToggleTab((_event, tab, visible) => {
+            setHiddenTabs(current => {
+                const hidden = current.filter(name => name !== tab)
+                return visible ? hidden : [...hidden, tab]
+            })
+        })
     }, [])
+    useEffect(() => {
+        // Don't leave the window on a panel whose tab was just hidden.
+        if (hiddenTabs.includes(tab)) {
+            handleClicked(Tabs.Memo)
+        }
+    }, [hiddenTabs, tab])
     const setModal = (modalWindow, modalProps = {}) => {
         setModalWindow(modalWindow)
         setModalProps(modalProps)
@@ -80,7 +94,7 @@ const WalletLoaded = () => {
         <>
             <Utxos lastUpdate={lastUpdate}/>
             <Frame selected={tab} clicked={handleClicked} connected={connected} lastUpdate={lastUpdate}
-                   setModal={setModal} unreadCount={unreadCount}>
+                   setModal={setModal} unreadCount={unreadCount} hiddenTabs={hiddenTabs}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
                     <Memo lastUpdate={lastUpdate} setModal={setModal} setChatRoom={setChatRoom}/></Page>
                 <Page tab={tab} page={Tabs.Chat} shown={shownRef}>

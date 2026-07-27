@@ -32,7 +32,12 @@ const ShowMenu = (win, newWindow, wallet) => {
     }, {
         label: "Wallet",
         submenu: [
-            {label: "Information"},
+            {
+                label: "Information",
+                click: () => {
+                    win.webContents.send(Listeners.DisplayModal, Modals.WalletInfo)
+                },
+            },
             {type: "separator"},
             {
                 label: "Seed",
@@ -63,14 +68,14 @@ const ShowMenu = (win, newWindow, wallet) => {
                     win.webContents.send(Listeners.DisplayModal, Modals.Aliases)
                 }
             },
-            {label: "Show Addresses"},
-            {label: "Show Coins"},
+            {type: "separator"},
+            ...TabToggles(win),
         ]
     }, {
         label: "Tools",
         submenu: [
             {label: "Preferences", click: () => win.webContents.send(Listeners.DisplayModal, Modals.Settings)},
-            {label: "Network"},
+            {label: "Network", click: () => win.webContents.send(Listeners.DisplayModal, Modals.NetworkView)},
             {
                 label: "Edit Addresses/Keys",
                 click: () => {
@@ -82,7 +87,12 @@ const ShowMenu = (win, newWindow, wallet) => {
     }, {
         label: "Help",
         submenu: [
-            {label: "About"},
+            {
+                label: "About",
+                click: () => {
+                    win.webContents.send(Listeners.DisplayModal, Modals.About)
+                },
+            },
             {role: 'reload'},
             {role: 'forceReload'},
             {
@@ -101,6 +111,23 @@ const ShowMenu = (win, newWindow, wallet) => {
     win.setMenu(menu)
     win.setMenuBarVisibility(true)
 }
+
+// The Addresses and Coins tabs are wallet internals most users never need, so
+// View lets them be hidden. Electron keeps the checked state on the menu item
+// itself, and the renderer mirrors it onto the tab strip.
+const ToggleableTabs = [
+    {label: "Show Addresses", tab: "addresses"},
+    {label: "Show Coins", tab: "coins"},
+]
+
+const TabToggles = (win) => ToggleableTabs.map(({label, tab}) => ({
+    label,
+    type: "checkbox",
+    checked: true,
+    click: (menuItem) => {
+        win.webContents.send(Listeners.ToggleTab, tab, menuItem.checked)
+    },
+}))
 
 const GetBasicFileSubMenu = () => {
     let submenu = [

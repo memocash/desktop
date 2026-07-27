@@ -6,6 +6,8 @@ import {FormatTokenAmount} from "../util/slp";
 import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
 import {Modals} from "../../../main/common/util";
+import {useResizableColumns} from "./snippets/use_columns";
+import {Loading} from "../util/loading";
 
 const Column = {
     Ticker: "ticker",
@@ -22,6 +24,7 @@ const Tokens = ({lastUpdate, setModal}) => {
     const [selectedToken, selectedTokenRef, setSelectedToken] = useReferredState("")
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Ticker)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
+    const columns = useResizableColumns(6)
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         const addresses = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
@@ -98,23 +101,27 @@ const Tokens = ({lastUpdate, setModal}) => {
                 <input type="button" value={"Create Token"} onClick={() => setModal(Modals.TokenCreate)}
                        title={"Create a new SLP token"}/>
             </p>
-            <div className={[styles.wrapper, styles.wrapper6Even].join(" ")}>
+            <div className={styles.wrapper} ref={columns.gridRef}
+                 style={{gridTemplateColumns: columns.gridTemplateColumns}}>
             {!tokens.length ?
-                <p className={styles.message}>{loaded ? <>No tokens</> : <>Loading...</>}</p>
+                (loaded ?
+                    <p className={styles.message}>No tokens. Create one, or receive an SLP token to see it here.</p> :
+                    <Loading>Loading tokens...</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol} index={0} columns={columns}
                               col={Column.Ticker} title={"Ticker"}/>
-                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol} index={1} columns={columns}
                               col={Column.Name} title={"Name"}/>
-                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol} index={2} columns={columns}
                               col={Column.Amount} title={"Balance"}/>
-                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol} index={3} columns={columns}
                               col={Column.UtxoCount} title={"UTXOs"}/>
-                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol} index={4} columns={columns}
                               col={Column.Baton} title={"Baton"}/>
-                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol} index={5} columns={columns}
                               col={Column.Token} title={"Token"}/>
+                    <span/>
                 </div>
             }
             {tokens.map((token, i) => {
@@ -129,6 +136,7 @@ const Tokens = ({lastUpdate, setModal}) => {
                         <span className={styles.itemValue} title={"Mint batons in wallet"}>
                             {token.baton_count ? "✓" : ""}</span>
                         <span title={token.token_hash}>{ShortHash(token.token_hash)}</span>
+                        <span/>
                     </div>
                 )
             })}

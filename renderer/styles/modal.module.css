@@ -40,6 +40,21 @@
     overflow: auto;
 }
 
+/* Standard modal heading, rendered by Modal when a title is passed. */
+.header {
+    margin-bottom: 15px;
+}
+
+.header h2 {
+    font-size: 16px;
+    margin: 0;
+}
+
+.header .description {
+    color: var(--text-muted);
+    margin: 5px 0 0;
+}
+
 .root {
     max-width: 350px;
 }
@@ -97,4 +112,63 @@
 
 .text {
     margin-bottom: 10px;
+}
+
+.textarea {
+    box-sizing: border-box;
+    display: block;
+    font-family: inherit;
+    font-size: 13px;
+    height: 5em;
+    margin-top: 5px;
+    min-width: 300px;
+    padding: 5px;
+    resize: vertical;
+    width: 100%;
+}
+
+.counter {
+    color: var(--text-faint);
+    margin-top: 5px;
+}
+
+.counter_over {
+    color: var(--danger);
+}
+
+.error {
+    color: var(--danger);
+}
+
+/* Label/value pairs for the read-only informational modals. */
+.details {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 5px 20px;
+    margin: 0;
+}
+
+.details dt {
+    color: var(--text-muted);
+}
+
+.details dd {
+    margin: 0;
+    word-break: break-word;
+}
+
+.about {
+    display: flex;
+    gap: 15px;
+}
+
+.about_logo {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+}
+
+.about p:last-child {
+    color: var(--text-muted);
+    margin-bottom: 0;
 }

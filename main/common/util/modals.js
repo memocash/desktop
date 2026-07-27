@@ -1,5 +1,6 @@
 const Modals = {
     None: "none",
+    About: "about",
     Address: "address",
     Remove: "remove",
     Settings: "settings",
@@ -28,6 +29,7 @@ const Modals = {
     TokenCreate: "token-create",
     TokenMint: "token-mint",
     TokenSend: "token-send",
+    WalletInfo: "wallet-info",
 }
 
 module.exports = {

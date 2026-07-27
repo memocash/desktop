@@ -13,6 +13,15 @@ const {
 
 const WindowHandlers = () => {
     ipcMain.handle(Handlers.GetWindowId, async (e) => e.sender.id)
+    ipcMain.handle(Handlers.GetAppInfo, async () => ({
+        name: app.getName(),
+        version: app.getVersion(),
+        electron: process.versions.electron,
+        chrome: process.versions.chrome,
+        node: process.versions.node,
+        platform: process.platform,
+        arch: process.arch,
+    }))
     ipcMain.on(Handlers.CloseWindow, (e) => GetWindow(e.sender.id).close())
     ipcMain.on(Handlers.SetWindowStorage, (e, key, value) => {
         if (GetStorage(e.sender.id) === undefined) {

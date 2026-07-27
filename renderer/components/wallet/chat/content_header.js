@@ -23,7 +23,7 @@ const ContentHeader = ({isFollowingRoom, lastUpdate, room, setModal}) => {
     return (
         <div className={styles.content_header}>
             <div className={styles.content_header_left}>
-                <h2>{room}</h2>
+                <h2>{room && room.length ? room : "Chat"}</h2>
                 {room.length ? <a onClick={clickRoomFollowers}>
                     {numFollowers} member{numFollowers === 1 ? "" : "s"}</a> : ""}
             </div>

@@ -5,6 +5,26 @@ import {FormatTokenAmount} from "../util/slp";
 import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
 import ShortHash from "../util/txs";
+import {useResizableColumns} from "./snippets/use_columns";
+import {BsThreeDots} from "react-icons/bs";
+import {Loading} from "../util/loading";
+
+// Most of a wallet's derived addresses are never used, so each section lists
+// the funded ones plus a few empties to receive into, rather than every
+// address the wallet has generated.
+const EmptyAddressesShown = 5
+
+const trimEmpty = (addresses) => {
+    let empty = 0
+    const shown = addresses.filter(address => {
+        if (address.balance) {
+            return true
+        }
+        empty++
+        return empty <= EmptyAddressesShown
+    })
+    return {shown, hidden: Math.max(0, empty - EmptyAddressesShown)}
+}
 
 const Column = {
     Index: "index",
@@ -21,31 +41,21 @@ const Addresses = ({lastUpdate}) => {
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [selectedAddress, selectedAddressRef, setSelectedAddress] = useReferredState("")
     const addressesDiv = useRef()
-    useEffect(() => {(async () => {
-        addressesDiv.current.addEventListener("contextmenu", async (e) => {
-            e.preventDefault()
-            let address
-            for (let i = 0; e.path && i < e.path.length; i++) {
-                if (e.path[i].dataset && e.path[i].dataset.address) {
-                    address = e.path[i].dataset.address
-                    break
-                }
-            }
-            if (address === undefined) {
-                let node = e.target
-                while (node !== null) {
-                    if (node.dataset && node.dataset.address) {
-                        address = node.dataset.address
-                        break
-                    }
-                    node = node.parentNode
-                }
-            }
-            const wallet = await GetWallet()
-            await window.electron.rightClickMenu(address, wallet)
-        })
+    const columns = useResizableColumns(3)
+    useEffect(() => {
         window.electron.walletLoaded()
-    })()}, [])
+    }, [])
+    // Same menu for a right-click anywhere on the row and for the row's "..."
+    // button, which is what makes the menu discoverable without a right-click.
+    const openAddressMenu = async (e, address) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (!address) {
+            return
+        }
+        setSelectedAddress(address)
+        await window.electron.rightClickMenu(address, await GetWallet())
+    }
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         try {
@@ -171,93 +181,77 @@ const Addresses = ({lastUpdate}) => {
         setSortDesc(desc)
         setSortCol(field)
     }
+    const sectionProps = {sortAddresses, sortDesc, sortCol, columns, selectedAddress, clickRow, openAddressMenu}
     return (
         <div>
-            <div className={[styles.wrapper, styles.wrapper3].join(" ")} onClick={clickWrapper}
-                 onKeyDown={keyDownHandler} tabIndex={-1}
-                 ref={addressesDiv}>
-                {!addresses.length ?
-                    (!changeList.length ?
-                        <p className={styles.message}>Generating addresses, please wait...</p> : <></>)
-                    :
-                    <div className={[styles.row, styles.rowTitle].join(" ")}>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Index} title={"Id"}/>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Address} title={"Address"}/>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Balance} title={"Balance"}/>
-                    </div>
-                }
-                {addresses.map((address, i) => {
-                    return (
-                        <div key={i} data-address={address.address} onClick={(e) => clickRow(e, address.address)}
-                             className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}>
-                            <span>{address.index}</span>
-                            <span className={styles.itemAddress}>{address.address}</span>
-                            <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
-                        </div>
-                    )
-                })}
-                {!changeList.length ?
-                    <></>
-                    : <div className={[styles.row, styles.rowTitle].join(" ")}>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Index} title={"Id"}/>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Address} title={"Change Address"}/>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Balance} title={"Balance"}/>
-                    </div>
-                }
-                {changeList.map((address, i) => {
-                    return (
-                        <div key={i} data-address={address.address} onClick={(e) => clickRow(e, address.address)}
-                             className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}>
-                            <span>{address.index}</span>
-                            <span className={styles.itemAddress}>{address.address}</span>
-                            <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
-                        </div>
-                    )
-                })}
-                {!slpList.length ?
-                    <></>
-                    : <div className={[styles.row, styles.rowTitle].join(" ")}>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Index} title={"Id"}/>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Address} title={"SLP Address"}/>
-                        <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol}
-                                  col={Column.Balance} title={"Balance"}/>
-                    </div>
-                }
-                {slpList.map((address, i) => {
-                    return (
-                        <Fragment key={i}>
-                            <div data-address={address.address} onClick={(e) => clickRow(e, address.address)}
-                                 className={[styles.row, selectedAddress === address.address && styles.rowSelected].join(" ")}>
-                                <span>{address.index}</span>
-                                <span className={styles.itemAddress}>{address.address}</span>
-                                <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
-                            </div>
-                            {(slpTokens[address.address] || []).map((token, j) => {
-                                return (
-                                    <div key={j} className={styles.row}>
-                                        <span/>
-                                        <span title={token.token_hash} style={{paddingLeft: "30px"}}>
-                                            {token.ticker || ShortHash(token.token_hash)}{token.name ? " (" + token.name + ")" : ""}
-                                        </span>
-                                        <span className={styles.itemValue}>
-                                            {FormatTokenAmount(token.amount, token.decimals)}
-                                        </span>
-                                    </div>
-                                )
-                            })}
-                        </Fragment>
-                    )
-                })}
+            <div className={styles.wrapper} style={{gridTemplateColumns: columns.gridTemplateColumns}}
+                 onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
+                 ref={(el) => {
+                     addressesDiv.current = el
+                     columns.gridRef.current = el
+                 }}>
+                {!addresses.length && !changeList.length ?
+                    <Loading>Generating addresses, please wait...</Loading> : null}
+                <Section title={"Address"} addresses={addresses} {...sectionProps}/>
+                <Section title={"Change Address"} addresses={changeList} {...sectionProps}/>
+                <Section title={"SLP Address"} addresses={slpList} {...sectionProps}
+                         tokensFor={(address) => slpTokens[address] || []}/>
             </div>
         </div>)
+}
+
+const Section = ({title, addresses, tokensFor, sortAddresses, sortDesc, sortCol, columns, selectedAddress,
+                     clickRow, openAddressMenu}) => {
+    if (!addresses.length) {
+        return null
+    }
+    const {shown, hidden} = trimEmpty(addresses)
+    return (
+        <>
+            <div className={[styles.row, styles.rowTitle].join(" ")}>
+                <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol} index={0} columns={columns}
+                          col={Column.Index} title={"Id"}/>
+                <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol} index={1} columns={columns}
+                          col={Column.Address} title={title}/>
+                <TitleCol sortFunc={sortAddresses} desc={sortDesc} sortCol={sortCol} index={2} columns={columns}
+                          col={Column.Balance} title={"Balance"}/>
+                <span/>
+            </div>
+            {shown.map((address, i) => (
+                <Fragment key={i}>
+                    <div data-address={address.address} onClick={(e) => clickRow(e, address.address)}
+                         onContextMenu={(e) => openAddressMenu(e, address.address)}
+                         className={[styles.row,
+                             selectedAddress === address.address && styles.rowSelected].filter(c => c).join(" ")}>
+                        <span>{address.index}</span>
+                        <span className={styles.itemAddress}>{address.address}</span>
+                        <span className={styles.itemValue}>{address.balance.toLocaleString()}</span>
+                        <span>
+                            <button className={styles.rowMenu} title={"Address actions"}
+                                    aria-label={"Address actions"}
+                                    onClick={(e) => openAddressMenu(e, address.address)}><BsThreeDots/></button>
+                        </span>
+                    </div>
+                    {(tokensFor ? tokensFor(address.address) : []).map((token, j) => (
+                        <div key={j} className={styles.row}>
+                            <span/>
+                            <span title={token.token_hash} style={{paddingLeft: "30px"}}>
+                                {token.ticker || ShortHash(token.token_hash)}
+                                {token.name ? " (" + token.name + ")" : ""}
+                            </span>
+                            <span className={styles.itemValue}>
+                                {FormatTokenAmount(token.amount, token.decimals)}
+                            </span>
+                            <span/>
+                        </div>
+                    ))}
+                </Fragment>
+            ))}
+            {hidden ? <div className={styles.sectionNote}>
+                {hidden.toLocaleString()} more empty address{hidden === 1 ? "" : "es"} not shown
+            </div> : null}
+        </>
+    )
 }
 
 export default Addresses

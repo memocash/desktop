@@ -1,5 +1,5 @@
 import {useRef, useState} from "react"
-import Modal from "../modal"
+import Modal, {ModalFooter} from "../modal"
 import styles from "../../../styles/modal.module.css"
 import form from "../../../styles/form.module.css"
 import GetWallet from "../../util/wallet"
@@ -47,13 +47,10 @@ const TokenCreateModal = ({onClose, setModal}) => {
         }
     }
     return (
-        <Modal onClose={onClose}>
+        <Modal onClose={onClose} title={"Create token"}
+               description={"Creates a new SLP token. The initial supply is sent to your wallet; " +
+                   "the token id will be this transaction's hash."}>
             <div className={[styles.root, styles.rootWide].join(" ")}>
-                <div className={styles.header}>
-                    <h2>Create Token</h2>
-                </div>
-                <p>Creates a new SLP token. The initial supply is sent to your wallet;
-                    the token id will be this transaction's hash.</p>
                 <form onSubmit={formSubmit}>
                     <p>
                         <label>
@@ -94,12 +91,13 @@ const TokenCreateModal = ({onClose, setModal}) => {
                             <i> (allows minting more supply later)</i>
                         </label>
                     </p>
-                    <p>
+                    {error.length ? <p className={styles.error}>{error}</p> : null}
+                    <ModalFooter>
+                        <button type={"button"} onClick={onClose}>Cancel</button>
                         <input type="submit" value="Preview"/>
-                        <button onClick={formSubmit}>Sign and Broadcast</button>
-                    </p>
+                        <button className={"button_primary"} onClick={formSubmit}>Sign and broadcast</button>
+                    </ModalFooter>
                 </form>
-                {error.length ? <p>{error}</p> : <p>&nbsp;</p>}
             </div>
         </Modal>
     )

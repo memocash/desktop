@@ -4,6 +4,9 @@ import styles from "../../styles/history.module.css";
 import ShortHash from "../util/txs";
 import {useReferredState} from "../util/state";
 import {TitleCol} from "./snippets/title_col";
+import {useResizableColumns} from "./snippets/use_columns";
+import {Loading} from "../util/loading";
+import {FormatTimestamp} from "../util/time";
 
 const Column = {
     Confirms: "confirms",
@@ -20,6 +23,7 @@ const History = ({lastUpdate}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const historyDiv = useRef()
+    const columns = useResizableColumns(5)
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         let txs = await window.electron.getTransactions(wallet.addresses.concat(wallet.changeList, wallet.slpList || []))
@@ -110,22 +114,29 @@ const History = ({lastUpdate}) => {
         setSortCol(field)
     }
     return (
-        <div className={[styles.wrapper, styles.wrapper5].join(" ")} onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}
-             ref={historyDiv}>
+        <div className={styles.wrapper} style={{gridTemplateColumns: columns.gridTemplateColumns}}
+             ref={(el) => {
+                 historyDiv.current = el
+                 columns.gridRef.current = el
+             }}
+             onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}>
             {!txs.length ?
-                <p className={styles.message}>{loaded ? <>No transactions</> : <>Loading...</>}</p>
+                (loaded ?
+                    <p className={styles.message}>No transactions yet. Payments in and out show up here.</p> :
+                    <Loading>Loading transactions...</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
-                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol} index={0} columns={columns}
                               col={Column.Confirms} title={<>&#10004;</>}/>
-                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol} index={1} columns={columns}
                               col={Column.Timestamp} title={"Timestamp"}/>
-                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol} index={2} columns={columns}
                               col={Column.Hash} title={"Hash"}/>
-                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol} index={3} columns={columns}
                               col={Column.Value} title={"Value"}/>
-                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol}
+                    <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol} index={4} columns={columns}
                               col={Column.Balance} title={"Balance"}/>
+                    <span/>
                 </div>
             }
             {txs.map((tx, i) => {
@@ -133,10 +144,11 @@ const History = ({lastUpdate}) => {
                     <div key={i} className={[styles.row, selectedTxHash === tx.hash && styles.rowSelected].join(" ")}
                          onClick={(e) => clickRow(e, tx.hash)} onDoubleClick={() => doubleClickTx(tx.hash)}>
                         <span>{tx.confirms >= 100 ? <>&#10004;</> : tx.confirms}</span>
-                        <span>{tx.timestamp ? tx.timestamp.replace(/\.\d+/, "") : "Unknown"}</span>
+                        <span title={tx.timestamp}>{FormatTimestamp(tx.timestamp)}</span>
                         <span>{ShortHash(tx.hash)}</span>
                         <span className={styles.itemValue}>{tx.value.toLocaleString()}</span>
                         <span className={styles.itemValue}>{tx.balance.toLocaleString()}</span>
+                        <span/>
                     </div>
                 )
             })}

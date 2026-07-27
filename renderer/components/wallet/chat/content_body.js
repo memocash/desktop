@@ -6,6 +6,7 @@ import {Modals} from "../../../../main/common/util";
 import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import {ListenPosts} from "../update/index";
+import {Spinner} from "../../util/loading";
 
 const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
     const [counter, setCounter] = useState(0)
@@ -39,11 +40,27 @@ const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
     const clickViewPost = (txHash) => setModal(Modals.Post, {txHash})
     const clickLikeLink = (txHash) => setModal(Modals.PostLike, {txHash})
     const clickReplyLink = (txHash) => setModal(Modals.PostReply, {txHash})
+    if (!room || !room.length) {
+        return (
+            <div className={styles.posts}>
+                <div className={styles.no_room}>
+                    <BsChatLeft className={styles.no_room_icon}/>
+                    <h3>No room selected</h3>
+                    <p>Pick one of your rooms on the left, or type a topic above it to open
+                        any room by name.</p>
+                </div>
+            </div>
+        )
+    }
     return (
         <div className={styles.posts}>
             {isLoading ? <div className={styles.room_loading} role={"status"} aria-live={"polite"}>
-                <span className={styles.room_loading_spinner}/>
+                <Spinner/>
                 Loading room…
+            </div> : null}
+            {!isLoading && !posts.length ? <div className={styles.no_room}>
+                <h3>No messages yet</h3>
+                <p>Be the first to post in {room}.</p>
             </div> : null}
             {posts.map((post, index) => {
                 return (

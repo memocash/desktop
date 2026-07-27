@@ -184,6 +184,10 @@ module.exports = {
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
     generateWallet: async (seed, keys) => ipcRenderer.invoke(Handlers.GenerateWallet, seed, keys),
     getWallet: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).wallet,
+    getWalletFileInfo: async () => {
+        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
+        return {filename, name: path.parse(filename).name, encrypted: !!(password && password.length)}
+    },
     getWalletFile: async (walletName) => await fs.readFile(getPathForWallet(walletName), {encoding: "utf8"}),
     setWallet: async (wallet, filename, password) =>
         ipcRenderer.send(Handlers.StoreWallet, wallet, getPathForWallet(filename), password),

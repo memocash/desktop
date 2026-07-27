@@ -319,12 +319,18 @@
     color: var(--text-faint);
 }
 
+/* Post text is prose, so it gets a comfortable measure and a slightly larger
+   size than the dense wallet tables - without a cap it runs the full width of
+   the window and becomes hard to read. */
 .post_body {
     white-space: pre-wrap;
     word-wrap: break-word;
     word-break: break-word;
     padding: 2px 5px 2px 5px;
     min-height: 21px;
+    max-width: 78ch;
+    font-size: 13px;
+    line-height: 1.45;
 }
 
 .post_body h3 {
@@ -357,6 +363,73 @@
 .post_footer button {
     cursor: pointer;
     margin-bottom: 5px;
+}
+
+/* Repeated on every row in the feed, so these read as quiet icon controls and
+   only pick up button chrome on hover. */
+.post_footer .action {
+    background: none;
+    background-image: none;
+    border: 1px solid transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    gap: 4px;
+    padding: 2px 6px;
+}
+
+.post_footer .action:hover {
+    background: var(--surface-muted);
+    border-color: var(--border-soft);
+    color: var(--color-text);
+}
+
+.overflow {
+    display: inline-flex;
+}
+
+.overflow_menu {
+    position: fixed;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    padding: 3px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 5px;
+    box-shadow: 0 2px 6px var(--button-shadow);
+}
+
+.overflow_menu button {
+    background: none;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    /* Items read as a list, so labels line up on the left rather than each one
+       centering itself in the menu's width. */
+    justify-content: flex-start;
+    gap: 8px;
+    margin: 0;
+    padding: 5px 8px;
+    text-align: left;
+    width: 100%;
+}
+
+.overflow_menu button:hover {
+    background: var(--surface-muted);
+}
+
+/* Rows in a list open the post when clicked. */
+.feed_post_row {
+    cursor: pointer;
+}
+
+.post_list > .feed_post_row:hover {
+    background: var(--row-hover-faint);
 }
 
 .likes_list {

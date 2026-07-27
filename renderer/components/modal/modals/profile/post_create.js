@@ -1,19 +1,20 @@
-import Modal from "../../modal";
+import Modal, {ModalFooter} from "../../modal";
 import styles from "../../../../styles/modal.module.css";
-import profile from "../../../../styles/profile.module.css";
 import bitcoin from "../../../util/bitcoin";
 import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
-import {useRef} from "react";
+import {useState} from "react";
+import {ByteCounter} from "../../snippets/byte_counter";
 
 const PostCreate = ({onClose, setModal}) => {
-    const postInputRef = useRef()
+    const [post, setPost] = useState("")
+    const maxBytes = bitcoin.Fee.MaxOpReturn
+    const usedBytes = bitcoin.Utf8ByteLength(post)
+    const canPost = usedBytes > 0 && usedBytes <= maxBytes
     const formPostSubmit = async (e) => {
         e.preventDefault()
-        const post = postInputRef.current.value
-        if (post && Buffer.from(post).length > bitcoin.Fee.MaxOpReturn) {
-            window.electron.showMessageDialog("Post length is too long (max: " + bitcoin.Fee.MaxOpReturn + ")")
+        if (!canPost) {
             return
         }
         const postOpReturnOutput = script.compile([
@@ -23,23 +24,23 @@ const PostCreate = ({onClose, setModal}) => {
         ])
         const wallet = await GetWallet()
         await CreateTransaction(wallet, [{script: postOpReturnOutput}], setModal)
-        if(!wallet.settings.DirectTx || !(await window.electron.getPassword())){
+        if (!wallet.settings.DirectTx || !(await window.electron.getPassword())) {
             onClose()
         }
     }
     return (
-        <Modal onClose={onClose}>
-            <div className={profile.set_profile}>
+        <Modal onClose={onClose} title={"New post"}>
+            <div className={[styles.root, styles.rootWide].join(" ")}>
                 <form onSubmit={formPostSubmit}>
-                    <label>
-                        <span>Message:</span>
-                    </label>
-                    <input ref={postInputRef} type="text"/>
-                    <input type="submit" value="Post"/>
+                    <label htmlFor={"post-message"}>Message</label>
+                    <textarea id={"post-message"} className={styles.textarea} autoFocus value={post}
+                              onChange={(e) => setPost(e.target.value)}/>
+                    <ByteCounter used={usedBytes} max={maxBytes}/>
+                    <ModalFooter>
+                        <button type={"button"} onClick={onClose}>Cancel</button>
+                        <input type="submit" className={"button_primary"} value="Post" disabled={!canPost}/>
+                    </ModalFooter>
                 </form>
-            </div>
-            <div className={styles.buttons}>
-                <button onClick={onClose}>Cancel</button>
             </div>
         </Modal>
     )

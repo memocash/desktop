@@ -26,3 +26,83 @@
 .img {
     max-width: 200px;
 }
+
+/* Labelled form layout used by the Send tab: a fixed label column keeps the
+   inputs aligned no matter how long a label wraps, and each field owns the
+   space below it for its hint or validation message. */
+.form {
+    max-width: 640px;
+    padding: 15px;
+}
+
+.heading {
+    font-size: 16px;
+    margin: 0 0 15px;
+}
+
+.rows {
+    align-items: baseline;
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 12px 10px;
+}
+
+.label {
+    color: var(--text-muted);
+    text-align: right;
+}
+
+.field {
+    min-width: 0;
+}
+
+.control {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.control .input {
+    flex: 1;
+    min-width: 200px;
+    width: auto;
+}
+
+.unit {
+    color: var(--text-muted);
+}
+
+.hint {
+    color: var(--text-faint);
+    margin-top: 3px;
+}
+
+.error {
+    color: var(--danger);
+    margin-top: 3px;
+}
+
+.summary {
+    border-top: 1px solid var(--border-soft);
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 5px 10px;
+    margin: 15px 0 0;
+    padding-top: 12px;
+}
+
+.summary dt {
+    color: var(--text-muted);
+    text-align: right;
+}
+
+.summary dd {
+    margin: 0;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}

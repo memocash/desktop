@@ -17,6 +17,8 @@ import TokenSendModal from "./modals/token_send";
 import TokenCreateModal from "./modals/token_create";
 import TokenMintModal from "./modals/token_mint";
 import GetPassword from "./modals/get_password";
+import WalletInfoModal from "./modals/wallet_info";
+import AboutModal from "./modals/about";
 import remove from "./modals/remove";
 import RemoveModal from "./modals/remove";
 
@@ -57,6 +59,8 @@ const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps =
             {modalWindow === Modals.ChatRoomLoad && <RoomLoad onClose={onClose} modalProps={modalProps}/>}
             {modalWindow === Modals.ChatRoomJoin && <RoomJoin onClose={onClose} modalProps={modalProps} setModal={setModal}/>}
             {modalWindow === Modals.NetworkView && <NetworkView onClose={onClose}/>}
+            {modalWindow === Modals.WalletInfo && <WalletInfoModal onClose={onClose}/>}
+            {modalWindow === Modals.About && <AboutModal onClose={onClose}/>}
             {modalWindow === Modals.TokenSend && <TokenSendModal onClose={onClose} setModal={setModal} modalProps={modalProps}/>}
             {modalWindow === Modals.TokenCreate && <TokenCreateModal onClose={onClose} setModal={setModal}/>}
             {modalWindow === Modals.TokenMint && <TokenMintModal onClose={onClose} setModal={setModal} modalProps={modalProps}/>}

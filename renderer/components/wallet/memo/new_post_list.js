@@ -6,6 +6,7 @@ import Post from "./post";
 // the update/ directory, and the bare path resolves to the file, silently
 // importing undefined from it.
 import {UpdateNewPosts} from "../update/index";
+import {Loading} from "../../util/loading";
 
 // Pull the newest posts network-wide from the server first, then read them back
 // out of the local db so likes/replies/names render the same way they do
@@ -38,11 +39,13 @@ const NewPostList = ({setModal, setChatRoom, lastUpdate, ranked = false}) => {
                 <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom} isFeedRow/>
             )}
             {failed && <div className={profile.noPosts}>
-                Could not load new posts, showing saved posts
+                Could not reach the network, showing saved posts
             </div>}
-            {!posts.length && !failed && <div className={profile.noPosts}>
-                {loading ? "Loading new posts..." : "No new posts"}
-            </div>}
+            {!posts.length && !failed && (loading ?
+                <Loading>Loading new posts...</Loading> :
+                <div className={profile.noPosts}>
+                    Nothing new right now. Posts from across the network show up here.
+                </div>)}
         </div>
     )
 }

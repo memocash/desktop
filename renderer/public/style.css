@@ -125,3 +125,24 @@ button:active, input[type=submit]:active {
     border-color: var(--accent-purple);
     box-shadow: 0 0 1px var(--button-shadow-active);
 }
+
+button:disabled, input[type=submit]:disabled {
+    opacity: 0.5;
+}
+
+/* The single confirming action of a form or dialog. Global rather than per
+   module so the primary button looks the same in every window. */
+button.button_primary,
+input[type=submit].button_primary {
+    background-color: var(--accent);
+    background-image: none;
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: bold;
+}
+
+button.button_primary:disabled,
+input[type=submit].button_primary:disabled {
+    background-color: var(--text-faint);
+    border-color: var(--text-faint);
+}
