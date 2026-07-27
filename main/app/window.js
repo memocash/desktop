@@ -18,6 +18,7 @@ const windows = {}
 const menus = {}
 const networkOptions = {}
 const txWindows = {}
+const txWindowIds = new Set()
 let windowNumber = 0
 
 const GetMenu = (winId) => menus[winId]
@@ -25,6 +26,10 @@ const GetNetworkOption = (winId) => networkOptions[winId]
 const GetStorage = (winId) => storage[winId]
 const GetWallet = (winId) => wallets[winId]
 const GetWindow = (winId) => windows[winId]
+// True once a wallet has been loaded in the window, which is also when it starts
+// rendering the modal viewer. Transaction windows inherit the parent's wallet
+// but have no modals, so they are excluded.
+const IsWalletWindow = (winId) => wallets[winId] !== undefined && !txWindowIds.has(winId)
 const SetMenu = (winId, menu) => menus[winId] = menu
 const SetNetworkOption = (winId, option) => networkOptions[winId] = option
 const SetStorage = (winId, data) => storage[winId] = data
@@ -80,6 +85,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     if (txWindows[winId] === undefined) {
         txWindows[winId] = []
     }
+    txWindowIds.add(win.webContents.id)
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     txWindows[winId].push(win)
     windows[win.webContents.id] = win
@@ -115,6 +121,7 @@ module.exports = {
     GetRuntimeNetworkOption,
     GetWallet,
     GetWindow,
+    IsWalletWindow,
     SetMenu,
     SetNetworkOption,
     SetStorage,

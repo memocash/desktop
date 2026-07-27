@@ -5,6 +5,7 @@ const {WindowHandlers} = require("./window");
 const {WindowTxHandlers} = require("./window_tx");
 const {DataHandlers} = require("./data");
 const {ThemeHandlers} = require("./theme");
+const {UpdateHandlers} = require("./update");
 
 module.exports = {
     AllHandlers: () => {
@@ -12,6 +13,7 @@ module.exports = {
         GraphQLHandlers()
         ProfileHandlers()
         ThemeHandlers()
+        UpdateHandlers()
         WalletHandlers()
         WindowHandlers()
         WindowTxHandlers()

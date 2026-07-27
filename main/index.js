@@ -6,6 +6,7 @@ const serve = require('electron-serve')
 const {CreateWindow} = require("./app/window");
 const {AllHandlers} = require("./app/handlers");
 const {ApplyStoredTheme} = require("./app/handlers/theme");
+const {ScheduleUpdateChecks} = require("./app/handlers/update");
 
 // In dev, electron-next runs the Next dev server on localhost:8000 (with hot
 // reload). In a packaged build there is no Next process, so serve the static
@@ -30,4 +31,5 @@ app.whenReady().then(async () => {
     ApplyStoredTheme()
     AllHandlers()
     await CreateWindow()
+    ScheduleUpdateChecks()
 })

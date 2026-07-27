@@ -10,12 +10,14 @@ const SettingsModal = ({onClose, setLastUpdate, setModal}) => {
     const [enableSkipPassword, setEnableSkipPassword] = useState(false)
     const [initialSkipPassword, setInitialSkipPassword] = useState(true)
     const [theme, setTheme] = useState("system")
+    const [checkUpdates, setCheckUpdates] = useState(true)
     useEffect(() => {(async () => {
         let wallet = await GetWallet()
         setDirectTx(wallet.settings.DirectTx)
         setSkipPassword(wallet.settings.SkipPassword)
         setInitialSkipPassword(wallet.settings.SkipPassword)
         setTheme(await window.electron.getTheme())
+        setCheckUpdates((await window.electron.getUpdatePrefs()).checkAutomatically)
     })()},[])
 
     // Appearance is app-global and applied immediately via nativeTheme, so it is
@@ -23,6 +25,13 @@ const SettingsModal = ({onClose, setLastUpdate, setModal}) => {
     const changeTheme = async (value) => {
         setTheme(value)
         await window.electron.setTheme(value)
+    }
+
+    // Update checks are app-global as well, so they are saved on change rather
+    // than with the wallet settings behind the Save button.
+    const changeCheckUpdates = async (value) => {
+        setCheckUpdates(value)
+        await window.electron.setUpdatePrefs({checkAutomatically: value})
     }
 
     const toggleSkipPassword = () => {
@@ -68,6 +77,11 @@ const SettingsModal = ({onClose, setLastUpdate, setModal}) => {
                     <div>
                         <input checked={skipPassword} type="checkbox" id="skipPassword" onChange={toggleSkipPassword}/>
                         <label htmlFor="skipPassword">Skip Password for basic transactions</label>
+                    </div>
+                    <div>
+                        <input checked={checkUpdates} type="checkbox" id="checkUpdates" onChange={
+                            () => changeCheckUpdates(!checkUpdates)}/>
+                        <label htmlFor="checkUpdates">Automatically check for new versions</label>
                     </div>
                     <div>
                         <label htmlFor="theme">Appearance:</label>

@@ -157,6 +157,21 @@
     word-break: break-word;
 }
 
+/* Release notes come from GitHub as plain markdown, so keep the line breaks and
+   let long notes scroll instead of stretching the dialog. */
+.notes {
+    background-color: var(--surface-muted);
+    border: 1px solid var(--border-soft);
+    border-radius: 3px;
+    color: var(--text-muted);
+    margin-top: 15px;
+    max-height: 150px;
+    overflow: auto;
+    padding: 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 .about {
     display: flex;
     gap: 15px;

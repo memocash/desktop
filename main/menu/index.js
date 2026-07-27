@@ -93,6 +93,13 @@ const ShowMenu = (win, newWindow, wallet) => {
                     win.webContents.send(Listeners.DisplayModal, Modals.About)
                 },
             },
+            {
+                label: "Check for Updates...",
+                click: () => {
+                    win.webContents.send(Listeners.DisplayModal, Modals.Update)
+                },
+            },
+            {type: "separator"},
             {role: 'reload'},
             {role: 'forceReload'},
             {

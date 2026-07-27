@@ -29,6 +29,7 @@ const Modals = {
     TokenCreate: "token-create",
     TokenMint: "token-mint",
     TokenSend: "token-send",
+    Update: "update",
     WalletInfo: "wallet-info",
 }
 

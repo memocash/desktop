@@ -8,6 +8,7 @@
   "repository": "github.com/memocash/desktop",
   "scripts": {
     "start": "electron .",
+    "test": "node --test \"main/**/*.test.js\"",
     "create": "npx electron-packager . Memo --overwrite --icon ./main/assets/memo-logo-small.icns --out dist",
     "build": "next build renderer",
     "pack-app": "npm run build && electron-builder --dir",
@@ -29,6 +30,7 @@
     },
     "files": [
       "main/**/*",
+      "!main/**/*.test.js",
       "build/icon.png",
       "renderer/out/**/*",
       "package.json"
