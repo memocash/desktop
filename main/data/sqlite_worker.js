@@ -59,6 +59,17 @@ const GetDb = async () => {
 
 const SetDb = async (db) => {
     _db = database(db.replace("~", homedir))
+    // Every Insert() lands here as its own statement, so without WAL each one is
+    // a separate autocommit against the default rollback journal: create the
+    // -journal file, fsync it, fsync the db, delete it. On Windows that measures
+    // ~11ms per row, which capped the initial history sync at ~90 rows/second and
+    // left wallets with a large history sitting on "Loading transaction history"
+    // for hours. WAL plus synchronous=NORMAL commits to an append-only log and
+    // only fsyncs on checkpoint, which measures ~0.04ms per row here.
+    // synchronous is per-connection so it has to be set on every open; the
+    // journal mode is a property of the file and persists.
+    _db.pragma("journal_mode = WAL")
+    _db.pragma("synchronous = NORMAL")
     const statements = Definitions.map(d => "CREATE TABLE IF NOT EXISTS " + d).concat(Indexes)
     _db.transaction(() => {
         for (const statement of statements) {
