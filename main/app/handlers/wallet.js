@@ -46,8 +46,17 @@ const unlockWallet = async (winId, walletName, password) => {
         }
         throw e
     }
-    // A wallet stored as plain JSON has no password to remember.
-    SetWallet(winId, {wallet: read.wallet, filename, password: read.encrypted ? password : undefined})
+    // A wallet stored without encryption has no password to remember.
+    const walletPassword = read.encrypted ? password : undefined
+    // Unlock is the one moment the whole wallet is in hand and nothing else can
+    // be writing to the file, so an old wallet is rewritten in the current format
+    // here rather than lazily. Everything after this point can assume version 2,
+    // which is what lets public updates skip the keystore entirely.
+    if (read.version !== keystore.Version) {
+        await keystore.WithWalletLock(filename, () =>
+            keystore.MigrateWallet(filename, read.wallet, walletPassword))
+    }
+    SetWallet(winId, {wallet: read.wallet, filename, password: walletPassword})
     return {ok: true}
 }
 
@@ -73,13 +82,27 @@ const createWallet = async (winId, walletName, seedPhrase, keyList, addressList,
 // windows open on the same file don't overwrite each other's lists. The whole
 // read-modify-write holds the file's lock, since the wallet page fires several
 // of these at once as it mounts.
+//
+// An update that only touches public metadata - which is all of them except the
+// imported keys - rewrites the public half and leaves the encrypted envelope
+// alone, so the common case never decrypts anything.
 const updateWallet = async (winId, op, values) => {
     const {filename, password} = GetWallet(winId)
     await keystore.WithWalletLock(filename, async () => {
-        const {wallet} = await keystore.ReadWallet(filename, password)
-        keystore.ApplyWalletUpdate(wallet, op, values)
-        await keystore.WriteWallet(filename, wallet, password)
-        SetWallet(winId, {wallet, filename, password})
+        if (keystore.UpdateTouchesSecret(op)) {
+            const {wallet: stored} = await keystore.ReadWallet(filename, password)
+            keystore.ApplyWalletUpdate(stored, op, values)
+            await keystore.WriteWallet(filename, stored, password)
+            SetWallet(winId, {wallet: stored, filename, password})
+            return
+        }
+        const publicData = await keystore.UpdatePublic(filename, (data) =>
+            keystore.ApplyWalletUpdate(data, op, values))
+        // Read the held wallet inside the lock: a key update queued ahead of
+        // this one would make a snapshot taken outside it stale, and merging
+        // over that would put the old keys back.
+        const {wallet} = GetWallet(winId)
+        SetWallet(winId, {wallet: {...wallet, ...publicData}, filename, password})
     })
 }
 

@@ -1,13 +1,14 @@
 const fs = require("fs/promises")
 const path = require("path")
-const CryptoJS = require("crypto-js")
 const {Dir} = require("../common/util")
+const walletFile = require("./wallet_file")
 
 // Every wallet read, write, and decryption lives here rather than in the preload
 // so the renderer never holds a file handle or a cipher. The renderer names a
-// wallet; it never supplies a path this module hasn't already vouched for.
+// wallet; it never supplies a path this module hasn't already vouched for. The
+// on-disk format itself lives in ./wallet_file.
 
-const WrongPassword = "wrong-password"
+const {WrongPassword} = walletFile
 
 // Wallets normally live in Dir.DefaultPath, but the import flow lets the user
 // point at a file anywhere. Choosing one in a dialog grants that one window the
@@ -45,24 +46,6 @@ const ResolveWalletPath = (winId, walletName) => {
     return Dir.DefaultPath + path.sep + name
 }
 
-// An unencrypted wallet is stored as bare JSON, so a file that doesn't open with
-// a brace is a CryptoJS payload. Phase 2 replaces this with a version field.
-const isCiphertext = (contents) => !contents.trimStart().startsWith("{")
-
-const decrypt = (contents, password) => {
-    let text
-    try {
-        text = CryptoJS.AES.decrypt(contents, password).toString(CryptoJS.enc.Utf8)
-    } catch (e) {
-        // A wrong password usually surfaces as a UTF-8 decode failure.
-        throw new Error(WrongPassword)
-    }
-    if (!text.startsWith("{")) {
-        throw new Error(WrongPassword)
-    }
-    return text
-}
-
 const ListWalletFiles = async () => {
     await fs.mkdir(Dir.DefaultPath, {recursive: true})
     const files = await fs.readdir(Dir.DefaultPath)
@@ -80,33 +63,19 @@ const WalletFileExists = async (winId, walletName) => {
 
 const WalletFileIsEncrypted = async (winId, walletName) => {
     const contents = await fs.readFile(ResolveWalletPath(winId, walletName), {encoding: "utf8"})
-    return isCiphertext(contents)
+    return walletFile.IsEncrypted(contents)
 }
 
 // Returns the decrypted wallet, or throws WrongPassword. Reports whether the
 // file was encrypted so the caller knows if there is a password worth keeping
-// for later writes; the password itself never travels back toward the renderer.
+// for later writes, and which version it was written in so the caller can
+// migrate it; the password itself never travels back toward the renderer.
 const ReadWallet = async (walletPath, password) => {
-    let contents = await fs.readFile(walletPath, {encoding: "utf8"})
-    const encrypted = isCiphertext(contents)
-    if (encrypted) {
-        if (!password || !password.length) {
-            throw new Error(WrongPassword)
-        }
-        contents = decrypt(contents, password)
-    }
-    return {wallet: JSON.parse(contents), encrypted}
+    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
+    return walletFile.DecodeContents(contents, password)
 }
 
 let writeCount = 0
-
-const encode = (wallet, password) => {
-    const contents = JSON.stringify(wallet)
-    if (password && password.length) {
-        return CryptoJS.AES.encrypt(contents, password).toString()
-    }
-    return contents
-}
 
 // A new wallet must never land on a file that already exists. Choosing a file in
 // the open dialog is permission to read that wallet, not to replace it, and a
@@ -115,14 +84,33 @@ const encode = (wallet, password) => {
 // reaches an existing one did not come from that screen. The exclusive flag
 // makes the check part of the write rather than a test before it.
 const CreateWalletFile = async (walletPath, wallet, password) => {
-    await fs.writeFile(walletPath, encode(wallet, password), {flag: "wx"})
+    await fs.writeFile(walletPath, await walletFile.EncodeContents(wallet, password), {flag: "wx"})
 }
 
 // Writes through a temporary file so a reader never sees a half-written wallet:
 // fs.writeFile truncates before it writes, and a torn read of a ciphertext looks
 // exactly like a wrong password.
 const WriteWallet = async (walletPath, wallet, password) => {
-    const contents = encode(wallet, password)
+    await writeContents(walletPath, await walletFile.EncodeContents(wallet, password))
+}
+
+// Applies an update to the public half alone, leaving the encrypted envelope
+// exactly as it is. This is the point of the version 2 format: an address or a
+// setting can be written without the password, and without the seed and keys
+// ever being decrypted.
+const UpdatePublic = async (walletPath, apply) => {
+    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
+    const form = walletFile.ReadForm(contents)
+    if (form.version !== walletFile.Version) {
+        throw new Error("wallet file must be migrated before a public update")
+    }
+    const publicData = {...form.doc.public}
+    apply(publicData)
+    await writeContents(walletPath, walletFile.EncodePublic(form.doc, publicData))
+    return publicData
+}
+
+const writeContents = async (walletPath, contents) => {
     // A unique scratch name so two writers can't clobber each other's temp file
     // even outside WithWalletLock.
     const tempPath = walletPath + "." + process.pid + "." + (writeCount++) + ".tmp"
@@ -133,6 +121,33 @@ const WriteWallet = async (walletPath, wallet, password) => {
         await fs.rm(tempPath, {force: true})
         throw e
     }
+}
+
+// Copies the file aside before it is rewritten in the new format. The exclusive
+// flag means an existing backup is never written over, so the copy of the
+// original wallet made by the first migration is the one that survives.
+const backupWalletFile = async (walletPath, contents) => {
+    for (let attempt = 0; ; attempt++) {
+        const backupPath = walletPath + ".v1.bak" + (attempt ? "." + attempt : "")
+        try {
+            await fs.writeFile(backupPath, contents, {flag: "wx"})
+            return backupPath
+        } catch (e) {
+            if (e.code !== "EEXIST") {
+                throw e
+            }
+        }
+    }
+}
+
+// Rewrites a version 1 wallet in the current format, keeping a copy of the
+// original first. Migration happens on unlock, before anything can write to the
+// file, so a wallet is only ever read in the old format and never written in it.
+const MigrateWallet = async (walletPath, wallet, password) => {
+    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
+    const backupPath = await backupWalletFile(walletPath, contents)
+    await WriteWallet(walletPath, wallet, password)
+    return backupPath
 }
 
 // The preload did its read-modify-write with the synchronous fs calls, which
@@ -171,6 +186,14 @@ const ListOps = {
     addSlpList: {field: "slpList", remove: false},
 }
 
+// Whether an update reaches inside the encrypted envelope, which only the ones
+// touching imported keys do. Derived from the table above so the two can't drift
+// apart the way a restated list of op names would.
+const UpdateTouchesSecret = (op) => {
+    const listOp = ListOps[op]
+    return !!listOp && walletFile.SecretFields.includes(listOp.field)
+}
+
 const ApplyWalletUpdate = (wallet, op, values) => {
     if (op === "changeSettings") {
         wallet.settings = {...DefaultSettings, ...wallet.settings, ...values}
@@ -195,9 +218,13 @@ module.exports = {
     CreateWalletFile,
     ForgetPaths,
     ListWalletFiles,
+    MigrateWallet,
     NewWallet,
     ReadWallet,
     ResolveWalletPath,
+    UpdatePublic,
+    UpdateTouchesSecret,
+    Version: walletFile.Version,
     WalletFileExists,
     WalletFileIsEncrypted,
     WithWalletLock,

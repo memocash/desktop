@@ -3,15 +3,20 @@ const assert = require("node:assert");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
+const CryptoJS = require("crypto-js");
 const {Dir} = require("../common/util");
 const {
     AllowPath,
     ApplyWalletUpdate,
     CreateWalletFile,
     ForgetPaths,
+    MigrateWallet,
     NewWallet,
     ReadWallet,
     ResolveWalletPath,
+    UpdatePublic,
+    UpdateTouchesSecret,
+    Version,
     WalletFileIsEncrypted,
     WithWalletLock,
     WriteWallet,
@@ -151,6 +156,72 @@ test("overlapping updates to one wallet each land, without tearing the file", as
     })))
     const {wallet} = await ReadWallet(walletPath, "hunter2")
     assert.deepEqual([...wallet.addresses].sort(), [...addresses].sort())
+})
+
+// Existing wallets are version 1. They have to keep opening, and the copy taken
+// before the rewrite is the user's way back if the new format has a problem.
+test("a version 1 wallet migrates on read, keeping the original beside it", async () => {
+    const walletPath = await tempWallet("legacy")
+    const original = CryptoJS.AES.encrypt(
+        JSON.stringify({seed: "old seed words", keys: [], addresses: ["addr1"]}), "hunter2").toString()
+    await fs.writeFile(walletPath, original)
+
+    const read = await ReadWallet(walletPath, "hunter2")
+    assert.equal(read.version, 1)
+    assert.equal(read.wallet.seed, "old seed words")
+
+    const backupPath = await MigrateWallet(walletPath, read.wallet, "hunter2")
+    assert.equal(backupPath, walletPath + ".v1.bak")
+    assert.equal(await fs.readFile(backupPath, {encoding: "utf8"}), original)
+
+    const migrated = await ReadWallet(walletPath, "hunter2")
+    assert.equal(migrated.version, Version)
+    assert.equal(migrated.encrypted, true)
+    assert.equal(migrated.wallet.seed, "old seed words")
+    assert.deepEqual(migrated.wallet.addresses, ["addr1"])
+})
+
+test("an unencrypted version 1 wallet migrates without gaining a password", async () => {
+    const walletPath = await tempWallet("legacy_plain")
+    await fs.writeFile(walletPath, JSON.stringify({seed: "old seed words", keys: [], addresses: []}))
+    const read = await ReadWallet(walletPath, undefined)
+    assert.equal(read.version, 1)
+    await MigrateWallet(walletPath, read.wallet, undefined)
+    const migrated = await ReadWallet(walletPath, undefined)
+    assert.equal(migrated.version, Version)
+    assert.equal(migrated.encrypted, false)
+    assert.equal(migrated.wallet.seed, "old seed words")
+})
+
+test("migrating twice never writes over the first backup", async () => {
+    const walletPath = await tempWallet("legacy_twice")
+    await fs.writeFile(walletPath, JSON.stringify({seed: "the original", keys: [], addresses: []}))
+    const first = await MigrateWallet(walletPath, {seed: "the original", keys: [], addresses: []}, undefined)
+    const second = await MigrateWallet(walletPath, {seed: "later", keys: [], addresses: []}, undefined)
+    assert.notEqual(first, second)
+    assert.match(JSON.parse(await fs.readFile(first, {encoding: "utf8"})).seed, /the original/)
+})
+
+// The routine writes - a new address, a changed setting - must not need the
+// password, which is what lets the window stop holding one.
+test("a public update rewrites the wallet without the password", async () => {
+    const walletPath = await tempWallet("public_only")
+    await WriteWallet(walletPath, NewWallet("seed words here", ["WIFkey"], ["addr1"]), "hunter2")
+    await UpdatePublic(walletPath, (publicData) =>
+        ApplyWalletUpdate(publicData, "addAddresses", ["addr2"]))
+    const {wallet} = await ReadWallet(walletPath, "hunter2")
+    assert.deepEqual(wallet.addresses, ["addr1", "addr2"])
+    assert.equal(wallet.seed, "seed words here")
+    assert.deepEqual(wallet.keys, ["WIFkey"])
+})
+
+test("only the updates reaching imported keys need the envelope opened", () => {
+    for (const op of ["addAddresses", "removeAddresses", "addChangeList", "addSlpList", "changeSettings"]) {
+        assert.equal(UpdateTouchesSecret(op), false, op + " should not need the envelope")
+    }
+    for (const op of ["addKeys", "removeKeys"]) {
+        assert.equal(UpdateTouchesSecret(op), true, op + " should need the envelope")
+    }
 })
 
 test("an update the keystore doesn't define is refused", () => {

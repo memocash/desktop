@@ -1,0 +1,134 @@
+const test = require("node:test");
+const assert = require("node:assert");
+const CryptoJS = require("crypto-js");
+const {
+    DecodeContents,
+    EncodeContents,
+    EncodePublic,
+    IsEncrypted,
+    ReadForm,
+    Version,
+    WrongPassword,
+} = require("./wallet_file");
+
+const Wallet = {
+    time: "2026-07-29T00:00:00.000Z",
+    seed: "abandon abandon abandon",
+    keys: ["WIFone", "WIFtwo"],
+    addresses: ["addr1", "addr2"],
+    changeList: ["change1"],
+    slpList: ["slp1"],
+    settings: {DirectTx: false, SkipPassword: true},
+}
+
+// What earlier releases wrote: bare JSON, or a CryptoJS passphrase blob.
+const v1Plain = (wallet) => JSON.stringify(wallet)
+const v1Encrypted = (wallet, password) => CryptoJS.AES.encrypt(JSON.stringify(wallet), password).toString()
+
+test("an encrypted wallet round-trips and reports its version", async () => {
+    const contents = await EncodeContents(Wallet, "hunter2")
+    assert.equal(IsEncrypted(contents), true)
+    const {wallet, encrypted, version} = await DecodeContents(contents, "hunter2")
+    assert.equal(version, Version)
+    assert.equal(encrypted, true)
+    assert.deepEqual(wallet, Wallet)
+})
+
+// The whole point of the format: the seed and the keys are the only things
+// inside the envelope, so everything else can be written without the password.
+test("the seed and keys are the only fields inside the envelope", async () => {
+    const contents = await EncodeContents(Wallet, "hunter2")
+    const doc = JSON.parse(contents)
+    assert.deepEqual(Object.keys(doc.public).sort(),
+        ["addresses", "changeList", "settings", "slpList", "time"])
+    assert.equal(doc.public.seed, undefined)
+    assert.equal(doc.public.keys, undefined)
+    // Nothing secret survives anywhere in the serialized file.
+    assert.ok(!contents.includes("abandon"))
+    assert.ok(!contents.includes("WIFone"))
+})
+
+test("the encrypted payload is authenticated, salted, and freshly nonced", async () => {
+    const first = JSON.parse(await EncodeContents(Wallet, "hunter2"))
+    const second = JSON.parse(await EncodeContents(Wallet, "hunter2"))
+    assert.equal(first.keystore.encryption, "scrypt-aes-256-gcm")
+    assert.equal(first.keystore.kdf.name, "scrypt")
+    assert.equal(first.keystore.cipher.name, "aes-256-gcm")
+    // A salt and nonce reused across wallets would leak far more than either.
+    assert.notEqual(first.keystore.kdf.salt, second.keystore.kdf.salt)
+    assert.notEqual(first.keystore.cipher.iv, second.keystore.cipher.iv)
+    assert.notEqual(first.keystore.ciphertext, second.keystore.ciphertext)
+})
+
+test("a wrong password is reported as wrong rather than as junk plaintext", async () => {
+    const contents = await EncodeContents(Wallet, "hunter2")
+    await assert.rejects(DecodeContents(contents, "not-the-password"), {message: WrongPassword})
+    await assert.rejects(DecodeContents(contents, ""), {message: WrongPassword})
+    await assert.rejects(DecodeContents(contents, undefined), {message: WrongPassword})
+})
+
+// GCM is authenticated, so tampering has to fail closed rather than hand back
+// bytes that happen to parse.
+test("a tampered payload fails closed", async () => {
+    for (const field of ["ciphertext", "tag", "iv", "salt"]) {
+        const doc = JSON.parse(await EncodeContents(Wallet, "hunter2"))
+        const target = field === "salt" ? doc.keystore.kdf : (field === "ciphertext" ? doc.keystore : doc.keystore.cipher)
+        const key = field === "salt" ? "salt" : field
+        const bytes = Buffer.from(target[key], "base64")
+        bytes[0] ^= 0xff
+        target[key] = bytes.toString("base64")
+        await assert.rejects(DecodeContents(JSON.stringify(doc), "hunter2"),
+            {message: WrongPassword}, "tampering with " + field + " should fail")
+    }
+})
+
+test("a wallet with no password keeps its secrets out of the public half", async () => {
+    const contents = await EncodeContents(Wallet, undefined)
+    assert.equal(IsEncrypted(contents), false)
+    const doc = JSON.parse(contents)
+    assert.equal(doc.keystore.encryption, "none")
+    assert.equal(doc.public.seed, undefined)
+    assert.equal(doc.keystore.secret.seed, Wallet.seed)
+    const {wallet, encrypted} = await DecodeContents(contents, undefined)
+    assert.equal(encrypted, false)
+    assert.deepEqual(wallet, Wallet)
+})
+
+test("a version 1 wallet without a password is read as version 1", async () => {
+    const contents = v1Plain(Wallet)
+    assert.equal(IsEncrypted(contents), false)
+    const {wallet, encrypted, version} = await DecodeContents(contents, undefined)
+    assert.equal(version, 1)
+    assert.equal(encrypted, false)
+    assert.deepEqual(wallet, Wallet)
+})
+
+test("a version 1 wallet with a password is read as version 1", async () => {
+    const contents = v1Encrypted(Wallet, "hunter2")
+    assert.equal(IsEncrypted(contents), true)
+    const {wallet, encrypted, version} = await DecodeContents(contents, "hunter2")
+    assert.equal(version, 1)
+    assert.equal(encrypted, true)
+    assert.deepEqual(wallet, Wallet)
+    await assert.rejects(DecodeContents(contents, "wrong"), {message: WrongPassword})
+})
+
+test("public metadata is rewritten without touching the envelope", async () => {
+    const contents = await EncodeContents(Wallet, "hunter2")
+    const form = ReadForm(contents)
+    const updated = EncodePublic(form.doc, {...form.doc.public, addresses: ["addr1", "addr2", "addr3"]})
+    // Byte-identical envelope: nothing was decrypted and nothing re-encrypted.
+    assert.deepEqual(JSON.parse(updated).keystore, form.doc.keystore)
+    const {wallet} = await DecodeContents(updated, "hunter2")
+    assert.deepEqual(wallet.addresses, ["addr1", "addr2", "addr3"])
+    assert.equal(wallet.seed, Wallet.seed)
+})
+
+test("a file that is neither version is refused with a controlled error", async () => {
+    assert.throws(() => ReadForm('{"version":99,"public":{},"keystore":{}}'),
+        {message: /unsupported wallet version: 99/})
+    assert.throws(() => ReadForm('{"version":2}'), {message: /no keystore/})
+    await assert.rejects(
+        DecodeContents('{"version":2,"public":{},"keystore":{"encryption":"rot13"}}', "hunter2"),
+        {message: /unsupported wallet encryption: rot13/})
+})
