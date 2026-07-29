@@ -12,6 +12,22 @@ const AppIcon = path.join(__dirname, "..", "..", "build", "icon.png")
 // the renderer loads (avoids a light flash when opening in dark mode).
 const BackgroundColor = () => nativeTheme.shouldUseDarkColors ? "#1b1c1e" : "#eeeeee"
 
+// The renderer gets Buffer and its crypto shims from the webpack build, not from
+// Electron, so node integration buys it nothing and would turn any script that
+// makes it onto the page into full process access. Context isolation keeps the
+// preload's contextBridge surface the only route from the page into main.
+// Sandboxing is the goal, but a sandboxed preload only gets a polyfilled require
+// that can't resolve relative paths, and this preload is split across ./common,
+// ./wallet, and ../common/util. Turning nodeIntegration off silently opts back
+// into the sandbox default and breaks the preload outright, so pin it off here
+// and flip it once the preload is bundled into a single file.
+const WebPreferences = {
+    nodeIntegration: false,
+    contextIsolation: true,
+    sandbox: false,
+    preload: path.join(__dirname, "..", "preload", "index.js"),
+}
+
 const wallets = {}
 const storage = {}
 const windows = {}
@@ -52,10 +68,7 @@ const CreateWindow = async () => {
         minHeight: 400,
         title: "Memo",
         backgroundColor: BackgroundColor(),
-        webPreferences: {
-            nodeIntegration: true,
-            preload: path.join(__dirname, "..", "preload", "index.js")
-        },
+        webPreferences: WebPreferences,
         icon: AppIcon,
     })
     win.webContents.setWindowOpenHandler(({url}) => {
@@ -76,10 +89,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         minHeight: 300,
         title: "Transaction",
         backgroundColor: BackgroundColor(),
-        webPreferences: {
-            nodeIntegration: true,
-            preload: path.join(__dirname, "..", "preload", "index.js")
-        },
+        webPreferences: WebPreferences,
         icon: AppIcon,
     })
     if (txWindows[winId] === undefined) {
