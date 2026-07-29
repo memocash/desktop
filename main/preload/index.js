@@ -1,7 +1,6 @@
 const {contextBridge} = require("electron");
 
 contextBridge.exposeInMainWorld('electron', {
-    ...require("./common"),
     ...require("./data"),
     ...require("./graphql"),
     ...require("./profile"),

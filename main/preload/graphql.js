@@ -1,5 +1,6 @@
 const {ipcRenderer} = require("electron");
-const {Handlers, GetId, Listeners} = require("../common/util");
+const {Handlers, Listeners} = require("../common/util/handlers");
+const {GetId} = require("../common/util/id");
 
 module.exports = {
     graphQL: async (query, variables) => await ipcRenderer.invoke(Handlers.GraphQL, {query, variables}),

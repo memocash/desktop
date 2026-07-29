@@ -7,10 +7,12 @@
   "main": "main/index.js",
   "repository": "github.com/memocash/desktop",
   "scripts": {
+    "build:preload": "node scripts/build-preload.js",
+    "prestart": "node scripts/build-preload.js",
     "start": "electron .",
     "test": "node --test \"main/**/*.test.js\"",
-    "create": "npx electron-packager . Memo --overwrite --icon ./main/assets/memo-logo-small.icns --out dist",
-    "build": "next build renderer",
+    "create": "npm run build && electron-packager . Memo --overwrite --icon ./main/assets/memo-logo-small.icns --out dist",
+    "build": "node scripts/build-preload.js && next build renderer",
     "pack-app": "npm run build && electron-builder --dir",
     "rebuild": "electron-rebuild",
     "dist": "npm run build && electron-builder",
@@ -73,6 +75,7 @@
     "electron": "39.8.5",
     "electron-builder": "^26.15.3",
     "electron-packager": "^17.1.1",
+    "esbuild": "^0.28.1",
     "next": "^15.5.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

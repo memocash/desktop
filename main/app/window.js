@@ -16,17 +16,14 @@ const BackgroundColor = () => nativeTheme.shouldUseDarkColors ? "#1b1c1e" : "#ee
 // The renderer gets Buffer and its crypto shims from the webpack build, not from
 // Electron, so node integration buys it nothing and would turn any script that
 // makes it onto the page into full process access. Context isolation keeps the
-// preload's contextBridge surface the only route from the page into main.
-// Sandboxing is the goal, but a sandboxed preload only gets a polyfilled require
-// that can't resolve relative paths, and this preload is split across ./common,
-// ./wallet, and ../common/util. Turning nodeIntegration off silently opts back
-// into the sandbox default and breaks the preload outright, so pin it off here
-// and flip it once the preload is bundled into a single file.
+// preload's contextBridge surface the only route from the page into main. The
+// preload is bundled before launch because a sandboxed preload can load
+// Electron's bridge module but cannot resolve our relative CommonJS modules.
 const WebPreferences = {
     nodeIntegration: false,
     contextIsolation: true,
-    sandbox: false,
-    preload: path.join(__dirname, "..", "preload", "index.js"),
+    sandbox: true,
+    preload: path.join(__dirname, "..", "preload.bundle.cjs"),
 }
 
 const wallets = {}

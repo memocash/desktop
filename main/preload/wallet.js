@@ -1,5 +1,5 @@
 const {ipcRenderer} = require("electron");
-const {Handlers} = require("../common/util");
+const {Handlers} = require("../common/util/handlers");
 
 // Nothing here touches the filesystem or a cipher. Each call names an operation
 // and main decides whether to perform it - see main/app/keystore.js.

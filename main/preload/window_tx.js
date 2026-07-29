@@ -1,5 +1,5 @@
 const {ipcRenderer} = require("electron");
-const {Handlers} = require("../common/util");
+const {Handlers} = require("../common/util/handlers");
 
 module.exports = {
     openPreviewSend: async ({inputs, outputs, beatHash}) => ipcRenderer.send(Handlers.OpenPreviewSend, {

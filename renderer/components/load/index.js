@@ -61,7 +61,10 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         if (!filepath.length) {
             return
         }
-        walletInput.current.value = window.electron.getWalletShort(filepath)
+        // Keep the full path. Main grants this window access to the exact file
+        // selected by the user; shortening an external path would instead make
+        // the next step look for a same-named wallet in the default directory.
+        walletInput.current.value = filepath
         await loadFile(filepath)
     }
     const handleClickNext = async () => {

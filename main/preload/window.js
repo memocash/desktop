@@ -1,5 +1,5 @@
 const {ipcRenderer, clipboard} = require("electron");
-const {Handlers, Listeners} = require("../common/util");
+const {Handlers, Listeners} = require("../common/util/handlers");
 
 module.exports = {
     clearClipboard: () => clipboard.clear(),
