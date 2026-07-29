@@ -1,4 +1,4 @@
-const {Insert, Select} = require("../sqlite")
+const {InsertBatch, InsertRows, Select} = require("../sqlite")
 const {SaveMemoPosts} = require("./memo_post");
 const {SaveTransactions} = require("./txs");
 const {MaxChatRoomFollows} = require("../common/memo_follow");
@@ -102,21 +102,18 @@ const SaveChatRoom = async (conf, room) => {
         return
     }
     await SaveMemoPosts(conf, room.posts)
-    const query = "" +
-        "INSERT OR REPLACE INTO memo_chat_post (tx_hash, room) " +
-        "VALUES " + Array(room.posts.length).fill("(?, ?)").join(", ")
-    await Insert(conf, "chat_room", query, room.posts.map(post => [post.tx_hash, room.name]).flat())
+    await InsertBatch(conf, "chat_room", InsertRows("INSERT OR REPLACE INTO memo_chat_post (tx_hash, room)",
+        room.posts.map(post => [post.tx_hash, room.name])))
 }
 
 const SaveChatRoomFollows = async (conf, roomFollows) => {
     if (!roomFollows || roomFollows.length === 0) {
         return
     }
-    const query = "" +
-        "INSERT OR REPLACE INTO memo_chat_follow (address, room, unfollow, tx_hash) " +
-        "VALUES " + Array(roomFollows.length).fill("(?, ?, ?, ?)").join(", ")
-    await Insert(conf, "chat_room_follow", query, roomFollows.map(roomFollow =>
-        [roomFollow.lock.address, roomFollow.name, roomFollow.unfollow ? 1 : 0, roomFollow.tx_hash]).flat())
+    await InsertBatch(conf, "chat_room_follow", InsertRows(
+        "INSERT OR REPLACE INTO memo_chat_follow (address, room, unfollow, tx_hash)",
+        roomFollows.map(roomFollow =>
+            [roomFollow.lock.address, roomFollow.name, roomFollow.unfollow ? 1 : 0, roomFollow.tx_hash])))
     await SaveTransactions(conf, roomFollows.map(roomFollow => roomFollow.tx))
 }
 

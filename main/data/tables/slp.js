@@ -1,43 +1,51 @@
-const {Insert, Select} = require("../sqlite")
+const {InsertBatch, Select} = require("../sqlite")
+const {KeepFirst, KeepLast, Rows, Statements} = require("../common/rows")
 
-const SaveSlpOutput = async (conf, hash, output) => {
+// The SLP tables an output writes to. Transaction saves build these alongside
+// their own tables so an output's SLP rows ride along in the same batch.
+const SlpRows = () => ({
+    outputs: Rows("INSERT OR IGNORE INTO slp_outputs (hash, `index`, token_hash, amount)", KeepFirst),
+    batons: Rows("INSERT OR IGNORE INTO slp_batons (hash, `index`, token_hash)", KeepFirst),
+    geneses: Rows("INSERT OR REPLACE INTO slp_geneses " +
+        "(hash, token_type, decimals, ticker, name, doc_url)", KeepLast),
+})
+
+const AddSlpOutput = (rows, hash, output) => {
     if (output.slp) {
-        await Insert(conf, "slp_outputs",
-            "INSERT OR IGNORE INTO slp_outputs (hash, `index`, token_hash, amount) VALUES (?, ?, ?, ?)", [
-                hash, output.index, output.slp.token_hash, output.slp.amount])
-        await SaveSlpGenesis(conf, output.slp.genesis)
+        rows.outputs.add(hash + "-" + output.index,
+            [hash, output.index, output.slp.token_hash, output.slp.amount])
+        AddSlpGenesis(rows, output.slp.genesis)
     }
     if (output.slp_baton) {
-        await Insert(conf, "slp_batons",
-            "INSERT OR IGNORE INTO slp_batons (hash, `index`, token_hash) VALUES (?, ?, ?)", [
-                hash, output.index, output.slp_baton.token_hash])
-        await SaveSlpGenesis(conf, output.slp_baton.genesis)
+        rows.batons.add(hash + "-" + output.index, [hash, output.index, output.slp_baton.token_hash])
+        AddSlpGenesis(rows, output.slp_baton.genesis)
     }
 }
 
-const SaveSlpGenesis = async (conf, genesis) => {
+const AddSlpGenesis = (rows, genesis) => {
     if (!genesis) {
         return
     }
-    await Insert(conf, "slp_geneses",
-        "INSERT OR REPLACE INTO slp_geneses (hash, token_type, decimals, ticker, name, doc_url) " +
-        "VALUES (?, ?, ?, ?, ?, ?)", [
-            genesis.hash, genesis.token_type, genesis.decimals, genesis.ticker, genesis.name, genesis.doc_url])
+    rows.geneses.add(genesis.hash, [
+        genesis.hash, genesis.token_type, genesis.decimals, genesis.ticker, genesis.name, genesis.doc_url])
 }
 
 // Saves SLP data from backfill tx queries (trimmed txs with just hash and
 // outputs' SLP fields) and marks the txs checked. Doesn't touch the outputs
 // table, so it can't clobber rows saved by full transaction syncs.
 const SaveSlp = async (conf, txs) => {
+    const rows = SlpRows()
+    const checks = Rows("INSERT OR IGNORE INTO slp_checks (hash)", KeepFirst)
     for (let i = 0; i < txs.length; i++) {
         if (!txs[i]) {
             continue
         }
         for (let j = 0; j < (txs[i].outputs || []).length; j++) {
-            await SaveSlpOutput(conf, txs[i].hash, txs[i].outputs[j])
+            AddSlpOutput(rows, txs[i].hash, txs[i].outputs[j])
         }
-        await Insert(conf, "slp_checks", "INSERT OR IGNORE INTO slp_checks (hash) VALUES (?)", [txs[i].hash])
+        checks.add(txs[i].hash, [txs[i].hash])
     }
+    await InsertBatch(conf, "slp", [...Statements(rows), ...checks.statements()])
 }
 
 // UTXO transactions that haven't been checked against the index server for SLP
@@ -126,6 +134,7 @@ module.exports = {
     GetTokenBalances,
     GetTokenBatons,
     GetUncheckedSlpTxs,
+    AddSlpOutput,
     SaveSlp,
-    SaveSlpOutput,
+    SlpRows,
 }

@@ -1,4 +1,5 @@
-const {Select, Insert} = require("../sqlite");
+const {Select, Insert, InsertBatch, InsertRows} = require("../sqlite");
+const {KeepLast, Rows, Statements} = require("../common/rows");
 const {SaveTransactions} = require("./txs");
 const {SaveMemoPosts} = require("./memo_post");
 const {MaxFollows} = require("../common/memo_follow");
@@ -97,30 +98,23 @@ const GetProfileInfo = async (conf, addresses) => {
 // signed by either side. That nesting is the only record of who signed an
 // accept or a revoke, so the rows are stored keyed to what they reference and
 // the queries below rely on it rather than re-checking addresses.
-const SaveProfileLinks = async (conf, links) => {
+const AddProfileLinks = (rows, links) => {
     if (!links || !links.length) {
         return
     }
-    await Insert(conf, "link_requests",
-        "INSERT OR REPLACE INTO link_requests (tx_hash, address, parent_address, message) " +
-        "VALUES " + Array(links.length).fill("(?, ?, ?, ?)").join(", "),
-        links.map(link => [link.tx_hash, link.address, link.parent_address, link.message]).flat())
-    await SaveTransactions(conf, links.map(link => link.tx))
-    const accepts = links.map(link => link.accepts || []).flat()
-    if (accepts.length) {
-        await Insert(conf, "link_accepts",
-            "INSERT OR REPLACE INTO link_accepts (tx_hash, request_tx_hash, message) " +
-            "VALUES " + Array(accepts.length).fill("(?, ?, ?)").join(", "),
-            accepts.map(accept => [accept.tx_hash, accept.request_tx_hash, accept.message]).flat())
-        await SaveTransactions(conf, accepts.map(accept => accept.tx))
+    for (const link of links) {
+        rows.tables.linkRequests.add(link.tx_hash,
+            [link.tx_hash, link.address, link.parent_address, link.message])
+        rows.txs.push(link.tx)
     }
-    const revokes = accepts.map(accept => accept.revokes || []).flat()
-    if (revokes.length) {
-        await Insert(conf, "link_revokes",
-            "INSERT OR REPLACE INTO link_revokes (tx_hash, accept_tx_hash, message) " +
-            "VALUES " + Array(revokes.length).fill("(?, ?, ?)").join(", "),
-            revokes.map(revoke => [revoke.tx_hash, revoke.accept_tx_hash, revoke.message]).flat())
-        await SaveTransactions(conf, revokes.map(revoke => revoke.tx))
+    const accepts = links.map(link => link.accepts || []).flat()
+    for (const accept of accepts) {
+        rows.tables.linkAccepts.add(accept.tx_hash, [accept.tx_hash, accept.request_tx_hash, accept.message])
+        rows.txs.push(accept.tx)
+    }
+    for (const revoke of accepts.map(accept => accept.revokes || []).flat()) {
+        rows.tables.linkRevokes.add(revoke.tx_hash, [revoke.tx_hash, revoke.accept_tx_hash, revoke.message])
+        rows.txs.push(revoke.tx)
     }
 }
 
@@ -205,10 +199,9 @@ const SaveAddressAliases = async (conf, aliases) => {
     if (!aliases || !aliases.length) {
         return
     }
-    await Insert(conf, "address-aliases",
-        "INSERT OR REPLACE INTO address_aliases (tx_hash, address, target_address, alias) VALUES " +
-        Array(aliases.length).fill("(?, ?, ?, ?)").join(", "), aliases.map(value => [
-            value.tx_hash, value.address, value.target_address, value.alias]).flat())
+    await InsertBatch(conf, "address-aliases", InsertRows(
+        "INSERT OR REPLACE INTO address_aliases (tx_hash, address, target_address, alias)",
+        aliases.map(value => [value.tx_hash, value.address, value.target_address, value.alias])))
 }
 
 // Aliases are meaningful within the identity that set them. Only aliases
@@ -235,84 +228,100 @@ const GetAddressAliases = async (conf, addresses) => {
     return Object.values(aliases)
 }
 
-const SaveMemoProfiles = async (conf, profiles) => {
+// A profile carries the profiles of everyone it follows and everyone following
+// it, each of those a full profile again, so saving one page of profiles walks
+// a tree. Collect the whole tree's rows first and write them as one batch,
+// rather than a handful of inserts per node with a worker round trip each.
+const ProfileRows = () => ({
+    tables: {
+        linkRequests: Rows("INSERT OR REPLACE INTO link_requests " +
+            "(tx_hash, address, parent_address, message)", KeepLast),
+        linkAccepts: Rows("INSERT OR REPLACE INTO link_accepts (tx_hash, request_tx_hash, message)", KeepLast),
+        linkRevokes: Rows("INSERT OR REPLACE INTO link_revokes (tx_hash, accept_tx_hash, message)", KeepLast),
+        names: Rows("INSERT OR REPLACE INTO profile_names (address, name, tx_hash)", KeepLast),
+        texts: Rows("INSERT OR REPLACE INTO profile_texts (address, profile, tx_hash)", KeepLast),
+        pics: Rows("INSERT OR REPLACE INTO profile_pics (address, pic, tx_hash)", KeepLast),
+        follows: Rows("INSERT OR REPLACE INTO memo_follows " +
+            "(address, follow_address, unfollow, tx_hash)", KeepLast),
+        profiles: Rows("INSERT OR REPLACE INTO profiles (address, name, profile, pic)", KeepLast),
+    },
+    txs: [],
+    posts: [],
+})
+
+const AddMemoProfiles = (rows, profiles) => {
     let saveProfiles = []
     for (let i = 0; i < profiles.length; i++) {
         let {lock, name, profile, pic, following, followers, posts, links} = profiles[i]
         if (!lock || !lock.address) {
             continue
         }
-        await SaveProfileLinks(conf, links)
+        AddProfileLinks(rows, links)
         if (posts && posts.length) {
             for (let i = 0; i < posts.length; i++) {
                 posts[i].lock = lock
             }
-            await SaveMemoPosts(conf, posts)
+            rows.posts.push(...posts)
         }
         if (name || profile || pic) {
             saveProfiles.push({lock, name, profile, pic})
         }
         if (name) {
-            await Insert(conf, "profile_names",
-                "INSERT OR REPLACE INTO profile_names (address, name, tx_hash) VALUES (?, ?, ?)", [
-                    lock.address, name.name, name.tx_hash])
-            await SaveTransactions(conf, [name.tx])
+            rows.tables.names.add(name.tx_hash, [lock.address, name.name, name.tx_hash])
+            rows.txs.push(name.tx)
         }
         if (profile) {
-            await Insert(conf, "profile_texts",
-                "INSERT OR REPLACE INTO profile_texts (address, profile, tx_hash) VALUES (?, ?, ?)", [
-                    lock.address, profile.text, profile.tx_hash])
-            await SaveTransactions(conf, [profile.tx])
+            rows.tables.texts.add(profile.tx_hash, [lock.address, profile.text, profile.tx_hash])
+            rows.txs.push(profile.tx)
         }
         if (pic) {
-            await Insert(conf, "profile_pics",
-                "INSERT OR REPLACE INTO profile_pics (address, pic, tx_hash) VALUES (?, ?, ?)", [
-                    lock.address, pic.pic, pic.tx_hash])
-            await SaveTransactions(conf, [pic.tx])
+            rows.tables.pics.add(pic.tx_hash, [lock.address, pic.pic, pic.tx_hash])
+            rows.txs.push(pic.tx)
         }
         if (following && following.length) {
-            await Insert(conf, "memo_follows-following",
-                "INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
-                "VALUES " + Array(following.length).fill("(?, ?, ?, ?)").join(", "), following.map(follow => [
-                    lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
-            const followingProfiles = following.map(follow => {
+            for (const follow of following) {
+                rows.tables.follows.add(follow.tx_hash,
+                    [lock.address, follow.follow_lock.address, follow.unfollow ? 1 : 0, follow.tx_hash])
+                rows.txs.push(follow.tx)
+            }
+            AddMemoProfiles(rows, following.map(follow => {
                 follow.follow_lock.profile.lock = {address: follow.follow_lock.address}
                 return follow.follow_lock.profile
-            })
-            await SaveMemoProfiles(conf, followingProfiles)
-            await SaveTransactions(conf, following.map(follow => {
-                return follow.tx
             }))
         }
         if (followers && followers.length) {
-            await Insert(conf, "memo_follows-followers",
-                "INSERT OR REPLACE INTO memo_follows (address, follow_address, unfollow, tx_hash) " +
-                "VALUES " + Array(followers.length).fill("(?, ?, ?, ?)").join(", "), followers.map(follow => [
-                    follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash]).flat())
-            const followersProfiles = followers.map(follow => {
+            for (const follow of followers) {
+                rows.tables.follows.add(follow.tx_hash,
+                    [follow.lock.address, lock.address, follow.unfollow ? 1 : 0, follow.tx_hash])
+                rows.txs.push(follow.tx)
+            }
+            AddMemoProfiles(rows, followers.map(follow => {
                 follow.lock.profile.lock = {address: follow.lock.address}
                 return follow.lock.profile
-            })
-            await SaveMemoProfiles(conf, followersProfiles)
-            await SaveTransactions(conf, followers.map(follow => {
-                return follow.tx
             }))
         }
     }
-    if (!saveProfiles.length) {
-        return
+    // After the recursion, so a profile that also appears further down the tree
+    // - where it can be carried with fewer fields set - keeps the row from the
+    // level it was asked for, the way the separate inserts left it.
+    for (const profile of saveProfiles) {
+        rows.tables.profiles.add(profile.lock.address, [
+            profile.lock.address,
+            profile.name ? profile.name.tx_hash : "",
+            profile.profile ? profile.profile.tx_hash : "",
+            profile.pic ? profile.pic.tx_hash : "",
+        ])
     }
-    const query = "" +
-        "INSERT OR REPLACE INTO profiles " +
-        "   (address, name, profile, pic) " +
-        "VALUES " + Array(saveProfiles.length).fill("(?, ?, ?, ?)").join(", ")
-    const values = saveProfiles.map(profile => [
-        profile.lock.address,
-        profile.name ? profile.name.tx_hash : "",
-        profile.profile ? profile.profile.tx_hash : "",
-        profile.pic ? profile.pic.tx_hash : "",
-    ]).flat()
-    await Insert(conf, "profiles", query, values)
+}
+
+const SaveMemoProfiles = async (conf, profiles) => {
+    const rows = ProfileRows()
+    AddMemoProfiles(rows, profiles)
+    await InsertBatch(conf, "profiles", Statements(rows.tables))
+    if (rows.posts.length) {
+        await SaveMemoPosts(conf, rows.posts)
+    }
+    await SaveTransactions(conf, rows.txs)
 }
 
 const GetRecentSetName = async (conf, addresses) => {

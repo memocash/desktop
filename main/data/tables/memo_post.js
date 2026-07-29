@@ -1,6 +1,13 @@
-const {Select, Insert} = require("../sqlite");
+const {Select, InsertBatch} = require("../sqlite");
+const {KeepFirst, KeepLast, Rows, Statements} = require("../common/rows");
 const {SaveTransactions} = require("./txs");
 const {historicallyValid} = require("../common/profile_links");
+
+const PostRows = () => ({
+    posts: Rows("INSERT OR REPLACE INTO memo_posts (address, text, tx_hash)", KeepLast),
+    replies: Rows("INSERT OR IGNORE INTO memo_replies (parent_tx_hash, child_tx_hash)", KeepFirst),
+    likes: Rows("INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip)", KeepLast),
+})
 
 const GetPosts = async ({conf, addresses, userAddresses}) => {
     const where = "memo_posts.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
@@ -189,36 +196,31 @@ const SaveMemoPosts = async (conf, posts) => {
     if (allPosts.length === 0) {
         return
     }
-    await Insert(conf, "memo_posts", "INSERT OR REPLACE INTO memo_posts (address, text, tx_hash) " +
-        "VALUES " + Array(allPosts.length).fill("(?, ?, ?)").join(", "), allPosts.map(post => [
-        post.lock.address, post.text, post.tx_hash]).flat())
-    if (parentChildren.length) {
-        await Insert(conf, "memo_replies", "INSERT OR IGNORE INTO memo_replies (parent_tx_hash, child_tx_hash) " +
-            "VALUES " + Array(parentChildren.length).fill("(?, ?)").join(", "), parentChildren.map(parentChild => [
-            parentChild.parent, parentChild.child]).flat())
-    }
-    await SaveTransactions(conf, allPosts.map(post => {
-        return post.tx
-    }))
+    const tables = PostRows()
     let allLikes = []
-    for (let j = 0; j < allPosts.length; j++) {
-        const post = allPosts[j]
-        if (post.likes && post.likes.length) {
-            for (let k = 0; k < post.likes.length; k++) {
-                post.likes[k].post_tx_hash = post.tx_hash
-            }
-            allLikes = allLikes.concat(post.likes)
+    for (let i = 0; i < allPosts.length; i++) {
+        const post = allPosts[i]
+        tables.posts.add(post.tx_hash, [post.lock.address, post.text, post.tx_hash])
+        if (!post.likes) {
+            continue
+        }
+        for (let j = 0; j < post.likes.length; j++) {
+            post.likes[j].post_tx_hash = post.tx_hash
+            allLikes.push(post.likes[j])
         }
     }
-    if (allLikes.length === 0) {
-        return
+    for (let i = 0; i < parentChildren.length; i++) {
+        tables.replies.add(parentChildren[i].parent + "-" + parentChildren[i].child,
+            [parentChildren[i].parent, parentChildren[i].child])
     }
-    await Insert(conf, "memo_likes", "INSERT OR REPLACE INTO memo_likes (address, like_tx_hash, post_tx_hash, tip) " +
-        "VALUES " + Array(allLikes.length).fill("(?, ?, ?, ?)").join(", "), allLikes.map(like => [
-        like.lock.address, like.tx_hash, like.post_tx_hash, like.tip]).flat())
-    await SaveTransactions(conf, allLikes.map(like => {
-        return like.tx
-    }))
+    for (let i = 0; i < allLikes.length; i++) {
+        tables.likes.add(allLikes[i].tx_hash,
+            [allLikes[i].lock.address, allLikes[i].tx_hash, allLikes[i].post_tx_hash, allLikes[i].tip])
+    }
+    await InsertBatch(conf, "memo_posts", Statements(tables))
+    // The posts' own transactions ahead of the likes', which is the order they
+    // were saved in when each went out as its own call.
+    await SaveTransactions(conf, [...allPosts.map(post => post.tx), ...allLikes.map(like => like.tx)])
 }
 
 module.exports = {

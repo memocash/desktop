@@ -7,10 +7,13 @@ if (isMainThread) {
     throw new Error('Its not a worker');
 }
 
-parentPort.on("message", async ({action, queryId, query, variables, dbFile}) => {
+parentPort.on("message", async ({action, queryId, query, variables, statements, dbFile}) => {
     switch (action) {
         case "INSERT":
             Insert({queryId, query, variables})
+            break
+        case "BATCH":
+            Batch({queryId, statements})
             break
         case "SELECT":
             Select({queryId, query, variables})
@@ -23,15 +26,52 @@ parentPort.on("message", async ({action, queryId, query, variables, dbFile}) => 
     }
 });
 
+// Compiling a statement costs about as much as running it, and the sync paths
+// send the same handful of query strings over and over, so keep the compiled
+// ones. Chunked inserts make the string depend on the row count, so the set of
+// distinct queries isn't bounded on its own - drop the cache wholesale once it
+// grows past a session's worth rather than let prepared statements accumulate.
+const MaxCachedStatements = 200
+let cachedStatements = new Map()
+
+const GetStatement = (db, query) => {
+    let statement = cachedStatements.get(query)
+    if (statement === undefined) {
+        if (cachedStatements.size >= MaxCachedStatements) {
+            cachedStatements = new Map()
+        }
+        statement = db.prepare(query)
+        cachedStatements.set(query, statement)
+    }
+    return statement
+}
+
 const Insert = async ({queryId, query, variables}) => {
     try {
         if (variables === undefined) {
             variables = []
         }
         const db = await GetDb()
-        const insert = db.prepare(query)
-        const result = await insert.run(...variables)
+        const result = GetStatement(db, query).run(...variables)
         parentPort.postMessage({queryId, result});
+    } catch (e) {
+        throw new Error(queryId + ": " + e)
+    }
+}
+
+// Runs a caller's whole set of inserts from one message, inside one
+// transaction. Each Insert() otherwise costs a postMessage round trip plus its
+// own commit, which is what the save paths spend nearly all their time on: the
+// round trips alone measured ~17x the cost of the inserts themselves.
+const Batch = async ({queryId, statements}) => {
+    try {
+        const db = await GetDb()
+        db.transaction(() => {
+            for (const {query, variables} of statements) {
+                GetStatement(db, query).run(...(variables === undefined ? [] : variables))
+            }
+        })()
+        parentPort.postMessage({queryId, result: {statements: statements.length}});
     } catch (e) {
         throw new Error(queryId + ": " + e)
     }
@@ -43,8 +83,7 @@ const Select = async ({queryId, query, variables}) => {
             variables = []
         }
         const db = await GetDb()
-        const select = db.prepare(query)
-        const result = await select.all(...variables)
+        const result = GetStatement(db, query).all(...variables)
         parentPort.postMessage({queryId, result});
     } catch (e) {
         throw new Error(queryId + ": " + e)
@@ -58,6 +97,8 @@ const GetDb = async () => {
 }
 
 const SetDb = async (db) => {
+    // Prepared statements belong to the connection they were compiled against.
+    cachedStatements = new Map()
     _db = database(db.replace("~", homedir))
     // Every Insert() lands here as its own statement, so without WAL each one is
     // a separate autocommit against the default rollback journal: create the
