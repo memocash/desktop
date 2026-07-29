@@ -18,8 +18,8 @@ const {
     GetAddressTokenBalances, GetSlpGenesis, GetTokenBalances, GetTokenBatons, GetUncheckedSlpTxs, SaveSlp,
 } = require("./slp")
 const {
-    GenerateHistory, GetRecentAddressTransactions, GetTransaction, GetTransactions, GetUtxos, GetWalletInfo, SaveBlock,
-    SaveTransactions
+    GenerateHistory, GetAddressSyncs, GetTransaction, GetTransactions, GetUtxos, GetWalletInfo, SaveAddressSync,
+    SaveBlock, SaveTransactions
 } = require("./txs")
 
 module.exports = {
@@ -27,6 +27,7 @@ module.exports = {
     GetAddressTokenBalances,
     GetAddressAliases,
     GetAddressesRoomFollowCount,
+    GetAddressSyncs,
     GetChatFollows,
     GetCoins,
     GetFollowers,
@@ -44,7 +45,6 @@ module.exports = {
     GetPosts,
     GetProfileInfo,
     GetProfileLinks,
-    GetRecentAddressTransactions,
     GetWalletLinks,
     GetRecentFollow,
     GetRecentRoomFollow,
@@ -62,6 +62,7 @@ module.exports = {
     GetUncheckedSlpTxs,
     GetUtxos,
     GetWalletInfo,
+    SaveAddressSync,
     SaveBlock,
     SaveAddressAliases,
     SaveChatRoom,

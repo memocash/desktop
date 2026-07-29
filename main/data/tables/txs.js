@@ -114,18 +114,62 @@ const GetWalletInfo = async (conf, addresses) => {
     return Select(conf, "outputs-wallet-info", query, addresses)
 }
 
-const GetRecentAddressTransactions = async (conf, addresses) => {
+// The index returns an address's transactions in the order it first saw them
+// and pages on that same order: seen time, then the tx hash in the internal
+// (reversed) byte order it stores hashes in. Comparing the display hash instead
+// puts same-second transactions in the wrong order at a page boundary.
+const ReverseHash = (hash) => (hash.match(/../g) || []).reverse().join("")
+
+const CompareSyncs = (a, b) => {
+    if (a.seen !== b.seen) {
+        return a.seen < b.seen ? -1 : 1
+    }
+    const aHash = ReverseHash(a.tx_hash), bHash = ReverseHash(b.tx_hash)
+    return aHash === bHash ? 0 : (aHash < bHash ? -1 : 1)
+}
+
+const MaxSync = (address, txs) => {
+    let max
+    for (let i = 0; i < (txs || []).length; i++) {
+        // SaveTransactions only keeps a seen timestamp that starts with "20",
+        // and the index sorts anything else to the front of the address, so a
+        // transaction without one can't be resumed from.
+        if (!txs[i].seen || txs[i].seen.substr(0, 2) !== "20") {
+            continue
+        }
+        const sync = {address, seen: txs[i].seen, tx_hash: txs[i].hash}
+        if (max === undefined || CompareSyncs(sync, max) > 0) {
+            max = sync
+        }
+    }
+    return max
+}
+
+const GetAddressSyncs = async (conf, addresses) => {
     const query = "" +
-        "SELECT " +
-        "   outputs.address, " +
-        "   MAX(blocks.timestamp) AS timestamp " +
-        "FROM outputs " +
-        "JOIN block_txs ON (block_txs.tx_hash = outputs.hash) " +
-        "JOIN blocks on (blocks.hash = block_txs.block_hash) " +
-        "JOIN history ON (history.address = outputs.address) " +
-        "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "GROUP BY outputs.address "
-    return Select(conf, "recent-address-transactions", query, addresses)
+        "SELECT address, seen, tx_hash " +
+        "FROM address_syncs " +
+        "WHERE address IN (" + Array(addresses.length).fill("?").join(", ") + ")"
+    return Select(conf, "address_syncs", query, addresses)
+}
+
+// How far the history sync has walked an address, stored as the last
+// transaction it actually reached rather than a time derived from the
+// transactions it saved. A block's timestamp is later than the seen time of the
+// transactions in it, so resuming from a block timestamp (or from the newest
+// transaction some other sync happened to save) skips every transaction the
+// index saw in between, and those gaps are permanent: an unfetched transaction
+// that spends a wallet output leaves that output looking unspent forever.
+const SaveAddressSync = async (conf, address, txs) => {
+    const existing = (await Select(conf, "address_syncs",
+        "SELECT address, seen, tx_hash FROM address_syncs WHERE address = ?", [address]))[0]
+    const sync = MaxSync(address, txs)
+    if (!sync || (existing && CompareSyncs(sync, existing) <= 0)) {
+        return existing
+    }
+    await Insert(conf, "address_syncs", "INSERT OR REPLACE INTO address_syncs (address, seen, tx_hash) VALUES (?, ?, ?)", [
+        sync.address, sync.seen, sync.tx_hash])
+    return sync
 }
 
 const GetTransaction = async (conf, txHash) => {
@@ -189,11 +233,12 @@ const GetUtxos = async (conf, addresses) => {
 
 module.exports = {
     GenerateHistory,
-    GetRecentAddressTransactions,
+    GetAddressSyncs,
     GetTransaction,
     GetTransactions,
     GetUtxos,
     GetWalletInfo,
+    SaveAddressSync,
     SaveBlock,
     SaveTransactions,
 }

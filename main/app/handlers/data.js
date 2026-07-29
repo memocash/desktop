@@ -3,7 +3,7 @@ const {SaveImagesFromProfiles} = require("../../client/images");
 const {Handlers} = require("../../common/util");
 const {
     SaveTransactions, SaveBlock, GenerateHistory, GetTransactions, GetUtxos, GetTransaction,
-    GetRecentAddressTransactions, SaveMemoProfiles, GetPic, GetCoins, SaveChatRoom, SaveChatRoomFollows, SaveMemoPosts,
+    GetAddressSyncs, SaveAddressSync, SaveMemoProfiles, GetPic, GetCoins, SaveChatRoom, SaveChatRoomFollows, SaveMemoPosts,
     GetAddressTokenBalances, GetNotifications, GetSlpGenesis, GetTokenBalances, GetTokenBatons, GetUncheckedSlpTxs, SaveSlp
 } = require("../../data/tables");
 const {eConf} = require("../window");
@@ -18,7 +18,8 @@ const DataHandlers = () => {
     ipcMain.handle(Handlers.GetUtxos, async (e, addresses) => GetUtxos(eConf(e), addresses))
     ipcMain.handle(Handlers.GetCoins, async (e, addresses) => GetCoins(eConf(e), addresses))
     ipcMain.handle(Handlers.GetNotifications, async (e, addresses) => GetNotifications(eConf(e), addresses))
-    ipcMain.handle(Handlers.GetRecentAddresses, async (e, addresses) => GetRecentAddressTransactions(eConf(e), addresses))
+    ipcMain.handle(Handlers.GetAddressSyncs, async (e, addresses) => GetAddressSyncs(eConf(e), addresses))
+    ipcMain.handle(Handlers.SaveAddressSync, async (e, address, txs) => await SaveAddressSync(eConf(e), address, txs))
     ipcMain.handle(Handlers.GetAddressTokenBalances, async (e, addresses) => GetAddressTokenBalances(eConf(e), addresses))
     ipcMain.handle(Handlers.GetTokenBalances, async (e, addresses) => GetTokenBalances(eConf(e), addresses))
     ipcMain.handle(Handlers.GetTokenBatons, async (e, addresses) => GetTokenBatons(eConf(e), addresses))

@@ -42,6 +42,18 @@ const Definitions = [
         tx_hash CHAR,
         UNIQUE(block_hash, tx_hash)
     )`,
+    // Where the history sync left off for each address. Deliberately not
+    // seeded for databases that predate it: an address with no row here syncs
+    // from its first transaction again, which is what fills in the gaps the
+    // old block-timestamp cursor skipped past. Filling this in from saved
+    // transactions would keep those gaps, since the newest transaction a
+    // database happens to hold isn't the one the sync last reached.
+    `address_syncs (
+        address CHAR,
+        seen CHAR,
+        tx_hash CHAR,
+        UNIQUE(address)
+    )`,
     `history (
         address CHAR,
         hash CHAR,
