@@ -1,13 +1,15 @@
 import profile from "../../../styles/profile.module.css";
 import ShortHash from "../../util/txs";
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 import {TitleCol} from "../snippets/title_col";
 import {useReferredState} from "../../util/state";
 import {TimeSince} from "../../util/time";
-import {Modals} from "../../../../main/common/util";
+import {Modals, Tabs} from "../../../../main/common/util";
 import {SyncProfileLinks, UpdateMemoProfile} from "../update/index";
 import {EmptyState} from "../../util/empty";
-import {BsPeople, BsPersonPlus} from "react-icons/bs";
+import {Loading} from "../../util/loading";
+import {useScopeActivity} from "../../util/activity";
+import {BsExclamationTriangle, BsPeople, BsPersonPlus} from "react-icons/bs";
 
 const Column = {
     Name: "name",
@@ -32,13 +34,22 @@ const compareFollows = (a, b, field, desc) => {
     return (aVal > bVal ? 1 : -1) * (desc ? -1 : 1)
 }
 
-const FollowList = ({addresses, setModal, showFollowers = false}) => {
+// scope names the sync that downloads these follow rows, so an empty list isn't
+// reported as "not following anyone" while they're still on their way: the Memo
+// tab's own list waits on the wallet sync, and the modal opened from a profile
+// waits on that profile's.
+const FollowList = ({addresses, setModal, showFollowers = false, scope = Tabs.Memo}) => {
     // Following comes back ordered by last activity descending, so the initial
     // sort state has to match what's already on screen.
     const [sortCol, sortColRef, setSortCol] = useReferredState(
         showFollowers ? Column.Timestamp : Column.LastActivity)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(true)
     const [follows, followsRef, setFollows] = useReferredState([])
+    // Whether the local list has actually been read for the current addresses.
+    // Nothing on screen is an answer only once it has.
+    const [loaded, setLoaded] = useState(false)
+    const [failed, setFailed] = useState(false)
+    const activity = useScopeActivity(scope)
     const syncedRef = useRef(new Set())
     const addressKey = [...addresses].sort().join("\0")
     const rowAddress = (follow) => showFollowers ? follow.address : follow.follow_address
@@ -46,6 +57,16 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
     useEffect(() => {
         let active = true
         syncedRef.current = new Set()
+        if (!addresses.length) {
+            // The caller hasn't resolved whose follows these are yet (the Memo
+            // tab fills its address list from an effect of its own), so there's
+            // nothing to read and nothing to conclude from an empty list.
+            setLoaded(false)
+            setFailed(false)
+            setFollows([])
+            return
+        }
+        setFailed(false)
         const readFollows = async () => {
             const rows = showFollowers
                 ? await window.electron.getFollowers(addresses)
@@ -56,6 +77,7 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
             const sorted = [...rows].sort((a, b) =>
                 compareFollows(a, b, sortFieldOf(sortColRef.current), sortDescRef.current))
             setFollows(sorted)
+            setLoaded(true)
             return sorted
         }
         const syncProfiles = async (syncAddresses) => {
@@ -97,7 +119,16 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
             if (active) {
                 await readFollows()
             }
-        })().catch(e => console.log("FollowList: follow read failed", e))
+        })().catch(e => {
+            console.log("FollowList: follow read failed", e)
+            // A read that never lands would otherwise leave the list spinning
+            // for work that has stopped. Say the read failed instead - and mark
+            // it answered, so the spinner doesn't outlive the attempt.
+            if (active) {
+                setFailed(true)
+                setLoaded(true)
+            }
+        })
         return () => { active = false }
     }, [addressKey])
     const clickTxLink = async (txHash) => {
@@ -152,13 +183,20 @@ const FollowList = ({addresses, setModal, showFollowers = false}) => {
                     </div>
                 )
             })}
-            {!follows.length && (showFollowers ?
-                <EmptyState icon={<BsPeople/>} title={"No followers yet"}>
-                    People who follow this profile show up here.
+            {!follows.length && (failed ?
+                <EmptyState icon={<BsExclamationTriangle/>}
+                            title={showFollowers ? "Could not load followers" : "Could not load follows"}>
+                    Check the connection indicator below and try again.
                 </EmptyState> :
-                <EmptyState icon={<BsPersonPlus/>} title={"Not following anyone"}>
-                    Follow someone from the Global feed and they show up here, with their posts in your feed.
-                </EmptyState>)}
+                (!loaded || activity.busy ?
+                <Loading>{showFollowers ? "Loading followers..." : "Loading follows..."}</Loading> :
+                (showFollowers ?
+                    <EmptyState icon={<BsPeople/>} title={"No followers yet"}>
+                        People who follow this profile show up here.
+                    </EmptyState> :
+                    <EmptyState icon={<BsPersonPlus/>} title={"Not following anyone"}>
+                        Follow someone from the Global feed and they show up here, with their posts in your feed.
+                    </EmptyState>)))}
         </div>
     )
 }

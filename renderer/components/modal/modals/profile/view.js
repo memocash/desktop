@@ -11,7 +11,16 @@ import {SendLinkAccept, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
 import Links from "../../../wallet/snippets/links";
 import {BackfillPosts, SyncAliases, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
-import {BsArrowLeft, BsArrowRight, BsPeople, BsPerson, BsXLg} from "react-icons/bs";
+import {BsArrowLeft, BsArrowRight, BsChatQuote, BsPeople, BsPerson, BsXLg} from "react-icons/bs";
+import {BeginActivity, Scopes, useScopeActivity} from "../../../util/activity";
+import {Loading, Spinner} from "../../../util/loading";
+import {EmptyState} from "../../../util/empty";
+
+// A profile opens on whatever is already saved locally - often nothing at all
+// for someone the wallet has never seen - and fills in as the sync lands. It
+// reports under its own scope rather than the Memo tab's: this is work the
+// modal is waiting on, and the tab behind it isn't.
+const ProfileScopes = [Scopes.Profile]
 
 const LinkStatus = {
     None: "none",
@@ -114,26 +123,40 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
         setIsFollowing(recentFollow !== undefined && !recentFollow.unfollow)
         setPosts(posts)
     })()}, [lastUpdate, lastProfileUpdate, addresses])
+    // What the modal is waiting on, for the header line and the post list below.
+    const activity = useScopeActivity(Scopes.Profile)
     useEffect(() => {(async () => {
-        // Resolve the linked-address cluster before the rest of the sync so
-        // history/posts cover every member. On network failure fall back to
-        // whatever links are already in the local db.
-        let linked = await SyncProfileLinks({addresses: [address]}).catch(async (e) => {
-            console.log("SyncProfileLinks failed", e)
-            return await window.electron.getLinkedAddresses([address])
-        })
-        setAddresses(linked)
-        await SyncAliases({addresses: linked}).then(() =>
-            setLastProfileUpdate((new Date()).toISOString()))
-            .catch(e => console.log("SyncAliases failed", e))
-        await UpdateMemoHistory({addresses: linked, setLastUpdate: setLastProfileUpdate})
-        const wallet = await GetWallet()
-        await BackfillPosts({addresses: linked, userAddresses: wallet.addresses, setLastUpdate: setLastProfileUpdate})
-        const roomsFollowingCount = await window.electron.getAddressesRoomFollowCount({addresses: linked})
-        if (roomsFollowingCount.length) {
-            setRoomsFollowingCount(roomsFollowingCount[0].count)
+        // Wraps the whole fetch, including the steps that report nothing of
+        // their own, so the modal keeps saying it's working right through to
+        // the last one instead of going quiet between phases.
+        const profileActivity = BeginActivity("Loading profile", {scopes: ProfileScopes})
+        try {
+            // Resolve the linked-address cluster before the rest of the sync so
+            // history/posts cover every member. On network failure fall back to
+            // whatever links are already in the local db.
+            let linked = await SyncProfileLinks({addresses: [address]}).catch(async (e) => {
+                console.log("SyncProfileLinks failed", e)
+                return await window.electron.getLinkedAddresses([address])
+            })
+            setAddresses(linked)
+            await SyncAliases({addresses: linked, scopes: ProfileScopes}).then(() =>
+                setLastProfileUpdate((new Date()).toISOString()))
+                .catch(e => console.log("SyncAliases failed", e))
+            await UpdateMemoHistory({addresses: linked, setLastUpdate: setLastProfileUpdate,
+                scopes: ProfileScopes})
+            const wallet = await GetWallet()
+            await BackfillPosts({addresses: linked, userAddresses: wallet.addresses,
+                setLastUpdate: setLastProfileUpdate, scopes: ProfileScopes})
+            const roomsFollowingCount = await window.electron.getAddressesRoomFollowCount({addresses: linked})
+            if (roomsFollowingCount.length) {
+                setRoomsFollowingCount(roomsFollowingCount[0].count)
+            }
+            profileActivity.end("Profile loaded")
+        } catch (e) {
+            profileActivity.fail(e)
+            throw e
         }
-    })()}, [address])
+    })().catch(e => console.log("View: profile sync failed", e))}, [address])
     const clickFollow = async (address, unfollow) => {
         const followOpReturnOutput = script.compile([
             opcodes.OP_RETURN,
@@ -179,6 +202,9 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                         <Links>{profileInfo.profile ? profileInfo.profile : "Profile not set"}</Links>
                     </p>
                     <p>Address: {address}</p>
+                    {activity.busy && <p className={profile.updating} role={"status"} aria-live={"polite"}>
+                        <Spinner/> {activity.label}
+                    </p>}
                     {addresses.length > 1 && <p className={profile.linked}>
                         Linked: {addresses.filter(linkedAddress => linkedAddress !== address)
                         .map((linkedAddress, i) => <span key={i}>
@@ -220,6 +246,11 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
                         <Post key={i} post={post} setModal={setModal} setChatRoom={setChatRoom}/>
                     )
                 })}
+                {!posts.length && (activity.busy ?
+                    <Loading>Loading posts...</Loading> :
+                    <EmptyState icon={<BsChatQuote/>} title={"No posts yet"}>
+                        Posts from this profile show up here.
+                    </EmptyState>)}
             </div>
             <div className={styles.buttons}>
                 <button onClick={onClose}><BsXLg/> Close</button>

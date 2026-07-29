@@ -1,9 +1,16 @@
 // https://stackoverflow.com/a/3177838/744298
+// Ages are floored at zero. The timestamps being aged here are the index
+// server's (when it first saw a transaction) and the miners' (block times),
+// while "now" is this machine's clock, and nothing keeps the two in step - a
+// wallet on a machine whose clock is behind the network is handed timestamps it
+// reads as the future. That fell through every unit below, each of which needs
+// its interval to exceed 1, and printed the raw negative seconds ("-1637s").
+// A timestamp in the future reads as the present instead.
 const TimeSince = (date) => {
     if (!(date instanceof Date)) {
         date = Date.parse(date)
     }
-    const seconds = Math.floor((new Date() - date) / 1000);
+    const seconds = Math.max(0, Math.floor((new Date() - date) / 1000));
     let interval = seconds / 31536000;
     if (interval > 1) {
         return Math.floor(interval) + "y";

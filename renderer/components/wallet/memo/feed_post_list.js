@@ -5,6 +5,8 @@ import Post from "./post";
 import {BackfillPosts, SyncProfileLinks, UpdateMemoHistory} from "../update/index";
 import {Loading} from "../../util/loading";
 import {EmptyState} from "../../util/empty";
+import {useScopeActivity} from "../../util/activity";
+import {Tabs} from "../../../../main/common/util";
 import {BsExclamationTriangle, BsFiles} from "react-icons/bs";
 
 const addressKeyOf = (addresses) => [...(addresses || [])].sort().join("\0")
@@ -23,6 +25,9 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses, onEmptyStat
     const [feedUpdate, setFeedUpdate] = useState("")
     const [loading, setLoading] = useState(true)
     const [failed, setFailed] = useState(false)
+    // The wallet sync downloads the follows this feed is built from, so it has
+    // work in flight here before this component's own passes start.
+    const activity = useScopeActivity(Tabs.Memo)
     const [feed, setFeed] = useState({followedAddresses: [], postAddresses: [], userAddresses: []})
     const addressKey = addressKeyOf(addresses)
     const followedAddressKey = addressKeyOf(feed.followedAddresses)
@@ -184,16 +189,24 @@ const FeedPostList = ({setModal, setChatRoom, lastUpdate, addresses, onEmptyStat
         return () => { active = false }
     }, [addressKey, postAddressKey, userAddressKey, lastUpdate, feedUpdate, settleTick])
 
+    // `loading` covers this component's own sync pass, which is only reached
+    // once there are follows to sync. Before that - no addresses resolved yet,
+    // or the wallet sync still downloading the follows themselves - an empty
+    // feed is a feed that hasn't been loaded, not one with nothing in it, and
+    // it said so as fact. The same three states the empty answer is withheld
+    // for above are the ones the screen has to keep quiet about.
+    const waiting = loading || !addresses || !addresses.length || activity.busy
+
     return (
         <div className={profile.post_list}>
             {posts.map(post =>
                 <Post key={post.tx_hash} post={post} setModal={setModal} setChatRoom={setChatRoom} isFeedRow/>
             )}
-            {loading && !posts.length && <Loading>Loading the latest posts...</Loading>}
-            {!loading && failed && posts.length > 0 && <div className={profile.noPosts}>
+            {waiting && !posts.length && <Loading>Loading the latest posts...</Loading>}
+            {!waiting && failed && posts.length > 0 && <div className={profile.noPosts}>
                 Could not refresh feed, showing saved posts
             </div>}
-            {!loading && !posts.length && (failed ?
+            {!waiting && !posts.length && (failed ?
                 <EmptyState icon={<BsExclamationTriangle/>} title={"Could not load your feed"}>
                     Check the connection indicator below and try again.
                 </EmptyState> :

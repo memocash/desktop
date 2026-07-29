@@ -8,11 +8,13 @@ import Tokens from "./tokens";
 import Update from "./update.js";
 import Memo from "./memo.js";
 import Notifications from "./notifications.js";
+import Log from "./log.js";
 
 export {
     Addresses,
     Chat,
     History,
+    Log,
     Send,
     Receive,
     Coins,

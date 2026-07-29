@@ -1,19 +1,15 @@
 import {useRef} from 'react'
 import tabs from '../../styles/tabs.module.css'
 import {StatusBar} from './snippets/status_bar'
+import {Tabs} from '../../../main/common/util'
 
-export const Tabs = {
-    History: "history",
-    Send: "send",
-    Receive: "receive",
-    Addresses: "addresses",
-    Coins: "coins",
-    Tokens: "tokens",
-    Memo: "memo",
-    Chat: "chat",
-    Notifications: "notifications",
-}
+export {Tabs}
 
+// The tab strip carries no busy indicator of its own: one spinner in the status
+// bar covers whatever the app is doing, and a strip of them competing with the
+// unread badge was more movement than the information was worth. A tab that has
+// nothing to show yet says so in the panel itself (see History, Coins, Tokens,
+// Notifications), which is where someone waiting on it is already looking.
 const Tab = ({selected, name, clicked, title, badge, tabRef, onKeyDown}) => {
     const isSelected = selected === name
     return (
@@ -39,6 +35,7 @@ const Frame = ({selected, clicked, children, connected, lastUpdate, setModal, un
         "Addresses": Tabs.Addresses,
         "Coins": Tabs.Coins,
         "Tokens": Tabs.Tokens,
+        "Log": Tabs.Log,
     }
     const shown = Object.entries(tabTitles).filter(([, name]) => !hiddenTabs.includes(name))
     // Left/right move between tabs and select as they go, the standard tab strip

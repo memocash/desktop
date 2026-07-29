@@ -1,7 +1,15 @@
 import {Status} from "../../util/connect"
+import {BeginActivity, Plural} from "../../util/activity"
+import {Tabs} from "../../../../main/common/util"
 
 // The most transactions the index returns for an address in one query.
 const PageSize = 1000
+
+// Transactions feed every balance the wallet shows, so a history sync marks all
+// of those tabs as busy - each of them is showing a number that's about to
+// change, or nothing at all until this lands. Notifications included: payments
+// and token transfers are notifications, derived from these same rows.
+const HistoryScopes = [Tabs.History, Tabs.Coins, Tabs.Addresses, Tabs.Tokens, Tabs.Send, Tabs.Notifications]
 
 // The index pages an address by the time it first saw each transaction, so the
 // sync resumes from the last transaction it reached (stored per address by
@@ -12,6 +20,22 @@ const PageSize = 1000
 // that spends a wallet output leaves that output listed as an unspent coin.
 const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
     let addressList = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
+    const activity = BeginActivity(
+        `Downloading transactions for ${Plural(addressList.length, "address", "addresses")}`,
+        {scopes: HistoryScopes})
+    try {
+        const saved = await syncHistory({addressList, setConnected, setLastUpdate, activity})
+        // A failed page has already ended the activity with its own message,
+        // and ending twice is a no-op, so this only closes the good path.
+        activity.end(`Downloaded ${Plural(saved, "transaction")}`)
+    } catch (e) {
+        activity.fail(e)
+        throw e
+    }
+}
+
+const syncHistory = async ({addressList, setConnected, setLastUpdate, activity}) => {
+    let saved = 0
     const syncs = await window.electron.getAddressSyncs(addressList)
     let addresses = new Array(addressList.length)
     for (let i = 0; i < addressList.length; i++) {
@@ -35,7 +59,8 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
             setConnected(Status.Disconnected)
             console.log("Error connecting to index server")
             console.log(e)
-            return
+            activity.fail(e)
+            return saved
         }
         let txs = []
         let pages = []
@@ -59,6 +84,14 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
             pages.push({address: data[name].address, txs: data[name].txs})
         }
         await window.electron.saveTransactions(txs)
+        if (txs.length) {
+            // The running total, not this round's count: a big wallet pages
+            // through the same size batch over and over, and a column of
+            // identical "Saved 2,000 transactions" lines says nothing about
+            // whether the download is getting anywhere.
+            saved += txs.length
+            activity.log(`Saved ${Plural(saved, "transaction")}`)
+        }
         for (let p = 0; p < pages.length; p++) {
             // Only save the sync position once the page's transactions are in
             // the database, so an interrupted run resumes before them instead
@@ -84,12 +117,28 @@ const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
                 break
             }
         }
+        // Publish each round rather than only at the end. The History tab reads
+        // the history table, which nothing but GenerateHistory writes, so a
+        // wallet with several pages of transactions used to sit on last
+        // session's rows (or on nothing at all, the first time) until the whole
+        // download finished. Regenerating per round costs one pass over the
+        // saved outputs, and only when that round actually brought something
+        // back.
+        if (txs.length) {
+            await window.electron.generateHistory(addressList)
+            if (typeof setLastUpdate === "function") {
+                setLastUpdate((new Date()).toISOString())
+            }
+        }
     }
+    // Again at the end, for the run that saved nothing: confirmations move with
+    // every block, so the rows still need rebuilding against the current tip.
     await window.electron.generateHistory(addressList)
     if (typeof setLastUpdate === "function") {
         setLastUpdate((new Date()).toISOString())
     }
     setConnected(Status.Connected)
+    return saved
 }
 
 const loadOutputs = async ({addresses}) => {
@@ -214,4 +263,5 @@ const loadOutputs = async ({addresses}) => {
     return data.data
 }
 
+export {HistoryScopes}
 export default UpdateHistory

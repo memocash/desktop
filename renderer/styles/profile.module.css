@@ -125,6 +125,15 @@
     margin-right: 2px;
 }
 
+/* What the profile is still downloading, in the header where it stays visible
+   however far the post list is scrolled. */
+.updating {
+    align-items: center;
+    color: var(--text-muted);
+    display: flex;
+    gap: 6px;
+}
+
 .header_modal .followers {
     margin-bottom: 10px;
 }

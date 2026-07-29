@@ -1,3 +1,6 @@
+import {LogActivity} from "../../util/activity"
+import {HistoryScopes} from "./history"
+
 const ListenNewTxs = ({wallet, setLastUpdate}) => {
     const query = `
         subscription($addresses: [Address!]) {
@@ -52,6 +55,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
         }
         `
     const handler = async (tx) => {
+        LogActivity("New wallet transaction received", {scopes: HistoryScopes})
         await window.electron.saveTransactions([tx.addresses])
         await window.electron.generateHistory(wallet.addresses.concat(wallet.slpList || []))
         if (typeof setLastUpdate === "function") {

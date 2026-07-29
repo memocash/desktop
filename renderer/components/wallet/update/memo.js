@@ -1,4 +1,6 @@
 import {ProfileFields, TxQuery} from "../../util/graphql";
+import {Plural, TrackActivity} from "../../util/activity";
+import {Tabs} from "../../../../main/common/util";
 
 // Index defaults profile collections to 100 rows and caps requests at 5000.
 // Posts only need the 50 rows the local list can display; follow graphs retain
@@ -96,26 +98,41 @@ const syncProfiles = async ({query, addresses, setLastUpdate, saveImages}) => {
         await window.electron.saveMemoProfileImages(data.data.profiles)
     }
     notifyUpdate(setLastUpdate)
+    return data.data.profiles || []
 }
 
-const UpdateMemoProfile = async ({addresses, setLastUpdate}) => {
-    await syncProfiles({query: HeaderQuery, addresses, setLastUpdate, saveImages: true})
-}
+// scopes says which part of the app is waiting on this sync: the Memo tab for
+// the wallet's own identity and its feed, the profile modal when it's the one
+// asking (see modal/modals/profile/view), so opening a profile doesn't make the
+// Memo tab look busy. Notifications are derived from the posts and follows this
+// downloads, so that tab waits on it too.
+const MemoScopes = [Tabs.Memo, Tabs.Notifications]
 
-const UpdateMemoDetails = async ({addresses, setLastUpdate}) => {
-    await syncProfiles({query: DetailsQuery, addresses, setLastUpdate, saveImages: false})
-}
+const UpdateMemoProfile = async ({addresses, setLastUpdate, scopes = MemoScopes}) =>
+    await TrackActivity({
+        start: `Updating ${Plural(addresses.length, "profile")}`,
+        done: profiles => `Updated ${Plural(profiles.length, "profile")}`,
+        scopes,
+    }, () => syncProfiles({query: HeaderQuery, addresses, setLastUpdate, saveImages: true}))
 
-const UpdateMemoHistory = async ({addresses, setLastUpdate}) => {
+const UpdateMemoDetails = async ({addresses, setLastUpdate, scopes = MemoScopes}) =>
+    await TrackActivity({
+        start: `Loading posts and follows for ${Plural(addresses.length, "profile")}`,
+        done: profiles => `Loaded posts and follows for ${Plural(profiles.length, "profile")}`,
+        scopes,
+    }, () => syncProfiles({query: DetailsQuery, addresses, setLastUpdate, saveImages: false}))
+
+const UpdateMemoHistory = async ({addresses, setLastUpdate, scopes = MemoScopes}) => {
     await Promise.all([
-        UpdateMemoProfile({addresses, setLastUpdate})
+        UpdateMemoProfile({addresses, setLastUpdate, scopes})
             .catch(e => console.log("UpdateMemoHistory: header sync failed", e)),
-        UpdateMemoDetails({addresses, setLastUpdate})
+        UpdateMemoDetails({addresses, setLastUpdate, scopes})
             .catch(e => console.log("UpdateMemoHistory: details sync failed", e)),
     ])
 }
 
 export {
+    MemoScopes,
     UpdateMemoDetails,
     UpdateMemoProfile,
 }

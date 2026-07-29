@@ -1,15 +1,25 @@
 import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql";
 import {SyncLinkedProfiles} from "./links";
+import {MemoScopes} from "./memo";
+import {Plural, TrackActivity} from "../../util/activity";
 
 // Number of newest posts pulled from the server for the feed. GetNewPosts reads
 // back the newest 50 rows locally, so asking for more here would only fetch
 // posts the feed can't show.
 const NewPostsLimit = 50
 
-const UpdatePosts = async ({txHashes, setLastUpdate}) => {
+const UpdatePosts = async ({txHashes, setLastUpdate, scopes = MemoScopes}) => {
     if (!txHashes || !txHashes.length) {
         return
     }
+    await TrackActivity({
+        start: `Downloading details for ${Plural(txHashes.length, "post")}`,
+        done: `Downloaded ${Plural(txHashes.length, "post")}`,
+        scopes,
+    }, () => fetchPosts({txHashes, setLastUpdate}))
+}
+
+const fetchPosts = async ({txHashes, setLastUpdate}) => {
     const query = `
         query($txHashes: [Hash!]) {
             posts(txHashes: $txHashes) {
@@ -41,9 +51,9 @@ const UpdatePosts = async ({txHashes, setLastUpdate}) => {
 // UpdateMemoHistory's posts query only fetches tx_hash/text/tx.seen (see
 // update/memo.js) - likes/replies/raw need this separate backfill for
 // whatever's currently in the local post list.
-const BackfillPosts = async ({addresses, userAddresses, setLastUpdate}) => {
+const BackfillPosts = async ({addresses, userAddresses, setLastUpdate, scopes = MemoScopes}) => {
     const posts = await window.electron.getPosts({addresses, userAddresses})
-    await UpdatePosts({txHashes: posts.map(post => post.tx_hash), setLastUpdate})
+    await UpdatePosts({txHashes: posts.map(post => post.tx_hash), setLastUpdate, scopes})
 }
 
 // The feed shows everyone's posts, so unlike the rest of the memo sync it can't
@@ -54,7 +64,14 @@ const BackfillPosts = async ({addresses, userAddresses, setLastUpdate}) => {
 // count and their timestamps resolve locally, and a prolific thread's full
 // reply detail is what makes these payloads balloon. Whoever opens a post gets
 // the full detail from UpdatePosts anyway.
-const UpdateNewPosts = async ({setLastUpdate}) => {
+const UpdateNewPosts = async ({setLastUpdate, scopes = MemoScopes}) =>
+    await TrackActivity({
+        start: "Loading the latest posts",
+        done: count => `Loaded ${Plural(count, "recent post")}`,
+        scopes,
+    }, () => fetchNewPosts({setLastUpdate}))
+
+const fetchNewPosts = async ({setLastUpdate}) => {
     const query = `
         query ($limit: Uint32) {
             posts_newest(limit: $limit) {
@@ -88,7 +105,7 @@ const UpdateNewPosts = async ({setLastUpdate}) => {
     const data = await window.electron.graphQL(query, {limit: NewPostsLimit})
     const posts = data.data.posts_newest
     if (!posts || !posts.length) {
-        return
+        return 0
     }
     // Profiles first: the local post list joins names/pics by address, so
     // without this every post from someone the wallet doesn't already follow
@@ -109,6 +126,7 @@ const UpdateNewPosts = async ({setLastUpdate}) => {
     if (typeof setLastUpdate === "function") {
         setLastUpdate((new Date()).toISOString())
     }
+    return posts.length
 }
 
 // One address can have several posts in the feed, and a duplicate profile would

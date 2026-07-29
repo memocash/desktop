@@ -1,5 +1,5 @@
 const {Menu} = require("electron");
-const {Modals, Listeners} = require("../common/util");
+const {Modals, Listeners, ToggleableTabs} = require("../common/util");
 
 const isMac = process.platform === "darwin"
 
@@ -119,18 +119,12 @@ const ShowMenu = (win, newWindow, wallet) => {
     win.setMenuBarVisibility(true)
 }
 
-// The Addresses and Coins tabs are wallet internals most users never need, so
-// View lets them be hidden. Electron keeps the checked state on the menu item
-// itself, and the renderer mirrors it onto the tab strip.
-const ToggleableTabs = [
-    {label: "Show Addresses", tab: "addresses"},
-    {label: "Show Coins", tab: "coins"},
-]
-
-const TabToggles = (win) => ToggleableTabs.map(({label, tab}) => ({
+// Which tabs can be toggled, and which of them start on, lives in
+// common/util/tabs - the renderer starts its tab strip from the same list.
+const TabToggles = (win) => ToggleableTabs.map(({label, tab, checked}) => ({
     label,
     type: "checkbox",
-    checked: true,
+    checked,
     click: (menuItem) => {
         win.webContents.send(Listeners.ToggleTab, tab, menuItem.checked)
     },

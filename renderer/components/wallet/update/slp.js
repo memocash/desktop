@@ -1,4 +1,11 @@
+import {BeginActivity, Plural} from "../../util/activity";
+import {Tabs} from "../../../../main/common/util";
+
 const BatchSize = 50
+
+// Token balances are shown on both of these tabs, and neither can be trusted
+// until the pre-SLP transactions have been checked.
+const SlpScopes = [Tabs.Tokens, Tabs.Coins]
 
 const SlpOutputFields = `
 outputs {
@@ -32,11 +39,22 @@ outputs {
 // Checks UTXO transactions synced before SLP support for SLP token data.
 // Newly synced transactions include SLP fields directly, so each tx only ever
 // needs to be checked once (tracked in the slp_checks table).
-const UpdateSlp = async ({addresses, setLastUpdate}) => {
+const UpdateSlp = async ({addresses, setLastUpdate, scopes = SlpScopes}) => {
     const unchecked = await window.electron.getUncheckedSlpTxs(addresses)
     if (!unchecked || !unchecked.length) {
         return
     }
+    const activity = BeginActivity(`Checking ${Plural(unchecked.length, "transaction")} for tokens`, {scopes})
+    try {
+        await checkSlp({unchecked, setLastUpdate, activity})
+    } catch (e) {
+        activity.fail(e)
+        throw e
+    }
+    activity.end(`Checked ${Plural(unchecked.length, "transaction")} for tokens`)
+}
+
+const checkSlp = async ({unchecked, setLastUpdate, activity}) => {
     for (let offset = 0; offset < unchecked.length; offset += BatchSize) {
         const batch = unchecked.slice(offset, offset + BatchSize)
         let variables = {}
@@ -63,6 +81,7 @@ const UpdateSlp = async ({addresses, setLastUpdate}) => {
         } catch (e) {
             console.log("Error checking transactions for SLP data")
             console.log(e)
+            activity.fail(e)
             return
         }
         let txs = []
@@ -78,4 +97,5 @@ const UpdateSlp = async ({addresses, setLastUpdate}) => {
     }
 }
 
+export {SlpScopes}
 export default UpdateSlp

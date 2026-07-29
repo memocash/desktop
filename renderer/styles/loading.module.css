@@ -1,4 +1,7 @@
 .spinner {
+    /* A bare inline span ignores width and height, which collapses the circle
+       to a sliver anywhere the spinner isn't a flex item. */
+    display: inline-block;
     width: 14px;
     height: 14px;
     flex-shrink: 0;
@@ -20,11 +23,15 @@
     }
 }
 
+/* The grid-column span keeps it full width inside the wallet's grid tables
+   (history, coins, tokens, follow lists) rather than squeezed into the first
+   column, matching how the empty state lays out in the same places. */
 .loading {
     align-items: center;
     color: var(--text-muted);
     display: flex;
     gap: 8px;
+    grid-column: 1 / -1;
     justify-content: center;
     padding: 20px 10px;
 }

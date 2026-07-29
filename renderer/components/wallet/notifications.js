@@ -1,9 +1,10 @@
 import {useEffect, useState} from "react"
 import {BsArrowDownCircle, BsBell, BsBoxArrowInUpRight, BsChatLeft, BsHeart, BsLink45Deg} from "react-icons/bs"
 import {TimeSince} from "../util/time"
-import {Modals} from "../../../main/common/util"
+import {Modals, Tabs} from "../../../main/common/util"
 import {EmptyState} from "../util/empty"
 import {Loading} from "../util/loading"
+import {useScopeActivity} from "../util/activity"
 import styles from "../../styles/notifications.module.css"
 
 const formatTokenAmount = ({amount, decimals}) => {
@@ -43,6 +44,9 @@ export const notificationSummary = (notification) => {
 
 const Notifications = ({notifications, loaded, setModal}) => {
     const [counter, setCounter] = useState(0)
+    // Notifications are derived from transactions, posts and follows, so an
+    // empty list only means "nothing here" once those have been downloaded.
+    const activity = useScopeActivity(Tabs.Notifications)
 
     useEffect(() => {
         const interval = setInterval(() => setCounter(value => value + 1), 10000)
@@ -85,11 +89,11 @@ const Notifications = ({notifications, loaded, setModal}) => {
     }[type])
 
     if (!notifications.length) {
-        return loaded ?
+        return loaded && !activity.busy ?
             <EmptyState icon={<BsBell/>} title={"No notifications yet"}>
                 Replies, likes, tips, and payments to this wallet show up here.
             </EmptyState> :
-            <Loading>Loading notifications...</Loading>
+            <Loading>{activity.busy ? activity.label : "Loading notifications..."}</Loading>
     }
     return <div className={styles.list}>
         {notifications.map(notification => <button key={`${notification.type}-${notification.tx_hash}-${notification.token_hash || ""}`}

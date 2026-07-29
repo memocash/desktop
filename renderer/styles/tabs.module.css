@@ -66,9 +66,40 @@
     padding: 5px 2px;
 }
 
+.statusInfo {
+    flex-shrink: 0;
+}
+
 .statusIcons {
     align-items: center;
     display: flex;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* The activity readout shares the status bar with the balance, so it takes
+   whatever room is left and truncates rather than pushing the connection light
+   off the end. */
+.statusActivity {
+    align-items: center;
+    color: var(--text-muted);
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.statusMessage {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 400ms ease;
+    white-space: nowrap;
+}
+
+/* Nothing is running any more: the last line is still readable but on its way
+   out, so it doesn't read as work still in progress. */
+.statusMessageFading {
+    opacity: 0.6;
 }
 
 .statusIcon {

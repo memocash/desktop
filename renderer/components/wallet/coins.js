@@ -9,6 +9,8 @@ import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
 import {EmptyState} from "../util/empty";
 import {BsCoin, BsThreeDots} from "react-icons/bs";
+import {useScopeActivity} from "../util/activity";
+import {Tabs} from "../../../main/common/util";
 
 const Column = {
     Address: "address",
@@ -28,6 +30,9 @@ const Coins = ({lastUpdate}) => {
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const coinsDiv = useRef()
     const columns = useResizableColumns(5)
+    // Coins are still being downloaded: "no coins yet" would be wrong until
+    // the transactions they come from have landed.
+    const activity = useScopeActivity(Tabs.Coins)
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         const coins = await window.electron.getCoins(wallet.addresses.concat(wallet.changeList, wallet.slpList || []))
@@ -149,11 +154,11 @@ const Coins = ({lastUpdate}) => {
                  columns.gridRef.current = el
              }}>
             {!coins.length ?
-                (loaded ?
+                (loaded && !activity.busy ?
                     <EmptyState icon={<BsCoin/>} title={"No coins yet"}>
                         Unspent outputs appear here once this wallet receives a payment.
                     </EmptyState> :
-                    <Loading>Loading coins...</Loading>)
+                    <Loading>{activity.busy ? activity.label : "Loading coins..."}</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
                     <TitleCol sortFunc={sortCoins} desc={sortDesc} sortCol={sortCol} index={0} columns={columns}

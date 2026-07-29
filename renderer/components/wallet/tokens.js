@@ -10,6 +10,8 @@ import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
 import {EmptyState} from "../util/empty";
 import {BsGem} from "react-icons/bs";
+import {useScopeActivity} from "../util/activity";
+import {Tabs} from "../../../main/common/util";
 
 const Column = {
     Ticker: "ticker",
@@ -27,6 +29,9 @@ const Tokens = ({lastUpdate, setModal}) => {
     const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Ticker)
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const columns = useResizableColumns(6)
+    // Token balances only settle once the SLP check has run over the wallet's
+    // transactions, so an empty table before then is a table still filling in.
+    const activity = useScopeActivity(Tabs.Tokens)
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         const addresses = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
@@ -106,11 +111,11 @@ const Tokens = ({lastUpdate, setModal}) => {
             <div className={styles.wrapper} ref={columns.gridRef}
                  style={{gridTemplateColumns: columns.gridTemplateColumns}}>
             {!tokens.length ?
-                (loaded ?
+                (loaded && !activity.busy ?
                     <EmptyState icon={<BsGem/>} title={"No tokens yet"}>
                         Tokens you create or receive show up here. Create Token is above.
                     </EmptyState> :
-                    <Loading>Loading tokens...</Loading>)
+                    <Loading>{activity.busy ? activity.label : "Loading tokens..."}</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
                     <TitleCol sortFunc={sortTokens} desc={sortDesc} sortCol={sortCol} index={0} columns={columns}

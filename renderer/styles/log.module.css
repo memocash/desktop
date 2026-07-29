@@ -1,0 +1,76 @@
+/* The log fills the tab body and scrolls its list on its own, so the header
+   line - what's running right now, and Clear - stays put while entries scroll
+   under it. */
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.header {
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    padding: 6px 8px;
+}
+
+.running {
+    align-items: center;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.count {
+    color: var(--text-faint);
+    flex-shrink: 0;
+}
+
+.list {
+    display: grid;
+    /* Time and scope stay narrow so the messages line up in a readable column
+       whatever they say. */
+    grid-template-columns: max-content max-content 1fr;
+    align-content: start;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.entry {
+    display: contents;
+}
+
+.entry > span {
+    padding: 3px 8px;
+}
+
+.entry:hover > span {
+    background: var(--border);
+}
+
+.time {
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.scopes {
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.message {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.error .message {
+    color: var(--danger);
+}

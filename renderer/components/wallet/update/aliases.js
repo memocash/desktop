@@ -1,13 +1,23 @@
 import bitcoincash, {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import bitcoin from "../../util/bitcoin";
+import {MemoScopes} from "./memo";
+import {Plural, TrackActivity} from "../../util/activity";
 
 // The profile GraphQL type does not expose 6d26 actions, so read recent
 // transactions for each identity address and index valid alias scripts
 // locally. The first input address is the protocol actor.
-const SyncAliases = async ({addresses}) => {
+const SyncAliases = async ({addresses, scopes = MemoScopes}) => {
     if (!addresses || !addresses.length) {
         return []
     }
+    return await TrackActivity({
+        start: `Loading aliases for ${Plural(addresses.length, "address", "addresses")}`,
+        done: aliases => `Loaded ${Plural(aliases.length, "alias", "aliases")}`,
+        scopes,
+    }, () => syncAliases({addresses}))
+}
+
+const syncAliases = async ({addresses}) => {
     const params = addresses.map((_, i) => `$address${i}: Address!`).join(", ")
     const fields = addresses.map((_, i) => `
         address${i}: address(address: $address${i}) {

@@ -1,7 +1,18 @@
 import {LikesQuery, PostFields, ProfileFields, TxQuery} from "../../util/graphql";
 import {SyncLinkedProfiles} from "./links";
+import {LogActivity, Plural, TrackActivity} from "../../util/activity";
+import {Tabs} from "../../../../main/common/util";
 
-const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
+const ChatScopes = [Tabs.Chat]
+
+const UpdateChatFollows = async ({addresses, setLastUpdate}) =>
+    await TrackActivity({
+        start: "Loading chat rooms",
+        done: count => `Loaded ${Plural(count, "chat room follow")}`,
+        scopes: ChatScopes,
+    }, () => syncChatFollows({addresses, setLastUpdate}))
+
+const syncChatFollows = async ({addresses, setLastUpdate}) => {
     const query = `
     query ($addresses: [Address!]) {
         profiles(addresses: $addresses) {
@@ -29,6 +40,7 @@ const UpdateChatFollows = async ({addresses, setLastUpdate}) => {
         await window.electron.saveChatRoomFollows(rooms)
     }
     setLastUpdate((new Date()).toISOString())
+    return rooms.length
 }
 
 // A room's history runs to thousands of posts, so take only the newest page.
@@ -39,7 +51,14 @@ const ChatPostLimit = 100
 // every follow transaction (including raw inputs and outputs) for busy rooms.
 const ChatFollowerLimit = 50
 
-const UpdateChat = async ({roomName, setLastUpdate}) => {
+const UpdateChat = async ({roomName, setLastUpdate}) =>
+    await TrackActivity({
+        start: `Loading chat room ${roomName}`,
+        done: count => `Loaded ${Plural(count, "post")} in ${roomName}`,
+        scopes: ChatScopes,
+    }, () => syncChat({roomName, setLastUpdate}))
+
+const syncChat = async ({roomName, setLastUpdate}) => {
     const query = `
     query ($room: String!) {
         room(name: $room) {
@@ -79,6 +98,7 @@ const UpdateChat = async ({roomName, setLastUpdate}) => {
         .filter(post => post.lock && post.lock.address)
         .map(post => post.lock.address))]})
     setLastUpdate((new Date()).toISOString())
+    return (data.data.room.posts || []).length
 }
 
 const ListenChatPosts = ({names, setLastUpdate}) => {
@@ -105,6 +125,7 @@ const ListenChatPosts = ({names, setLastUpdate}) => {
         }
         `
     const handler = async (post) => {
+        LogActivity(`New post in ${post.rooms.room.name}`, {scopes: ChatScopes})
         await window.electron.saveChatRoom({name: post.rooms.room.name, posts: [post.rooms]})
         if (post.rooms.lock && post.rooms.lock.address) {
             await SyncLinkedProfiles({addresses: [post.rooms.lock.address]})

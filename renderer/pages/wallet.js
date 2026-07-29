@@ -1,12 +1,12 @@
 import Frame, {Tabs} from "../components/wallet/frame";
-import {Addresses, Chat, Coins, History, Memo, Notifications, Receive, Send, Tokens, Update} from "../components/wallet";
+import {Addresses, Chat, Coins, History, Log, Memo, Notifications, Receive, Send, Tokens, Update}
+    from "../components/wallet";
 import {useEffect, useRef, useState} from "react";
 import {Status} from "../components/util/connect"
 import ModalViewer from "../components/modal/viewer";
-import {Modals} from "../../main/common/util";
+import {DefaultHiddenTabs, Modals} from "../../main/common/util";
 import {Utxos} from "../components/util/utxos";
 import useNotifications from "../components/wallet/use_notifications";
-import styles from "../styles/walletLoading.module.css";
 
 const StorageKeyWalletTab = "wallet-tab"
 
@@ -34,19 +34,22 @@ const WalletLoaded = () => {
     const [lastUpdate, setLastUpdate] = useState("")
     const [connected, setConnected] = useState(Status.NotConnected)
     const [room, setRoom] = useState("")
-    // Tabs the user has switched off in View > Show Addresses / Show Coins.
-    const [hiddenTabs, setHiddenTabs] = useState([])
-    const [syncProgress, setSyncProgress] = useState({
-        active: true,
-        percent: 0,
-        label: "Preparing wallet",
-    })
+    // Tabs the user has switched off in View, starting from the same set the
+    // View menu starts unchecked.
+    const [hiddenTabs, setHiddenTabs] = useState(DefaultHiddenTabs)
+    // Whether the first sync of the session is still running. It no longer
+    // covers the window - the status bar and the panes themselves report it in
+    // place (see components/wallet/update) - but a couple of behaviours still
+    // need to know a wallet is only part loaded: which view the Memo tab opens
+    // on, and not raising desktop alerts for history that is merely being
+    // downloaded for the first time.
+    const [initialSync, setInitialSync] = useState(true)
     const shownRef = useRef([])
     // Whether the Notifications tab is currently open, so incoming activity
     // isn't badged or alerted while the user is already reading it.
     const notificationsActiveRef = useRef(false)
     const {notifications, loaded: notificationsLoaded, unreadCount, markRead} =
-        useNotifications({lastUpdate, activeRef: notificationsActiveRef, initialSync: syncProgress.active})
+        useNotifications({lastUpdate, activeRef: notificationsActiveRef, initialSync})
     useEffect(() => {(async () => {
         const tab = await window.electron.getWindowStorage(StorageKeyWalletTab) || Tabs.Memo
 
@@ -97,7 +100,7 @@ const WalletLoaded = () => {
                    setModal={setModal} unreadCount={unreadCount} hiddenTabs={hiddenTabs}>
                 <Page tab={tab} page={Tabs.Memo} shown={shownRef}>
                     <Memo lastUpdate={lastUpdate} setModal={setModal} setChatRoom={setChatRoom}
-                          initialSync={syncProgress.active}/></Page>
+                          initialSync={initialSync}/></Page>
                 <Page tab={tab} page={Tabs.Chat} shown={shownRef}>
                     <Chat setModal={setModal} room={room} setRoom={setRoom}/></Page>
                 <Page tab={tab} page={Tabs.Notifications} shown={shownRef}>
@@ -108,23 +111,11 @@ const WalletLoaded = () => {
                 <Page tab={tab} page={Tabs.Addresses} shown={shownRef}><Addresses lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Coins} shown={shownRef}><Coins lastUpdate={lastUpdate}/></Page>
                 <Page tab={tab} page={Tabs.Tokens} shown={shownRef}><Tokens lastUpdate={lastUpdate} setModal={setModal}/></Page>
+                <Page tab={tab} page={Tabs.Log} shown={shownRef}><Log/></Page>
             </Frame>
             <ModalViewer setLastUpdate={setLastUpdate} setModal={setModal} modalWindow={modalWindow} modalProps={modalProps}
                          setChatRoom={setChatRoom}/>
-            <Update setConnected={setConnected} setLastUpdate={setLastUpdate} setSyncProgress={setSyncProgress}/>
-            {syncProgress.active && <div className={styles.backdrop} role="status" aria-live="polite">
-                <div className={styles.card}>
-                    <img src="/memo-logo-large.png" alt="" className={styles.logo}/>
-                    <h1>Loading your wallet</h1>
-                    <p>{syncProgress.label}</p>
-                    <div className={styles.track} role="progressbar" aria-label="Wallet loading progress"
-                         aria-valuemin="0" aria-valuemax="100" aria-valuenow={syncProgress.percent}>
-                        <div className={styles.fill} style={{width: `${syncProgress.percent}%`}}/>
-                    </div>
-                    <span>{syncProgress.percent}%</span>
-                    <small>A wallet with lots of history may take a few minutes.</small>
-                </div>
-            </div>}
+            <Update setConnected={setConnected} setLastUpdate={setLastUpdate} setInitialSync={setInitialSync}/>
         </>
     )
 }

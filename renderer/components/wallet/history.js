@@ -9,6 +9,8 @@ import {Loading} from "../util/loading";
 import {EmptyState} from "../util/empty";
 import {FormatTimestamp} from "../util/time";
 import {BsClockHistory} from "react-icons/bs";
+import {useScopeActivity} from "../util/activity";
+import {Tabs} from "../../../main/common/util";
 
 const Column = {
     Confirms: "confirms",
@@ -26,6 +28,9 @@ const History = ({lastUpdate}) => {
     const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const historyDiv = useRef()
     const columns = useResizableColumns(5)
+    // An empty table during the first sync isn't "no transactions", it's
+    // transactions that haven't been downloaded yet - say which.
+    const activity = useScopeActivity(Tabs.History)
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         let txs = await window.electron.getTransactions(wallet.addresses.concat(wallet.changeList, wallet.slpList || []))
@@ -123,11 +128,11 @@ const History = ({lastUpdate}) => {
              }}
              onClick={clickWrapper} onKeyDown={keyDownHandler} tabIndex={-1}>
             {!txs.length ?
-                (loaded ?
+                (loaded && !activity.busy ?
                     <EmptyState icon={<BsClockHistory/>} title={"No transactions yet"}>
                         Payments in and out of this wallet show up here.
                     </EmptyState> :
-                    <Loading>Loading transactions...</Loading>)
+                    <Loading>{activity.busy ? activity.label : "Loading transactions..."}</Loading>)
                 :
                 <div className={[styles.row, styles.rowTitle].join(" ")}>
                     <TitleCol sortFunc={sortTxs} desc={sortDesc} sortCol={sortCol} index={0} columns={columns}

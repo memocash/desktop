@@ -3,70 +3,103 @@ import GetWallet from "../util/wallet";
 import {BackfillPosts, ListenBlocks, ListenNewTxs, ListenPosts, RecentBlock, SyncAliases, SyncProfileLinks, UpdateHistory,
     UpdateMemoDetails, UpdateMemoHistory, UpdateMemoProfile, UpdateSlp} from "./update/index.js";
 import ListenNewMemos from "./update/listen_memo";
+import {BeginActivity, LogActivity, LogActivityError} from "../util/activity";
+import {Tabs} from "../../../main/common/util";
 
-const Update = ({setConnected, setLastUpdate, setSyncProgress}) => {
+// Every tab the startup sync fills. Held busy for the whole run, not just for
+// the phase that happens to be feeding them: the phases are sequential, so a
+// tab whose turn hasn't come round yet has nothing on screen and nothing marked
+// in flight, and it would state as fact that the wallet has no transactions -
+// or no follows - when the download simply hasn't got there. Chat is absent
+// because it syncs when its own pane mounts, not from here.
+const StartupScopes = [Tabs.Memo, Tabs.Notifications, Tabs.History, Tabs.Coins, Tabs.Addresses,
+    Tabs.Tokens, Tabs.Send]
+
+// The startup sync used to run behind a modal covering the window, so nothing
+// was usable until the slowest phase finished. It runs in the open now: each
+// phase reports through the activity store (components/util/activity), which
+// marks the tabs waiting on it as busy and logs what it's doing, and the panes
+// stay interactive throughout, showing whatever is already in the local db.
+// setInitialSync marks the first sync of the session as running: not for a
+// progress readout - the phases below are whatever work each one turns out to
+// be, and weighting them against each other produced a percentage that only
+// looked precise - but for the couple of behaviours that must not act on a
+// half-loaded wallet (the Memo tab's opening view, notification alerts).
+const Update = ({setConnected, setLastUpdate, setInitialSync}) => {
     const walletRef = useRef(null);
     // Wallet addresses expanded with their linked-address cluster, so the memo
     // sync and profile subscription cover activity from linked accounts too.
     // Resolved before UpdateHistory's first setLastUpdate re-render so it's
     // set by the time the listeners effect below runs.
     const linkedRef = useRef(null);
-    useEffect(() => {(async () => {
-        const progress = (percent, label) => setSyncProgress({active: percent < 100, percent, label})
-        window.electron.walletLoaded()
-        progress(5, "Opening wallet")
-        let wallet = await GetWallet()
-        if (!wallet.addresses || !wallet.addresses.length) {
-            console.log("ERROR: Addresses not loaded")
-            progress(100, "Wallet ready")
-            return
-        }
-        walletRef.current = wallet
-        progress(10, "Connecting to the network")
-        await RecentBlock()
-        const addresses = wallet.addresses.concat(wallet.changeList)
-        progress(15, "Finding linked profiles")
-        linkedRef.current = await SyncProfileLinks({addresses}).catch(async (e) => {
-            console.log("Update: SyncProfileLinks failed", e)
-            return await window.electron.getLinkedAddresses(addresses)
-        })
-        progress(25, "Loading profile information")
-        await UpdateMemoProfile({addresses: linkedRef.current, setLastUpdate})
-            .catch(e => console.log("Update: profile sync failed", e))
-        progress(35, "Loading transaction history")
-        await UpdateHistory({wallet, setConnected, setLastUpdate})
-        progress(55, "Loading profile activity")
-        await UpdateMemoDetails({addresses: linkedRef.current, setLastUpdate})
-            .catch(e => console.log("Update: profile activity sync failed", e))
-        progress(70, "Loading aliases")
-        await SyncAliases({addresses: linkedRef.current}).catch(e => console.log("Update: SyncAliases failed", e))
-        progress(78, "Loading tokens")
-        await UpdateSlp({addresses: addresses.concat(wallet.slpList || []), setLastUpdate})
-        progress(86, "Loading your recent posts")
-        await BackfillPosts({addresses: linkedRef.current, userAddresses: wallet.addresses, setLastUpdate})
-        progress(90, "Loading the latest feed")
-        const following = await window.electron.getFollowing(linkedRef.current, {limit: null})
-        const followedAddresses = [...new Set(following.map(follow => follow.follow_address))]
-        if (followedAddresses.length) {
-            // Await direct follows so reaching 100% reveals a current baseline.
-            // FeedPostList expands followed identities after startup; doing that
-            // here too would add its sequential link-discovery rounds to launch.
-            await UpdateMemoHistory({addresses: followedAddresses, setLastUpdate})
-            await BackfillPosts({
-                addresses: followedAddresses,
-                userAddresses: wallet.addresses,
-                setLastUpdate,
+    useEffect(() => {
+        const startup = BeginActivity("Loading your wallet", {scopes: StartupScopes})
+        ;(async () => {
+            // Each phase is announced as it starts, so the status bar and the
+            // Log tab name the step being waited on. Several of them (opening
+            // the wallet, the block tip, reading follows) do no reporting of
+            // their own. Logged without a scope: a phase is a step of the
+            // wallet's overall sync, and tying "Loading tokens" to whichever
+            // tab happened to sort first would only mislabel it in the log.
+            const phase = (label) => LogActivity(label)
+            window.electron.walletLoaded()
+            phase("Opening wallet")
+            let wallet = await GetWallet()
+            if (!wallet.addresses || !wallet.addresses.length) {
+                console.log("ERROR: Addresses not loaded")
+                LogActivity("Wallet has no addresses loaded")
+                return
+            }
+            walletRef.current = wallet
+            phase("Connecting to the network")
+            await RecentBlock()
+            const addresses = wallet.addresses.concat(wallet.changeList)
+            phase("Finding linked profiles")
+            linkedRef.current = await SyncProfileLinks({addresses}).catch(async (e) => {
+                console.log("Update: SyncProfileLinks failed", e)
+                LogActivityError("Finding linked profiles", e)
+                return await window.electron.getLinkedAddresses(addresses)
             })
-        }
-        progress(100, "Wallet ready")
-    })().catch(e => {
-        console.log("Update: initial wallet sync failed", e)
-    }).finally(() => {
-        // Individual panes retain their existing saved-data/error treatments;
-        // never strand the user behind the startup screen if a remote phase
-        // fails unexpectedly.
-        setSyncProgress({active: false, percent: 100, label: "Wallet ready"})
-    })}, [])
+            phase("Loading profile information")
+            await UpdateMemoProfile({addresses: linkedRef.current, setLastUpdate})
+                .catch(e => console.log("Update: profile sync failed", e))
+            phase("Loading transaction history")
+            await UpdateHistory({wallet, setConnected, setLastUpdate})
+            phase("Loading profile activity")
+            await UpdateMemoDetails({addresses: linkedRef.current, setLastUpdate})
+                .catch(e => console.log("Update: profile activity sync failed", e))
+            phase("Loading aliases")
+            await SyncAliases({addresses: linkedRef.current}).catch(e => console.log("Update: SyncAliases failed", e))
+            phase("Loading tokens")
+            await UpdateSlp({addresses: addresses.concat(wallet.slpList || []), setLastUpdate})
+            phase("Loading your recent posts")
+            await BackfillPosts({addresses: linkedRef.current, userAddresses: wallet.addresses, setLastUpdate})
+            phase("Loading the latest feed")
+            const following = await window.electron.getFollowing(linkedRef.current, {limit: null})
+            const followedAddresses = [...new Set(following.map(follow => follow.follow_address))]
+            if (followedAddresses.length) {
+                // Await direct follows so the sync ends on a current baseline.
+                // FeedPostList expands followed identities after startup; doing that
+                // here too would add its sequential link-discovery rounds to launch.
+                await UpdateMemoHistory({addresses: followedAddresses, setLastUpdate})
+                await BackfillPosts({
+                    addresses: followedAddresses,
+                    userAddresses: wallet.addresses,
+                    setLastUpdate,
+                })
+            }
+        })().catch(e => {
+            console.log("Update: initial wallet sync failed", e)
+            startup.fail(e)
+        }).finally(() => {
+            // Individual panes retain their existing saved-data/error treatments;
+            // never leave the status bar - or a tab still marked as waiting on this
+            // sync - reporting work that has stopped because a remote phase failed
+            // unexpectedly. A run that already failed has ended with its own
+            // message, and ending twice is a no-op.
+            startup.end("Wallet sync complete")
+            setInitialSync(false)
+        })}, [])
     useEffect(() => {
         if (!walletRef.current) {
             return
