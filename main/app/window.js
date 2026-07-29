@@ -2,6 +2,7 @@ const {BrowserWindow, nativeTheme, screen, shell} = require("electron");
 const path = require("path");
 const isDev = require("electron-is-dev");
 const menu = require("../menu");
+const {ForgetPaths} = require("./keystore");
 
 // Dev loads the Next dev server; prod loads the static export served over the
 // app:// protocol (see main/index.js). The rest of the URL is identical.
@@ -36,6 +37,14 @@ const networkOptions = {}
 const txWindows = {}
 const txWindowIds = new Set()
 let windowNumber = 0
+
+// Picking a wallet in a file dialog authorizes that window to open that file.
+// The grant goes when the window does, so an import doesn't leave the path
+// reachable by whatever window is handed the same id later.
+const ForgetPathsOnClose = (win) => {
+    const winId = win.webContents.id
+    win.webContents.once("destroyed", () => ForgetPaths(winId))
+}
 
 const GetMenu = (winId) => menus[winId]
 const GetNetworkOption = (winId) => networkOptions[winId]
@@ -77,6 +86,7 @@ const CreateWindow = async () => {
     });
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     windows[win.webContents.id] = win
+    ForgetPathsOnClose(win)
     await win.loadURL(AppUrl + "/")
     windowNumber++
 }
@@ -99,6 +109,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     menus[win.webContents.id] = menu.SimpleMenu(win, true)
     txWindows[winId].push(win)
     windows[win.webContents.id] = win
+    ForgetPathsOnClose(win)
     wallets[win.webContents.id] = wallets[winId]
     networkOptions[win.webContents.id] = networkOptions[winId]
     let params = {txHash}

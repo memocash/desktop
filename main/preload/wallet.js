@@ -1,206 +1,34 @@
-const fs = require("fs/promises")
-const CryptoJS = require("crypto-js");
 const {ipcRenderer} = require("electron");
-const {Handlers, Dir} = require("../common/util");
-const {decryptWallet, getPathForWallet, fileExists} = require("./common");
-const path = require("path");
-const fsOriginal = require("fs");
+const {Handlers} = require("../common/util");
+
+// Nothing here touches the filesystem or a cipher. Each call names an operation
+// and main decides whether to perform it - see main/app/keystore.js.
+const updateWallet = (op) => async (values) => ipcRenderer.invoke(Handlers.UpdateWallet, op, values)
 
 module.exports = {
-    removeAddresses: async (addressList) => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
-        if (password && password.length){
-            walletJson = decryptWallet(walletJson, password)
-        }
-        const wallet = JSON.parse(walletJson)
-        if (!wallet.addresses){
-            wallet.addresses = []
-        }
-        const newAddresses = wallet.addresses.filter(address => !addressList.includes(address))
-        wallet.addresses = [... new Set(newAddresses)]
-        let contents = JSON.stringify(wallet)
-        if (password && password.length){
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fsOriginal.writeFileSync(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet,wallet, filename,password)
-    },
-    addAddresses: async (addressList) => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
-        if (password && password.length) {
-            walletJson = decryptWallet(walletJson, password)
-        }
-        const wallet = JSON.parse(walletJson)
-        if (!wallet.addresses) {
-            wallet.addresses = []
-        }
-        wallet.addresses.push(...addressList)
-        wallet.addresses = [...new Set(wallet.addresses)]
-        let contents = JSON.stringify(wallet)
-        if (password && password.length) {
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fsOriginal.writeFileSync(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
-    },
-    addSlpList: async (slpList) => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
-        if (password && password.length) {
-            walletJson = decryptWallet(walletJson, password)
-        }
-        const wallet = JSON.parse(walletJson)
-        if (!wallet.slpList) {
-            wallet.slpList = []
-        }
-        wallet.slpList.push(...slpList)
-        wallet.slpList = [...new Set(wallet.slpList)]
-        let contents = JSON.stringify(wallet)
-        if (password && password.length) {
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fsOriginal.writeFileSync(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
-    },
-    addChangeList: async (changeList) => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
-        if (password && password.length) {
-            walletJson = decryptWallet(walletJson, password)
-        }
-        const wallet = JSON.parse(walletJson)
-        if (!wallet.changeList) {
-            wallet.changeList = []
-        }
-        wallet.changeList.push(...changeList)
-        wallet.changeList = [...new Set(wallet.changeList)]
-        let contents = JSON.stringify(wallet)
-        if (password && password.length) {
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fsOriginal.writeFileSync(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
-    },
-    removeKeys: async (keyList) => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
-        if (password && password.length) {
-            walletJson = decryptWallet(walletJson, password)
-        }
-        const wallet = JSON.parse(walletJson)
-        if (!wallet.keys) {
-            wallet.keys = []
-        }
-        const newKeys = wallet.keys.filter(key => !keyList.includes(key))
-        wallet.keys = [...new Set(newKeys)]
-        let contents = JSON.stringify(wallet)
-        if (password && password.length) {
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fsOriginal.writeFileSync(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
-    },
-    addKeys: async (keyList) => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
-        if (password && password.length) {
-            walletJson = decryptWallet(walletJson, password)
-        }
-        const wallet = JSON.parse(walletJson)
-        if (!wallet.keys) {
-            wallet.keys = []
-        }
-        wallet.keys.push(...keyList)
-        wallet.keys = [...new Set(wallet.keys)]
-        let contents = JSON.stringify(wallet)
-        if (password && password.length) {
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fsOriginal.writeFileSync(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
-    },
-    changeSettings: async (newSettings) => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        let walletJson = await fsOriginal.readFileSync(filename, {encoding: "utf8"})
-        if (password && password.length) {
-            walletJson = decryptWallet(walletJson, password)
-        }
-        const wallet = JSON.parse(walletJson)
-        if (!wallet.settings) {
-            wallet.settings = {
-                DirectTx: false,
-                SkipPassword: true,
-            }
-        }
-        for(let key in newSettings){
-            wallet.settings[key] = newSettings[key]
-        }
-        let contents = JSON.stringify(wallet)
-        if (password && password.length) {
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fsOriginal.writeFileSync(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet, wallet, filename, password)
-    },
-    checkFile: async (walletName) => {
-        const wallet = getPathForWallet(walletName)
-        try {
-            await fs.access(wallet)
-            return true
-        } catch (err) {
-            return false
-        }
-    },
-    createFile: async (walletName, seedPhrase, keyList, addressList, password) => {
-        if (!Dir.IsFullPath(walletName)) {
-            await fs.mkdir(Dir.DefaultPath, {recursive: true})
-        }
-        const filename = getPathForWallet(walletName)
-        let wallet = JSON.stringify({
-            time: new Date(),
-            seed: seedPhrase,
-            keys: keyList,
-            addresses: addressList,
-        })
-        let contents = wallet
-        if (password) {
-            contents = CryptoJS.AES.encrypt(contents, password).toString()
-        }
-        await fs.writeFile(filename, contents)
-        await ipcRenderer.send(Handlers.StoreWallet, JSON.parse(wallet), filename, password)
-    },
-    getExistingWalletFiles: async () => {
-        if (!await fileExists(Dir.DefaultPath)) {
-            await fs.mkdir(Dir.DefaultPath, {recursive: true})
-        }
-        const files = await fs.readdir(Dir.DefaultPath)
-        return files.map(file => {
-            return path.parse(file).name
-        })
-    },
-    getPassword: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).password,
+    addAddresses: updateWallet("addAddresses"),
+    removeAddresses: updateWallet("removeAddresses"),
+    addKeys: updateWallet("addKeys"),
+    removeKeys: updateWallet("removeKeys"),
+    addChangeList: updateWallet("addChangeList"),
+    addSlpList: updateWallet("addSlpList"),
+    changeSettings: updateWallet("changeSettings"),
+    checkFile: async (walletName) => ipcRenderer.invoke(Handlers.CheckWalletFile, walletName),
+    createFile: async (walletName, seedPhrase, keyList, addressList, password) =>
+        ipcRenderer.invoke(Handlers.CreateWallet, walletName, seedPhrase, keyList, addressList, password),
+    getExistingWalletFiles: async () => ipcRenderer.invoke(Handlers.GetExistingWalletFiles),
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
     generateWallet: async (seed, keys) => ipcRenderer.invoke(Handlers.GenerateWallet, seed, keys),
     getWallet: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).wallet,
-    getWalletFileInfo: async () => {
-        const {filename, password} = await ipcRenderer.invoke(Handlers.GetWallet)
-        return {filename, name: path.parse(filename).name, encrypted: !!(password && password.length)}
-    },
-    getWalletFile: async (walletName) => await fs.readFile(getPathForWallet(walletName), {encoding: "utf8"}),
-    setWallet: async (wallet, filename, password) =>
-        ipcRenderer.send(Handlers.StoreWallet, wallet, getPathForWallet(filename), password),
+    // Still reachable until per-operation authentication lands, at which point
+    // the window stops handing the password back across this boundary at all.
+    getPassword: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).password,
+    getWalletFileInfo: async () => ipcRenderer.invoke(Handlers.GetWalletFileInfo),
+    isWalletFileEncrypted: async (walletName) => ipcRenderer.invoke(Handlers.WalletFileIsEncrypted, walletName),
+    unlockWallet: async (walletName, password) => ipcRenderer.invoke(Handlers.UnlockWallet, walletName, password),
     walletLoaded: () => ipcRenderer.send(Handlers.WalletLoaded),
-    saveNetworkConfig: async (networkConfig) => {
-        await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(networkConfig, null, 2)+"\n")
-    },
+    saveNetworkConfig: async (networkConfig) => ipcRenderer.invoke(Handlers.SaveNetworkConfig, networkConfig),
+    getNetworkConfig: async () => ipcRenderer.invoke(Handlers.GetNetworkConfig),
     getWindowNetwork: async () => await ipcRenderer.invoke(Handlers.GetWindowNetwork),
     setWindowNetwork: async (network) => await ipcRenderer.invoke(Handlers.SetWindowNetwork, network),
-    getNetworkConfig: async () => {
-        if (!await fileExists(Dir.NetworkConfigFile)) {
-            return
-        }
-        return JSON.parse(await fs.readFile(getPathForWallet(Dir.NetworkConfigFile), {encoding: "utf8"}))
-    },
 }

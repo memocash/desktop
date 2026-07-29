@@ -7,7 +7,6 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
     const [isUnreadableFile, setIsUnreadableFile] = useState(false);
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
-    const [walletContents, setWalletContents] = useState("")
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
     const walletInput = useRef()
     const passwordInput = useRef()
@@ -29,30 +28,20 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         setFilePath(pathToWallet)
         setPane(Panes.Step2SelectType)
     }
+    // Main opens and decrypts the file; the renderer only learns whether the
+    // password was right.
     const onLoadWallet = async (pathToWallet, password) => {
-        let walletJson = await window.electron.getWalletFile(pathToWallet)
-        try {
-            if (password) {
-                walletJson = window.electron.decryptWallet(walletJson, password)
-            }
-            const wallet = JSON.parse(walletJson)
-            await window.electron.setWallet(wallet, pathToWallet, password)
-        } catch (err) {
-            console.log(err)
+        const {error} = await window.electron.unlockWallet(pathToWallet, password)
+        if (error) {
+            setHasEnteredWrongPassword(true)
             return
         }
         await loadWallet()
     }
     const loadFile = async (walletFile) => {
-        const fileContents = await window.electron.getWalletFile(walletFile)
+        setPasswordProtectedFile(await window.electron.isWalletFileEncrypted(walletFile))
         setFileExists(true)
         setIsUnreadableFile(false)
-        if (!fileContents.startsWith("{")) {
-            setPasswordProtectedFile(true)
-        } else {
-            setPasswordProtectedFile(false)
-        }
-        setWalletContents(fileContents)
     }
     const fileChangeHandler = async () => {
         try {
@@ -85,17 +74,7 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
             await onLoadWallet(pathname)
             return
         }
-        let password;
-        try {
-            password = passwordInput.current.value
-            const decryptedWallet = window.electron.decryptWallet(walletContents, password)
-            if (!decryptedWallet.startsWith("{")) {
-                setHasEnteredWrongPassword(true)
-            }
-        } catch (err) {
-            setHasEnteredWrongPassword(true)
-        }
-        await onLoadWallet(pathname, password)
+        await onLoadWallet(pathname, passwordInput.current.value)
     }
     const passwordKeyDown = async (e) => {
         if (e.keyCode === 13) {

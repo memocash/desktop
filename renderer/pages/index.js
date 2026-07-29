@@ -45,7 +45,14 @@ const Index = () => {
         }
     }
     const handlePasswordCreated = async (password) => {
-        await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
+        const {error} = await window.electron.createFile(filePath, seedPhrase, keyList, addressList, password)
+        // Main refuses to write over an existing wallet. This screen is only
+        // reached for a name with no file behind it, so getting here means the
+        // file appeared in between - opening the wallet would find no wallet.
+        if (error) {
+            window.electron.showMessageDialog("A wallet named " + filePath + " already exists.")
+            return
+        }
         await loadWallet()
     }
     const loadWallet = async () => {

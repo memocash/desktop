@@ -1,5 +1,6 @@
 const {ipcMain, Menu, MenuItem, Notification, app, dialog} = require("electron");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
+const {AllowPath} = require("../keystore");
 const {
     GetMenu,
     GetStorage,
@@ -78,6 +79,10 @@ const WindowHandlers = () => {
         if (canceled) {
             return ""
         }
+        // Vouch for the path so the wallet handlers will accept it later, for
+        // this window alone. Only files the user picked here can be opened from
+        // outside Dir.DefaultPath.
+        AllowPath(e.sender.id, filePaths[0])
         return filePaths[0]
     })
     ipcMain.on(Handlers.ShowMessageDialog, (e, message) => {
