@@ -219,8 +219,8 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         outer_transaction.outer_fee = fee
         outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
         outer_transaction.outer_beatHash.current = beatHash
-        const storedPassword = await window.electron.getPassword()
-        if (!storedPassword || !storedPassword.length || !requirePassword) {
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if (!encrypted || !requirePassword) {
             await setAndPushTx(outer_transaction, setModal, onDone)
         } else {
             setModal(Modals.Password, {

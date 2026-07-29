@@ -2,8 +2,6 @@ import {useEffect, useState} from "react"
 import Modal from "../modal"
 import styles from "../../../styles/modal.module.css"
 import Password from "./password";
-import {mnemonicToSeedSync} from "bip39";
-import bip32 from "../../util/bip32";
 import {useReferredState} from "../../util/state";
 
 const KeyModal = ({onClose, modalProps: {address}}) => {
@@ -13,58 +11,32 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
     const [wif, setWif] = useState("")
     useEffect(() => {(async () => {
         const wallet = await window.electron.getWallet()
-        const storedPassword = await window.electron.getPassword()
-        let changeAddress = false
-        if (!storedPassword || !storedPassword.length) {
-            setShowKey(true)
-            setLoading(false)
-        } else {
-            setLoading(false)
-        }
-        let addressId = -1
-        for (let i = 0; i < wallet.addresses.length; i++) {
-            if (wallet.addresses[i] === address) {
-                changeAddress = false
-                addressId = i
-                break
-            }
-        }
-        for (let i = 0; i < wallet.changeList.length; i++) {
-            if (wallet.changeList[i] === address) {
-                changeAddress = true
-                addressId = i
-                break
-            }
-        }
-        if (addressId === -1) {
+        const allAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
+        if (!allAddresses.includes(address)) {
             setDisplayAddress("Address not found")
+            setLoading(false)
             return
         }
-        if (wallet.seed) {
-            const seed = mnemonicToSeedSync(wallet.seed)
-            const node = bip32.fromSeed(seed)
-            let path
-            if (!changeAddress) {
-                path = "m/44'/0'/0'/0/" + addressId
-                setDisplayAddress(wallet.addresses[addressId])
-            } else {
-                path = "m/44'/0'/0'/1/" + addressId
-                setDisplayAddress(wallet.changeList[addressId])
-            }
-            const child = node.derivePath(path)
-            const wif = child.toWIF()
-
-            setWif(wif)
-        } else if (wallet.keys) {
-            setDisplayAddress(wallet.addresses[addressId])
-            setWif(wallet.keys[addressId])
-        } else {
-            setDisplayAddress(wallet.addresses[0])
-            setWif("Wallet does not have private keys")
+        setDisplayAddress(address)
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if (!encrypted) {
+            await loadKey()
+            setShowKey(true)
         }
+        setLoading(false)
     })()}, [address])
-    const onCorrectPassword = () => {
-        setShowKey(true)
+    const loadKey = async (password) => {
+        const {error, value} = await window.electron.exportPrivateKey(address, password)
+        if (!error) {
+            setWif(value || "Wallet does not have private keys")
+            return true
+        }
+        return false
+    }
+    const onCorrectPassword = async (password) => {
+        if (await loadKey(password)) {
+            setShowKey(true)
+        }
     }
     return (
         <Modal onClose={onClose}>

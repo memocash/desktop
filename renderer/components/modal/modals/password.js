@@ -6,9 +6,9 @@ const Password = ({onClose, onCorrectPassword}) => {
     const passwordInputRef = useRef()
     const handleCheckPassword = async () => {
         const enteredPassword = passwordInputRef.current.value
-        const storedPassword = await window.electron.getPassword()
-        if (enteredPassword === storedPassword) {
-            onCorrectPassword()
+        const {error} = await window.electron.authenticateWallet(enteredPassword)
+        if (!error) {
+            await onCorrectPassword(enteredPassword)
         } else {
             setHasEnteredWrongPassword(true)
         }

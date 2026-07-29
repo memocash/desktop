@@ -24,7 +24,8 @@ const PostCreate = ({onClose, setModal}) => {
         ])
         const wallet = await GetWallet()
         await CreateTransaction(wallet, [{script: postOpReturnOutput}], setModal)
-        if (!wallet.settings.DirectTx || !(await window.electron.getPassword())) {
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if (!wallet.settings.DirectTx || !encrypted) {
             onClose()
         }
     }

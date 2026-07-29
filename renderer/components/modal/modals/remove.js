@@ -9,18 +9,18 @@ import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
 const RemoveModal = ({basic: {onClose, setLastUpdate, setModal}, modalProps:{address}}) => {
     const onSubmit = async (address) => {
-        let storedPassword = await window.electron.getPassword()
-        if (storedPassword && storedPassword.length > 0) {
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if (encrypted) {
             setModal(Modals.Password, {
-                onCorrectPassword: async () => {
-                    await remove(address)
+                onCorrectPassword: async (password) => {
+                    await remove(address, password)
                 }
             })
         } else {
             await remove(address)
         }
     }
-    const remove = async (addresses) => {
+    const remove = async (addresses, password) => {
         const wallet = await GetWallet()
         let key
         if(wallet.keys.length > 0){
@@ -32,7 +32,7 @@ const RemoveModal = ({basic: {onClose, setLastUpdate, setModal}, modalProps:{add
             }
             const convertedKeys = GetAddresses([key])
             await window.electron.removeAddresses(convertedKeys)
-            await window.electron.removeKeys([key])
+            await window.electron.removeKeys([key], password)
         } else{
             await window.electron.removeAddresses(addresses)
         }

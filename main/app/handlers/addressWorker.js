@@ -30,7 +30,9 @@ const deriveWallet = (seedPhrase, keyList) => {
     const keys = []
     const addresses = []
     const changeList = []
+    const changeKeys = []
     const slpList = []
+    const slpKeys = []
     if (seedPhrase && seedPhrase.length) {
         const seed = mnemonicToSeedSync(seedPhrase)
         const node = bip32.fromSeed(seed)
@@ -41,13 +43,17 @@ const deriveWallet = (seedPhrase, keyList) => {
         }
         for (let i = 0; i < AddressCount; i++) {
             const change = node.derivePath("m/44'/0'/0'/1/" + i)
-            changeList.push(ECPair.fromWIF(change.toWIF()).getAddress())
+            const changeWif = change.toWIF()
+            changeKeys.push(changeWif)
+            changeList.push(ECPair.fromWIF(changeWif).getAddress())
         }
         // SLP addresses use coin type 245 (the SLP standard derivation path),
         // keeping token outputs separate from regular BCH addresses.
         for (let i = 0; i < AddressCount; i++) {
             const slp = node.derivePath("m/44'/245'/0'/0/" + i)
-            slpList.push(ECPair.fromWIF(slp.toWIF()).getAddress())
+            const slpWif = slp.toWIF()
+            slpKeys.push(slpWif)
+            slpList.push(ECPair.fromWIF(slpWif).getAddress())
         }
     }
     if (keyList && keyList.length) {
@@ -55,7 +61,7 @@ const deriveWallet = (seedPhrase, keyList) => {
             addresses.push(ECPair.fromWIF(keyList[i]).getAddress())
         }
     }
-    return {keys, addresses, changeList, slpList}
+    return {keys, addresses, changeKeys, changeList, slpKeys, slpList}
 }
 
 try {

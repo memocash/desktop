@@ -30,7 +30,8 @@ const RoomJoin = ({onClose, modalProps: {room, leave = false}, setModal}) => {
             beatHash = recentFollowRoom.tx_hash
         }
         await CreateTransaction(wallet, [{script: joinRoomOpReturnOutput}],setModal, null, beatHash)
-        if(!wallet.settings.DirectTx || !(await window.electron.getPassword())){
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if(!wallet.settings.DirectTx || !encrypted){
             onClose()
         }
     }

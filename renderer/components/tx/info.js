@@ -415,8 +415,8 @@ const Info = () => {
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
     const clickSign = async () => {
-        const storedPassword = await window.electron.getPassword()
-        if (!storedPassword || !storedPassword.length) {
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if (!encrypted) {
             await onCorrectPassword()
         } else {
             setShowPasswordForSign(true)

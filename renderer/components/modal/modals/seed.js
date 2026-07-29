@@ -7,15 +7,19 @@ const SeedModal = ({onClose}) => {
     const [showSeed, setShowSeed] = useState(false)
     const [seedPhrase, setSeedPhrase] = useState("")
     useEffect(() => {(async () => {
-        const {seed} = await window.electron.getWallet()
-        setSeedPhrase(seed)
-        const storedPassword = await window.electron.getPassword()
-        if (!storedPassword || !storedPassword.length) {
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if (!encrypted) {
+            const {value} = await window.electron.exportSeed()
+            setSeedPhrase(value || "")
             setShowSeed(true)
         }
     })()}, [])
-    const onCorrectPassword = () => {
-        setShowSeed(true)
+    const onCorrectPassword = async (password) => {
+        const {error, value} = await window.electron.exportSeed(password)
+        if (!error) {
+            setSeedPhrase(value || "")
+            setShowSeed(true)
+        }
     }
     return (
         <Modal onClose={onClose}>

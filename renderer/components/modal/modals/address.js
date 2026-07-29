@@ -10,22 +10,22 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
     const [error, setError] = useState("")
     const [addOrRemove, setAddOrRemove] = useState(true)
     const onSetKeysAndAddresses = async (keys, addresses) => {
-        let storedPassword = await window.electron.getPassword()
+        const {encrypted} = await window.electron.getWalletFileInfo()
         if (addOrRemove) {
-            if (storedPassword && storedPassword.length > 0) {
+            if (encrypted && keys.length) {
                 setModal(Modals.Password, {
-                    onCorrectPassword: async () => {
-                        await add(keys, addresses)
+                    onCorrectPassword: async (password) => {
+                        await add(keys, addresses, password)
                     }
                 })
             } else {
                 await add(keys, addresses)
             }
         } else {
-            if (storedPassword && storedPassword.length > 0) {
+            if (encrypted && keys.length) {
                 setModal(Modals.Password, {
-                    onCorrectPassword: async () => {
-                        await remove(keys, addresses)
+                    onCorrectPassword: async (password) => {
+                        await remove(keys, addresses, password)
                     }
                 })
             } else {
@@ -33,7 +33,7 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
             }
         }
     }
-    const add = async (keys, addresses) => {
+    const add = async (keys, addresses, password) => {
         const wallet = await GetWallet()
         if ((keys.length > 0) && wallet.keys.length == 0) {
             setError("Error, cannot add keys to a keyless wallet")
@@ -44,14 +44,14 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
         } else if (wallet.keys.length > 0) {
             const convertedKeys = GetAddresses(keys)
             await window.electron.addAddresses(convertedKeys)
-            await window.electron.addKeys(keys)
+            await window.electron.addKeys(keys, password)
         } else {
             await window.electron.addAddresses(addresses)
         }
         setLastUpdate((new Date()).toISOString())
         onClose()
     }
-    const remove = async (keys, addresses) => {
+    const remove = async (keys, addresses, password) => {
         const wallet = await GetWallet()
         if ((keys.length > 0) && wallet.keys.length == 0) {
             setError("Error, cannot remove keys from a keyless wallet")
@@ -62,7 +62,7 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
         } else if (wallet.keys.length > 0) {
             const convertedKeys = GetAddresses(keys)
             await window.electron.removeAddresses(convertedKeys)
-            await window.electron.removeKeys(keys)
+            await window.electron.removeKeys(keys, password)
         } else {
             await window.electron.removeAddresses(addresses)
         }

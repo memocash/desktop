@@ -35,7 +35,8 @@ const PostReply = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
         ])
         let wallet = await GetWallet()
         await CreateTransaction(wallet, [{script: replyOpReturnOutput}], setModal)
-        if (wallet.settings.DirectTx && await window.electron.getPassword()) {
+        const {encrypted} = await window.electron.getWalletFileInfo()
+        if (wallet.settings.DirectTx && encrypted) {
             return
         }
         setModal(Modals.Post, {txHash})
