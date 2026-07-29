@@ -1,7 +1,7 @@
 const {parentPort, isMainThread} = require("worker_threads");
 const database = require("better-sqlite3")
 const homedir = require('os').homedir()
-const {Definitions, Indexes} = require("./schema")
+const {Definitions, Indexes, Cleanups} = require("./schema")
 
 if (isMainThread) {
     throw new Error('Its not a worker');
@@ -111,7 +111,8 @@ const SetDb = async (db) => {
     // journal mode is a property of the file and persists.
     _db.pragma("journal_mode = WAL")
     _db.pragma("synchronous = NORMAL")
-    const statements = Definitions.map(d => "CREATE TABLE IF NOT EXISTS " + d).concat(Indexes)
+    const statements = Definitions.map(d => "CREATE TABLE IF NOT EXISTS " + d)
+        .concat(Indexes).concat(Cleanups)
     _db.transaction(() => {
         for (const statement of statements) {
             _db.prepare(statement).run()

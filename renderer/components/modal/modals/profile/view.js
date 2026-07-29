@@ -190,7 +190,8 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
             <div className={profile.header_modal}>
                 <div className={profile.pic}>
                     <img alt={"Profile image"} className={profile.img}
-                         src={picData ? `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
+                         src={(picData && picData.length) ?
+                             `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
                              "/default-profile.jpg"}/>
                 </div>
                 <div className={profile.info}>
