@@ -6,15 +6,16 @@ const {Dir, Handlers} = require("../../common/util");
 const {GetOutput, GetWalletInfo} = require("../../data/tables");
 const menu = require("../../menu");
 const keystore = require("../keystore");
+const {normalizeSeedWalletData} = require("../seed_wallet");
 const {SignTransaction} = require("../transaction_signer");
 const {SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, eConf} = require("../window");
 
 // Runs key/address derivation in a worker thread so the CPU-intensive
 // secp256k1 work never blocks the main process or the renderer UI. The worker
 // derives everything from the seed in one pass and posts back a single result.
-const generateWallet = (seed, keys) => new Promise((resolve, reject) => {
+const generateWallet = ({seed, keys, derivation}) => new Promise((resolve, reject) => {
     const worker = new Worker(path.resolve(__dirname, "addressWorker.js"), {
-        workerData: {seed, keys},
+        workerData: {seed, keys, derivation},
     })
     worker.once("message", (msg) => {
         worker.terminate()
@@ -32,24 +33,59 @@ const generateWallet = (seed, keys) => new Promise((resolve, reject) => {
     })
 })
 
-const ensurePublicMetadata = async (filename, read) => {
+const same = (left, right) => JSON.stringify(left) === JSON.stringify(right)
+
+// Seed wallets created by older releases stored the first 20 receive WIFs in
+// the encrypted key list. Build public account keys once during unlock, remove
+// only those recognizable derived WIFs, and retain any separately imported
+// keys. Subsequent public address derivation can use the xpubs without exposing
+// or decrypting the mnemonic.
+const normalizeSeedWallet = async (filename, password) => {
+    return keystore.WithWalletLock(filename, async () => {
+        const read = await keystore.ReadWallet(filename, password)
+        if (!read.wallet.seed) {
+            return read
+        }
+
+        // The presence of versioned derivation metadata is also the migration
+        // marker. Once it exists, routine unlocks use only the xpubs and do not
+        // repeat mnemonic/private-key derivation.
+        const derived = read.wallet.derivation
+            ? {keys: [], derivation: read.wallet.derivation}
+            : await generateWallet({
+                seed: read.wallet.seed,
+                keys: read.wallet.keys || [],
+            })
+        const publicDerived = await generateWallet({derivation: derived.derivation})
+        const wallet = read.wallet.derivation
+            ? {
+                ...read.wallet,
+                addresses: [...new Set([...publicDerived.addresses, ...(read.wallet.addresses || [])])],
+                changeList: [...new Set([...publicDerived.changeList, ...(read.wallet.changeList || [])])],
+                slpList: [...new Set([...publicDerived.slpList, ...(read.wallet.slpList || [])])],
+            }
+            : normalizeSeedWalletData(read.wallet, derived, publicDerived)
+        const secretChanged = !same(wallet.keys, read.wallet.keys || [])
+        const publicChanged = !same(keystore.PublicWallet(wallet), keystore.PublicWallet(read.wallet))
+        if (secretChanged) {
+            await keystore.WriteWallet(
+                filename, wallet, read.encrypted ? password : undefined, read.integrityKey)
+        } else if (publicChanged) {
+            await keystore.UpdatePublic(filename, read.integrityKey, (publicData) => {
+                const {seed, keys, canSign, walletType, ...nextPublic} =
+                    keystore.PublicWallet(wallet)
+                Object.assign(publicData, nextPublic)
+            })
+        }
+        return {...read, wallet}
+    })
+}
+
+const ensurePublicMetadata = async (filename, read, password) => {
     if (!read.wallet.seed) {
         return read
     }
-    const needsAddresses = !read.wallet.addresses || !read.wallet.addresses.length
-    const needsChange = !read.wallet.changeList || !read.wallet.changeList.length
-    const needsSlp = !read.wallet.slpList || !read.wallet.slpList.length
-    if (!needsAddresses && !needsChange && !needsSlp) {
-        return read
-    }
-    const derived = await generateWallet(read.wallet.seed, read.wallet.keys)
-    const publicData = await keystore.WithWalletLock(filename, () =>
-        keystore.UpdatePublic(filename, read.integrityKey, (wallet) => {
-            if (needsAddresses) wallet.addresses = derived.addresses.slice(0, 20)
-            if (needsChange) wallet.changeList = derived.changeList
-            if (needsSlp) wallet.slpList = derived.slpList
-        }))
-    return {...read, wallet: {...read.wallet, ...publicData}}
+    return normalizeSeedWallet(filename, read.encrypted ? password : undefined)
 }
 
 // The renderer used to decrypt the file itself and hand the plaintext wallet and
@@ -61,7 +97,7 @@ const unlockWallet = async (winId, walletName, password) => {
     let read
     try {
         read = await keystore.ReadAndMigrateWallet(filename, password)
-        read = await ensurePublicMetadata(filename, read)
+        read = await ensurePublicMetadata(filename, read, password)
     } catch (e) {
         if (e.message === keystore.WrongPassword) {
             return {error: keystore.WrongPassword}
@@ -84,10 +120,11 @@ const createWallet = async (winId, walletName, seedPhrase, keyList, addressList,
     const filename = keystore.ResolveWalletPath(winId, walletName)
     const wallet = keystore.NewWallet(seedPhrase, keyList, addressList)
     if (seedPhrase) {
-        const derived = await generateWallet(seedPhrase, [])
+        const derived = await generateWallet({seed: seedPhrase, keys: []})
         wallet.addresses = derived.addresses
         wallet.changeList = derived.changeList
         wallet.slpList = derived.slpList
+        wallet.derivation = derived.derivation
     }
     try {
         const integrityKey = await keystore.CreateWalletFile(filename, wallet, password)
@@ -154,7 +191,7 @@ const operationResult = async (run) => {
 
 const exportPrivateKey = async (winId, address, password) => {
     const {wallet} = await readForOperation(winId, password)
-    const derived = await generateWallet(wallet.seed, wallet.keys)
+    const derived = await generateWallet({seed: wallet.seed, keys: wallet.keys})
     let index = derived.addresses.indexOf(address)
     if (index !== -1) {
         if (index < derived.keys.length) {

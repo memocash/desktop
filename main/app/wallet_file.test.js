@@ -18,6 +18,11 @@ const Wallet = {
     addresses: ["addr1", "addr2"],
     changeList: ["change1"],
     slpList: ["slp1"],
+    derivation: {
+        version: 1,
+        addressCount: 20,
+        accounts: {bch: "xpub-public-bch", slp: "xpub-public-slp"},
+    },
     settings: {DirectTx: false, SkipPassword: true},
 }
 
@@ -41,7 +46,7 @@ test("the seed and keys are the only fields inside the envelope", async () => {
     const contents = await EncodeContents(Wallet, "hunter2")
     const doc = JSON.parse(contents)
     assert.deepEqual(Object.keys(doc.public).sort(),
-        ["addresses", "changeList", "settings", "slpList", "time"])
+        ["addresses", "changeList", "derivation", "settings", "slpList", "time"])
     assert.equal(doc.public.seed, undefined)
     assert.equal(doc.public.keys, undefined)
     // Nothing secret survives anywhere in the serialized file.
