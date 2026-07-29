@@ -32,6 +32,7 @@ test("an encrypted wallet round-trips and reports its version", async () => {
     assert.equal(version, Version)
     assert.equal(encrypted, true)
     assert.deepEqual(wallet, Wallet)
+    assert.equal(wallet.__publicMacKey, undefined)
 })
 
 // The whole point of the format: the seed and the keys are the only things
@@ -116,12 +117,47 @@ test("a version 1 wallet with a password is read as version 1", async () => {
 test("public metadata is rewritten without touching the envelope", async () => {
     const contents = await EncodeContents(Wallet, "hunter2")
     const form = ReadForm(contents)
-    const updated = EncodePublic(form.doc, {...form.doc.public, addresses: ["addr1", "addr2", "addr3"]})
+    const {integrityKey} = await DecodeContents(contents, "hunter2")
+    const updated = EncodePublic(
+        form.doc, {...form.doc.public, addresses: ["addr1", "addr2", "addr3"]}, integrityKey)
     // Byte-identical envelope: nothing was decrypted and nothing re-encrypted.
     assert.deepEqual(JSON.parse(updated).keystore, form.doc.keystore)
     const {wallet} = await DecodeContents(updated, "hunter2")
     assert.deepEqual(wallet.addresses, ["addr1", "addr2", "addr3"])
     assert.equal(wallet.seed, Wallet.seed)
+})
+
+test("tampering with public metadata fails authentication", async () => {
+    for (const change of [
+        (doc) => doc.public.addresses.unshift("attacker"),
+        (doc) => doc.public.changeList = ["attacker"],
+        (doc) => doc.public.slpList = ["attacker"],
+        (doc) => doc.public.settings.SkipPassword = true,
+    ]) {
+        const doc = JSON.parse(await EncodeContents(
+            {...Wallet, settings: {...Wallet.settings, SkipPassword: false}}, "hunter2"))
+        change(doc)
+        await assert.rejects(DecodeContents(JSON.stringify(doc), "hunter2"),
+            {message: WrongPassword})
+    }
+})
+
+test("file-controlled scrypt parameters are refused before derivation", async () => {
+    for (const [field, value] of [
+        ["N", 65536],
+        ["r", 16],
+        ["p", 1000000],
+        ["keyLength", 1024],
+    ]) {
+        const doc = JSON.parse(await EncodeContents(Wallet, "hunter2"))
+        doc.keystore.kdf[field] = value
+        await assert.rejects(DecodeContents(JSON.stringify(doc), "hunter2"),
+            {message: new RegExp("unsupported key derivation parameter: " + field)})
+    }
+    const doc = JSON.parse(await EncodeContents(Wallet, "hunter2"))
+    doc.keystore.kdf.salt = Buffer.alloc(64).toString("base64")
+    await assert.rejects(DecodeContents(JSON.stringify(doc), "hunter2"),
+        {message: /unsupported key derivation salt/})
 })
 
 test("a file that is neither version is refused with a controlled error", async () => {

@@ -84,21 +84,25 @@ let writeCount = 0
 // reaches an existing one did not come from that screen. The exclusive flag
 // makes the check part of the write rather than a test before it.
 const CreateWalletFile = async (walletPath, wallet, password) => {
-    await fs.writeFile(walletPath, await walletFile.EncodeContents(wallet, password), {flag: "wx"})
+    const encoded = await walletFile.EncodeWallet(wallet, password)
+    await fs.writeFile(walletPath, encoded.contents, {flag: "wx"})
+    return encoded.integrityKey
 }
 
 // Writes through a temporary file so a reader never sees a half-written wallet:
 // fs.writeFile truncates before it writes, and a torn read of a ciphertext looks
 // exactly like a wrong password.
-const WriteWallet = async (walletPath, wallet, password) => {
-    await writeContents(walletPath, await walletFile.EncodeContents(wallet, password))
+const WriteWallet = async (walletPath, wallet, password, integrityKey) => {
+    const encoded = await walletFile.EncodeWallet(wallet, password, integrityKey)
+    await writeContents(walletPath, encoded.contents)
+    return encoded.integrityKey
 }
 
 // Applies an update to the public half alone, leaving the encrypted envelope
-// exactly as it is. This is the point of the version 2 format: an address or a
-// setting can be written without the password, and without the seed and keys
-// ever being decrypted.
-const UpdatePublic = async (walletPath, apply) => {
+// exactly as it is. Main retains only the public-integrity key after unlock, so
+// an address or setting can be updated and authenticated without the password
+// and without decrypting the seed and imported keys.
+const UpdatePublic = async (walletPath, integrityKey, apply) => {
     const contents = await fs.readFile(walletPath, {encoding: "utf8"})
     const form = walletFile.ReadForm(contents)
     if (form.version !== walletFile.Version) {
@@ -106,7 +110,7 @@ const UpdatePublic = async (walletPath, apply) => {
     }
     const publicData = {...form.doc.public}
     apply(publicData)
-    await writeContents(walletPath, walletFile.EncodePublic(form.doc, publicData))
+    await writeContents(walletPath, walletFile.EncodePublic(form.doc, publicData, integrityKey))
     return publicData
 }
 
@@ -146,8 +150,8 @@ const backupWalletFile = async (walletPath, contents) => {
 const MigrateWallet = async (walletPath, wallet, password) => {
     const contents = await fs.readFile(walletPath, {encoding: "utf8"})
     const backupPath = await backupWalletFile(walletPath, contents)
-    await WriteWallet(walletPath, wallet, password)
-    return backupPath
+    const integrityKey = await WriteWallet(walletPath, wallet, password)
+    return {backupPath, integrityKey}
 }
 
 // The preload did its read-modify-write with the synchronous fs calls, which
@@ -162,6 +166,21 @@ const WithWalletLock = (walletPath, run) => {
     walletQueues.set(walletPath, next.catch(() => {}))
     return next
 }
+
+// Reading the legacy form and deciding whether to migrate must happen under the
+// same lock as the rewrite. Otherwise two unlockers can both capture version 1,
+// then the second can write that stale snapshot over changes made after the
+// first migration.
+const ReadAndMigrateWallet = (walletPath, password) =>
+    WithWalletLock(walletPath, async () => {
+        const read = await ReadWallet(walletPath, password)
+        if (read.version === walletFile.Version) {
+            return read
+        }
+        const migrated = await MigrateWallet(
+            walletPath, read.wallet, read.encrypted ? password : undefined)
+        return {...read, version: walletFile.Version, integrityKey: migrated.integrityKey}
+    })
 
 const NewWallet = (seedPhrase, keyList, addressList) => ({
     time: new Date(),
@@ -220,6 +239,7 @@ module.exports = {
     ListWalletFiles,
     MigrateWallet,
     NewWallet,
+    ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
     UpdatePublic,

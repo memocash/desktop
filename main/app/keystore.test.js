@@ -12,6 +12,7 @@ const {
     ForgetPaths,
     MigrateWallet,
     NewWallet,
+    ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
     UpdatePublic,
@@ -170,7 +171,7 @@ test("a version 1 wallet migrates on read, keeping the original beside it", asyn
     assert.equal(read.version, 1)
     assert.equal(read.wallet.seed, "old seed words")
 
-    const backupPath = await MigrateWallet(walletPath, read.wallet, "hunter2")
+    const {backupPath} = await MigrateWallet(walletPath, read.wallet, "hunter2")
     assert.equal(backupPath, walletPath + ".v1.bak")
     assert.equal(await fs.readFile(backupPath, {encoding: "utf8"}), original)
 
@@ -196,10 +197,27 @@ test("an unencrypted version 1 wallet migrates without gaining a password", asyn
 test("migrating twice never writes over the first backup", async () => {
     const walletPath = await tempWallet("legacy_twice")
     await fs.writeFile(walletPath, JSON.stringify({seed: "the original", keys: [], addresses: []}))
-    const first = await MigrateWallet(walletPath, {seed: "the original", keys: [], addresses: []}, undefined)
-    const second = await MigrateWallet(walletPath, {seed: "later", keys: [], addresses: []}, undefined)
+    const {backupPath: first} =
+        await MigrateWallet(walletPath, {seed: "the original", keys: [], addresses: []}, undefined)
+    const {backupPath: second} =
+        await MigrateWallet(walletPath, {seed: "later", keys: [], addresses: []}, undefined)
     assert.notEqual(first, second)
     assert.match(JSON.parse(await fs.readFile(first, {encoding: "utf8"})).seed, /the original/)
+})
+
+test("concurrent unlocks migrate a legacy wallet only once", async () => {
+    const walletPath = await tempWallet("legacy_concurrent")
+    await fs.writeFile(walletPath, JSON.stringify({seed: "the original", keys: [], addresses: ["addr1"]}))
+    const [first, second] = await Promise.all([
+        ReadAndMigrateWallet(walletPath, undefined),
+        ReadAndMigrateWallet(walletPath, undefined),
+    ])
+    assert.equal(first.version, Version)
+    assert.equal(second.version, Version)
+    assert.deepEqual(first.wallet.addresses, ["addr1"])
+    assert.deepEqual(second.wallet.addresses, ["addr1"])
+    const files = await fs.readdir(path.dirname(walletPath))
+    assert.deepEqual(files.filter((name) => name.includes(".v1.bak")), ["legacy_concurrent.v1.bak"])
 })
 
 // The routine writes - a new address, a changed setting - must not need the
@@ -207,12 +225,42 @@ test("migrating twice never writes over the first backup", async () => {
 test("a public update rewrites the wallet without the password", async () => {
     const walletPath = await tempWallet("public_only")
     await WriteWallet(walletPath, NewWallet("seed words here", ["WIFkey"], ["addr1"]), "hunter2")
-    await UpdatePublic(walletPath, (publicData) =>
+    const {integrityKey} = await ReadWallet(walletPath, "hunter2")
+    await UpdatePublic(walletPath, integrityKey, (publicData) =>
         ApplyWalletUpdate(publicData, "addAddresses", ["addr2"]))
     const {wallet} = await ReadWallet(walletPath, "hunter2")
     assert.deepEqual(wallet.addresses, ["addr1", "addr2"])
     assert.equal(wallet.seed, "seed words here")
     assert.deepEqual(wallet.keys, ["WIFkey"])
+})
+
+test("a public update cannot be signed with another wallet's integrity key", async () => {
+    const walletPath = await tempWallet("wrong_integrity_key")
+    const otherPath = await tempWallet("other_integrity_key")
+    await WriteWallet(walletPath, NewWallet("seed words here", [], ["addr1"]), "hunter2")
+    await WriteWallet(otherPath, NewWallet("other seed words", [], ["other"]), "hunter2")
+    const {integrityKey: wrongKey} = await ReadWallet(otherPath, "hunter2")
+    await assert.rejects(
+        UpdatePublic(walletPath, wrongKey, (publicData) =>
+            ApplyWalletUpdate(publicData, "addAddresses", ["attacker"])),
+        {message: WrongPassword})
+    const {wallet} = await ReadWallet(walletPath, "hunter2")
+    assert.deepEqual(wallet.addresses, ["addr1"])
+})
+
+test("a secret update preserves the key used to authenticate public metadata", async () => {
+    const walletPath = await tempWallet("secret_update")
+    await WriteWallet(walletPath, NewWallet("seed words here", ["key1"], ["addr1"]), "hunter2")
+    const before = await ReadWallet(walletPath, "hunter2")
+    ApplyWalletUpdate(before.wallet, "addKeys", ["key2"])
+    const returnedKey = await WriteWallet(
+        walletPath, before.wallet, "hunter2", before.integrityKey)
+    assert.deepEqual(returnedKey, before.integrityKey)
+    await UpdatePublic(walletPath, before.integrityKey, (publicData) =>
+        ApplyWalletUpdate(publicData, "addAddresses", ["addr2"]))
+    const after = await ReadWallet(walletPath, "hunter2")
+    assert.deepEqual(after.wallet.keys, ["key1", "key2"])
+    assert.deepEqual(after.wallet.addresses, ["addr1", "addr2"])
 })
 
 test("only the updates reaching imported keys need the envelope opened", () => {

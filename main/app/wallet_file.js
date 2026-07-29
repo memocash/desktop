@@ -8,7 +8,8 @@ const scrypt = promisify(crypto.scrypt)
 // envelope rather than encrypting the wallet whole, because addresses, the
 // change and SLP lists, and settings are written constantly - and a format that
 // needs the password for those writes is a format that has to keep the password
-// around. Only the seed and the imported keys go inside the envelope.
+// around. The seed, imported keys, and the key authenticating the public half
+// go inside the envelope.
 //
 // Version 1 is what earlier releases wrote: either bare JSON when the wallet had
 // no password, or a CryptoJS passphrase blob when it did. It is still read, so
@@ -27,8 +28,12 @@ const IvBytes = 12
 
 const NoEncryption = "none"
 const ScryptGcm = "scrypt-aes-256-gcm"
+const PublicMacName = "hmac-sha256"
+const PublicMacKeyField = "__publicMacKey"
+const PublicMacKeyBytes = 32
 
-// The only fields that may not sit outside the envelope.
+// The wallet fields that may not sit outside the envelope. The public-MAC key
+// is an internal field added separately and never returned as wallet data.
 const SecretFields = ["seed", "keys"]
 
 const splitWallet = (wallet) => {
@@ -48,12 +53,36 @@ const deriveKey = async (password, kdf) => {
     if (!kdf || kdf.name !== DefaultKdf.name) {
         throw new Error("unsupported key derivation: " + (kdf && kdf.name))
     }
+    for (const field of ["N", "r", "p", "keyLength"]) {
+        if (kdf[field] !== DefaultKdf[field]) {
+            throw new Error("unsupported key derivation parameter: " + field)
+        }
+    }
+    if (typeof kdf.salt !== "string" ||
+        Buffer.from(kdf.salt, "base64").length !== SaltBytes) {
+        throw new Error("unsupported key derivation salt")
+    }
     return scrypt(password, Buffer.from(kdf.salt, "base64"), kdf.keyLength, {
         N: kdf.N,
         r: kdf.r,
         p: kdf.p,
         maxmem: ScryptMaxmem,
     })
+}
+
+const publicMac = (publicData, integrityKey) =>
+    crypto.createHmac("sha256", integrityKey).update(JSON.stringify(publicData)).digest("base64")
+
+const verifyPublic = (doc, integrityKey) => {
+    if (!doc.publicMac || doc.publicMac.name !== PublicMacName ||
+        typeof doc.publicMac.value !== "string") {
+        throw new Error(WrongPassword)
+    }
+    const expected = Buffer.from(publicMac(doc.public, integrityKey), "base64")
+    const actual = Buffer.from(doc.publicMac.value, "base64")
+    if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
+        throw new Error(WrongPassword)
+    }
 }
 
 const encryptSecret = async (secret, password) => {
@@ -170,27 +199,56 @@ const DecodeContents = async (contents, password) => {
             wallet: form.encrypted ? decryptV1(contents, password) : form.wallet,
         }
     }
-    const secret = await decryptSecret(form.doc.keystore, password)
-    return {version: Version, encrypted: form.encrypted, wallet: {...form.doc.public, ...secret}}
+    const storedSecret = await decryptSecret(form.doc.keystore, password)
+    const encodedKey = storedSecret[PublicMacKeyField]
+    if (typeof encodedKey !== "string" ||
+        Buffer.from(encodedKey, "base64").length !== PublicMacKeyBytes) {
+        throw new Error(WrongPassword)
+    }
+    const integrityKey = Buffer.from(encodedKey, "base64")
+    verifyPublic(form.doc, integrityKey)
+    const secret = {...storedSecret}
+    delete secret[PublicMacKeyField]
+    return {
+        version: Version,
+        encrypted: form.encrypted,
+        wallet: {...form.doc.public, ...secret},
+        integrityKey,
+    }
 }
 
-const EncodeContents = async (wallet, password) => {
+const EncodeWallet = async (wallet, password, currentIntegrityKey) => {
     const {secret, publicData} = splitWallet(wallet)
+    const integrityKey = currentIntegrityKey || crypto.randomBytes(PublicMacKeyBytes)
+    const storedSecret = {
+        ...secret,
+        [PublicMacKeyField]: integrityKey.toString("base64"),
+    }
     const keystore = password && password.length
-        ? await encryptSecret(secret, password)
-        : {encryption: NoEncryption, secret}
-    return JSON.stringify({version: Version, public: publicData, keystore})
+        ? await encryptSecret(storedSecret, password)
+        : {encryption: NoEncryption, secret: storedSecret}
+    const publicMacDoc = {name: PublicMacName, value: publicMac(publicData, integrityKey)}
+    return {
+        contents: JSON.stringify({version: Version, public: publicData, publicMac: publicMacDoc, keystore}),
+        integrityKey,
+    }
 }
+
+const EncodeContents = async (wallet, password) => (await EncodeWallet(wallet, password)).contents
 
 // Rewrites the public half without touching the envelope, so the routine writes
 // - a new address, a changed setting - need no password and never decrypt.
-const EncodePublic = (doc, publicData) =>
-    JSON.stringify({version: Version, public: publicData, keystore: doc.keystore})
+const EncodePublic = (doc, publicData, integrityKey) => {
+    verifyPublic(doc, integrityKey)
+    const publicMacDoc = {name: PublicMacName, value: publicMac(publicData, integrityKey)}
+    return JSON.stringify({version: Version, public: publicData, publicMac: publicMacDoc, keystore: doc.keystore})
+}
 
 module.exports = {
     DecodeContents,
     EncodeContents,
     EncodePublic,
+    EncodeWallet,
     IsEncrypted,
     ReadForm,
     SecretFields,
