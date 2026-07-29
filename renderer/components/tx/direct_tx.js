@@ -1,7 +1,5 @@
-import bitcoin, {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../util/wallet";
-import {mnemonicToSeedSync} from "bip39";
-import bip32 from "../util/bip32";
 import {Modals} from "../../../main/common/util"
 import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
@@ -22,75 +20,33 @@ const Prefix = {
     "6d22": "LinkRevoke",
     "6d26": "SetAlias",
 }
-const setTx = async (outer_transaction, setModal) => {
+const setTx = async (outer_transaction, setModal, password) => {
     const wallet = await GetWallet()
-    if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
+    if (!wallet.canSign) {
         window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
         return false
     }
-    // Seed wallets store their external-path WIFs in wallet.keys, so stored
-    // keys and seed derivation aren't either/or: change and SLP path keys are
-    // only reachable through the seed. Check both.
-    let node
-    if (wallet.seed && wallet.seed.length) {
-        node = bip32.fromSeed(mnemonicToSeedSync(wallet.seed))
+    const {error, value} = await window.electron.signTransaction({
+        raw: Buffer.from(outer_transaction.outer_txInfo.raw).toString("hex"),
+        inputs: outer_transaction.outer_txInfo.inputs.map(({prev_hash, prev_index}) =>
+            ({prev_hash, prev_index})),
+        beatHash: outer_transaction.outer_beatHash.current,
+    }, password)
+    if (error) {
+        if (error !== "wrong-password") {
+            window.electron.showMessageDialog("Unable to sign transaction: " + error)
+        }
+        return false
     }
-    const derivedLists = [
-        {addresses: wallet.addresses || [], path: "m/44'/0'/0'/0/"},
-        {addresses: wallet.changeList || [], path: "m/44'/0'/0'/1/"},
-        {addresses: wallet.slpList || [], path: "m/44'/245'/0'/0/"},
-    ]
-    const getKey = (address) => {
-        const keys = wallet.keys || []
-        for (let i = 0; i < keys.length; i++) {
-            const key = ECPair.fromWIF(keys[i])
-            if (address === key.getAddress()) {
-                return key
-            }
-        }
-        if (!node) {
-            return undefined
-        }
-        for (let j = 0; j < derivedLists.length; j++) {
-            const {addresses, path} = derivedLists[j]
-            for (let i = 0; i < addresses.length; i++) {
-                if (address === addresses[i]) {
-                    return ECPair.fromWIF(node.derivePath(path + i).toWIF())
-                }
-            }
-        }
-    }
-    const tx = bitcoin.Transaction.fromBuffer(outer_transaction.outer_txInfo.raw)
-    let txb
-    let txBuild
-    for (let lockTime = 5e8; lockTime < 5e8 + 2 ^ 12; lockTime++) {
-        txb = bitcoin.TransactionBuilder.fromTransaction(tx)
-        for (let i = 0; i < outer_transaction.outer_txInfo.inputs.length; i++) {
-            const input = outer_transaction.outer_txInfo.inputs[i]
-            const key = getKey(input.output.address)
-            if (key === undefined) {
-                window.electron.showMessageDialog("Unable to find key for input address: " + input.output.address)
-                return false
-            }
-            txb.sign(i, key, undefined, bitcoin.Transaction.SIGHASH_ALL, input.output.value)
-        }
-        txBuild = txb.build()
-        if (!outer_transaction.outer_beatHash.current) {
-            break
-        }
-        const txHash = txBuild.getId()
-        if (txHash > outer_transaction.outer_beatHash.current) {
-            break
-        }
-        tx.locktime = lockTime
-    }
-    const buf = txBuild.toBuffer()
+    const buf = Buffer.from(value.raw, "hex")
     outer_transaction.outer_txInfo.raw = buf
-    const size = buf.length
-    outer_transaction.outer_size = size
-    outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
-    const feeRate = outer_transaction.outer_fee / size
-    outer_transaction.outer_feeRate = feeRate.toFixed((4))
+    for (let i = 0; i < value.inputs.length; i++) {
+        outer_transaction.outer_txInfo.inputs[i].output = value.inputs[i]
+    }
+    outer_transaction.outer_size = value.size
+    outer_transaction.outer_fee = value.fee
+    outer_transaction.outer_transactionIDEleRef.value = value.txid
+    outer_transaction.outer_feeRate = value.feeRate.toFixed(4)
     if (setModal) {
         setModal(Modals.None)
     }
@@ -114,19 +70,20 @@ const pushTx = async (outer_txInfo) => {
     console.log("Broadcast successful")
 }
 
-const setAndPushTx = async (outer_transaction, setModal, onDone) => {
-    if (!await setTx(outer_transaction, setModal)) {
-        return
+const setAndPushTx = async (outer_transaction, setModal, onDone, password) => {
+    if (!await setTx(outer_transaction, setModal, password)) {
+        return false
     }
     try {
         await pushTx(outer_transaction.outer_txInfo)
     } catch (e) {
         window.electron.showMessageDialog("Error broadcasting transaction: " + FormatTxError(e))
-        return
+        return false
     }
     if (typeof onDone == "function") {
         onDone()
     }
+    return true
 }
 const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePassword) => {
     let outer_transaction = {
@@ -144,11 +101,6 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         },
         outer_feeRate: 0
     }
-    if (!requirePassword) {
-        let wallet = await GetWallet()
-        requirePassword = !wallet.settings.SkipPassword
-    }
-
     if (inputs && inputs.length && outputs && outputs.length) {
         const inputStrings = inputs
         const outputStrings = outputs
@@ -220,13 +172,14 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
         outer_transaction.outer_beatHash.current = beatHash
         const {encrypted} = await window.electron.getWalletFileInfo()
-        if (!encrypted || !requirePassword) {
+        if (!encrypted) {
             await setAndPushTx(outer_transaction, setModal, onDone)
         } else {
             setModal(Modals.Password, {
-                onCorrectPassword: async () => {
-                    await setAndPushTx(outer_transaction, setModal, onDone)
-                }
+                onCorrectPassword: async (password) => {
+                    return setAndPushTx(outer_transaction, setModal, onDone, password)
+                },
+                authenticate: false,
             })
         }
     }

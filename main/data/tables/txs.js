@@ -227,6 +227,16 @@ const GetTransaction = async (conf, txHash) => {
     return {outputs, inputs, seen, block, raw}
 }
 
+const GetOutput = async (conf, txHash, outputIndex) =>
+    (await Select(conf, "transaction-output",
+        "SELECT outputs.*, slp_outputs.token_hash AS slp_token_hash, " +
+        "slp_outputs.amount AS slp_amount, slp_batons.token_hash AS slp_baton_token_hash " +
+        "FROM outputs " +
+        "LEFT JOIN slp_outputs ON slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index` " +
+        "LEFT JOIN slp_batons ON slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index` " +
+        "WHERE outputs.hash = ? AND outputs.`index` = ? LIMIT 1",
+        [txHash, outputIndex]))[0]
+
 const GetUtxos = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
@@ -247,6 +257,7 @@ module.exports = {
     GenerateHistory,
     GetAddressSyncs,
     GetTransaction,
+    GetOutput,
     GetTransactions,
     GetUtxos,
     GetWalletInfo,

@@ -35,13 +35,13 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
     }
     const add = async (keys, addresses, password) => {
         const wallet = await GetWallet()
-        if ((keys.length > 0) && wallet.keys.length == 0) {
+        if ((keys.length > 0) && wallet.walletType === "watch") {
             setError("Error, cannot add keys to a keyless wallet")
             return
-        } else if ((addresses.length > 0) && wallet.keys.length > 0) {
+        } else if ((addresses.length > 0) && wallet.walletType !== "watch") {
             setError("Error, cannot add addresses directly to a wallet with keys")
             return
-        } else if (wallet.keys.length > 0) {
+        } else if (wallet.walletType !== "watch") {
             const convertedKeys = GetAddresses(keys)
             await window.electron.addAddresses(convertedKeys)
             await window.electron.addKeys(keys, password)
@@ -53,13 +53,13 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
     }
     const remove = async (keys, addresses, password) => {
         const wallet = await GetWallet()
-        if ((keys.length > 0) && wallet.keys.length == 0) {
+        if ((keys.length > 0) && wallet.walletType === "watch") {
             setError("Error, cannot remove keys from a keyless wallet")
             return
-        } else if ((addresses.length > 0) && wallet.keys.length > 0) {
+        } else if ((addresses.length > 0) && wallet.walletType !== "watch") {
             setError("Error, cannot remove addresses directly from a wallet with keys")
             return
-        } else if (wallet.keys.length > 0) {
+        } else if (wallet.walletType !== "watch") {
             const convertedKeys = GetAddresses(keys)
             await window.electron.removeAddresses(convertedKeys)
             await window.electron.removeKeys(keys, password)

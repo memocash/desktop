@@ -12,6 +12,7 @@ const {
     ForgetPaths,
     MigrateWallet,
     NewWallet,
+    PublicWallet,
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
@@ -42,6 +43,23 @@ const tempWallet = async (name) => {
 test("a plain wallet name resolves inside the wallet directory", () => {
     assert.equal(ResolveWalletPath(Window, "default_wallet"), Dir.DefaultPath + path.sep + "default_wallet")
     assert.equal(ResolveWalletPath(Window, "  spaced  "), Dir.DefaultPath + path.sep + "spaced")
+})
+
+test("renderer wallet state contains capabilities but no private material", () => {
+    const publicState = PublicWallet({
+        seed: "secret seed words",
+        keys: ["private WIF"],
+        addresses: ["addr1"],
+        settings: {SkipPassword: false},
+    })
+    assert.equal(publicState.seed, undefined)
+    assert.equal(publicState.keys, undefined)
+    assert.equal(publicState.canSign, true)
+    assert.equal(publicState.walletType, "seed")
+    assert.deepEqual(publicState.addresses, ["addr1"])
+    assert.equal(PublicWallet({keys: ["WIF"], addresses: []}).walletType, "imported")
+    assert.equal(PublicWallet({keys: [], addresses: ["watch"]}).walletType, "watch")
+    assert.equal(PublicWallet({keys: [], addresses: ["watch"]}).canSign, false)
 })
 
 test("a name that would escape the wallet directory is refused", () => {

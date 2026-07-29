@@ -425,7 +425,7 @@ const Info = () => {
     const onClose = () => {
         setShowPasswordForSign(false)
     }
-    const onCorrectPassword = async () => {
+    const onCorrectPassword = async (password) => {
         setShowPasswordForSign(false)
         const feeRate = feeRef.current / size
         let outer_transaction = {
@@ -437,8 +437,8 @@ const Info = () => {
             outer_feeRate: feeRate
         }
 
-        if (!await setTx(outer_transaction, null)) {
-            return
+        if (!await setTx(outer_transaction, null, password)) {
+            return false
         }
         console.log(outer_transaction)
         txInfoRef.current = outer_transaction.outer_txInfo
@@ -447,6 +447,7 @@ const Info = () => {
         transactionIdEleRef.current.value = outer_transaction.outer_transactionIDEleRef.value
         setFeeRate(feeRate)
         setSigned(true)
+        return true
     }
     const clickBroadcast = async () => {
         if (!txInfoRef.current.raw) {
@@ -539,7 +540,7 @@ const Info = () => {
             </div>
             {showPasswordForSign && <Modal onClose={onClose}>
                 <div className={styles.root}>
-                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword}/>
+                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword} authenticate={false}/>
                 </div>
             </Modal>}
         </div>

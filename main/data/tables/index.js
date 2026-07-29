@@ -18,7 +18,7 @@ const {
     GetAddressTokenBalances, GetSlpGenesis, GetTokenBalances, GetTokenBatons, GetUncheckedSlpTxs, SaveSlp,
 } = require("./slp")
 const {
-    GenerateHistory, GetAddressSyncs, GetTransaction, GetTransactions, GetUtxos, GetWalletInfo, SaveAddressSync,
+    GenerateHistory, GetAddressSyncs, GetOutput, GetTransaction, GetTransactions, GetUtxos, GetWalletInfo, SaveAddressSync,
     SaveBlock, SaveTransactions
 } = require("./txs")
 
@@ -36,6 +36,7 @@ module.exports = {
     GetLinkedAddresses,
     GetNewPosts,
     GetNotifications,
+    GetOutput,
     GetPic,
     GetPicExists,
     GetPicsExist,

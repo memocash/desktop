@@ -189,6 +189,15 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
     addresses: addressList,
 })
 
+const PublicWallet = (wallet) => {
+    const {seed, keys, ...publicData} = wallet
+    return {
+        ...publicData,
+        canSign: !!(seed || (keys && keys.length)),
+        walletType: seed ? "seed" : (keys && keys.length ? "imported" : "watch"),
+    }
+}
+
 const DefaultSettings = {
     DirectTx: false,
     SkipPassword: true,
@@ -239,6 +248,7 @@ module.exports = {
     ListWalletFiles,
     MigrateWallet,
     NewWallet,
+    PublicWallet,
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,

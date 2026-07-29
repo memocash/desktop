@@ -36,13 +36,15 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
     const onCorrectPassword = async (password) => {
         if (await loadKey(password)) {
             setShowKey(true)
+            return true
         }
+        return false
     }
     return (
         <Modal onClose={onClose}>
             <div className={styles.root}>
                 {!loading ? !showKeyRef.current ?
-                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword}/>
+                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword} authenticate={false}/>
                     :
                     <div>
                         <div className={styles.text}>Address: {displayAddress}</div>

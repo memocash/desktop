@@ -19,13 +19,15 @@ const SeedModal = ({onClose}) => {
         if (!error) {
             setSeedPhrase(value || "")
             setShowSeed(true)
+            return true
         }
+        return false
     }
     return (
         <Modal onClose={onClose}>
             <div className={styles.root}>
                 {!showSeed ?
-                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword}/>
+                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword} authenticate={false}/>
                     :
                     <div>
                         <div className={styles.text}>Your wallet seed phrase is:</div>

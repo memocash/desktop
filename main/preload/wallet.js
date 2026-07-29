@@ -19,17 +19,20 @@ module.exports = {
         ipcRenderer.invoke(Handlers.CreateWallet, walletName, seedPhrase, keyList, addressList, password),
     getExistingWalletFiles: async () => ipcRenderer.invoke(Handlers.GetExistingWalletFiles),
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
-    generateWallet: async (seed, keys) => ipcRenderer.invoke(Handlers.GenerateWallet, seed, keys),
     getWallet: async () => (await ipcRenderer.invoke(Handlers.GetWallet)).wallet,
     authenticateWallet: async (password) => ipcRenderer.invoke(Handlers.AuthenticateWallet, password),
     exportSeed: async (password) => ipcRenderer.invoke(Handlers.ExportSeed, password),
     exportPrivateKey: async (address, password) =>
         ipcRenderer.invoke(Handlers.ExportPrivateKey, address, password),
+    removePrivateKey: async (address, password) =>
+        ipcRenderer.invoke(Handlers.RemovePrivateKey, address, password),
     getWalletFileInfo: async () => ipcRenderer.invoke(Handlers.GetWalletFileInfo),
     isWalletFileEncrypted: async (walletName) => ipcRenderer.invoke(Handlers.WalletFileIsEncrypted, walletName),
     unlockWallet: async (walletName, password) => ipcRenderer.invoke(Handlers.UnlockWallet, walletName, password),
     walletLoaded: () => ipcRenderer.send(Handlers.WalletLoaded),
     saveNetworkConfig: async (networkConfig) => ipcRenderer.invoke(Handlers.SaveNetworkConfig, networkConfig),
+    signTransaction: async (request, password) =>
+        ipcRenderer.invoke(Handlers.SignTransaction, request, password),
     getNetworkConfig: async () => ipcRenderer.invoke(Handlers.GetNetworkConfig),
     getWindowNetwork: async () => await ipcRenderer.invoke(Handlers.GetWindowNetwork),
     setWindowNetwork: async (network) => await ipcRenderer.invoke(Handlers.SetWindowNetwork, network),

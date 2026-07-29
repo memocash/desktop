@@ -44,7 +44,7 @@ const ShowMenu = (win, newWindow, wallet) => {
                 click: () => {
                     win.webContents.send(Listeners.DisplayModal, Modals.Seed)
                 },
-                enabled: !!wallet.seed,
+                enabled: wallet.walletType === "seed",
             },
         ]
     }, {
@@ -81,7 +81,7 @@ const ShowMenu = (win, newWindow, wallet) => {
                 click: () => {
                     win.webContents.send(Listeners.DisplayModal, Modals.Address)
                 },
-                enabled: !wallet.seed || wallet.seed.length === 0,
+                enabled: wallet.walletType !== "seed",
             }
         ]
     }, {

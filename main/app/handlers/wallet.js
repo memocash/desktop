@@ -3,9 +3,10 @@ const fs = require("fs/promises");
 const path = require("path");
 const {Worker} = require("worker_threads");
 const {Dir, Handlers} = require("../../common/util");
-const {GetWalletInfo} = require("../../data/tables");
+const {GetOutput, GetWalletInfo} = require("../../data/tables");
 const menu = require("../../menu");
 const keystore = require("../keystore");
+const {SignTransaction} = require("../transaction_signer");
 const {SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, eConf} = require("../window");
 
 // Runs key/address derivation in a worker thread so the CPU-intensive
@@ -31,6 +32,26 @@ const generateWallet = (seed, keys) => new Promise((resolve, reject) => {
     })
 })
 
+const ensurePublicMetadata = async (filename, read) => {
+    if (!read.wallet.seed) {
+        return read
+    }
+    const needsAddresses = !read.wallet.addresses || !read.wallet.addresses.length
+    const needsChange = !read.wallet.changeList || !read.wallet.changeList.length
+    const needsSlp = !read.wallet.slpList || !read.wallet.slpList.length
+    if (!needsAddresses && !needsChange && !needsSlp) {
+        return read
+    }
+    const derived = await generateWallet(read.wallet.seed, read.wallet.keys)
+    const publicData = await keystore.WithWalletLock(filename, () =>
+        keystore.UpdatePublic(filename, read.integrityKey, (wallet) => {
+            if (needsAddresses) wallet.addresses = derived.addresses.slice(0, 20)
+            if (needsChange) wallet.changeList = derived.changeList
+            if (needsSlp) wallet.slpList = derived.slpList
+        }))
+    return {...read, wallet: {...read.wallet, ...publicData}}
+}
+
 // The renderer used to decrypt the file itself and hand the plaintext wallet and
 // password back through an ipcMain.on, which left it in charge of what main
 // trusted. Now it only names a wallet and offers a password, and finds out
@@ -40,6 +61,7 @@ const unlockWallet = async (winId, walletName, password) => {
     let read
     try {
         read = await keystore.ReadAndMigrateWallet(filename, password)
+        read = await ensurePublicMetadata(filename, read)
     } catch (e) {
         if (e.message === keystore.WrongPassword) {
             return {error: keystore.WrongPassword}
@@ -47,7 +69,7 @@ const unlockWallet = async (winId, walletName, password) => {
         throw e
     }
     SetWallet(winId, {
-        wallet: read.wallet,
+        wallet: keystore.PublicWallet(read.wallet),
         filename,
         encrypted: read.encrypted,
         integrityKey: read.integrityKey,
@@ -61,9 +83,20 @@ const createWallet = async (winId, walletName, seedPhrase, keyList, addressList,
     }
     const filename = keystore.ResolveWalletPath(winId, walletName)
     const wallet = keystore.NewWallet(seedPhrase, keyList, addressList)
+    if (seedPhrase) {
+        const derived = await generateWallet(seedPhrase, [])
+        wallet.addresses = derived.addresses
+        wallet.changeList = derived.changeList
+        wallet.slpList = derived.slpList
+    }
     try {
         const integrityKey = await keystore.CreateWalletFile(filename, wallet, password)
-        SetWallet(winId, {wallet, filename, encrypted: !!(password && password.length), integrityKey})
+        SetWallet(winId, {
+            wallet: keystore.PublicWallet(wallet),
+            filename,
+            encrypted: !!(password && password.length),
+            integrityKey,
+        })
     } catch (e) {
         if (e.code === "EEXIST") {
             return {error: "wallet-exists"}
@@ -90,7 +123,7 @@ const updateWallet = async (winId, op, values, password) => {
             keystore.ApplyWalletUpdate(stored, op, values)
             await keystore.WriteWallet(
                 filename, stored, encrypted ? password : undefined, integrityKey)
-            SetWallet(winId, {wallet: stored, filename, encrypted, integrityKey})
+            SetWallet(winId, {wallet: keystore.PublicWallet(stored), filename, encrypted, integrityKey})
             return
         }
         const publicData = await keystore.UpdatePublic(filename, integrityKey, (data) =>
@@ -144,6 +177,37 @@ const exportPrivateKey = async (winId, address, password) => {
     throw new Error("address not found in wallet")
 }
 
+const removePrivateKey = async (winId, address, password) => {
+    const state = GetWallet(winId)
+    const {wallet: stored} = await readForOperation(winId, password)
+    const key = await exportPrivateKey(winId, address, password)
+    if (!key || !(stored.keys || []).includes(key)) {
+        throw new Error("address is not backed by an imported key")
+    }
+    keystore.ApplyWalletUpdate(stored, "removeKeys", [key])
+    keystore.ApplyWalletUpdate(stored, "removeAddresses", [address])
+    await keystore.WriteWallet(
+        state.filename, stored, state.encrypted ? password : undefined, state.integrityKey)
+    SetWallet(winId, {...state, wallet: keystore.PublicWallet(stored)})
+}
+
+const signTransaction = async (e, request, password) => {
+    try {
+        const {wallet} = await readForOperation(e.sender.id, password)
+        const value = await SignTransaction({
+            raw: request.raw,
+            inputs: request.inputs,
+            beatHash: request.beatHash,
+            wallet,
+            getOutput: (hash, index) => GetOutput(eConf(e), hash, index),
+        })
+        return {ok: true, value}
+    } catch (error) {
+        return {error: error.message === keystore.WrongPassword ?
+            keystore.WrongPassword : error.message}
+    }
+}
+
 const readNetworkConfig = async () => {
     try {
         return JSON.parse(await fs.readFile(Dir.NetworkConfigFile, {encoding: "utf8"}))
@@ -155,12 +219,6 @@ const readNetworkConfig = async () => {
 const WalletHandlers = () => {
     ipcMain.handle(Handlers.GetWallet, async (e) => GetWallet(e.sender.id))
     ipcMain.handle(Handlers.GetWalletInfo, async (e, addresses) => GetWalletInfo(eConf(e), addresses))
-    ipcMain.handle(Handlers.GenerateWallet, async (e, seed, keys) => {
-        const {addresses, changeList, keys: derivedKeys, slpList} = await generateWallet(seed, keys)
-        // The extra change/SLP WIFs are generated only for main-process export
-        // and must not expand the renderer-facing derivation response.
-        return {addresses, changeList, keys: derivedKeys, slpList}
-    })
     ipcMain.handle(Handlers.AuthenticateWallet, async (e, password) =>
         operationResult(async () => {
             await readForOperation(e.sender.id, password)
@@ -169,6 +227,10 @@ const WalletHandlers = () => {
         operationResult(async () => (await readForOperation(e.sender.id, password)).wallet.seed))
     ipcMain.handle(Handlers.ExportPrivateKey, async (e, address, password) =>
         operationResult(() => exportPrivateKey(e.sender.id, address, password)))
+    ipcMain.handle(Handlers.RemovePrivateKey, async (e, address, password) =>
+        operationResult(() => keystore.WithWalletLock(
+            GetWallet(e.sender.id).filename,
+            () => removePrivateKey(e.sender.id, address, password))))
     ipcMain.handle(Handlers.CheckWalletFile, async (e, walletName) =>
         keystore.WalletFileExists(e.sender.id, walletName))
     ipcMain.handle(Handlers.GetExistingWalletFiles, async () => keystore.ListWalletFiles())
@@ -190,6 +252,7 @@ const WalletHandlers = () => {
     ipcMain.handle(Handlers.SaveNetworkConfig, async (e, networkConfig) => {
         await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(networkConfig, null, 2) + "\n")
     })
+    ipcMain.handle(Handlers.SignTransaction, signTransaction)
     ipcMain.on(Handlers.WalletLoaded, (e) => {
         SetMenu(e.sender.id, menu.ShowMenu(GetWindow(e.sender.id), CreateWindow, GetWallet(e.sender.id).wallet))
         const walletName = path.parse(GetWallet(e.sender.id).filename).name

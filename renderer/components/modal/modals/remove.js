@@ -1,11 +1,8 @@
 import {useEffect, useState} from "react"
 import Modal from "../modal"
-import ImportKeys from "../../load/import_keys"
 import styles from "../../../styles/modal.module.css"
 import GetWallet from "../../util/wallet"
-import {GetAddresses} from "../../util/addresses"
 import {Modals} from "../../../../main/common/util/modals";
-import {ECPair} from "@bitcoin-dot-com/bitcoincashjs2-lib";
 
 const RemoveModal = ({basic: {onClose, setLastUpdate, setModal}, modalProps:{address}}) => {
     const onSubmit = async (address) => {
@@ -22,17 +19,12 @@ const RemoveModal = ({basic: {onClose, setLastUpdate, setModal}, modalProps:{add
     }
     const remove = async (addresses, password) => {
         const wallet = await GetWallet()
-        let key
-        if(wallet.keys.length > 0){
-            for (let i = 0; i < wallet.keys.length; i++) {
-                const current_key = ECPair.fromWIF(wallet.keys[i])
-                if (address === current_key.getAddress()) {
-                    key = current_key.toWIF()
-                }
+        if(wallet.walletType !== "watch"){
+            const {error} = await window.electron.removePrivateKey(address, password)
+            if (error) {
+                window.electron.showMessageDialog(error)
+                return
             }
-            const convertedKeys = GetAddresses([key])
-            await window.electron.removeAddresses(convertedKeys)
-            await window.electron.removeKeys([key], password)
         } else{
             await window.electron.removeAddresses(addresses)
         }

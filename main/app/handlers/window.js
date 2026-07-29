@@ -50,7 +50,7 @@ const WindowHandlers = () => {
             click: () => {
                 win.webContents.send(Listeners.DisplayModal, Modals.Remove, {address})
             },
-            enabled: !wallet.seed || wallet.seed.length === 0,
+            enabled: wallet.walletType !== "seed",
         },))
         menu.popup({window: win})
     })

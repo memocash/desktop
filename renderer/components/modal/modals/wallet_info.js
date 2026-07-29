@@ -20,7 +20,8 @@ const WalletInfoModal = ({onClose}) => {
             addressCount: addresses.length,
             changeCount: changeList.length,
             slpCount: slpList.length,
-            backup: wallet.seed && wallet.seed.length ? "Seed phrase (BIP39)" : "Imported keys",
+            backup: wallet.walletType === "seed" ? "Seed phrase (BIP39)" :
+                (wallet.walletType === "imported" ? "Imported keys" : "Watch only"),
         })
     })()}, [])
     return (

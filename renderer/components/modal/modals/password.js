@@ -1,15 +1,19 @@
 import styles from "../../../styles/modal.module.css"
 import {useRef, useState} from "react";
 
-const Password = ({onClose, onCorrectPassword}) => {
+const Password = ({onClose, onCorrectPassword, authenticate = true}) => {
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
     const passwordInputRef = useRef()
     const handleCheckPassword = async () => {
         const enteredPassword = passwordInputRef.current.value
-        const {error} = await window.electron.authenticateWallet(enteredPassword)
-        if (!error) {
-            await onCorrectPassword(enteredPassword)
-        } else {
+        if (authenticate) {
+            const {error} = await window.electron.authenticateWallet(enteredPassword)
+            if (error) {
+                setHasEnteredWrongPassword(true)
+                return
+            }
+        }
+        if (await onCorrectPassword(enteredPassword) === false) {
             setHasEnteredWrongPassword(true)
         }
     }
