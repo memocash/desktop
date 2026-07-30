@@ -1,4 +1,5 @@
 const {Dir} = require("./dir");
+const {WalletErrors} = require("./errors");
 const {Modals} = require("./modals");
 const {GetId} = require("./id");
 const {Handlers, Listeners} = require("./handlers");
@@ -11,6 +12,7 @@ module.exports = {
     Listeners: Listeners,
     Modals: Modals,
     GetId: GetId,
+    WalletErrors: WalletErrors,
     Tabs: Tabs,
     ToggleableTabs: ToggleableTabs,
 }

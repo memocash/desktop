@@ -60,6 +60,10 @@ test("renderer wallet state contains capabilities but no private material", () =
     assert.equal(PublicWallet({keys: ["WIF"], addresses: []}).walletType, "imported")
     assert.equal(PublicWallet({keys: [], addresses: ["watch"]}).walletType, "watch")
     assert.equal(PublicWallet({keys: [], addresses: ["watch"]}).canSign, false)
+    // The lists are always present, so no caller has to have one created first.
+    assert.deepEqual(PublicWallet({}).addresses, [])
+    assert.deepEqual(PublicWallet({}).changeList, [])
+    assert.deepEqual(PublicWallet({}).slpList, [])
 })
 
 test("a name that would escape the wallet directory is refused", () => {
@@ -153,11 +157,23 @@ test("list updates add, de-duplicate, and remove", () => {
 test("changing settings fills in the defaults and keeps untouched values", () => {
     const wallet = {}
     ApplyWalletUpdate(wallet, "changeSettings", {})
-    assert.deepEqual(wallet.settings, {DirectTx: false, SkipPassword: true})
-    ApplyWalletUpdate(wallet, "changeSettings", {SkipPassword: false})
-    assert.deepEqual(wallet.settings, {DirectTx: false, SkipPassword: false})
+    // A wallet asks for its password on every send until someone says otherwise.
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 0})
+    ApplyWalletUpdate(wallet, "changeSettings", {PasswordThreshold: 10000})
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 10000})
     ApplyWalletUpdate(wallet, "changeSettings", {DirectTx: true})
-    assert.deepEqual(wallet.settings, {DirectTx: true, SkipPassword: false})
+    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000})
+})
+
+test("a spend budget has to be a whole number of satoshis", () => {
+    for (const threshold of ["10000", 1.5, -1, Infinity, NaN, null]) {
+        assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {PasswordThreshold: threshold}),
+            {message: /whole number of satoshis/}, "accepted " + threshold)
+    }
+    // Zero is a policy, not a missing value: it means ask every time.
+    const wallet = {}
+    ApplyWalletUpdate(wallet, "changeSettings", {PasswordThreshold: 0})
+    assert.equal(wallet.settings.PasswordThreshold, 0)
 })
 
 // The wallet page asks for the wallet from several components as it mounts, so
@@ -282,7 +298,7 @@ test("a secret update preserves the key used to authenticate public metadata", a
 })
 
 test("only the updates reaching imported keys need the envelope opened", () => {
-    for (const op of ["addAddresses", "removeAddresses", "addChangeList", "addSlpList", "changeSettings"]) {
+    for (const op of ["addAddresses", "removeAddresses", "changeSettings"]) {
         assert.equal(UpdateTouchesSecret(op), false, op + " should not need the envelope")
     }
     for (const op of ["addKeys", "removeKeys"]) {
@@ -292,5 +308,10 @@ test("only the updates reaching imported keys need the envelope opened", () => {
 
 test("an update the keystore doesn't define is refused", () => {
     assert.throws(() => ApplyWalletUpdate({}, "addSeed", ["nope"]), {message: /unknown wallet update/})
+    // The change and SLP lists come from the account keys in main, so there is
+    // no longer an op that appends to them from outside.
+    for (const op of ["addChangeList", "addSlpList"]) {
+        assert.throws(() => ApplyWalletUpdate({}, op, ["addr"]), {message: /unknown wallet update/})
+    }
     assert.throws(() => ApplyWalletUpdate({}, "addAddresses", "not-a-list"), {message: /list of values/})
 })

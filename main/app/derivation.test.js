@@ -3,6 +3,7 @@ const test = require("node:test")
 const {ECPair} = require("@bitcoin-dot-com/bitcoincashjs2-lib")
 const {
     AddressCount,
+    addressesForKeys,
     derivePrivateWallet,
     derivePublicWallet,
 } = require("./derivation")
@@ -21,6 +22,14 @@ test("public account keys reproduce every seed-derived address without private k
     assert.equal(privateWallet.derivation.accounts.slp.startsWith("xpub"), true)
     assert.equal(privateWallet.derivation.addressCount, AddressCount)
     assert.equal(JSON.stringify(privateWallet.derivation).includes(privateWallet.keys[0]), false)
+})
+
+test("an imported key contributes the address it unlocks", () => {
+    const {keys, addresses} = derivePrivateWallet(Seed, [])
+    assert.deepEqual(addressesForKeys([keys[3], keys[7]]), [addresses[3], addresses[7]])
+    assert.deepEqual(addressesForKeys([]), [])
+    // A string that isn't a key can't be stored as one.
+    assert.throws(() => addressesForKeys(["not-a-key"]), {message: /not a valid private key/})
 })
 
 test("public derivation rejects private account keys and unreasonable counts", () => {

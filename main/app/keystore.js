@@ -1,6 +1,7 @@
 const fs = require("fs/promises")
 const path = require("path")
 const {Dir} = require("../common/util")
+const {Serialize} = require("./serial")
 const walletFile = require("./wallet_file")
 
 // Every wallet read, write, and decryption lives here rather than in the preload
@@ -158,14 +159,9 @@ const MigrateWallet = async (walletPath, wallet, password) => {
 // blocked the renderer and so could never interleave. Doing the same work
 // asynchronously in main can, and several components ask for the wallet at once
 // when the wallet page mounts, so updates to one file are run one at a time.
-const walletQueues = new Map()
-
-const WithWalletLock = (walletPath, run) => {
-    const previous = walletQueues.get(walletPath) || Promise.resolve()
-    const next = previous.then(run, run)
-    walletQueues.set(walletPath, next.catch(() => {}))
-    return next
-}
+// Prefixed so a file path can never share a queue with anything else serialized
+// elsewhere in main.
+const WithWalletLock = (walletPath, run) => Serialize("wallet:" + walletPath, run)
 
 // Reading the legacy form and deciding whether to migrate must happen under the
 // same lock as the rewrite. Otherwise two unlockers can both capture version 1,
@@ -193,25 +189,37 @@ const PublicWallet = (wallet) => {
     const {seed, keys, ...publicData} = wallet
     return {
         ...publicData,
+        // Present even when empty, so nothing on the other side has to ask for a
+        // list to be created before it can read one.
+        addresses: wallet.addresses || [],
+        changeList: wallet.changeList || [],
+        slpList: wallet.slpList || [],
         canSign: !!(seed || (keys && keys.length)),
         walletType: seed ? "seed" : (keys && keys.length ? "imported" : "watch"),
     }
 }
 
+// PasswordThreshold is how many satoshis may leave the wallet, in total, before
+// the password is asked for again. Zero means every send is asked for, which is
+// what a wallet gets until someone deliberately raises it.
 const DefaultSettings = {
     DirectTx: false,
-    SkipPassword: true,
+    PasswordThreshold: 0,
 }
+
+const ThresholdSetting = "PasswordThreshold"
 
 // The nine near-identical mutators the preload used to carry, reduced to one
 // table. Each op adds to or removes from a list field, de-duplicating as before.
+//
+// The change and SLP lists are not in the table: they are derived from the
+// account keys in main, so nothing outside this process has a reason to append
+// to them, and an op that exists is an op a compromised renderer can call.
 const ListOps = {
     addAddresses: {field: "addresses", remove: false},
     removeAddresses: {field: "addresses", remove: true},
     addKeys: {field: "keys", remove: false},
     removeKeys: {field: "keys", remove: true},
-    addChangeList: {field: "changeList", remove: false},
-    addSlpList: {field: "slpList", remove: false},
 }
 
 // Whether an update reaches inside the encrypted envelope, which only the ones
@@ -224,6 +232,14 @@ const UpdateTouchesSecret = (op) => {
 
 const ApplyWalletUpdate = (wallet, op, values) => {
     if (op === "changeSettings") {
+        // The threshold decides when a spend may go through without the
+        // password, so it is worth being certain of its shape: a string or an
+        // Infinity here would be a policy nobody can reason about.
+        const threshold = values && values[ThresholdSetting]
+        if (threshold !== undefined &&
+            (!Number.isSafeInteger(threshold) || threshold < 0)) {
+            throw new Error("password threshold must be a whole number of satoshis")
+        }
         wallet.settings = {...DefaultSettings, ...wallet.settings, ...values}
         return
     }
@@ -252,6 +268,7 @@ module.exports = {
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
+    ThresholdSetting,
     UpdatePublic,
     UpdateTouchesSecret,
     Version: walletFile.Version,

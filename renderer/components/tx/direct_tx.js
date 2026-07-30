@@ -1,6 +1,6 @@
 import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import GetWallet from "../util/wallet";
-import {Modals} from "../../../main/common/util"
+import {Modals, WalletErrors} from "../../../main/common/util"
 import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
 const Prefix = {
@@ -33,7 +33,17 @@ const setTx = async (outer_transaction, setModal, password) => {
         beatHash: outer_transaction.outer_beatHash.current,
     }, password)
     if (error) {
-        if (error !== "wrong-password") {
+        // Declining main's send confirmation isn't a failure to report back: the
+        // person just said no, and main has already told them what they declined.
+        if (error === WalletErrors.SpendCancelled) {
+            return WalletErrors.SpendCancelled
+        }
+        // The session's budget doesn't cover this one. Nothing has gone wrong;
+        // the caller asks for the password and comes back.
+        if (error === WalletErrors.PasswordRequired) {
+            return WalletErrors.PasswordRequired
+        }
+        if (error !== WalletErrors.WrongPassword) {
             window.electron.showMessageDialog("Unable to sign transaction: " + error)
         }
         return false
@@ -71,8 +81,9 @@ const pushTx = async (outer_txInfo) => {
 }
 
 const setAndPushTx = async (outer_transaction, setModal, onDone, password) => {
-    if (!await setTx(outer_transaction, setModal, password)) {
-        return false
+    const signed = await setTx(outer_transaction, setModal, password)
+    if (signed !== true) {
+        return signed
     }
     try {
         await pushTx(outer_transaction.outer_txInfo)
@@ -171,17 +182,26 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         outer_transaction.outer_fee = fee
         outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
         outer_transaction.outer_beatHash.current = beatHash
-        const {encrypted} = await window.electron.getWalletFileInfo()
-        if (!encrypted) {
-            await setAndPushTx(outer_transaction, setModal, onDone)
-        } else {
-            setModal(Modals.Password, {
-                onCorrectPassword: async (password) => {
-                    return setAndPushTx(outer_transaction, setModal, onDone, password)
-                },
-                authenticate: false,
-            })
+        // No password to begin with: an unencrypted wallet needs none, and an
+        // encrypted one may have a spend budget with room left in it. Main is
+        // the one that decides, and asks for a password when it has to.
+        const attempt = await setAndPushTx(outer_transaction, setModal, onDone)
+        if (attempt !== WalletErrors.PasswordRequired) {
+            return
         }
+        setModal(Modals.Password, {
+            onCorrectPassword: async (password) => {
+                const result = await setAndPushTx(outer_transaction, setModal, onDone, password)
+                if (result === WalletErrors.SpendCancelled) {
+                    // The password was fine; the send was declined. Close rather
+                    // than accusing them of mistyping it.
+                    setModal(Modals.None)
+                    return true
+                }
+                return result
+            },
+            authenticate: false,
+        })
     }
 }
 export {DirectTx, setTx, pushTx, FormatTxError}

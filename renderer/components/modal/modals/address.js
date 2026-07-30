@@ -3,7 +3,6 @@ import Modal from "../modal"
 import ImportKeys from "../../load/import_keys"
 import styles from "../../../styles/modal.module.css"
 import GetWallet from "../../util/wallet"
-import {GetAddresses} from "../../util/addresses"
 import {Modals} from "../../../../main/common/util/modals";
 
 const AddressModal = ({onClose, setLastUpdate, setModal}) => {
@@ -42,8 +41,7 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
             setError("Error, cannot add addresses directly to a wallet with keys")
             return
         } else if (wallet.walletType !== "watch") {
-            const convertedKeys = GetAddresses(keys)
-            await window.electron.addAddresses(convertedKeys)
+            // Just the keys: main derives the address each one unlocks.
             await window.electron.addKeys(keys, password)
         } else {
             await window.electron.addAddresses(addresses)
@@ -60,8 +58,6 @@ const AddressModal = ({onClose, setLastUpdate, setModal}) => {
             setError("Error, cannot remove addresses directly from a wallet with keys")
             return
         } else if (wallet.walletType !== "watch") {
-            const convertedKeys = GetAddresses(keys)
-            await window.electron.removeAddresses(convertedKeys)
             await window.electron.removeKeys(keys, password)
         } else {
             await window.electron.removeAddresses(addresses)

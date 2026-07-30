@@ -3,6 +3,23 @@ const path = require("path");
 const isDev = require("electron-is-dev");
 const menu = require("../menu");
 const {ForgetPaths} = require("./keystore");
+const {
+    AddTxWindow,
+    ForgetWindow,
+    GetMenu,
+    GetNetworkOption,
+    GetStorage,
+    GetTxWindows,
+    GetWallet,
+    GetWindow,
+    IsOpen,
+    IsWalletWindow,
+    SetMenu,
+    SetNetworkOption,
+    SetStorage,
+    SetWallet,
+    SetWindow,
+} = require("./window_state");
 
 // Dev loads the Next dev server; prod loads the static export served over the
 // app:// protocol (see main/index.js). The rest of the URL is identical.
@@ -26,36 +43,23 @@ const WebPreferences = {
     preload: path.join(__dirname, "..", "preload.bundle.cjs"),
 }
 
-const wallets = {}
-const storage = {}
-const windows = {}
-const menus = {}
-const networkOptions = {}
-const txWindows = {}
-const txWindowIds = new Set()
 let windowNumber = 0
 
-// Picking a wallet in a file dialog authorizes that window to open that file.
-// The grant goes when the window does, so an import doesn't leave the path
-// reachable by whatever window is handed the same id later.
-const ForgetPathsOnClose = (win) => {
+// Everything a window puts in the state maps outlives it otherwise: its wallet
+// metadata and the key that authenticates that metadata on disk, its menu, its
+// network choice, the paths a file dialog authorized it to open, and the window
+// object itself - all held for the life of the process, however many wallets
+// have been opened and closed since. Clear them when the window's contents are
+// destroyed, so closing a wallet actually puts it away and a later window handed
+// the same id starts with nothing. A transaction window also names the window it
+// was opened from, which is where the list holding it lives.
+const ForgetWindowOnClose = (win, parentId) => {
     const winId = win.webContents.id
-    win.webContents.once("destroyed", () => ForgetPaths(winId))
+    win.webContents.once("destroyed", () => {
+        ForgetPaths(winId)
+        ForgetWindow(winId, parentId)
+    })
 }
-
-const GetMenu = (winId) => menus[winId]
-const GetNetworkOption = (winId) => networkOptions[winId]
-const GetStorage = (winId) => storage[winId]
-const GetWallet = (winId) => wallets[winId]
-const GetWindow = (winId) => windows[winId]
-// True once a wallet has been loaded in the window, which is also when it starts
-// rendering the modal viewer. Transaction windows inherit the parent's wallet
-// but have no modals, so they are excluded.
-const IsWalletWindow = (winId) => wallets[winId] !== undefined && !txWindowIds.has(winId)
-const SetMenu = (winId, menu) => menus[winId] = menu
-const SetNetworkOption = (winId, option) => networkOptions[winId] = option
-const SetStorage = (winId, data) => storage[winId] = data
-const SetWallet = (winId, wallet) => wallets[winId] = wallet
 
 const CreateWindow = async () => {
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
@@ -81,9 +85,9 @@ const CreateWindow = async () => {
         shell.openExternal(url);
         return {action: "deny"}
     });
-    menus[win.webContents.id] = menu.SimpleMenu(win, true)
-    windows[win.webContents.id] = win
-    ForgetPathsOnClose(win)
+    SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
+    SetWindow(win.webContents.id, win)
+    ForgetWindowOnClose(win)
     await win.loadURL(AppUrl + "/")
     windowNumber++
 }
@@ -99,16 +103,12 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         webPreferences: WebPreferences,
         icon: AppIcon,
     })
-    if (txWindows[winId] === undefined) {
-        txWindows[winId] = []
-    }
-    txWindowIds.add(win.webContents.id)
-    menus[win.webContents.id] = menu.SimpleMenu(win, true)
-    txWindows[winId].push(win)
-    windows[win.webContents.id] = win
-    ForgetPathsOnClose(win)
-    wallets[win.webContents.id] = wallets[winId]
-    networkOptions[win.webContents.id] = networkOptions[winId]
+    AddTxWindow(winId, win.webContents.id, win)
+    SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
+    SetWindow(win.webContents.id, win)
+    ForgetWindowOnClose(win, winId)
+    SetWallet(win.webContents.id, GetWallet(winId))
+    SetNetworkOption(win.webContents.id, GetNetworkOption(winId))
     let params = {txHash}
     if (!txHash || !txHash.length) {
         params = {inputs, outputs, beatHash}
@@ -133,12 +133,14 @@ const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
 module.exports = {
     eConf,
+    GetTxWindows,
     GetMenu,
     GetNetworkOption,
     GetStorage,
     GetRuntimeNetworkOption,
     GetWallet,
     GetWindow,
+    IsOpen,
     IsWalletWindow,
     SetMenu,
     SetNetworkOption,

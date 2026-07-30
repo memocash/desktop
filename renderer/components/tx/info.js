@@ -10,6 +10,7 @@ import styles from "../../styles/modal.module.css"
 import Password from "../modal/modals/password";
 import Modal from "../modal/modal";
 import {FormatTxError, setTx} from "./direct_tx";
+import {WalletErrors} from "../../../main/common/util";
 import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
 import Link from "next/link";
 
@@ -415,10 +416,10 @@ const Info = () => {
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
     const clickSign = async () => {
-        const {encrypted} = await window.electron.getWalletFileInfo()
-        if (!encrypted) {
-            await onCorrectPassword()
-        } else {
+        // Try without a password: unencrypted wallets never need one, and an
+        // encrypted one may have budget left in its session. Main asks when it
+        // has to.
+        if (await onCorrectPassword() === WalletErrors.PasswordRequired) {
             setShowPasswordForSign(true)
         }
     }
@@ -437,8 +438,15 @@ const Info = () => {
             outer_feeRate: feeRate
         }
 
-        if (!await setTx(outer_transaction, null, password)) {
-            return false
+        const signed = await setTx(outer_transaction, null, password)
+        if (signed !== true) {
+            // A declined send confirmation leaves the password prompt closed and
+            // the transaction unsigned, with nothing to correct. A budget that
+            // doesn't reach is passed back so the caller can ask.
+            if (signed === WalletErrors.PasswordRequired) {
+                return signed
+            }
+            return signed === WalletErrors.SpendCancelled
         }
         console.log(outer_transaction)
         txInfoRef.current = outer_transaction.outer_txInfo

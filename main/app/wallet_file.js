@@ -1,6 +1,7 @@
 const crypto = require("crypto")
 const {promisify} = require("util")
 const CryptoJS = require("crypto-js")
+const {WalletErrors} = require("../common/util")
 
 const scrypt = promisify(crypto.scrypt)
 
@@ -16,7 +17,8 @@ const scrypt = promisify(crypto.scrypt)
 // existing wallets open, but it is never written - see MigrateContents.
 
 const Version = 2
-const WrongPassword = "wrong-password"
+// Shared with the renderer so its checks match what main sends.
+const WrongPassword = WalletErrors.WrongPassword
 
 // scrypt at N=32768 with r=8 needs 128*N*r bytes, which is exactly Node's
 // default maxmem, so the derivation throws unless the limit is raised.

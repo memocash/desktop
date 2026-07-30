@@ -10,6 +10,7 @@ const bitcoin = require("@bitcoin-dot-com/bitcoincashjs2-lib")
 const {mnemonicToSeedSync} = require("bip39")
 const {BIP32Factory} = require("bip32")
 const ecc = require("tiny-secp256k1")
+const {WalletErrors} = require("../common/util")
 
 const bip32 = BIP32Factory(ecc)
 const MaxFeeRate = 100
@@ -19,17 +20,17 @@ const DustLimit = 546
 const walletAddresses = (wallet) =>
     (wallet.addresses || []).concat(wallet.changeList || [], wallet.slpList || [])
 
-const keyForAddress = (wallet, address) => {
+const keyForAddress = (wallet, address, seedRoot) => {
     for (const wif of wallet.keys || []) {
         const key = bitcoin.ECPair.fromWIF(wif)
         if (key.getAddress() === address) {
             return key
         }
     }
-    if (!wallet.seed) {
+    const node = seedRoot()
+    if (!node) {
         return undefined
     }
-    const node = bip32.fromSeed(mnemonicToSeedSync(wallet.seed))
     const lists = [
         {addresses: wallet.addresses || [], path: "m/44'/0'/0'/0/"},
         {addresses: wallet.changeList || [], path: "m/44'/0'/0'/1/"},
@@ -37,9 +38,38 @@ const keyForAddress = (wallet, address) => {
     ]
     for (const {addresses, path} of lists) {
         const index = addresses.indexOf(address)
-        if (index !== -1) {
-            return bitcoin.ECPair.fromWIF(node.derivePath(path + index).toWIF())
+        if (index === -1) {
+            continue
         }
+        // A list position is not proof of derivation: a watch-only address, or
+        // one a renderer added to a list, sits at an index whose derived key
+        // belongs to some other address. Signing with it would produce a
+        // transaction no node accepts, so treat a mismatch as no key at all.
+        const key = bitcoin.ECPair.fromWIF(node.derivePath(path + index).toWIF())
+        if (key.getAddress() === address) {
+            return key
+        }
+    }
+}
+
+// Answering "does this wallet hold the key for this address" costs a PBKDF2 pass
+// over the mnemonic and a derivation, and one transaction asks about the same
+// addresses several times - once per input, once per output. Build the root and
+// remember each answer for the duration of the signing.
+const keyFinder = (wallet) => {
+    const answers = new Map()
+    let root
+    const seedRoot = () => {
+        if (root === undefined) {
+            root = wallet.seed ? bip32.fromSeed(mnemonicToSeedSync(wallet.seed)) : null
+        }
+        return root
+    }
+    return (address) => {
+        if (!answers.has(address)) {
+            answers.set(address, keyForAddress(wallet, address, seedRoot))
+        }
+        return answers.get(address)
     }
 }
 
@@ -56,11 +86,32 @@ const uint64 = (buffer) => {
     return BigInt("0x" + buffer.toString("hex"))
 }
 
+// bitcoinjs normalizes a minimal single-byte push back into its opcode, so the
+// MINT baton field arrives as OP_0 when the baton is being destroyed, as OP_1 to
+// OP_16 for the usual output indexes, and as a one-byte push beyond that.
+const batonOutput = (chunk) => {
+    if (chunk === bitcoin.opcodes.OP_0) {
+        return undefined
+    }
+    if (typeof chunk === "number" &&
+        chunk >= bitcoin.opcodes.OP_1 && chunk <= bitcoin.opcodes.OP_16) {
+        return chunk - bitcoin.opcodes.OP_1 + 1
+    }
+    if (Buffer.isBuffer(chunk) && chunk.length === 1) {
+        return chunk[0]
+    }
+    throw new Error("invalid SLP MINT baton output")
+}
+
+// Validates the SLP framing against the authoritative token inputs and reports
+// what each output carries: a token amount, the mint baton, or both. The person
+// approving a send is told about the tokens and the mint authority moving, not
+// just about the dust carrying them.
 const validateSlp = (tx, authoritative) => {
     const tokenInputs = authoritative.filter(({output}) => output.slp_token_hash)
     const batonInputs = authoritative.filter(({output}) => output.slp_baton_token_hash)
     if (!tokenInputs.length && !batonInputs.length) {
-        return
+        return new Map()
     }
     const chunks = bitcoin.script.decompile(tx.outs[0] && tx.outs[0].script)
     if (!chunks || chunks[0] !== bitcoin.opcodes.OP_RETURN ||
@@ -87,7 +138,11 @@ const validateSlp = (tx, authoritative) => {
             amount > 0n && (!tx.outs[index + 1] || tx.outs[index + 1].value !== DustLimit))) {
             throw new Error("SLP SEND output does not match its token amount")
         }
-        return
+        // Amount n in the OP_RETURN belongs to output n + 1, the OP_RETURN
+        // itself being output 0.
+        return new Map(amounts
+            .map((amount, index) => [index + 1, {amount}])
+            .filter(([, {amount}]) => amount > 0n))
     }
     if (action === "MINT") {
         if (tokenInputs.length || !batonInputs.length || !Buffer.isBuffer(chunks[4])) {
@@ -97,12 +152,65 @@ const validateSlp = (tx, authoritative) => {
         if (batonInputs.some(({output}) => output.slp_baton_token_hash !== tokenHash)) {
             throw new Error("SLP MINT baton does not match its token")
         }
-        return
+        // The minted quantity always goes to output 1. The baton field either
+        // names the output that keeps the authority to mint more - which the
+        // format puts at 2 or later - or is empty, destroying it.
+        const carried = new Map([[1, {amount: uint64(chunks[6])}]])
+        if (!tx.outs[1]) {
+            throw new Error("SLP MINT has no output for the minted tokens")
+        }
+        const baton = batonOutput(chunks[5])
+        if (baton !== undefined) {
+            if (baton < 2 || !tx.outs[baton]) {
+                throw new Error("SLP MINT baton names an output the transaction does not have")
+            }
+            carried.set(baton, {baton: true})
+        }
+        return carried
     }
     throw new Error("unsupported SLP action for token inputs")
 }
 
-const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput}) => {
+// The outputs that leave the wallet: everything except a valueless data carrier
+// and everything except payments the wallet can spend again. An output whose
+// script names no address counts as leaving, since nothing establishes that the
+// wallet can spend it - and so does an OP_RETURN carrying value, which is a way
+// to destroy coins rather than to send them.
+//
+// Staying in the wallet means main can produce the key, not that the address
+// appears in the wallet's address lists. Those lists are public metadata that a
+// renderer updates without a password, so treating them as ownership would let a
+// compromised one list an address it controls and have its own payments
+// classified as change.
+const outsidePayments = (tx, findKey, tokenOutputs) => {
+    const payments = []
+    for (let index = 0; index < tx.outs.length; index++) {
+        const {script, value} = tx.outs[index]
+        const chunks = bitcoin.script.decompile(script)
+        if (chunks && chunks[0] === bitcoin.opcodes.OP_RETURN && value === 0) {
+            continue
+        }
+        let address
+        try {
+            address = bitcoin.address.fromOutputScript(script)
+        } catch (e) {
+            address = undefined
+        }
+        if (address && findKey(address)) {
+            continue
+        }
+        const token = tokenOutputs.get(index) || {}
+        payments.push({
+            address,
+            value,
+            tokenAmount: token.amount === undefined ? undefined : token.amount.toString(),
+            baton: token.baton === true,
+        })
+    }
+    return payments
+}
+
+const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, authorizeSpend, confirmSpend}) => {
     if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
         throw new Error("watch-only-wallet")
     }
@@ -115,6 +223,7 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput}) => {
     }
 
     const owned = new Set(walletAddresses(wallet))
+    const findKey = keyFinder(wallet)
     const authoritative = []
     const seenInputs = new Set()
     let inputValue = 0
@@ -145,7 +254,7 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput}) => {
         if (output.script && Buffer.from(output.script, "hex").compare(expectedScript) !== 0) {
             throw new Error("input script does not match its address")
         }
-        const key = keyForAddress(wallet, output.address)
+        const key = findKey(output.address)
         if (!key) {
             throw new Error("no private key for input address")
         }
@@ -169,7 +278,34 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput}) => {
     if (fee / estimatedSignedSize > MaxFeeRate) {
         throw new Error("transaction fee rate exceeds safety limit")
     }
-    validateSlp(tx, authoritative)
+    const tokenOutputs = validateSlp(tx, authoritative)
+
+    // Everything above establishes that the inputs are this wallet's to spend.
+    // None of it says anything about where the money goes: the outputs arrive
+    // already built, and a renderer that can ask for a signature can ask for one
+    // paying anyone. So whoever calls this has to obtain agreement to the
+    // destinations first, and a caller that offers no way to ask doesn't get to
+    // move funds outside the wallet at all.
+    const payments = outsidePayments(tx, findKey, tokenOutputs)
+    // What this takes out of the wallet: everything paid where the wallet can't
+    // spend it again, plus the fee. Change is not spent, and neither is a data
+    // output. Known before any key work, so a caller that meters spending can
+    // refuse from the authoritative figure rather than from anything the
+    // renderer offered - and refuse before anyone is asked to confirm a
+    // transaction that isn't going to be signed.
+    const outgoing = payments.reduce((total, {value}) => total + value, 0) + fee
+    const carriesTokens = payments.some(({tokenAmount, baton}) => !!tokenAmount || baton)
+    if (typeof authorizeSpend === "function" && !authorizeSpend({outgoing, carriesTokens})) {
+        throw new Error(WalletErrors.PasswordRequired)
+    }
+    if (payments.length) {
+        if (typeof confirmSpend !== "function") {
+            throw new Error("a payment leaving the wallet needs confirmation")
+        }
+        if (!await confirmSpend({payments, fee})) {
+            throw new Error(WalletErrors.SpendCancelled)
+        }
+    }
 
     let signed
     for (let attempt = 0; attempt < MaxBeatHashAttempts; attempt++) {
@@ -198,6 +334,8 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput}) => {
         txid: signed.getId(),
         fee,
         feeRate,
+        outgoing,
+        carriesTokens,
         inputs: authoritative.map(({output}) => ({
             address: output.address,
             value: output.value,
@@ -206,6 +344,7 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput}) => {
 }
 
 module.exports = {
+    KeyFinder: keyFinder,
     MaxFeeRate,
     SignTransaction,
 }

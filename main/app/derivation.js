@@ -50,6 +50,17 @@ const derivePublicWallet = (derivation) => {
     }
 }
 
+// The address an imported key unlocks, derived from the key itself. The renderer
+// used to work these out and send them alongside the keys, which meant trusting
+// it to say what a key it had just handed over actually controls.
+const addressesForKeys = (keys) => keys.map((key) => {
+    try {
+        return ECPair.fromWIF(key).getAddress()
+    } catch (e) {
+        throw new Error("not a valid private key")
+    }
+})
+
 const derivePrivateWallet = (seedPhrase, keyList = []) => {
     const keys = []
     const addresses = []
@@ -91,6 +102,7 @@ const derivePrivateWallet = (seedPhrase, keyList = []) => {
 module.exports = {
     AddressCount,
     DerivationVersion,
+    addressesForKeys,
     derivePrivateWallet,
     derivePublicWallet,
 }
