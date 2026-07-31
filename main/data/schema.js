@@ -203,7 +203,33 @@ const Indexes = [
     "CREATE INDEX IF NOT EXISTS idx_address_aliases_target ON address_aliases (target_address)",
 ]
 
+// Run after the tables exist, on every open, in place of a migration mechanism.
+//
+// Cached pics used to be whatever the pic URL returned, with no check that it
+// was an image. Dead image hosts overwhelmingly answer with a 200 and an HTML
+// page rather than a 404 - imgur serves its homepage - so those databases hold
+// rows of markup that render as a permanently broken image: the row exists, so
+// the downloader skips the URL forever and the render sites see a non-empty
+// blob and never fall back to the default pic. Dropping them lets the download
+// happen once more, now checked (see client/images.js).
+//
+// The length(data) > 0 guard is what stops this from re-downloading dead URLs
+// on every launch: a URL that comes back as a non-image is re-saved as an empty
+// blob, deliberately, as a tombstone meaning "asked, it isn't an image, don't
+// ask again", and this must leave those alone.
+const Cleanups = [
+    "DELETE FROM images " +
+    "WHERE length(data) > 0 " +
+    "AND hex(substr(data, 1, 4)) != '89504E47' " +          // png
+    "AND hex(substr(data, 1, 3)) != 'FFD8FF' " +            // jpeg
+    "AND hex(substr(data, 1, 4)) != '47494638' " +          // gif
+    "AND hex(substr(data, 1, 2)) != '424D' " +              // bmp
+    "AND NOT (hex(substr(data, 1, 4)) = '52494646' " +      // webp
+    "   AND hex(substr(data, 9, 4)) = '57454250')",
+]
+
 module.exports = {
     Definitions,
     Indexes,
+    Cleanups,
 }

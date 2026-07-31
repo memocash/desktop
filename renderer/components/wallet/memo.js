@@ -83,7 +83,7 @@ const Memo = ({lastUpdate, setModal, setChatRoom, initialSync}) => {
         <div className={profile.wrapper}>
             <div className={profile.header}>
                 <div className={profile.pic} onClick={clickEditPic}>
-                    <img alt={"Profile image"} className={profile.img} src={picData ?
+                    <img alt={"Profile image"} className={profile.img} src={(picData && picData.length) ?
                         `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
                         "/default-profile.jpg"}/>
                     <a className={profile.editLink}><BsPencil/></a>
