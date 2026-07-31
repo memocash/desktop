@@ -2,6 +2,7 @@ import {useEffect, useState} from "react"
 import Modal from "../modal"
 import styles from "../../../styles/modal.module.css"
 import Password from "./password";
+import {WalletErrors} from "../../../../main/common/util"
 
 const SeedModal = ({onClose}) => {
     const [showSeed, setShowSeed] = useState(false)
@@ -14,14 +15,16 @@ const SeedModal = ({onClose}) => {
             setShowSeed(true)
         }
     })()}, [])
+    // false for a wrong password, the message for anything else, so the prompt
+    // doesn't report a wallet it cannot read as a password that was mistyped.
     const onCorrectPassword = async (password) => {
         const {error, value} = await window.electron.exportSeed(password)
-        if (!error) {
-            setSeedPhrase(value || "")
-            setShowSeed(true)
-            return true
+        if (error) {
+            return error === WalletErrors.WrongPassword ? false : error
         }
-        return false
+        setSeedPhrase(value || "")
+        setShowSeed(true)
+        return true
     }
     return (
         <Modal onClose={onClose}>

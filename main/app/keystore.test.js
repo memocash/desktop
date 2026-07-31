@@ -10,6 +10,7 @@ const {
     ApplyWalletUpdate,
     CreateWalletFile,
     ForgetPaths,
+    IsWalletArtifact,
     MigrateWallet,
     NewWallet,
     PublicWallet,
@@ -64,6 +65,23 @@ test("renderer wallet state contains capabilities but no private material", () =
     assert.deepEqual(PublicWallet({}).addresses, [])
     assert.deepEqual(PublicWallet({}).changeList, [])
     assert.deepEqual(PublicWallet({}).slpList, [])
+})
+
+// The wallet list is what the load screen checks a suggested name against, so a
+// backup or a stranded temp file listed there is offered as a wallet that cannot
+// be opened. Matching what this module writes, rather than excluding every name
+// with a dot, keeps a wallet somebody really named "my.wallet" visible.
+test("the files a wallet write leaves behind are not wallets", () => {
+    for (const artifact of [
+        "default_wallet.v1.bak",
+        "default_wallet.v1.bak.1",
+        "default_wallet.12345.0.tmp",
+    ]) {
+        assert.equal(IsWalletArtifact(artifact), true, artifact + " should not be listed")
+    }
+    for (const wallet of ["default_wallet", "wallet_1", "my.wallet", "backup.v1"]) {
+        assert.equal(IsWalletArtifact(wallet), false, wallet + " is a wallet name")
+    }
 })
 
 test("a name that would escape the wallet directory is refused", () => {

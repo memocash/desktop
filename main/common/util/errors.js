@@ -6,6 +6,9 @@ const WalletErrors = {
     // and try again. Not a failure, and not something to show as an error.
     PasswordRequired: "password-required",
     SpendCancelled: "spend-cancelled",
+    // A wallet already occupies the name. The renderer names the file in the
+    // message it shows, which main has no business phrasing.
+    WalletExists: "wallet-exists",
     WrongPassword: "wrong-password",
 }
 

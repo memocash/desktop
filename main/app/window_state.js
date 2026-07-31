@@ -47,6 +47,34 @@ const AddTxWindow = (parentId, winId, win) => {
 // has to find them again.
 const TxWindowIds = (parentId) => (txWindows[parentId] || []).map(({winId}) => winId)
 
+// Puts the parent's wallet in front of the transaction windows it opened, which
+// would otherwise go on showing it as it stood when each of them opened. The
+// settings are the part that matters: they say how much may leave the wallet
+// without the password, and a window reading a stale copy would seal a session
+// against a budget its owner has already withdrawn. The address lists matter
+// too, since a preview decides from them which outputs are the wallet's own.
+//
+// Only the wallet travels. The session does not: each window's key lives in its
+// own preload, so an envelope sealed for one window opens for nobody in another.
+// And only onto a child still open on the same file, so wallet metadata can
+// never be put in front of a window holding a different wallet's path and key.
+// Returns the windows it reached, so a test can see it rather than take it on
+// trust.
+const CopyWalletToTxWindows = (parentId, wallet) => {
+    const parent = wallets[parentId]
+    if (!parent) {
+        return []
+    }
+    return TxWindowIds(parentId).filter((winId) => {
+        const child = wallets[winId]
+        if (windows[winId] === undefined || !child || child.filename !== parent.filename) {
+            return false
+        }
+        wallets[winId] = {...child, wallet}
+        return true
+    })
+}
+
 // The wallet window a transaction window was opened from, or undefined for a
 // window that is not a transaction window. A preview cannot spend on the budget
 // itself - the session key stays in the preload of the window that unlocked the
@@ -92,6 +120,7 @@ const HeldWindowIds = () => ({
 
 module.exports = {
     AddTxWindow,
+    CopyWalletToTxWindows,
     ForgetWindow,
     GetMenu,
     GetNetworkOption,

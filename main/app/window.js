@@ -5,6 +5,7 @@ const menu = require("../menu");
 const {ForgetPaths} = require("./keystore");
 const {
     AddTxWindow,
+    CopyWalletToTxWindows,
     ForgetWindow,
     GetMenu,
     GetNetworkOption,
@@ -18,7 +19,6 @@ const {
     SetStorage,
     SetWallet,
     SetWindow,
-    TxWindowIds,
     TxWindowParent,
 } = require("./window_state");
 
@@ -139,6 +139,7 @@ const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
 module.exports = {
     eConf,
+    CopyWalletToTxWindows,
     GetMenu,
     GetNetworkOption,
     GetStorage,
@@ -153,6 +154,5 @@ module.exports = {
     SetWallet,
     CreateWindow,
     CreateTxWindow,
-    TxWindowIds,
     TxWindowParent,
 }

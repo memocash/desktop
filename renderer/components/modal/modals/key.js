@@ -3,6 +3,7 @@ import Modal from "../modal"
 import styles from "../../../styles/modal.module.css"
 import Password from "./password";
 import {useReferredState} from "../../util/state";
+import {WalletErrors} from "../../../../main/common/util"
 
 const KeyModal = ({onClose, modalProps: {address}}) => {
     const [showKey, showKeyRef, setShowKey] = useReferredState(false)
@@ -26,20 +27,23 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
         }
         setLoading(false)
     })()}, [address])
+    // The error, or undefined once the key is in hand.
     const loadKey = async (password) => {
         const {error, value} = await window.electron.exportPrivateKey(address, password)
-        if (!error) {
-            setWif(value || "Wallet does not have private keys")
-            return true
+        if (error) {
+            return error
         }
-        return false
+        setWif(value || "Wallet does not have private keys")
     }
+    // false for a wrong password, the message for anything else, so the prompt
+    // doesn't report a wallet it cannot read as a password that was mistyped.
     const onCorrectPassword = async (password) => {
-        if (await loadKey(password)) {
-            setShowKey(true)
-            return true
+        const error = await loadKey(password)
+        if (error) {
+            return error === WalletErrors.WrongPassword ? false : error
         }
-        return false
+        setShowKey(true)
+        return true
     }
     const body = () => {
         if (loading) {

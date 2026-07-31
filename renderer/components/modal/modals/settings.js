@@ -2,7 +2,7 @@ import Modal, {ModalFooter} from "../modal"
 import styles from "../../../styles/modal.module.css"
 import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
-import {Modals} from "../../../../main/common/util";
+import {Modals, WalletErrors} from "../../../../main/common/util";
 
 // Preferences, opened from the app menu. Two kinds of setting live here: the
 // ones stored in the wallet file, which go through main behind the Save button,
@@ -53,7 +53,9 @@ const SettingsModal = ({onClose, setModal}) => {
             // on screen in that case, so it reports it. This message is for the
             // save that failed with the settings still in front of the user.
             setError("Could not save settings: " + error)
-            return false
+            // Which of the two it was, for the prompt in front: false for a wrong
+            // password, the message for a save that failed for its own reasons.
+            return error === WalletErrors.WrongPassword ? false : error
         }
         onClose()
         return true

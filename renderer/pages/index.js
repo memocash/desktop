@@ -9,6 +9,7 @@ import SelectType from "../components/load/select_type"
 import ImportKeys from "../components/load/import_keys";
 import styles from "../styles/addWallet.module.css"
 import {Panes} from "../components/load/common"
+import {WalletErrors} from "../../main/common/util"
 import NetworkConfiguration from "../components/load/network/configuration";
 import {GetNetworkConfig, SaveNetworkConfig, SetWindowNetwork} from "../components/load/network/common"
 
@@ -49,8 +50,13 @@ const Index = () => {
         // Main refuses to write over an existing wallet. This screen is only
         // reached for a name with no file behind it, so getting here means the
         // file appeared in between - opening the wallet would find no wallet.
+        // Anything else it refuses for says so in its own words: this is the last
+        // step of the creation flow, and a button that did nothing here left the
+        // seed just written down belonging to no wallet at all.
         if (error) {
-            window.electron.showMessageDialog("A wallet named " + filePath + " already exists.")
+            window.electron.showMessageDialog(error === WalletErrors.WalletExists
+                ? "A wallet named " + filePath + " already exists."
+                : error)
             return
         }
         await loadWallet()

@@ -24,7 +24,11 @@ const Password = ({onClose, onCorrectPassword, authenticate = true}) => {
                 return
             }
         }
-        setErrorMessage(await onCorrectPassword(enteredPassword) === false ? IncorrectPassword : "")
+        // A caller that checks the password itself answers false for a wrong one,
+        // or a message for a failure that was not about the password at all.
+        const answer = await onCorrectPassword(enteredPassword)
+        setErrorMessage(answer === false ? IncorrectPassword
+            : typeof answer === "string" ? answer : "")
     }
     const handlePasswordChange = () => setErrorMessage("")
     const handlePasswordKeyDown = async (e) => {

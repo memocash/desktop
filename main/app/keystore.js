@@ -47,19 +47,27 @@ const ResolveWalletPath = (winId, walletName) => {
     return Dir.DefaultPath + path.sep + name
 }
 
-// Wallets are written under a bare name with no extension, so anything carrying
-// one is something the app left beside them: the .v1.bak a migration keeps, or a
-// .<pid>.<n>.tmp a crash stranded mid-write. Listing those offered
-// "default_wallet.v1" as a wallet, which is not one.
+// What this module leaves beside the wallets: backupWalletFile's copy and
+// writeContents' scratch file, which a crash can strand. Matched rather than
+// excluding every name with a dot, since ResolveWalletPath accepts any plain
+// basename - "my.wallet" is a wallet somebody can really have.
+const IsWalletArtifact = (file) => /(\.v1\.bak(\.\d+)?|\.\d+\.\d+\.tmp)$/.test(file)
+
 const ListWalletFiles = async () => {
     await fs.mkdir(Dir.DefaultPath, {recursive: true})
     const files = await fs.readdir(Dir.DefaultPath)
-    return files.filter(file => !path.parse(file).ext)
+    return files.filter(file => !IsWalletArtifact(file))
 }
 
+// False means no wallet by that name yet, which the load screen offers to
+// create. A name that cannot resolve to a path at all is not that: answering
+// false for it walks the user through type, seed, seed confirmation and password
+// before the write is refused for a reason nothing has mentioned yet. That
+// throws, and is reported where the name is typed.
 const WalletFileExists = async (winId, walletName) => {
+    const walletPath = ResolveWalletPath(winId, walletName)
     try {
-        await fs.access(ResolveWalletPath(winId, walletName))
+        await fs.access(walletPath)
         return true
     } catch (e) {
         return false
@@ -277,6 +285,7 @@ module.exports = {
     ApplyWalletUpdate,
     CreateWalletFile,
     ForgetPaths,
+    IsWalletArtifact,
     ListWalletFiles,
     MigrateWallet,
     NewWallet,

@@ -2,9 +2,13 @@ import {useEffect, useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
 import NetworkForm from "./network/form";
 import {Panes} from "./common";
+import {WalletErrors} from "../../../main/common/util"
 
 const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
-    const [isUnreadableFile, setIsUnreadableFile] = useState(false);
+    // Why this name cannot be opened, rather than only that it cannot. A name
+    // with a separator in it and a file this version cannot parse are different
+    // problems, and neither is the one the old boolean named.
+    const [fileError, setFileError] = useState("")
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
@@ -29,32 +33,49 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         setPane(Panes.Step2SelectType)
     }
     // Main opens and decrypts the file; the renderer only learns whether the
-    // password was right.
+    // password was right - or, now, that the wallet could not be opened for a
+    // reason no password would have fixed, which used to leave Next doing
+    // nothing at all.
     const onLoadWallet = async (pathToWallet, password) => {
         const {error} = await window.electron.unlockWallet(pathToWallet, password)
-        if (error) {
+        if (error === WalletErrors.WrongPassword) {
             setHasEnteredWrongPassword(true)
+            return
+        }
+        if (error) {
+            setFileError(error)
             return
         }
         await loadWallet()
     }
+    // Each of these answers with a result, so the reason a name cannot be used
+    // arrives here instead of throwing at the destructuring. Both callers get
+    // that for free, which is what the Choose... button was missing.
     const loadFile = async (walletFile) => {
-        setPasswordProtectedFile(await window.electron.isWalletFileEncrypted(walletFile))
+        const {error, value} = await window.electron.isWalletFileEncrypted(walletFile)
+        if (error) {
+            setFileError(error)
+            setFileExists(false)
+            return
+        }
+        setPasswordProtectedFile(value)
         setFileExists(true)
-        setIsUnreadableFile(false)
+        setFileError("")
     }
     const fileChangeHandler = async () => {
-        try {
-            const fileExists = await window.electron.checkFile(walletInput.current.value)
-            if (!fileExists) {
-                setFileExists(false)
-            } else {
-                await loadFile(walletInput.current.value)
-            }
-            setIsUnreadableFile(false)
-        } catch {
-            setIsUnreadableFile(true)
+        const walletFile = walletInput.current.value
+        const {error, value: exists} = await window.electron.checkFile(walletFile)
+        if (error) {
+            setFileError(error)
+            setFileExists(false)
+            return
         }
+        if (!exists) {
+            setFileExists(false)
+            setFileError("")
+            return
+        }
+        await loadFile(walletFile)
     }
     const handleClickImport = async () => {
         const filepath = await window.electron.openFileDialog()
@@ -96,8 +117,8 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
                             <button className={styles.buttonChoose} onClick={handleClickImport}>Choose...</button>
                         </label>
                     </p>
-                    {isUnreadableFile ?
-                        <div>Cannot read file</div>
+                    {fileError ?
+                        <div>{fileError}</div>
                         : fileExists ?
                             passwordProtectedFile ?
                                 <div>
@@ -119,7 +140,7 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
                 </div>
             </div>
             <div className={styles.buttons}>
-                <button onClick={handleClickNext} disabled={isUnreadableFile}>Next</button>
+                <button onClick={handleClickNext} disabled={!!fileError}>Next</button>
             </div>
         </div>
     )

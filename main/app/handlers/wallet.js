@@ -15,7 +15,8 @@ const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
 const {KeyFinder, PreviewSpend, SignTransaction} = require("../transaction_signer");
 const {
-    SetWallet, GetWallet, SetMenu, GetWindow, IsOpen, CreateWindow, TxWindowIds, TxWindowParent, eConf,
+    SetWallet, GetWallet, SetMenu, GetWindow, IsOpen, CreateWindow, CopyWalletToTxWindows,
+    TxWindowParent, eConf,
 } = require("../window");
 
 // Runs key/address derivation in a worker thread so the CPU-intensive
@@ -166,7 +167,7 @@ const createWallet = async (winId, walletName, seedPhrase, keyList, addressList,
         })
     } catch (e) {
         if (e.code === "EEXIST") {
-            return {error: "wallet-exists"}
+            return {error: WalletErrors.WalletExists}
         }
         throw e
     }
@@ -206,24 +207,11 @@ const rememberWallet = (winId, state) => {
     // doesn't quietly discard the session alongside it. Clearing something
     // means naming it, as ending a session does.
     SetWallet(winId, {...GetWallet(winId), ...state})
-    if (state.wallet === undefined) {
-        return
-    }
-    // A transaction window opened from here was handed the wallet as it stood
-    // then, and nothing has updated it since. Settings are the part that matters:
-    // spendThreshold reads them when that window asks for a password, so a budget
-    // the owner has just revoked would still be sealed there. The addresses
-    // matter too - a preview decides from them which outputs are the wallet's own.
-    //
-    // Only the wallet travels. The session does not: each window's key lives in
-    // its own preload, so a session sealed here opens for nobody there.
-    for (const childId of TxWindowIds(winId)) {
-        const child = IsOpen(childId) ? GetWallet(childId) : undefined
-        // Only onto a child still open on the same file, so metadata can never be
-        // put in front of a window holding a different wallet's path and key.
-        if (child && child.filename === GetWallet(winId).filename) {
-            SetWallet(childId, {...child, wallet: state.wallet})
-        }
+    // Any transaction window opened from here still holds the wallet as it stood
+    // when it opened; the rules for putting this one in front of it live with the
+    // state they touch.
+    if (state.wallet !== undefined) {
+        CopyWalletToTxWindows(winId, state.wallet)
     }
 }
 
@@ -330,13 +318,18 @@ const readForOperation = async (winId, password) => {
 // destructuring throw at the call site, so the message a handler raises
 // deliberately - "address is not backed by an imported key" - would never reach
 // the dialog meant to show it. Answers are results here, whatever the answer.
+//
+// A thrown value with no message would become {error: undefined}, which every
+// `if (error)` reads as success - the one failure shape that could still pass
+// through silently. WrongPassword is a message like any other, and the renderer
+// compares against the same constant this module throws.
+const asError = (e) => ({error: (e && e.message) || String(e)})
+
 const operationResult = async (run) => {
     try {
         return {ok: true, value: await run()}
     } catch (e) {
-        // WrongPassword is a message like any other, and the renderer compares
-        // against the same constant this module throws.
-        return {error: e.message}
+        return asError(e)
     }
 }
 
@@ -631,14 +624,16 @@ const WalletHandlers = () => {
             GetWallet(e.sender.id).filename,
             () => removePrivateKey(e.sender.id, address, password))))
     ipcMain.handle(Handlers.CheckWalletFile, async (e, walletName) =>
-        keystore.WalletFileExists(e.sender.id, walletName))
+        operationResult(() => keystore.WalletFileExists(e.sender.id, walletName)))
     ipcMain.handle(Handlers.GetExistingWalletFiles, async () => keystore.ListWalletFiles())
     ipcMain.handle(Handlers.WalletFileIsEncrypted, async (e, walletName) =>
-        keystore.WalletFileIsEncrypted(e.sender.id, walletName))
+        operationResult(() => keystore.WalletFileIsEncrypted(e.sender.id, walletName)))
+    // These two answer in their own shape - a session key beside the ok, the
+    // named wallet that is in the way - so only the failure needs wrapping.
     ipcMain.handle(Handlers.UnlockWallet, async (e, walletName, password) =>
-        unlockWallet(e.sender.id, walletName, password))
+        unlockWallet(e.sender.id, walletName, password).catch(asError))
     ipcMain.handle(Handlers.CreateWallet, async (e, walletName, seedPhrase, keyList, addressList, password) =>
-        createWallet(e.sender.id, walletName, seedPhrase, keyList, addressList, password))
+        createWallet(e.sender.id, walletName, seedPhrase, keyList, addressList, password).catch(asError))
     ipcMain.handle(Handlers.UpdateWallet, async (e, op, values, password) => {
         const result = await operationResult(() => updateWallet(e.sender.id, op, values, password))
         // A settings change that opened a budget hands its key back the way
