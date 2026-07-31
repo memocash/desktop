@@ -9,7 +9,6 @@ const {
     GetMenu,
     GetNetworkOption,
     GetStorage,
-    GetTxWindows,
     GetWallet,
     GetWindow,
     IsOpen,
@@ -19,6 +18,7 @@ const {
     SetStorage,
     SetWallet,
     SetWindow,
+    TxWindowIds,
     TxWindowParent,
 } = require("./window_state");
 
@@ -108,7 +108,12 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
     SetWindow(win.webContents.id, win)
     ForgetWindowOnClose(win, winId)
-    SetWallet(win.webContents.id, GetWallet(winId))
+    // The wallet as the parent holds it, minus its session. A transaction window
+    // has no key of its own - the key belongs to the document that unlocked the
+    // wallet - so a sealed password here could never be opened, and would go on
+    // sitting in this window's state after the parent had ended its session.
+    // Later changes to the parent's wallet are copied over in rememberWallet.
+    SetWallet(win.webContents.id, {...GetWallet(winId), session: undefined})
     SetNetworkOption(win.webContents.id, GetNetworkOption(winId))
     let params = {txHash}
     if (!txHash || !txHash.length) {
@@ -134,7 +139,6 @@ const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
 module.exports = {
     eConf,
-    GetTxWindows,
     GetMenu,
     GetNetworkOption,
     GetStorage,
@@ -149,5 +153,6 @@ module.exports = {
     SetWallet,
     CreateWindow,
     CreateTxWindow,
+    TxWindowIds,
     TxWindowParent,
 }

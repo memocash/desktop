@@ -47,10 +47,14 @@ const ResolveWalletPath = (winId, walletName) => {
     return Dir.DefaultPath + path.sep + name
 }
 
+// Wallets are written under a bare name with no extension, so anything carrying
+// one is something the app left beside them: the .v1.bak a migration keeps, or a
+// .<pid>.<n>.tmp a crash stranded mid-write. Listing those offered
+// "default_wallet.v1" as a wallet, which is not one.
 const ListWalletFiles = async () => {
     await fs.mkdir(Dir.DefaultPath, {recursive: true})
     const files = await fs.readdir(Dir.DefaultPath)
-    return files.map(file => path.parse(file).name)
+    return files.filter(file => !path.parse(file).ext)
 }
 
 const WalletFileExists = async (winId, walletName) => {
@@ -170,12 +174,21 @@ const WithWalletLock = (walletPath, run) => Serialize("wallet:" + walletPath, ru
 const ReadAndMigrateWallet = (walletPath, password) =>
     WithWalletLock(walletPath, async () => {
         const read = await ReadWallet(walletPath, password)
-        if (read.version === walletFile.Version) {
+        const secretPassword = read.encrypted ? password : undefined
+        if (read.version !== walletFile.Version) {
+            const migrated = await MigrateWallet(walletPath, read.wallet, secretPassword)
+            return {...read, version: walletFile.Version, integrityKey: migrated.integrityKey}
+        }
+        if (!read.publicSecrets) {
             return read
         }
-        const migrated = await MigrateWallet(
-            walletPath, read.wallet, read.encrypted ? password : undefined)
-        return {...read, version: walletFile.Version, integrityKey: migrated.integrityKey}
+        // A current-version file holding a field that now belongs inside the
+        // envelope. Nothing about the wallet changes, only which half each field
+        // is written in, so this needs no backup - unlike a version migration,
+        // which changes the format the file is readable in at all.
+        const integrityKey = await WriteWallet(
+            walletPath, read.wallet, secretPassword, read.integrityKey)
+        return {...read, integrityKey, publicSecrets: false}
     })
 
 const NewWallet = (seedPhrase, keyList, addressList) => ({
@@ -185,8 +198,11 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
     addresses: addressList,
 })
 
+// What may cross to the renderer, and equally what may be written outside the
+// envelope: the same fields walletFile keeps inside it are dropped here, so the
+// public half of a file is never rebuilt from a wallet still carrying them.
 const PublicWallet = (wallet) => {
-    const {seed, keys, ...publicData} = wallet
+    const {seed, keys, derivation, ...publicData} = wallet
     return {
         ...publicData,
         // Present even when empty, so nothing on the other side has to ask for a

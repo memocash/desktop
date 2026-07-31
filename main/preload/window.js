@@ -1,8 +1,11 @@
-const {ipcRenderer, clipboard} = require("electron");
+const {ipcRenderer} = require("electron");
 const {Handlers, Listeners} = require("../common/util/handlers");
 
 module.exports = {
-    clearClipboard: () => clipboard.clear(),
+    // A sandboxed preload gets only contextBridge, crashReporter, ipcRenderer,
+    // nativeImage, webFrame, and webUtils out of the electron module - clipboard
+    // is not among them - so the clearing happens in main.
+    clearClipboard: () => ipcRenderer.send(Handlers.ClearClipboard),
     closeWindow: () => ipcRenderer.send(Handlers.CloseWindow),
     getWindowId: async () => await ipcRenderer.invoke(Handlers.GetWindowId),
     getAppInfo: async () => await ipcRenderer.invoke(Handlers.GetAppInfo),

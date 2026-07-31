@@ -42,7 +42,10 @@ const AddTxWindow = (parentId, winId, win) => {
     txWindowIds.add(winId)
 }
 
-const GetTxWindows = (parentId) => (txWindows[parentId] || []).map(({win}) => win)
+// The transaction windows opened from a wallet window. They are handed a copy of
+// the parent's wallet state when they open, so whatever changes it afterwards
+// has to find them again.
+const TxWindowIds = (parentId) => (txWindows[parentId] || []).map(({winId}) => winId)
 
 // The wallet window a transaction window was opened from, or undefined for a
 // window that is not a transaction window. A preview cannot spend on the budget
@@ -93,7 +96,6 @@ module.exports = {
     GetMenu,
     GetNetworkOption,
     GetStorage,
-    GetTxWindows,
     GetWallet,
     GetWindow,
     HeldWindowIds,
@@ -104,5 +106,6 @@ module.exports = {
     SetStorage,
     SetWallet,
     SetWindow,
+    TxWindowIds,
     TxWindowParent,
 }

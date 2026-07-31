@@ -3,7 +3,6 @@ const assert = require("node:assert")
 const {
     AddTxWindow,
     ForgetWindow,
-    GetTxWindows,
     GetWallet,
     HeldWindowIds,
     IsOpen,
@@ -13,6 +12,7 @@ const {
     SetStorage,
     SetWallet,
     SetWindow,
+    TxWindowIds,
     TxWindowParent,
 } = require("./window_state")
 
@@ -45,18 +45,18 @@ test("a transaction window is released by the window it was opened from", () => 
         open(child, GetWallet(2))
         AddTxWindow(2, child, {id: child})
     }
-    assert.deepEqual(GetTxWindows(2).map(({id}) => id), [3, 4])
+    assert.deepEqual(TxWindowIds(2), [3, 4])
     // A transaction window is not a wallet window, even though it has a wallet.
     assert.equal(IsWalletWindow(3), false)
 
     // Closing one has to take it out of the list held under its parent, which is
     // not keyed by its own id.
     ForgetWindow(3, 2)
-    assert.deepEqual(GetTxWindows(2).map(({id}) => id), [4])
+    assert.deepEqual(TxWindowIds(2), [4])
     assert.equal(HeldWindowIds().txWindowIds.includes("3"), false)
 
     ForgetWindow(4, 2)
-    assert.deepEqual(GetTxWindows(2), [])
+    assert.deepEqual(TxWindowIds(2), [])
     assert.equal(HeldWindowIds().txWindows.includes("2"), false,
         "an empty list should not be kept either")
 

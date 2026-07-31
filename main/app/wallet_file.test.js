@@ -5,6 +5,7 @@ const {
     DecodeContents,
     EncodeContents,
     EncodePublic,
+    EncodeWallet,
     IsEncrypted,
     ReadForm,
     Version,
@@ -40,18 +41,44 @@ test("an encrypted wallet round-trips and reports its version", async () => {
     assert.equal(wallet.__publicMacKey, undefined)
 })
 
-// The whole point of the format: the seed and the keys are the only things
-// inside the envelope, so everything else can be written without the password.
-test("the seed and keys are the only fields inside the envelope", async () => {
+// The point of the format: what is written constantly stays outside the
+// envelope so those writes need no password, and everything that would let a
+// reader of the file follow the wallet stays inside it.
+test("only the write-hot metadata sits outside the envelope", async () => {
     const contents = await EncodeContents(Wallet, "hunter2")
     const doc = JSON.parse(contents)
     assert.deepEqual(Object.keys(doc.public).sort(),
-        ["addresses", "changeList", "derivation", "settings", "slpList", "time"])
+        ["addresses", "changeList", "settings", "slpList", "time"])
     assert.equal(doc.public.seed, undefined)
     assert.equal(doc.public.keys, undefined)
-    // Nothing secret survives anywhere in the serialized file.
+    assert.equal(doc.public.derivation, undefined)
+    // Nothing secret survives anywhere in the serialized file. The account xpubs
+    // derive every address the wallet will ever use, so an encrypted file must
+    // not carry them in the clear either.
     assert.ok(!contents.includes("abandon"))
     assert.ok(!contents.includes("WIFone"))
+    assert.ok(!contents.includes("xpub-public-bch"))
+})
+
+// A version 2 file written before the derivation moved inside the envelope reads
+// exactly the same, and says that it is holding a field in the wrong half so the
+// caller can reseal it.
+test("a secret field left in the public half is read and reported", async () => {
+    const clean = await DecodeContents(await EncodeContents(Wallet, "hunter2"), "hunter2")
+    assert.equal(clean.publicSecrets, false)
+    assert.deepEqual(clean.wallet, Wallet)
+
+    // An envelope with no derivation in it, and the derivation written beside it
+    // in the public half - authenticated with that file's own key, the way the
+    // earlier writer would have left it, so this tests the split and not the MAC.
+    const {derivation, ...withoutDerivation} = Wallet
+    const older = await EncodeWallet(withoutDerivation, "hunter2")
+    const form = ReadForm(older.contents)
+    const contents = EncodePublic(form.doc, {...form.doc.public, derivation}, older.integrityKey)
+
+    const read = await DecodeContents(contents, "hunter2")
+    assert.equal(read.publicSecrets, true)
+    assert.deepEqual(read.wallet, Wallet)
 })
 
 test("the encrypted payload is authenticated, salted, and freshly nonced", async () => {

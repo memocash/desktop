@@ -17,16 +17,18 @@ const RemoveModal = ({basic: {onClose, setLastUpdate, setModal}, modalProps:{add
             await remove(address)
         }
     }
-    const remove = async (addresses, password) => {
+    const remove = async (address, password) => {
         const wallet = await GetWallet()
-        if(wallet.walletType !== "watch"){
-            const {error} = await window.electron.removePrivateKey(address, password)
-            if (error) {
-                window.electron.showMessageDialog(error)
-                return
-            }
-        } else{
-            await window.electron.removeAddresses(addresses)
+        // removeAddresses takes a list. A bare string used to survive the old
+        // preload's filter by accident, and the update now refuses one.
+        const {error} = wallet.walletType !== "watch"
+            ? await window.electron.removePrivateKey(address, password)
+            : await window.electron.removeAddresses([address])
+        // Both answer with a result rather than rejecting, so a refusal reaches
+        // the dialog instead of stopping this function at the destructuring.
+        if (error) {
+            window.electron.showMessageDialog(error)
+            return
         }
         setLastUpdate((new Date()).toISOString())
         onClose()

@@ -34,6 +34,7 @@ const Handlers = {
     GetWindowId: "get-window-id",
     GetAppInfo: "get-app-info",
     CloseWindow: "close-window",
+    ClearClipboard: "clear-clipboard",
     CheckWalletFile: "check-wallet-file",
     AuthenticateWallet: "authenticate-wallet",
     CreateWallet: "create-wallet",

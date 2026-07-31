@@ -18,6 +18,10 @@ Promise.all(bundles.map(([entry, out]) => esbuild.build({
     format: "cjs",
     external: ["electron"],
     logLevel: "info",
-}))).catch(() => {
+}))).catch((e) => {
+    // esbuild reports its own build diagnostics at this log level, but a config
+    // or IO failure only surfaces here - and silently failing a build step that
+    // produces the preload is worse than noisy.
+    console.error(e)
     process.exitCode = 1
 })

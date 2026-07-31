@@ -1,4 +1,4 @@
-const {ipcMain, Menu, MenuItem, Notification, app, dialog} = require("electron");
+const {ipcMain, Menu, MenuItem, Notification, app, clipboard, dialog} = require("electron");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
 const {AllowPath} = require("../keystore");
 const {
@@ -24,6 +24,9 @@ const WindowHandlers = () => {
         arch: process.arch,
     }))
     ipcMain.on(Handlers.CloseWindow, (e) => GetWindow(e.sender.id).close())
+    // The seed step clears whatever the user copied out of the seed box. The
+    // sandboxed preload has no clipboard module of its own, so it asks here.
+    ipcMain.on(Handlers.ClearClipboard, () => clipboard.clear())
     ipcMain.on(Handlers.SetWindowStorage, (e, key, value) => {
         if (GetStorage(e.sender.id) === undefined) {
             SetStorage(e.sender.id, {})
@@ -56,7 +59,6 @@ const WindowHandlers = () => {
     })
     ipcMain.handle(Handlers.CoinsMenu, async (e, hash, index, value, address) => {
         const win = GetWindow(e.sender.id)
-        const clipboard = require("electron").clipboard
         const menu = new Menu()
         menu.append(new MenuItem({
             label: "Copy",

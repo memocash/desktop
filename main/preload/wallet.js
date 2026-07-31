@@ -87,7 +87,10 @@ module.exports = {
         if (sessionKey || result.error !== WalletErrors.PasswordRequired) {
             return result
         }
-        return ipcRenderer.invoke(Handlers.SignOnParentSession, request)
+        // A parent that cannot answer sends this back to main's own window, which
+        // renews the session on the password typed there. That key belongs on
+        // this side of the bridge like every other one.
+        return keepSessionKey(await ipcRenderer.invoke(Handlers.SignOnParentSession, request))
     },
     getNetworkConfig: async () => ipcRenderer.invoke(Handlers.GetNetworkConfig),
     getWindowNetwork: async () => await ipcRenderer.invoke(Handlers.GetWindowNetwork),

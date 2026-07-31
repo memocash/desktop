@@ -36,7 +36,15 @@ const PublicMacKeyBytes = 32
 
 // The wallet fields that may not sit outside the envelope. The public-MAC key
 // is an internal field added separately and never returned as wallet data.
-const SecretFields = ["seed", "keys"]
+//
+// The derivation metadata is in here for what it grants rather than for what it
+// is: the account xpubs are not spending keys, but they derive every address the
+// wallet will ever use, so leaving them in the cleartext half would let anyone
+// holding the file follow the wallet forward forever without the password. The
+// address lists stay outside because they are written constantly and the format
+// exists so those writes need no password; the xpubs are written once, at
+// creation and at migration, both of which have the password in hand.
+const SecretFields = ["seed", "keys", "derivation"]
 
 const splitWallet = (wallet) => {
     const secret = {}
@@ -216,6 +224,10 @@ const DecodeContents = async (contents, password) => {
         encrypted: form.encrypted,
         wallet: {...form.doc.public, ...secret},
         integrityKey,
+        // A field that belongs in the envelope but was found outside it. Reading
+        // still works - the two halves are merged either way - but the file is
+        // exposing something it should not be, and the caller can reseal it.
+        publicSecrets: SecretFields.some((field) => form.doc.public[field] !== undefined),
     }
 }
 

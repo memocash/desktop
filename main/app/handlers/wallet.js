@@ -14,7 +14,9 @@ const session = require("../session");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
 const {KeyFinder, PreviewSpend, SignTransaction} = require("../transaction_signer");
-const {SetWallet, GetWallet, SetMenu, GetWindow, IsOpen, CreateWindow, TxWindowParent, eConf} = require("../window");
+const {
+    SetWallet, GetWallet, SetMenu, GetWindow, IsOpen, CreateWindow, TxWindowIds, TxWindowParent, eConf,
+} = require("../window");
 
 // Runs key/address derivation in a worker thread so the CPU-intensive
 // secp256k1 work never blocks the main process or the renderer UI. The worker
@@ -71,15 +73,23 @@ const normalizeSeedWallet = async (filename, password) => {
                 slpList: [...new Set([...publicDerived.slpList, ...(read.wallet.slpList || [])])],
             }
             : normalizeSeedWalletData(read.wallet, derived, publicDerived)
-        const secretChanged = !same(wallet.keys, read.wallet.keys || [])
+        // The derivation counts as a change to the envelope, not to the public
+        // half: it is written inside it, so establishing one the first time needs
+        // the whole file rewritten rather than a public update. Unlock is where
+        // the password is, which is why this is the only place that can do it.
+        const secretChanged = !same(wallet.keys, read.wallet.keys || []) ||
+            !same(wallet.derivation, read.wallet.derivation)
         const publicChanged = !same(keystore.PublicWallet(wallet), keystore.PublicWallet(read.wallet))
         if (secretChanged) {
             await keystore.WriteWallet(
                 filename, wallet, read.encrypted ? password : undefined, read.integrityKey)
         } else if (publicChanged) {
             await keystore.UpdatePublic(filename, read.integrityKey, (publicData) => {
-                const {seed, keys, canSign, walletType, ...nextPublic} =
-                    keystore.PublicWallet(wallet)
+                // canSign and walletType are read off the wallet for the
+                // renderer's benefit rather than stored, so they do not go to
+                // disk. PublicWallet has already dropped what belongs inside the
+                // envelope.
+                const {canSign, walletType, ...nextPublic} = keystore.PublicWallet(wallet)
                 Object.assign(publicData, nextPublic)
             })
         }
@@ -189,11 +199,31 @@ const spendThreshold = (wallet) => {
 // written either way, but a closed window's state must stay closed rather than
 // being put back in the map for whatever window is handed that id next.
 const rememberWallet = (winId, state) => {
-    if (IsOpen(winId)) {
-        // Merged over what is there, so an update that speaks only of the wallet
-        // doesn't quietly discard the session alongside it. Clearing something
-        // means naming it, as ending a session does.
-        SetWallet(winId, {...GetWallet(winId), ...state})
+    if (!IsOpen(winId)) {
+        return
+    }
+    // Merged over what is there, so an update that speaks only of the wallet
+    // doesn't quietly discard the session alongside it. Clearing something
+    // means naming it, as ending a session does.
+    SetWallet(winId, {...GetWallet(winId), ...state})
+    if (state.wallet === undefined) {
+        return
+    }
+    // A transaction window opened from here was handed the wallet as it stood
+    // then, and nothing has updated it since. Settings are the part that matters:
+    // spendThreshold reads them when that window asks for a password, so a budget
+    // the owner has just revoked would still be sealed there. The addresses
+    // matter too - a preview decides from them which outputs are the wallet's own.
+    //
+    // Only the wallet travels. The session does not: each window's key lives in
+    // its own preload, so a session sealed here opens for nobody there.
+    for (const childId of TxWindowIds(winId)) {
+        const child = IsOpen(childId) ? GetWallet(childId) : undefined
+        // Only onto a child still open on the same file, so metadata can never be
+        // put in front of a window holding a different wallet's path and key.
+        if (child && child.filename === GetWallet(winId).filename) {
+            SetWallet(childId, {...child, wallet: state.wallet})
+        }
     }
 }
 
@@ -295,14 +325,18 @@ const readForOperation = async (winId, password) => {
     return keystore.ReadWallet(filename, encrypted ? password : undefined)
 }
 
+// Every caller of these reads a result rather than catching: `const {error} =
+// await ...`. Letting anything but WrongPassword reject would make that
+// destructuring throw at the call site, so the message a handler raises
+// deliberately - "address is not backed by an imported key" - would never reach
+// the dialog meant to show it. Answers are results here, whatever the answer.
 const operationResult = async (run) => {
     try {
         return {ok: true, value: await run()}
     } catch (e) {
-        if (e.message === keystore.WrongPassword) {
-            return {error: keystore.WrongPassword}
-        }
-        throw e
+        // WrongPassword is a message like any other, and the renderer compares
+        // against the same constant this module throws.
+        return {error: e.message}
     }
 }
 
@@ -362,11 +396,12 @@ const spendPassword = (winId, sessionKey) => {
 // figure in satoshis can stand in for the owner's consent to it.
 const withinBudget = (winId, {outgoing, carriesTokens}) => {
     const state = GetWallet(winId)
-    const threshold = spendThreshold(state.wallet)
-    if (carriesTokens || !state.session) {
+    // Signing spans a prevout lookup and key derivation, which is long enough for
+    // the window to close underneath it - the same reason chargeSession guards.
+    if (carriesTokens || !state || !state.session) {
         return false
     }
-    return state.session.spent + outgoing <= threshold
+    return state.session.spent + outgoing <= spendThreshold(state.wallet)
 }
 
 // Records what the session has spent, and closes it once the budget is gone:
