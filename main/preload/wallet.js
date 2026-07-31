@@ -85,12 +85,17 @@ module.exports = {
     signTransaction: async (request) => {
         const result = keepSessionKey(
             await ipcRenderer.invoke(Handlers.SignTransaction, request, sessionKey))
-        if (sessionKey || result.error !== WalletErrors.PasswordRequired) {
+        if (result.error !== WalletErrors.PasswordRequired) {
             return result
         }
-        // A parent that cannot answer sends this back to main's own window, which
-        // renews the session on the password typed there. That key belongs on
-        // this side of the bridge like every other one.
+        // PasswordRequired only ever means "relay": main answers it from exactly
+        // one place, a transaction window whose spend it could not put on a
+        // session of its own. Holding a key here is no reason not to - a key
+        // whose session has been spent since it was handed over opens nothing,
+        // and refusing to relay on its account left the window unable to send at
+        // all. A parent that cannot answer sends this back to main's own window,
+        // which renews the session on the password typed there. That key belongs
+        // on this side of the bridge like every other one.
         return keepSessionKey(await ipcRenderer.invoke(Handlers.SignOnParentSession, request))
     },
     getNetworkConfig: async () => ipcRenderer.invoke(Handlers.GetNetworkConfig),

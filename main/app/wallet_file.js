@@ -30,6 +30,11 @@ const IvBytes = 12
 
 const NoEncryption = "none"
 const ScryptGcm = "scrypt-aes-256-gcm"
+// The MAC over the public half proves it was last written by someone holding
+// the key sealed in the envelope. For a wallet with no password the envelope
+// is cleartext and the key sits in it for anyone to read, so there the MAC
+// catches accidents, not tampering - which is inherent to having no password,
+// and no more than the format claims for such a file.
 const PublicMacName = "hmac-sha256"
 const PublicMacKeyField = "__publicMacKey"
 const PublicMacKeyBytes = 32
@@ -248,8 +253,6 @@ const EncodeWallet = async (wallet, password, currentIntegrityKey) => {
     }
 }
 
-const EncodeContents = async (wallet, password) => (await EncodeWallet(wallet, password)).contents
-
 // Rewrites the public half without touching the envelope, so the routine writes
 // - a new address, a changed setting - need no password and never decrypt.
 const EncodePublic = (doc, publicData, integrityKey) => {
@@ -260,7 +263,6 @@ const EncodePublic = (doc, publicData, integrityKey) => {
 
 module.exports = {
     DecodeContents,
-    EncodeContents,
     EncodePublic,
     EncodeWallet,
     IsEncrypted,

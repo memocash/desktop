@@ -56,7 +56,7 @@ test("seed normalization removes legacy derived WIFs but preserves imported keys
         addresses: [derived.addresses[0], importedAddress, watchAddress],
     }
 
-    const normalized = normalizeSeedWalletData(wallet, derived, publicDerived)
+    const normalized = normalizeSeedWalletData(wallet, derived)
 
     assert.deepEqual(normalized.keys, [imported])
     assert.deepEqual(normalized.addresses.slice(0, AddressCount), publicDerived.addresses)

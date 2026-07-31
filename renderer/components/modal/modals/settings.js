@@ -71,10 +71,12 @@ const SettingsModal = ({onClose, setModal}) => {
             return
         }
         setError("")
-        // Main requires the password to change this, since it decides when the
-        // password is asked for. Asking here means the prompt appears before the
-        // save rather than as a failure after it.
-        if (encrypted && wanted !== saved.threshold) {
+        // Main requires the password for any settings change on an encrypted
+        // wallet, since the settings decide when the password is asked for.
+        // Asking here means the prompt appears before the save rather than as a
+        // failure after it. No comparison against the loaded values: this
+        // window's copy can be stale, and main asks regardless.
+        if (encrypted) {
             setModal(Modals.Password, {onCorrectPassword: save, authenticate: false})
             return
         }

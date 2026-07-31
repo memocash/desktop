@@ -3,7 +3,6 @@ const assert = require("node:assert");
 const CryptoJS = require("crypto-js");
 const {
     DecodeContents,
-    EncodeContents,
     EncodePublic,
     EncodeWallet,
     IsEncrypted,
@@ -11,6 +10,8 @@ const {
     Version,
     WrongPassword,
 } = require("./wallet_file");
+
+const EncodeContents = async (wallet, password) => (await EncodeWallet(wallet, password)).contents
 
 const Wallet = {
     time: "2026-07-29T00:00:00.000Z",

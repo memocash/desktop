@@ -489,3 +489,22 @@ test("the preview reads the address list where signing reads the keys", async ()
     assert.equal(confirmed.payments[0].address, foreign)
     assert.equal(confirmed.payments[0].value, 9000)
 })
+
+// The ordering constraint is renderer-supplied and compared as a string against
+// the lowercase hex txid. A shape that can never be beaten must be refused up
+// front rather than running the synchronous re-signing loop to exhaustion on
+// the main process's thread.
+test("a beat hash must be 64 lowercase hex characters", async () => {
+    for (const beatHash of ["zz", "F".repeat(64), "f".repeat(63), "f".repeat(65)]) {
+        await assert.rejects(SignTransaction({...request(), beatHash}),
+            {message: /ordering constraint/})
+    }
+    // Every txid beats all zeros, so the loop settles on the first attempt.
+    const signed = await SignTransaction({...request(), beatHash: "0".repeat(64)})
+    assert.ok(signed.txid > "0".repeat(64))
+})
+
+test("an unbeatable beat hash fails after the bounded attempts rather than hanging", async () => {
+    await assert.rejects(SignTransaction({...request(), beatHash: "f".repeat(64)}),
+        {message: /unable to satisfy transaction ordering constraint/})
+})

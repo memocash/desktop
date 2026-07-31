@@ -5,6 +5,7 @@ const menu = require("../menu");
 const {ForgetPaths} = require("./keystore");
 const {
     AddTxWindow,
+    CopyPublicToFileWindows,
     CopyWalletToTxWindows,
     ForgetWindow,
     GetMenu,
@@ -153,6 +154,7 @@ const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 module.exports = {
     eConf,
     BackgroundColor,
+    CopyPublicToFileWindows,
     CopyWalletToTxWindows,
     GetMenu,
     GetNetworkOption,

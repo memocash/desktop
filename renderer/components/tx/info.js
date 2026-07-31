@@ -430,7 +430,6 @@ const Info = () => {
             // correct and nothing to report - main has already been told no.
             return
         }
-        console.log(outer_transaction)
         txInfoRef.current = outer_transaction.outer_txInfo
         setSize(outer_transaction.outer_size)
         setTxInfo(txInfoRef.current)

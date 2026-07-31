@@ -2,6 +2,7 @@ const test = require("node:test")
 const assert = require("node:assert")
 const {
     AddTxWindow,
+    CopyPublicToFileWindows,
     CopyWalletToTxWindows,
     ForgetWindow,
     GetWallet,
@@ -115,6 +116,46 @@ test("a wallet change stops at a window that is closed or holds another wallet",
 
     ForgetWindow(21)
     ForgetWindow(20)
+})
+
+// Two wallet windows on the same file each cached their copy at unlock, and
+// nothing else connects them - so a settings write in one must reach the other,
+// or the other goes on granting spends and answering the password gate from a
+// policy already replaced.
+test("a public update reaches every window open on the same file", () => {
+    open(30, {filename: "wallet", wallet: {settings: {PasswordThreshold: 0}, canSign: true},
+        session: {envelope: "thirty"}})
+    open(31, {filename: "wallet", wallet: {settings: {PasswordThreshold: 500}, canSign: true},
+        session: {envelope: "thirty-one", spent: 100}})
+    open(32, {filename: "other", wallet: {settings: {PasswordThreshold: 500}},
+        session: {envelope: "other-file"}})
+
+    assert.deepEqual(CopyPublicToFileWindows("wallet", {settings: {PasswordThreshold: 0}}, true),
+        [30, 31])
+    // The sibling reads the new policy, and the session sealed under the old one
+    // is gone everywhere on the file - a revoked budget stays revoked.
+    assert.equal(GetWallet(31).wallet.settings.PasswordThreshold, 0)
+    assert.equal(GetWallet(31).session, undefined)
+    assert.equal(GetWallet(30).session, undefined)
+    // The fields main computes rather than stores survive the copy.
+    assert.equal(GetWallet(31).wallet.canSign, true)
+    // A window on another file hears nothing and keeps its session.
+    assert.equal(GetWallet(32).wallet.settings.PasswordThreshold, 500)
+    assert.equal(GetWallet(32).session.envelope, "other-file")
+
+    // An update that is not a settings change leaves sessions alone.
+    open(31, {...GetWallet(31), session: {envelope: "renewed"}})
+    CopyPublicToFileWindows("wallet", {addresses: ["addr"]}, false)
+    assert.equal(GetWallet(31).session.envelope, "renewed")
+    assert.deepEqual(GetWallet(31).wallet.addresses, ["addr"])
+
+    // A closed window keeps nothing put back into it.
+    ForgetWindow(30)
+    assert.deepEqual(CopyPublicToFileWindows("wallet", {settings: {}}, false), [31])
+    assert.equal(GetWallet(30), undefined)
+
+    ForgetWindow(31)
+    ForgetWindow(32)
 })
 
 test("a transaction window names the window that opened it", () => {

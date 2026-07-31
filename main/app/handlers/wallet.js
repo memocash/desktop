@@ -15,8 +15,8 @@ const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
 const {KeyFinder, PreviewSpend, SignTransaction, WalletAddresses} = require("../transaction_signer");
 const {
-    SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, CopyWalletToTxWindows,
-    TxWindowParent, eConf,
+    SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, CopyPublicToFileWindows,
+    CopyWalletToTxWindows, TxWindowParent, eConf,
 } = require("../window");
 
 // Runs key/address derivation in a worker thread so the CPU-intensive
@@ -57,16 +57,21 @@ const normalizeSeedWallet = async (filename, password) => {
         }
 
         // The presence of versioned derivation metadata is also the migration
-        // marker. Once it exists, routine unlocks use only the xpubs and do not
-        // repeat mnemonic/private-key derivation.
+        // marker. Once it exists, routine unlocks derive the addresses from the
+        // xpubs alone and offer no legacy keys to remove; a first unlock derives
+        // everything - addresses, metadata, and the recognizable legacy WIFs -
+        // from the mnemonic in one worker pass.
         const derived = read.wallet.derivation
-            ? {keys: [], derivation: read.wallet.derivation}
+            ? {
+                keys: [],
+                derivation: read.wallet.derivation,
+                ...await generateWallet({derivation: read.wallet.derivation}),
+            }
             : await generateWallet({
                 seed: read.wallet.seed,
                 keys: read.wallet.keys || [],
             })
-        const publicDerived = await generateWallet({derivation: derived.derivation})
-        const wallet = normalizeSeedWalletData(read.wallet, derived, publicDerived)
+        const wallet = normalizeSeedWalletData(read.wallet, derived)
         // The derivation counts as a change to the envelope, not to the public
         // half: it is written inside it, so establishing one the first time needs
         // the whole file rewritten rather than a public update. Unlock is where
@@ -91,13 +96,6 @@ const normalizeSeedWallet = async (filename, password) => {
     })
 }
 
-const ensurePublicMetadata = async (filename, read, password) => {
-    if (!read.wallet.seed) {
-        return read
-    }
-    return normalizeSeedWallet(filename, read.encrypted ? password : undefined)
-}
-
 // The renderer used to decrypt the file itself and hand the plaintext wallet and
 // password back through an ipcMain.on, which left it in charge of what main
 // trusted. Now it only names a wallet and offers a password, and finds out
@@ -107,7 +105,9 @@ const unlockWallet = async (winId, walletName, password) => {
     let read
     try {
         read = await keystore.ReadAndMigrateWallet(filename, password)
-        read = await ensurePublicMetadata(filename, read, password)
+        if (read.wallet.seed) {
+            read = await normalizeSeedWallet(filename, read.encrypted ? password : undefined)
+        }
     } catch (e) {
         if (e.message === keystore.WrongPassword) {
             return {error: keystore.WrongPassword}
@@ -240,15 +240,17 @@ const updateWallet = async (winId, op, values, password) => {
     if (op === "addAddresses" && held && held.canSign) {
         throw new Error("a wallet with keys derives its own addresses")
     }
-    // The threshold decides when a spend needs the password, so changing it
+    // The settings decide when a spend needs the password, so changing them
     // needs the password. Otherwise anything that can reach this handler could
-    // raise its own spending limit, and the budget would bound nothing. Reading
+    // raise its own spending limit, and the budget would bound nothing. The gate
+    // deliberately does not compare the requested value against anything: an
+    // earlier version skipped the proof when the new threshold matched this
+    // window's cached copy, which made a stale cache the authority on whether
+    // the most security-sensitive write in the app was authenticated. Reading
     // the wallet with the offered password is the proof; it throws WrongPassword
     // if it isn't one, before anything is written.
-    const changingThreshold = op === "changeSettings" && values &&
-        values[keystore.ThresholdSetting] !== undefined &&
-        values[keystore.ThresholdSetting] !== spendThreshold(held)
-    if (changingThreshold && encrypted) {
+    const changingSettings = op === "changeSettings"
+    if (changingSettings && encrypted) {
         await keystore.ReadWallet(filename, password)
     }
     await keystore.WithWalletLock(filename, async () => {
@@ -266,30 +268,27 @@ const updateWallet = async (winId, op, values, password) => {
             }
             await keystore.WriteWallet(
                 filename, stored, encrypted ? password : undefined, integrityKey)
-            rememberWallet(winId, {wallet: keystore.PublicWallet(stored), filename, encrypted, integrityKey})
+            CopyPublicToFileWindows(filename, keystore.PublicWallet(stored), false)
             return
         }
         const publicData = await keystore.UpdatePublic(filename, integrityKey, (data) =>
             keystore.ApplyWalletUpdate(data, op, values))
-        // Read the held wallet inside the lock: a key update queued ahead of
+        // The write went to the file, so it goes in front of every window open
+        // on the file - a sibling wallet window left with the old settings would
+        // go on sealing and spending sessions against a budget its owner has
+        // already withdrawn. Run inside the lock: a key update queued ahead of
         // this one would make a snapshot taken outside it stale, and merging
-        // over that would put the old keys back.
-        const current = GetWallet(winId)
-        if (current) {
-            rememberWallet(winId, {
-                wallet: {...current.wallet, ...publicData}, filename, encrypted, integrityKey,
-                // A new budget starts from nothing: the session sealed under the
-                // old policy doesn't carry over into the new one.
-                session: changingThreshold ? undefined : current.session,
-            })
-        }
+        // over that would put the old keys back. A settings change ends every
+        // session on the file - each was sealed against the old policy - and
+        // the window that proved the password gets a fresh one below.
+        CopyPublicToFileWindows(filename, publicData, changingSettings)
     })
     // The new budget opens here, on the password that was just proved to set it.
     // Waiting for the next spend to ask instead would charge the same password
     // twice for one decision: once to say how much may go without it, and again
     // for the first send under that limit. A threshold of zero opens nothing,
     // which is how it goes back to asking every time.
-    if (!changingThreshold || !encrypted) {
+    if (!changingSettings || !encrypted) {
         return {}
     }
     const updated = GetWallet(winId)
@@ -356,7 +355,7 @@ const removePrivateKey = async (winId, address, password) => {
     keystore.ApplyWalletUpdate(stored, "removeAddresses", forgottenAddresses(stored, [key]))
     await keystore.WriteWallet(
         state.filename, stored, state.encrypted ? password : undefined, state.integrityKey)
-    rememberWallet(winId, {...state, wallet: keystore.PublicWallet(stored)})
+    CopyPublicToFileWindows(state.filename, keystore.PublicWallet(stored), false)
 }
 
 // The password behind this signature, if the caller can produce the key that

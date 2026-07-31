@@ -71,8 +71,8 @@ const WalletLoaded = () => {
     }
     useEffect(() => {
         // Clicking a native notification focuses the window and jumps here.
-        window.electron.listenSelectTab((_event, tab) => handleClicked(tab))
-        window.electron.listenToggleTab((_event, tab, visible) => {
+        window.electron.listenSelectTab((tab) => handleClicked(tab))
+        window.electron.listenToggleTab((tab, visible) => {
             setHiddenTabs(current => {
                 const hidden = current.filter(name => name !== tab)
                 return visible ? hidden : [...hidden, tab]

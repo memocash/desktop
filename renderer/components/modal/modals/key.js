@@ -9,6 +9,7 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
     const [showKey, showKeyRef, setShowKey] = useReferredState(false)
     const [loading, setLoading] = useState(true)
     const [missing, setMissing] = useState(false)
+    const [loadError, setLoadError] = useState("")
     const [wif, setWif] = useState("")
     useEffect(() => {(async () => {
         const wallet = await window.electron.getWallet()
@@ -24,8 +25,15 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
         }
         const {encrypted} = await window.electron.getWalletFileInfo()
         if (!encrypted) {
-            await loadKey()
-            setShowKey(true)
+            // The encrypted path reports a failed export through the password
+            // prompt; with no prompt in the way, it is reported here instead of
+            // showing an empty key box.
+            const error = await loadKey()
+            if (error) {
+                setLoadError(error)
+            } else {
+                setShowKey(true)
+            }
         }
         setLoading(false)
     })()}, [address])
@@ -51,10 +59,12 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
         if (loading) {
             return <div className={styles.text}>Loading...</div>
         }
-        if (missing) {
+        if (missing || loadError) {
             return (
                 <div>
-                    <div className={styles.text}>Address not found in this wallet.</div>
+                    <div className={styles.text}>{missing ?
+                        "Address not found in this wallet." :
+                        "Could not export the private key: " + loadError}</div>
                     <div className={styles.buttons}>
                         <button onClick={onClose}>Close</button>
                     </div>

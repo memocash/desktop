@@ -25,7 +25,7 @@ import RemoveModal from "./modals/remove";
 
 const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps = {}}) => {
     useEffect(() => {
-        window.electron.listenDisplayModal((e, modal, props = {}) => setModal(modal, props))
+        window.electron.listenDisplayModal((modal, props = {}) => setModal(modal, props))
     }, [])
     const onClose = () => {
         setModal(Modals.None)

@@ -8,7 +8,12 @@ const {mnemonicToSeedSync} = require("bip39")
 const {WalletErrors} = require("../common/util")
 
 const MaxFeeRate = 100
-const MaxBeatHashAttempts = 4096
+// Every attempt re-signs all the inputs, synchronously on the main process's
+// thread, so this cap is what bounds how long every window in the app can
+// freeze. Against a real txid target each attempt beats it about half the
+// time, so 32 tries fail roughly once in four billion; anything that ever
+// needs more headroom belongs in a worker, not in a bigger number here.
+const MaxBeatHashAttempts = 32
 const DustLimit = 546
 
 const walletAddresses = (wallet) =>
@@ -314,6 +319,14 @@ const PreviewSpend = async ({raw, inputs, wallet, getOutput}) => {
 const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, authorizeSpend, confirmSpend}) => {
     if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
         throw new Error("watch-only-wallet")
+    }
+    // The ordering constraint arrives from the renderer and is compared as a
+    // string against the lowercase hex txid, so anything of another shape -
+    // wrong length, wrong case, not hex at all - can be a target no txid ever
+    // beats, which would run the re-signing loop below to exhaustion before
+    // failing. Refuse it before any key work.
+    if (beatHash && !/^[0-9a-f]{64}$/.test(beatHash)) {
+        throw new Error("invalid transaction ordering constraint")
     }
     const {tx, authoritative, fee, payments, outgoing, carriesTokens} = await analyzeSpend({
         raw, inputs, wallet, getOutput, findKey: keyFinder(wallet),

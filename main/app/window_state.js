@@ -70,6 +70,36 @@ const CopyWalletToTxWindows = (parentId, wallet) => {
     })
 }
 
+// A public update went to the file, so it reaches every window open on that
+// file - not only the writer and its own transaction children. Two wallet
+// windows on the same file share nothing else: each cached its copy at unlock,
+// and a sibling left holding the old settings would go on answering the most
+// security-sensitive question in the app - how much may leave without the
+// password - from a policy its owner has already replaced. Merged over each
+// window's wallet, so the fields main computes for the renderer rather than
+// storing (canSign, walletType) survive the copy.
+//
+// A settings change ends every session on the file as well: each one was
+// sealed against the old policy, and a revoked or resized budget must not go
+// on being spent wherever an old copy is cached. The one window that proved
+// the password for the change is handed a fresh session by its handler.
+// Returns the windows it reached, so a test can see it rather than take it on
+// trust.
+const CopyPublicToFileWindows = (filename, publicData, endSessions) => {
+    return Object.keys(wallets).filter((winId) => {
+        const state = wallets[winId]
+        if (windows[winId] === undefined || !state || state.filename !== filename) {
+            return false
+        }
+        wallets[winId] = {
+            ...state,
+            wallet: {...state.wallet, ...publicData},
+            session: endSessions ? undefined : state.session,
+        }
+        return true
+    }).map(Number)
+}
+
 // The wallet window a transaction window was opened from, or undefined for a
 // window that is not a transaction window. A preview cannot spend on the budget
 // itself - the session key stays in the preload of the window that unlocked the
@@ -104,6 +134,7 @@ const HeldWindowIds = () => ({
 
 module.exports = {
     AddTxWindow,
+    CopyPublicToFileWindows,
     CopyWalletToTxWindows,
     ForgetWindow,
     GetMenu,
