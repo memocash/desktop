@@ -4,7 +4,7 @@ const bitcoin = require("@bitcoin-dot-com/bitcoincashjs2-lib")
 const {mnemonicToSeedSync} = require("bip39")
 const {BIP32Factory} = require("bip32")
 const ecc = require("tiny-secp256k1")
-const {KeyFinder, MaxFeeRate, PreviewSpend, SignTransaction} = require("./transaction_signer")
+const {KeyFinder, MaxFeeRate, PreviewSpend, SignTransaction, WalletAddresses} = require("./transaction_signer")
 
 const bip32 = BIP32Factory(ecc)
 const key = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 7)})
@@ -92,6 +92,45 @@ test("a seed wallet still controls an address after an imported copy of its key 
     const emptied = {...wallet, keys: []}
     assert.ok(KeyFinder(emptied)(derivedAddress))
     assert.equal(KeyFinder(emptied)(importedOnly.getAddress()), undefined)
+})
+
+// Exporting and removing a key ask KeyFinder for the address's key and then use
+// its WIF: the export hands it to the owner, and the removal matches it against
+// the stored key list to establish the address is backed by an imported key. So
+// the WIF it yields has to be the one on file, character for character, and an
+// address the wallet only watches has to come back as no key rather than as an
+// unknown address.
+test("the key for an address round-trips to the stored WIF", () => {
+    const seed = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    const root = bip32.fromSeed(mnemonicToSeedSync(seed))
+    const derivedWif = root.derivePath("m/44'/0'/0'/0/0").toWIF()
+    const changeWif = root.derivePath("m/44'/0'/0'/1/0").toWIF()
+    const slpWif = root.derivePath("m/44'/245'/0'/0/0").toWIF()
+    const imported = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 23)})
+    const watched = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 29)}).getAddress()
+    const address = (wif) => bitcoin.ECPair.fromWIF(wif).getAddress()
+    const wallet = {
+        seed,
+        keys: [imported.toWIF()],
+        addresses: [address(derivedWif), imported.getAddress(), watched],
+        changeList: [address(changeWif)],
+        slpList: [address(slpWif)],
+    }
+    const find = KeyFinder(wallet)
+    for (const wif of [derivedWif, changeWif, slpWif, imported.toWIF()]) {
+        assert.equal(find(address(wif)).toWIF(), wif)
+    }
+    // Listed, so it is the wallet's to watch, but nothing derives or unlocks it.
+    assert.equal(find(watched), undefined)
+    assert.ok(WalletAddresses(wallet).includes(watched))
+    assert.equal(WalletAddresses(wallet).includes(address(slpWif)), true)
+
+    // An address the wallet has never heard of is neither: no key, and not in
+    // any list, which is what tells an export to say so rather than answer
+    // "watch only".
+    const stranger = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 31)}).getAddress()
+    assert.equal(find(stranger), undefined)
+    assert.equal(WalletAddresses(wallet).includes(stranger), false)
 })
 
 test("refuses input metadata that does not match the raw transaction", async () => {

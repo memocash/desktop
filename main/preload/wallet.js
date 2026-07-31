@@ -53,6 +53,8 @@ module.exports = {
     addKeys: updateWallet("addKeys"),
     removeKeys: updateWallet("removeKeys"),
     changeSettings: updateWallet("changeSettings"),
+    // Answers {exists, encrypted} - what the load screen needs to decide whether
+    // to offer opening, creating, or a password box.
     checkFile: async (walletName) => ipcRenderer.invoke(Handlers.CheckWalletFile, walletName),
     createFile: async (walletName, seedPhrase, keyList, addressList, password) =>
         ipcRenderer.invoke(Handlers.CreateWallet, walletName, seedPhrase, keyList, addressList, password),
@@ -66,7 +68,6 @@ module.exports = {
     removePrivateKey: async (address, password) =>
         ipcRenderer.invoke(Handlers.RemovePrivateKey, address, password),
     getWalletFileInfo: async () => ipcRenderer.invoke(Handlers.GetWalletFileInfo),
-    isWalletFileEncrypted: async (walletName) => ipcRenderer.invoke(Handlers.WalletFileIsEncrypted, walletName),
     unlockWallet: async (walletName, password) => {
         sessionKey = undefined
         return keepSessionKey(

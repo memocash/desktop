@@ -48,35 +48,21 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         }
         await loadWallet()
     }
-    // Each of these answers with a result, so the reason a name cannot be used
-    // arrives here instead of throwing at the destructuring. Both callers get
-    // that for free, which is what the Choose... button was missing.
+    // Answers with a result, so the reason a name cannot be used arrives here
+    // instead of throwing at the destructuring. Both callers get that for free,
+    // which is what the Choose... button was missing.
     const loadFile = async (walletFile) => {
-        const {error, value} = await window.electron.isWalletFileEncrypted(walletFile)
+        const {error, value} = await window.electron.checkFile(walletFile)
         if (error) {
             setFileError(error)
             setFileExists(false)
             return
         }
-        setPasswordProtectedFile(value)
-        setFileExists(true)
         setFileError("")
+        setFileExists(value.exists)
+        setPasswordProtectedFile(value.encrypted)
     }
-    const fileChangeHandler = async () => {
-        const walletFile = walletInput.current.value
-        const {error, value: exists} = await window.electron.checkFile(walletFile)
-        if (error) {
-            setFileError(error)
-            setFileExists(false)
-            return
-        }
-        if (!exists) {
-            setFileExists(false)
-            setFileError("")
-            return
-        }
-        await loadFile(walletFile)
-    }
+    const fileChangeHandler = async () => loadFile(walletInput.current.value)
     const handleClickImport = async () => {
         const filepath = await window.electron.openFileDialog()
         if (!filepath.length) {

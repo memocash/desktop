@@ -12,13 +12,13 @@ const {
     GetStorage,
     GetWallet,
     GetWindow,
-    IsOpen,
     IsWalletWindow,
     SetMenu,
     SetNetworkOption,
     SetStorage,
     SetWallet,
     SetWindow,
+    TxWindowIds,
     TxWindowParent,
 } = require("./window_state");
 
@@ -52,13 +52,26 @@ let windowNumber = 0
 // object itself - all held for the life of the process, however many wallets
 // have been opened and closed since. Clear them when the window's contents are
 // destroyed, so closing a wallet actually puts it away and a later window handed
-// the same id starts with nothing. A transaction window also names the window it
-// was opened from, which is where the list holding it lives.
-const ForgetWindowOnClose = (win, parentId) => {
+// the same id starts with nothing.
+const ForgetWindowOnClose = (win) => {
     const winId = win.webContents.id
     win.webContents.once("destroyed", () => {
+        // The transaction windows this one opened close with it. They show the
+        // wallet this window held and spend on this window's session, so with
+        // the wallet put away they are windows nobody can act in. Read before
+        // the forgetting below, and closed after it, so a child's own destroyed
+        // handler - which runs this same code, closing grandchildren in turn -
+        // sees the parent already gone. Not Electron's parent option, which
+        // would also pin every preview on top of the wallet window.
+        const children = TxWindowIds(winId)
         ForgetPaths(winId)
-        ForgetWindow(winId, parentId)
+        ForgetWindow(winId)
+        for (const childId of children) {
+            const child = GetWindow(childId)
+            if (child && !child.isDestroyed()) {
+                child.close()
+            }
+        }
     })
 }
 
@@ -104,10 +117,10 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         webPreferences: WebPreferences,
         icon: AppIcon,
     })
-    AddTxWindow(winId, win.webContents.id, win)
+    AddTxWindow(winId, win.webContents.id)
     SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
     SetWindow(win.webContents.id, win)
-    ForgetWindowOnClose(win, winId)
+    ForgetWindowOnClose(win)
     // The wallet as the parent holds it, minus its session. A transaction window
     // has no key of its own - the key belongs to the document that unlocked the
     // wallet - so a sealed password here could never be opened, and would go on
@@ -139,6 +152,7 @@ const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
 module.exports = {
     eConf,
+    BackgroundColor,
     CopyWalletToTxWindows,
     GetMenu,
     GetNetworkOption,
@@ -146,7 +160,6 @@ module.exports = {
     GetRuntimeNetworkOption,
     GetWallet,
     GetWindow,
-    IsOpen,
     IsWalletWindow,
     SetMenu,
     SetNetworkOption,

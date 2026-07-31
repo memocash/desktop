@@ -12,7 +12,9 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
     const [wif, setWif] = useState("")
     useEffect(() => {(async () => {
         const wallet = await window.electron.getWallet()
-        const allAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
+        // Main sends all three lists whether or not the wallet has anything in
+        // them, so there is nothing to guard against here.
+        const allAddresses = wallet.addresses.concat(wallet.changeList, wallet.slpList)
         if (!allAddresses.includes(address)) {
             // Say so, rather than asking for a password to unlock a key that no
             // password will produce.

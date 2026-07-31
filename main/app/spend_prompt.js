@@ -1,6 +1,7 @@
-const {BrowserWindow, ipcMain, nativeTheme} = require("electron");
+const {BrowserWindow, ipcMain} = require("electron");
 const path = require("path");
 const {Handlers, Listeners} = require("../common/util");
+const {BackgroundColor} = require("./window");
 
 // Where a spend is authorised. Main opens this window itself, from a file on
 // disk with a preload of its own, so nothing the wallet page runs is on either
@@ -27,8 +28,6 @@ const settle = (winId, message) => {
         resolve(message)
     }
 }
-
-const BackgroundColor = () => nativeTheme.shouldUseDarkColors ? "#1b1c1e" : "#eeeeee"
 
 const OpenSpendPrompt = async (parent) => {
     const win = new BrowserWindow({

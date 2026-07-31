@@ -13,9 +13,9 @@ const {CreateSignRelay} = require("../sign_relay");
 const session = require("../session");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
-const {KeyFinder, PreviewSpend, SignTransaction} = require("../transaction_signer");
+const {KeyFinder, PreviewSpend, SignTransaction, WalletAddresses} = require("../transaction_signer");
 const {
-    SetWallet, GetWallet, SetMenu, GetWindow, IsOpen, CreateWindow, CopyWalletToTxWindows,
+    SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, CopyWalletToTxWindows,
     TxWindowParent, eConf,
 } = require("../window");
 
@@ -66,14 +66,7 @@ const normalizeSeedWallet = async (filename, password) => {
                 keys: read.wallet.keys || [],
             })
         const publicDerived = await generateWallet({derivation: derived.derivation})
-        const wallet = read.wallet.derivation
-            ? {
-                ...read.wallet,
-                addresses: [...new Set([...publicDerived.addresses, ...(read.wallet.addresses || [])])],
-                changeList: [...new Set([...publicDerived.changeList, ...(read.wallet.changeList || [])])],
-                slpList: [...new Set([...publicDerived.slpList, ...(read.wallet.slpList || [])])],
-            }
-            : normalizeSeedWalletData(read.wallet, derived, publicDerived)
+        const wallet = normalizeSeedWalletData(read.wallet, derived, publicDerived)
         // The derivation counts as a change to the envelope, not to the public
         // half: it is written inside it, so establishing one the first time needs
         // the whole file rewritten rather than a public update. Unlock is where
@@ -200,7 +193,7 @@ const spendThreshold = (wallet) => {
 // written either way, but a closed window's state must stay closed rather than
 // being put back in the map for whatever window is handed that id next.
 const rememberWallet = (winId, state) => {
-    if (!IsOpen(winId)) {
+    if (!GetWindow(winId)) {
         return
     }
     // Merged over what is there, so an update that speaks only of the wallet
@@ -333,35 +326,29 @@ const operationResult = async (run) => {
     }
 }
 
-const exportPrivateKey = async (winId, address, password) => {
-    const {wallet} = await readForOperation(winId, password)
-    const derived = await generateWallet({seed: wallet.seed, keys: wallet.keys})
-    let index = derived.addresses.indexOf(address)
-    if (index !== -1) {
-        if (index < derived.keys.length) {
-            return derived.keys[index]
-        }
-        return wallet.keys[index - derived.keys.length]
+// The key for an address, or undefined for one the wallet only watches. The
+// same question signing asks, so it is answered by the same code: an imported
+// key is matched by the address it unlocks and a derived one is checked against
+// the address it is claimed to be, rather than trusted because of where it sits
+// in a list.
+const walletKey = (wallet, address) => {
+    const key = KeyFinder(wallet)(address)
+    if (key) {
+        return key.toWIF()
     }
-    index = derived.changeList.indexOf(address)
-    if (index !== -1) {
-        return derived.changeKeys[index]
-    }
-    index = derived.slpList.indexOf(address)
-    if (index !== -1) {
-        return derived.slpKeys[index]
-    }
-    const publicAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
-    if (publicAddresses.includes(address)) {
+    if (WalletAddresses(wallet).includes(address)) {
         return undefined
     }
     throw new Error("address not found in wallet")
 }
 
+const exportPrivateKey = async (winId, address, password) =>
+    walletKey((await readForOperation(winId, password)).wallet, address)
+
 const removePrivateKey = async (winId, address, password) => {
     const state = GetWallet(winId)
     const {wallet: stored} = await readForOperation(winId, password)
-    const key = await exportPrivateKey(winId, address, password)
+    const key = walletKey(stored, address)
     if (!key || !(stored.keys || []).includes(key)) {
         throw new Error("address is not backed by an imported key")
     }
@@ -624,10 +611,8 @@ const WalletHandlers = () => {
             GetWallet(e.sender.id).filename,
             () => removePrivateKey(e.sender.id, address, password))))
     ipcMain.handle(Handlers.CheckWalletFile, async (e, walletName) =>
-        operationResult(() => keystore.WalletFileExists(e.sender.id, walletName)))
+        operationResult(() => keystore.WalletFileState(e.sender.id, walletName)))
     ipcMain.handle(Handlers.GetExistingWalletFiles, async () => keystore.ListWalletFiles())
-    ipcMain.handle(Handlers.WalletFileIsEncrypted, async (e, walletName) =>
-        operationResult(() => keystore.WalletFileIsEncrypted(e.sender.id, walletName)))
     // These two answer in their own shape - a session key beside the ok, the
     // named wallet that is in the way - so only the failure needs wrapping.
     ipcMain.handle(Handlers.UnlockWallet, async (e, walletName, password) =>

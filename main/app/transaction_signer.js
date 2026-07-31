@@ -1,18 +1,12 @@
-const crypto = require("crypto")
-
-// bitcoincashjs2-lib asks OpenSSL for the historical rmd160 alias. Electron's
-// BoringSSL only exposes ripemd160, so normalize it before loading the library.
-const originalCreateHash = crypto.createHash
-crypto.createHash = (algorithm, options) =>
-    originalCreateHash.call(crypto, algorithm === "rmd160" ? "ripemd160" : algorithm, options)
+// First, and before the transaction library: derivation installs the rmd160
+// alias that bitcoincashjs2-lib asks OpenSSL for and Electron's BoringSSL does
+// not have, and it owns the paths a wallet's addresses come from.
+const {AccountPath, Bip32} = require("./derivation")
 
 const bitcoin = require("@bitcoin-dot-com/bitcoincashjs2-lib")
 const {mnemonicToSeedSync} = require("bip39")
-const {BIP32Factory} = require("bip32")
-const ecc = require("tiny-secp256k1")
 const {WalletErrors} = require("../common/util")
 
-const bip32 = BIP32Factory(ecc)
 const MaxFeeRate = 100
 const MaxBeatHashAttempts = 4096
 const DustLimit = 546
@@ -32,9 +26,9 @@ const keyForAddress = (wallet, address, seedRoot) => {
         return undefined
     }
     const lists = [
-        {addresses: wallet.addresses || [], path: "m/44'/0'/0'/0/"},
-        {addresses: wallet.changeList || [], path: "m/44'/0'/0'/1/"},
-        {addresses: wallet.slpList || [], path: "m/44'/245'/0'/0/"},
+        {addresses: wallet.addresses || [], path: AccountPath.bch + "/0/"},
+        {addresses: wallet.changeList || [], path: AccountPath.bch + "/1/"},
+        {addresses: wallet.slpList || [], path: AccountPath.slp + "/0/"},
     ]
     for (const {addresses, path} of lists) {
         const index = addresses.indexOf(address)
@@ -61,7 +55,7 @@ const keyFinder = (wallet) => {
     let root
     const seedRoot = () => {
         if (root === undefined) {
-            root = wallet.seed ? bip32.fromSeed(mnemonicToSeedSync(wallet.seed)) : null
+            root = wallet.seed ? Bip32.fromSeed(mnemonicToSeedSync(wallet.seed)) : null
         }
         return root
     }
@@ -377,4 +371,5 @@ module.exports = {
     MaxFeeRate,
     PreviewSpend,
     SignTransaction,
+    WalletAddresses: walletAddresses,
 }

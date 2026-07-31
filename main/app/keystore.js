@@ -59,24 +59,26 @@ const ListWalletFiles = async () => {
     return files.filter(file => !IsWalletArtifact(file))
 }
 
-// False means no wallet by that name yet, which the load screen offers to
+// What the load screen needs to know about a name before it can offer anything:
+// whether there is a wallet there, and whether opening it will need a password.
+// Answered together because the screen has no use for one without the other, and
+// asking twice means reading the file twice.
+//
+// Not existing means no wallet by that name yet, which the screen offers to
 // create. A name that cannot resolve to a path at all is not that: answering
-// false for it walks the user through type, seed, seed confirmation and password
-// before the write is refused for a reason nothing has mentioned yet. That
-// throws, and is reported where the name is typed.
-const WalletFileExists = async (winId, walletName) => {
+// "no wallet here" for it walks the user through type, seed, seed confirmation
+// and password before the write is refused for a reason nothing has mentioned
+// yet. That throws, as does a file that exists but cannot be read, and both are
+// reported where the name is typed.
+const WalletFileState = async (winId, walletName) => {
     const walletPath = ResolveWalletPath(winId, walletName)
     try {
         await fs.access(walletPath)
-        return true
     } catch (e) {
-        return false
+        return {exists: false, encrypted: false}
     }
-}
-
-const WalletFileIsEncrypted = async (winId, walletName) => {
-    const contents = await fs.readFile(ResolveWalletPath(winId, walletName), {encoding: "utf8"})
-    return walletFile.IsEncrypted(contents)
+    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
+    return {exists: true, encrypted: walletFile.IsEncrypted(contents)}
 }
 
 // Returns the decrypted wallet, or throws WrongPassword. Reports whether the
@@ -206,23 +208,6 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
     addresses: addressList,
 })
 
-// What may cross to the renderer, and equally what may be written outside the
-// envelope: the same fields walletFile keeps inside it are dropped here, so the
-// public half of a file is never rebuilt from a wallet still carrying them.
-const PublicWallet = (wallet) => {
-    const {seed, keys, derivation, ...publicData} = wallet
-    return {
-        ...publicData,
-        // Present even when empty, so nothing on the other side has to ask for a
-        // list to be created before it can read one.
-        addresses: wallet.addresses || [],
-        changeList: wallet.changeList || [],
-        slpList: wallet.slpList || [],
-        canSign: !!(seed || (keys && keys.length)),
-        walletType: seed ? "seed" : (keys && keys.length ? "imported" : "watch"),
-    }
-}
-
 // PasswordThreshold is how many satoshis may leave the wallet, in total, before
 // the password is asked for again. Zero means every send is asked for, which is
 // what a wallet gets until someone deliberately raises it.
@@ -232,6 +217,26 @@ const DefaultSettings = {
 }
 
 const ThresholdSetting = "PasswordThreshold"
+
+// What may cross to the renderer, and equally what may be written outside the
+// envelope: the same fields walletFile keeps inside it are dropped here, so the
+// public half of a file is never rebuilt from a wallet still carrying them.
+const PublicWallet = (wallet) => {
+    const {seed, keys, derivation, ...publicData} = wallet
+    return {
+        ...publicData,
+        // Present even when empty, so nothing on the other side has to ask for a
+        // list to be created before it can read one. Settings the same way: a
+        // wallet whose file predates a setting reads as the default, rather than
+        // having the renderer write one in before it can ask what it is.
+        addresses: wallet.addresses || [],
+        changeList: wallet.changeList || [],
+        slpList: wallet.slpList || [],
+        settings: {...DefaultSettings, ...wallet.settings},
+        canSign: !!(seed || (keys && keys.length)),
+        walletType: seed ? "seed" : (keys && keys.length ? "imported" : "watch"),
+    }
+}
 
 // The nine near-identical mutators the preload used to carry, reduced to one
 // table. Each op adds to or removes from a list field, de-duplicating as before.
@@ -284,6 +289,7 @@ module.exports = {
     AllowPath,
     ApplyWalletUpdate,
     CreateWalletFile,
+    DefaultSettings,
     ForgetPaths,
     IsWalletArtifact,
     ListWalletFiles,
@@ -297,8 +303,7 @@ module.exports = {
     UpdatePublic,
     UpdateTouchesSecret,
     Version: walletFile.Version,
-    WalletFileExists,
-    WalletFileIsEncrypted,
+    WalletFileState,
     WithWalletLock,
     WriteWallet,
     WrongPassword,

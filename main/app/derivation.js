@@ -16,6 +16,13 @@ const bip32 = BIP32Factory(ecc)
 const AddressCount = 20
 const DerivationVersion = 1
 
+// The accounts this wallet derives from, named once so the signer and the
+// derivation cannot disagree about where a wallet's addresses come from.
+const AccountPath = {
+    bch: "m/44'/0'/0'",
+    slp: "m/44'/245'/0'",
+}
+
 const addressOf = (node) => ECPair.fromPublicKeyBuffer(Buffer.from(node.publicKey)).getAddress()
 
 const deriveBranch = (account, branch, count = AddressCount, includeKeys = false) => {
@@ -72,8 +79,8 @@ const derivePrivateWallet = (seedPhrase, keyList = []) => {
 
     if (seedPhrase && seedPhrase.length) {
         const root = bip32.fromSeed(mnemonicToSeedSync(seedPhrase))
-        const bch = root.derivePath("m/44'/0'/0'")
-        const slp = root.derivePath("m/44'/245'/0'")
+        const bch = root.derivePath(AccountPath.bch)
+        const slp = root.derivePath(AccountPath.slp)
         const receive = deriveBranch(bch, 0, AddressCount, true)
         const change = deriveBranch(bch, 1, AddressCount, true)
         const token = deriveBranch(slp, 0, AddressCount, true)
@@ -100,8 +107,9 @@ const derivePrivateWallet = (seedPhrase, keyList = []) => {
 }
 
 module.exports = {
+    AccountPath,
     AddressCount,
-    DerivationVersion,
+    Bip32: bip32,
     addressesForKeys,
     derivePrivateWallet,
     derivePublicWallet,

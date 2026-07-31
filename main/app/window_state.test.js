@@ -5,8 +5,8 @@ const {
     CopyWalletToTxWindows,
     ForgetWindow,
     GetWallet,
+    GetWindow,
     HeldWindowIds,
-    IsOpen,
     IsWalletWindow,
     SetMenu,
     SetNetworkOption,
@@ -27,11 +27,11 @@ const open = (winId, wallet) => {
 
 test("closing a window leaves nothing of it behind", () => {
     open(1, {filename: "wallet", integrityKey: "secret", session: {envelope: {}}})
-    assert.equal(IsOpen(1), true)
+    assert.notEqual(GetWindow(1), undefined)
     assert.equal(IsWalletWindow(1), true)
 
     ForgetWindow(1)
-    assert.equal(IsOpen(1), false)
+    assert.equal(GetWindow(1), undefined)
     assert.equal(IsWalletWindow(1), false)
     assert.equal(GetWallet(1), undefined)
     const held = HeldWindowIds()
@@ -44,22 +44,22 @@ test("a transaction window is released by the window it was opened from", () => 
     open(2, {filename: "wallet"})
     for (const child of [3, 4]) {
         open(child, GetWallet(2))
-        AddTxWindow(2, child, {id: child})
+        AddTxWindow(2, child)
     }
     assert.deepEqual(TxWindowIds(2), [3, 4])
     // A transaction window is not a wallet window, even though it has a wallet.
     assert.equal(IsWalletWindow(3), false)
 
-    // Closing one has to take it out of the list held under its parent, which is
-    // not keyed by its own id.
-    ForgetWindow(3, 2)
+    // Closing one has to stop it being counted under the window it came from.
+    ForgetWindow(3)
     assert.deepEqual(TxWindowIds(2), [4])
-    assert.equal(HeldWindowIds().txWindowIds.includes("3"), false)
+    assert.equal(TxWindowParent(3), undefined, "a closed child names no parent")
+    assert.equal(HeldWindowIds().txWindows.includes("3"), false)
 
-    ForgetWindow(4, 2)
+    ForgetWindow(4)
     assert.deepEqual(TxWindowIds(2), [])
-    assert.equal(HeldWindowIds().txWindows.includes("2"), false,
-        "an empty list should not be kept either")
+    assert.equal(HeldWindowIds().txWindows.includes("4"), false,
+        "a closed child should not be kept either")
 
     ForgetWindow(2)
     assert.deepEqual(HeldWindowIds().windows, [])
@@ -73,7 +73,7 @@ test("a wallet change reaches the transaction windows opened from that window", 
     open(10, {filename: "wallet", wallet: wallet(0), session: {envelope: "parent"}})
     for (const child of [11, 12]) {
         open(child, {filename: "wallet", wallet: wallet(0)})
-        AddTxWindow(10, child, {id: child})
+        AddTxWindow(10, child)
     }
 
     assert.deepEqual(CopyWalletToTxWindows(10, wallet(50000)), [11, 12])
@@ -88,8 +88,8 @@ test("a wallet change reaches the transaction windows opened from that window", 
     assert.equal(GetWallet(11).session, undefined)
     assert.equal(GetWallet(10).session.envelope, "parent")
 
-    ForgetWindow(11, 10)
-    ForgetWindow(12, 10)
+    ForgetWindow(11)
+    ForgetWindow(12)
     ForgetWindow(10)
 })
 
@@ -98,7 +98,7 @@ test("a wallet change stops at a window that is closed or holds another wallet",
     open(21, {filename: "other", wallet: {settings: {}}})
     open(22, {filename: "wallet", wallet: {settings: {}}})
     for (const child of [21, 22]) {
-        AddTxWindow(20, child, {id: child})
+        AddTxWindow(20, child)
     }
     // A window on a different file would be shown metadata belonging to a wallet
     // whose path and integrity key it does not hold.
@@ -106,33 +106,50 @@ test("a wallet change stops at a window that is closed or holds another wallet",
     assert.equal(GetWallet(21).wallet.settings.PasswordThreshold, undefined)
 
     // And a window whose contents have gone keeps nothing put back into it.
-    ForgetWindow(22, 20)
+    ForgetWindow(22)
     assert.deepEqual(CopyWalletToTxWindows(20, {settings: {PasswordThreshold: 9}}), [])
     assert.equal(GetWallet(22), undefined)
 
     // A parent with no wallet has nothing to hand on.
     assert.deepEqual(CopyWalletToTxWindows(999, {settings: {}}), [])
 
-    ForgetWindow(21, 20)
+    ForgetWindow(21)
     ForgetWindow(20)
 })
 
 test("a transaction window names the window that opened it", () => {
     open(5, {filename: "wallet"})
     open(6, GetWallet(5))
-    AddTxWindow(5, 6, {id: 6})
+    AddTxWindow(5, 6)
     // A spend asked for in the transaction window is carried back to this one,
     // which is the only side holding the key to the session it spends against.
     assert.equal(TxWindowParent(6), 5)
     // A wallet window has no parent, and neither does a window that has gone.
     assert.equal(TxWindowParent(5), undefined)
-    ForgetWindow(6, 5)
+    ForgetWindow(6)
     assert.equal(TxWindowParent(6), undefined)
     ForgetWindow(5)
 })
 
+// A closing wallet window closes the transaction windows it opened, but not in
+// the same instant: each child is asked to close and its own destroyed event
+// arrives later. In that gap - or if a close is ever refused - a child that
+// stopped counting as a transaction window would start looking like somewhere
+// the update notice can be drawn, and it has no modal viewer, so the notice
+// would go there and never appear instead of falling back to the browser.
+test("a transaction window outliving its parent is still not a wallet window", () => {
+    open(7, {filename: "wallet"})
+    open(8, GetWallet(7))
+    AddTxWindow(7, 8)
+    assert.equal(IsWalletWindow(8), false)
+
+    ForgetWindow(7)
+    assert.equal(IsWalletWindow(8), false, "closing the parent must not promote the child")
+    assert.equal(IsWalletWindow(7), false)
+    ForgetWindow(8)
+})
+
 test("forgetting a window that was never open is not an error", () => {
     ForgetWindow(99)
-    ForgetWindow(99, 98)
-    assert.equal(IsOpen(99), false)
+    assert.equal(GetWindow(99), undefined)
 })

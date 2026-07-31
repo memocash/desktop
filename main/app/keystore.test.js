@@ -9,6 +9,7 @@ const {
     AllowPath,
     ApplyWalletUpdate,
     CreateWalletFile,
+    DefaultSettings,
     ForgetPaths,
     IsWalletArtifact,
     MigrateWallet,
@@ -20,7 +21,7 @@ const {
     UpdatePublic,
     UpdateTouchesSecret,
     Version,
-    WalletFileIsEncrypted,
+    WalletFileState,
     WithWalletLock,
     WriteWallet,
     WrongPassword,
@@ -65,6 +66,12 @@ test("renderer wallet state contains capabilities but no private material", () =
     assert.deepEqual(PublicWallet({}).addresses, [])
     assert.deepEqual(PublicWallet({}).changeList, [])
     assert.deepEqual(PublicWallet({}).slpList, [])
+    // Settings the same way, and a wallet that has stored one keeps it: reading
+    // must never be the thing that decides a wallet's spend budget.
+    assert.deepEqual(PublicWallet({}).settings, DefaultSettings)
+    assert.equal(publicState.settings.PasswordThreshold, 0)
+    assert.equal(PublicWallet({settings: {PasswordThreshold: 5000}}).settings.PasswordThreshold, 5000)
+    assert.equal(PublicWallet({settings: {DirectTx: true}}).settings.DirectTx, true)
 })
 
 // The wallet list is what the load screen checks a suggested name against, so a
@@ -118,6 +125,27 @@ test("a window's grants go when the window does", async () => {
     assert.throws(() => ResolveWalletPath(OtherWindow, outside), {message: /not chosen by the user/})
 })
 
+// The load screen offers to create a wallet for a name with no file behind it,
+// and refuses a name it cannot use at all. Those must not look the same: a
+// refusal reported as "no wallet yet" walks someone through type, seed, seed
+// confirmation and password before the write fails.
+test("a name with no file is not the same answer as a name that cannot be used", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const missing = path.join(dir, "not_here_yet")
+    AllowPath(Window, missing)
+    assert.deepEqual(await WalletFileState(Window, missing), {exists: false, encrypted: false})
+    await assert.rejects(WalletFileState(Window, "sub/evil"), {message: /wallet name/})
+    await assert.rejects(WalletFileState(OtherWindow, missing), {message: /not chosen by the user/})
+})
+
+// A file that is there but this version cannot parse is its own answer again:
+// no password would open it, so the screen must not offer a password box.
+test("a file that cannot be read is reported rather than called unencrypted", async () => {
+    const walletPath = await tempWallet("unreadable")
+    await fs.writeFile(walletPath, JSON.stringify({version: 99}))
+    await assert.rejects(WalletFileState(Window, walletPath), {message: /unsupported wallet version/})
+})
+
 // Opening a wallet is not permission to replace it, and neither is naming one in
 // the wallet directory. The load screen only offers create for a name with no
 // file behind it, so anything else reaching create did not come from there.
@@ -135,7 +163,7 @@ test("an encrypted wallet round-trips through the file", async () => {
     const walletPath = await tempWallet("encrypted")
     const wallet = NewWallet("seed words here", [], ["addr1"])
     await WriteWallet(walletPath, wallet, "hunter2")
-    assert.equal(await WalletFileIsEncrypted(Window, walletPath), true)
+    assert.deepEqual(await WalletFileState(Window, walletPath), {exists: true, encrypted: true})
     const {wallet: read, encrypted} = await ReadWallet(walletPath, "hunter2")
     assert.equal(encrypted, true)
     assert.equal(read.seed, "seed words here")
@@ -153,7 +181,7 @@ test("the wrong password is reported as wrong rather than throwing something els
 test("a wallet saved without a password stays readable JSON and reads back unencrypted", async () => {
     const walletPath = await tempWallet("plain")
     await WriteWallet(walletPath, NewWallet("", ["WIFkey"], ["addr1"]), undefined)
-    assert.equal(await WalletFileIsEncrypted(Window, walletPath), false)
+    assert.deepEqual(await WalletFileState(Window, walletPath), {exists: true, encrypted: false})
     const {wallet, encrypted} = await ReadWallet(walletPath, undefined)
     assert.equal(encrypted, false)
     assert.deepEqual(wallet.keys, ["WIFkey"])

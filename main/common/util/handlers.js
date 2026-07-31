@@ -52,7 +52,6 @@ const Handlers = {
     SpendPromptReply: "spend-prompt-reply",
     UnlockWallet: "unlock-wallet",
     UpdateWallet: "update-wallet",
-    WalletFileIsEncrypted: "wallet-file-is-encrypted",
     WalletLoaded: "wallet-loaded",
     GetWalletInfo: "get-wallet-info",
     GraphQL: "graphql",

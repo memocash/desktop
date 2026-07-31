@@ -10,42 +10,37 @@ const storage = {}
 const windows = {}
 const menus = {}
 const networkOptions = {}
-// Transaction windows opened from a wallet window, kept under the id of the
-// window they came from.
-const txWindows = {}
-const txWindowIds = new Set()
+// The wallet window each transaction window was opened from, kept under the id
+// of the transaction window itself rather than the other way round. A child has
+// to go on knowing what it is after its parent closes: transaction windows are
+// top-level windows that outlive the window they came from, they have no modal
+// viewer, and one that stopped naming a parent would start looking like a wallet
+// window that does - which is how the update notice ends up sent somewhere it
+// cannot be drawn. A Map so the ids stay numbers and keep their insertion order.
+const txParents = new Map()
 
 const GetMenu = (winId) => menus[winId]
 const GetNetworkOption = (winId) => networkOptions[winId]
 const GetStorage = (winId) => storage[winId]
 const GetWallet = (winId) => wallets[winId]
 const GetWindow = (winId) => windows[winId]
-// Whether a window is still open, for work that outlives the window that asked
-// for it: an update queued behind the wallet's lock can finish after its window
-// has gone, and it must not put that window's wallet back into the map.
-const IsOpen = (winId) => windows[winId] !== undefined
 // True once a wallet has been loaded in the window, which is also when it starts
 // rendering the modal viewer. Transaction windows inherit the parent's wallet
 // but have no modals, so they are excluded.
-const IsWalletWindow = (winId) => wallets[winId] !== undefined && !txWindowIds.has(winId)
+const IsWalletWindow = (winId) => wallets[winId] !== undefined && !txParents.has(winId)
 const SetMenu = (winId, menu) => menus[winId] = menu
 const SetNetworkOption = (winId, option) => networkOptions[winId] = option
 const SetStorage = (winId, data) => storage[winId] = data
 const SetWallet = (winId, wallet) => wallets[winId] = wallet
 const SetWindow = (winId, win) => windows[winId] = win
 
-const AddTxWindow = (parentId, winId, win) => {
-    if (txWindows[parentId] === undefined) {
-        txWindows[parentId] = []
-    }
-    txWindows[parentId].push({winId, win})
-    txWindowIds.add(winId)
-}
+const AddTxWindow = (parentId, winId) => txParents.set(winId, parentId)
 
 // The transaction windows opened from a wallet window. They are handed a copy of
 // the parent's wallet state when they open, so whatever changes it afterwards
 // has to find them again.
-const TxWindowIds = (parentId) => (txWindows[parentId] || []).map(({winId}) => winId)
+const TxWindowIds = (parentId) =>
+    [...txParents].filter(([, parent]) => parent === parentId).map(([winId]) => winId)
 
 // Puts the parent's wallet in front of the transaction windows it opened, which
 // would otherwise go on showing it as it stood when each of them opened. The
@@ -79,31 +74,21 @@ const CopyWalletToTxWindows = (parentId, wallet) => {
 // window that is not a transaction window. A preview cannot spend on the budget
 // itself - the session key stays in the preload of the window that unlocked the
 // wallet - so a spend it asks for is carried back to the window that holds it.
-const TxWindowParent = (winId) => {
-    const found = Object.entries(txWindows).find(([, children]) =>
-        children.some((child) => child.winId === winId))
-    return found ? Number(found[0]) : undefined
-}
+// The window named here may already have closed; whoever asks has to allow for
+// that, which is why the relay falls back to asking in main's own window.
+const TxWindowParent = (winId) => txParents.get(winId)
 
-// Everything a window put here goes when the window does. A transaction window
-// also has to come out of the list held under the window it was opened from,
-// which is not keyed by its own id: without that, opening and closing previews
-// would pile up closed windows under the parent for as long as the parent lived.
-const ForgetWindow = (winId, parentId) => {
+// Everything a window put here goes when the window does. Keying the parent
+// under the child means a transaction window takes its own entry with it, so
+// opening and closing previews leaves nothing piled up under the parent and a
+// closing parent strands nothing under itself.
+const ForgetWindow = (winId) => {
     delete wallets[winId]
     delete storage[winId]
     delete menus[winId]
     delete networkOptions[winId]
     delete windows[winId]
-    delete txWindows[winId]
-    txWindowIds.delete(winId)
-    if (parentId === undefined || txWindows[parentId] === undefined) {
-        return
-    }
-    txWindows[parentId] = txWindows[parentId].filter((child) => child.winId !== winId)
-    if (!txWindows[parentId].length) {
-        delete txWindows[parentId]
-    }
+    txParents.delete(winId)
 }
 
 // For tests, which need to see that nothing is left rather than take it on
@@ -114,8 +99,7 @@ const HeldWindowIds = () => ({
     menus: Object.keys(menus),
     networkOptions: Object.keys(networkOptions),
     windows: Object.keys(windows),
-    txWindows: Object.keys(txWindows),
-    txWindowIds: [...txWindowIds].map(String),
+    txWindows: [...txParents.keys()].map(String),
 })
 
 module.exports = {
@@ -128,7 +112,6 @@ module.exports = {
     GetWallet,
     GetWindow,
     HeldWindowIds,
-    IsOpen,
     IsWalletWindow,
     SetMenu,
     SetNetworkOption,

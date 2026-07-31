@@ -8,29 +8,18 @@ import {Modals} from "../../../../main/common/util/modals";
 const AddressModal = ({onClose, setLastUpdate, setModal}) => {
     const [error, setError] = useState("")
     const [addOrRemove, setAddOrRemove] = useState(true)
+    // Only keys reach inside the encrypted envelope, so only they need the
+    // password. Which way round it goes changes nothing else about the asking.
     const onSetKeysAndAddresses = async (keys, addresses) => {
         const {encrypted} = await window.electron.getWalletFileInfo()
-        if (addOrRemove) {
-            if (encrypted && keys.length) {
-                setModal(Modals.Password, {
-                    onCorrectPassword: async (password) => {
-                        await add(keys, addresses, password)
-                    }
-                })
-            } else {
-                await add(keys, addresses)
-            }
-        } else {
-            if (encrypted && keys.length) {
-                setModal(Modals.Password, {
-                    onCorrectPassword: async (password) => {
-                        await remove(keys, addresses, password)
-                    }
-                })
-            } else {
-                await remove(keys, addresses)
-            }
+        const apply = addOrRemove ? add : remove
+        if (encrypted && keys.length) {
+            setModal(Modals.Password, {
+                onCorrectPassword: async (password) => await apply(keys, addresses, password)
+            })
+            return
         }
+        await apply(keys, addresses)
     }
     const add = async (keys, addresses, password) => {
         const wallet = await GetWallet()
