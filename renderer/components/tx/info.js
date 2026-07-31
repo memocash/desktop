@@ -9,6 +9,7 @@ import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
 import {FormatTxError, setTx} from "./direct_tx";
 import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
 import Link from "next/link";
+import {SafeExternalUrl} from "../../../main/common/util/urls";
 
 // Include each referenced output so an arbitrary transaction has enough
 // context to show input addresses/values and calculate its fee, even when
@@ -159,6 +160,14 @@ const Info = () => {
         await window.electron.openTransaction({txHash})
     }
 
+    // Hand the url to the main process instead of letting the click navigate.
+    // This window loads the wallet preload, so a page opened in it would come up
+    // holding the wallet bridge; the browser is where an external link belongs.
+    const externalLink = (e, url) => {
+        e.preventDefault()
+        window.electron.openExternal(url)
+    }
+
     const GetOutputScriptInfo = (script) => {
         const scriptBuffer = Buffer.from(script, "hex")
         try {
@@ -188,9 +197,20 @@ const Info = () => {
                     const likeTxHash = script.substr(10).match(/.{2}/g).reverse().join("")
                     return (<>Memo like: <Link onClick={(e) => txLink(e, likeTxHash)}
                         href={"/tx?txHash=" + likeTxHash}>{ShortHash(likeTxHash)}</Link></>)
-                case "6d0a":
+                case "6d0a": {
+                    // Anyone can write anything here, so the payload only becomes
+                    // a link when it is plain http(s). A javascript: url would
+                    // otherwise run on click - React emits one unchanged - and an
+                    // ordinary looking https: one would navigate this window onto
+                    // someone else's page. Everything else shows as plain text.
                     const picUrl = "" + Buffer.from(script.substr(script.length > 160 ? 12 : 10), "hex")
-                    return (<>Memo profile pic: <Link href={picUrl}>{picUrl}</Link></>)
+                    const safePicUrl = SafeExternalUrl(picUrl)
+                    if (!safePicUrl) {
+                        return "Memo profile pic: " + picUrl
+                    }
+                    return (<>Memo profile pic: <a href={safePicUrl}
+                        onClick={(e) => externalLink(e, safePicUrl)}>{safePicUrl}</a></>)
+                }
                 case "6d0c":
                     let size = parseInt(script.substr(8, 2), 16)
                     size *= 2

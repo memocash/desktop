@@ -15,6 +15,7 @@ module.exports = {
     // the page has no business holding, the way graphql.js already avoids.
     listenDisplayModal: (handler) =>
         ipcRenderer.on(Listeners.DisplayModal, (e, ...args) => handler(...args)),
+    openExternal: (url) => ipcRenderer.send(Handlers.OpenExternal, url),
     openFileDialog: async () => await ipcRenderer.invoke(Handlers.OpenFileDialog),
     rightClickMenu: (address, wallet) => ipcRenderer.invoke(Handlers.RightClickMenu, address, wallet),
     coinsMenu: (hash, index, value, address) => ipcRenderer.invoke(Handlers.CoinsMenu, hash, index, value, address),

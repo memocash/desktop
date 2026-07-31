@@ -2,6 +2,7 @@ const {BrowserWindow, nativeTheme, screen, shell} = require("electron");
 const path = require("path");
 const isDev = require("electron-is-dev");
 const menu = require("../menu");
+const {IsSameOrigin, SafeExternalUrl} = require("../common/util");
 const {ForgetPaths} = require("./keystore");
 const {
     AddTxWindow,
@@ -76,6 +77,49 @@ const ForgetWindowOnClose = (win) => {
     })
 }
 
+// The single point where a url from a renderer reaches the operating system.
+// Anything that isn't plain http(s) is dropped rather than passed on - see
+// SafeExternalUrl for what that keeps out and why.
+const OpenExternalUrl = (url) => {
+    const safeUrl = SafeExternalUrl(url)
+    if (!safeUrl) {
+        console.log("OpenExternalUrl: refusing to open " + url)
+        return
+    }
+    shell.openExternal(safeUrl)
+}
+
+// Both window types load the wallet preload, so a page from anywhere but the app
+// itself would come up holding the wallet bridge. Two things have to be closed
+// for that to be true:
+//
+// - Opening a window (window.open, target="_blank") is always denied. A child
+//   window inherits the preload, and nothing installs these handlers on it, so
+//   allowing one would hand a page the bridge with no checks left. Valid links
+//   go to the user's browser instead.
+// - Navigating away from the app origin is blocked outright. Every legitimate
+//   external link in the app routes through OpenExternalUrl, so a navigation to
+//   somewhere else is either a bug or someone trying to load their own page into
+//   a window that can read the wallet.
+//
+// Applied through one function because these two windows had drifted apart
+// before: only the main window installed an open handler, which left the
+// transaction viewer - the window that renders arbitrary on-chain urls - as the
+// one without it, the way WebPreferences is now shared for the same reason.
+const ApplyWindowSecurity = (win) => {
+    win.webContents.setWindowOpenHandler(({url}) => {
+        OpenExternalUrl(url)
+        return {action: "deny"}
+    })
+    win.webContents.on("will-navigate", (e, url) => {
+        if (IsSameOrigin(url, AppUrl + "/")) {
+            return
+        }
+        e.preventDefault()
+        console.log("will-navigate: blocked navigation to " + url)
+    })
+}
+
 const CreateWindow = async () => {
     const {getCursorScreenPoint, getDisplayNearestPoint} = screen
     const currentScreen = getDisplayNearestPoint(getCursorScreenPoint())
@@ -96,10 +140,7 @@ const CreateWindow = async () => {
         webPreferences: WebPreferences,
         icon: AppIcon,
     })
-    win.webContents.setWindowOpenHandler(({url}) => {
-        shell.openExternal(url);
-        return {action: "deny"}
-    });
+    ApplyWindowSecurity(win)
     SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
     SetWindow(win.webContents.id, win)
     ForgetWindowOnClose(win)
@@ -118,6 +159,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         webPreferences: WebPreferences,
         icon: AppIcon,
     })
+    ApplyWindowSecurity(win)
     AddTxWindow(winId, win.webContents.id)
     SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
     SetWindow(win.webContents.id, win)
@@ -156,6 +198,7 @@ module.exports = {
     BackgroundColor,
     CopyPublicToFileWindows,
     CopyWalletToTxWindows,
+    OpenExternalUrl,
     GetMenu,
     GetNetworkOption,
     GetStorage,

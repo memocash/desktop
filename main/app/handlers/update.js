@@ -1,9 +1,9 @@
-const {ipcMain, app, shell, BrowserWindow, Notification} = require("electron");
+const {ipcMain, app, BrowserWindow, Notification} = require("electron");
 const fs = require("fs");
 const path = require("path");
 const {Dir, Handlers, Listeners, Modals} = require("../../common/util");
 const {CompareVersions, PickAsset, PickLatestRelease} = require("../../common/util/release");
-const {IsWalletWindow} = require("../window");
+const {IsWalletWindow, OpenExternalUrl} = require("../window");
 
 // Releases are published to GitHub by .github/workflows/release.yml, so the
 // releases API is the source of truth for what is available - the same list the
@@ -105,7 +105,7 @@ const ShowUpdate = (result) => {
     const windows = BrowserWindow.getAllWindows().filter((win) => IsWalletWindow(win.webContents.id))
     const win = windows.find((win) => win.isFocused()) || windows[0]
     if (!win) {
-        shell.openExternal(result.releaseUrl || ReleasesPageUrl)
+        OpenExternalUrl(result.releaseUrl || ReleasesPageUrl)
         return
     }
     if (win.isMinimized()) {

@@ -7,6 +7,7 @@ const {
     SetStorage,
     GetWindow,
     GetWallet,
+    OpenExternalUrl,
     SetNetworkOption,
     GetNetworkOption,
     GetRuntimeNetworkOption,
@@ -75,6 +76,10 @@ const WindowHandlers = () => {
             Menu.setApplicationMenu(GetMenu(win.webContents.id))
         }
     })
+    // Renderers ask for a link to be opened rather than navigating to it, so the
+    // protocol check happens in the main process where the renderer cannot skip
+    // it. The url is untrusted: on-chain data reaches this.
+    ipcMain.on(Handlers.OpenExternal, (e, url) => OpenExternalUrl(url))
     ipcMain.handle(Handlers.OpenFileDialog, async (e) => {
         const win = GetWindow(e.sender.id)
         const {canceled, filePaths} = await dialog.showOpenDialog(win, {defaultPath: Dir.DefaultPath})

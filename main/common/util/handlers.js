@@ -28,6 +28,7 @@ const Handlers = {
     RightClickMenu: "right-click-menu",
     CoinsMenu: "coins-menu",
     BrowserWindowFocus: "browser-window-focus",
+    OpenExternal: "open-external",
     OpenFileDialog: "open-file-dialog",
     ShowMessageDialog: "show-message-dialog",
     ShowNotification: "show-notification",
