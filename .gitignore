@@ -10,3 +10,4 @@ bun.lock
 /.claude
 /.idea
 /.agents
+/main/preload.spend.bundle.cjs

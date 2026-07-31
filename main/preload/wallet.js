@@ -1,5 +1,6 @@
 const {ipcRenderer} = require("electron");
-const {Handlers} = require("../common/util/handlers");
+const {Handlers, Listeners} = require("../common/util/handlers");
+const {WalletErrors} = require("../common/util/errors");
 
 // Nothing here touches the filesystem or a cipher. Each call names an operation
 // and main decides whether to perform it - see main/app/keystore.js.
@@ -22,8 +23,29 @@ const keepSessionKey = ({sessionKey: key, ...rest}) => {
     }
     return rest
 }
+// Setting a spend budget opens one, so these replies carry a session key like
+// unlocking does. Every other update replies without one and leaves the current
+// key alone.
 const updateWallet = (op) => async (values, password) =>
-    ipcRenderer.invoke(Handlers.UpdateWallet, op, values, password)
+    keepSessionKey(await ipcRenderer.invoke(Handlers.UpdateWallet, op, values, password))
+
+// Main asks this window to make a spend on behalf of a preview window it opened,
+// which has no key of its own. It is the same call this window makes for itself,
+// on the same key and against the same budget - only the result travels back, so
+// the key never leaves this preload. Registered here rather than on the bridge,
+// where the page could reach it.
+ipcRenderer.on(Listeners.SignOnSession, async (e, {id, request}) => {
+    let result
+    try {
+        result = keepSessionKey(
+            await ipcRenderer.invoke(Handlers.SignTransaction, request, sessionKey))
+    } catch (error) {
+        // Whatever went wrong, the window waiting on this is waiting on a person
+        // and has no other way to find out. It gets an answer.
+        result = {error: error && error.message ? error.message : String(error)}
+    }
+    ipcRenderer.send(Handlers.SignOnSessionResult, {id, result})
+})
 
 module.exports = {
     addAddresses: updateWallet("addAddresses"),
@@ -52,11 +74,21 @@ module.exports = {
     },
     walletLoaded: () => ipcRenderer.send(Handlers.WalletLoaded),
     saveNetworkConfig: async (networkConfig) => ipcRenderer.invoke(Handlers.SaveNetworkConfig, networkConfig),
-    // With no password offered, the session key stands in for one - main decides
-    // whether the budget covers this transaction, and says so if it doesn't.
-    signTransaction: async (request, password) => keepSessionKey(
-        await ipcRenderer.invoke(Handlers.SignTransaction, request, password,
-            password === undefined || password === null ? sessionKey : undefined)),
+    // No password crosses from the page: main signs on the session if the budget
+    // covers it, and otherwise asks in a window of its own. What this offers is a
+    // key it cannot read, and what it learns is whether that was enough.
+    //
+    // A preview window's preload never had a key - the key belongs to the
+    // document that unlocked the wallet, and that is a different one - so a spend
+    // it cannot authorise is offered to main to carry to the window that can.
+    signTransaction: async (request) => {
+        const result = keepSessionKey(
+            await ipcRenderer.invoke(Handlers.SignTransaction, request, sessionKey))
+        if (sessionKey || result.error !== WalletErrors.PasswordRequired) {
+            return result
+        }
+        return ipcRenderer.invoke(Handlers.SignOnParentSession, request)
+    },
     getNetworkConfig: async () => ipcRenderer.invoke(Handlers.GetNetworkConfig),
     getWindowNetwork: async () => await ipcRenderer.invoke(Handlers.GetWindowNetwork),
     setWindowNetwork: async (network) => await ipcRenderer.invoke(Handlers.SetWindowNetwork, network),

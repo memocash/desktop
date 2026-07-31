@@ -4,7 +4,7 @@ const bitcoin = require("@bitcoin-dot-com/bitcoincashjs2-lib")
 const {mnemonicToSeedSync} = require("bip39")
 const {BIP32Factory} = require("bip32")
 const ecc = require("tiny-secp256k1")
-const {KeyFinder, MaxFeeRate, SignTransaction} = require("./transaction_signer")
+const {KeyFinder, MaxFeeRate, PreviewSpend, SignTransaction} = require("./transaction_signer")
 
 const bip32 = BIP32Factory(ecc)
 const key = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 7)})
@@ -417,4 +417,36 @@ test("refuses negative fees and excessive fee rates", async () => {
 test("refuses watch-only wallets", async () => {
     await assert.rejects(SignTransaction({...request(), wallet: {addresses: [address]}}),
         {message: /watch-only/})
+})
+
+test("the preview reads the address list where signing reads the keys", async () => {
+    // An address the wallet cannot sign for, listed as if it were the wallet's
+    // own: the preview has nothing but the list to go on and calls the output
+    // change, while signing produces no key for it and calls it a payment. This
+    // is the disagreement main/app/spend_match.js exists to catch.
+    const foreign = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 3)}).getAddress()
+    const txb = new bitcoin.TransactionBuilder()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
+        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
+    txb.addOutput(bitcoin.address.toOutputScript(foreign), 9000)
+    const listed = {
+        raw: txb.__build(true).toBuffer().toString("hex"),
+        inputs: [{prev_hash: prevHash, prev_index: 1}],
+        wallet: {keys: [key.toWIF()], addresses: [address, foreign]},
+        getOutput: async () => ({
+            hash: prevHash, index: 1, address, value: 10000,
+            script: bitcoin.address.toOutputScript(address).toString("hex"),
+        }),
+    }
+    const preview = await PreviewSpend(listed)
+    assert.deepEqual(preview.payments, [])
+    assert.equal(preview.fee, 1000)
+    let confirmed
+    await SignTransaction({...listed, confirmSpend: async (spend) => {
+        confirmed = spend
+        return true
+    }})
+    assert.equal(confirmed.payments.length, 1)
+    assert.equal(confirmed.payments[0].address, foreign)
+    assert.equal(confirmed.payments[0].value, 9000)
 })

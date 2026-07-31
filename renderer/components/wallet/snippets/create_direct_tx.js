@@ -73,7 +73,7 @@ const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requir
     if (change > 0) {
         outputStrings.push(address.toOutputScript(changeAddress).toString("hex") + ":" + change)
     }
-    await DirectTx(inputs, outputStrings, beatHash, setModal, onDone, requirePassword)
+    await DirectTx(inputs, outputStrings, beatHash, setModal, onDone)
 }
 
 export {

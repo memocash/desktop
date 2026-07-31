@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <!-- Loaded from disk by main, never over app:// or http, and allowed to load
+         nothing else. Everything on this page is written here; none of it comes
+         from the renderer or the network. -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none'; style-src 'unsafe-inline'; script-src 'none'"/>
+    <title>Confirm send</title>
+    <style>
+        :root {
+            --bg: #eeeeee;
+            --surface: #ffffff;
+            --text: #202020;
+            --text-muted: #606060;
+            --border: #c8c8c8;
+            --danger: #b00020;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1b1c1e;
+                --surface: #26282b;
+                --text: #e6e6e6;
+                --text-muted: #a0a0a0;
+                --border: #3c3f43;
+                --danger: #ff6b6b;
+            }
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-size: 13px;
+            height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 15px;
+            margin: 0 0 10px;
+        }
+
+        p {
+            margin: 0 0 10px;
+        }
+
+        .muted {
+            color: var(--text-muted);
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        /* The destinations take the space between the heading and the rest, so
+           they fill the window rather than sitting in a block at the top of it. */
+        #spend {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            flex: 1 1 auto;
+        }
+
+        .hidden,
+        #spend.hidden,
+        #password-step.hidden {
+            display: none;
+        }
+
+        label {
+            color: var(--text-muted);
+        }
+
+        /* The destinations are the point of the window, so they get the room and
+           scroll on their own rather than pushing the buttons off the bottom. */
+        .payments {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            flex: 1 1 auto;
+            margin-bottom: 10px;
+            min-height: 0;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        .payment {
+            margin-bottom: 10px;
+        }
+
+        .payment:last-child {
+            margin-bottom: 0;
+        }
+
+        .address {
+            font-family: ui-monospace, monospace;
+            word-break: break-all;
+        }
+
+        .amount {
+            font-weight: bold;
+        }
+
+        input[type="password"] {
+            box-sizing: border-box;
+            font-size: 13px;
+            padding: 4px;
+            width: 100%;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        button {
+            font-size: 13px;
+            min-width: 90px;
+            padding: 5px 12px;
+        }
+    </style>
+</head>
+<body>
+<h1 id="heading">Confirm send</h1>
+
+<p id="mismatch" class="error hidden">
+    This is not what you were shown. The wallet's address list disagreed with its
+    keys, and these are the payments the keys establish. Nothing has been signed.
+</p>
+
+<div id="spend">
+    <p id="summary"></p>
+    <div class="payments" id="payments"></div>
+    <p class="muted" id="fee"></p>
+</div>
+
+<div id="password-step">
+    <p><label for="password">Wallet password:</label></p>
+    <p><input id="password" type="password" autofocus/></p>
+    <p id="wrong" class="error hidden">Incorrect password.</p>
+</div>
+
+<div class="buttons">
+    <button id="cancel" type="button">Cancel</button>
+    <button id="ok" type="button">Continue</button>
+</div>
+<!-- No script of its own: script-src is 'none' and everything on this page is
+     driven from the preload, which the page has no way to reach or change. -->
+</body>
+</html>

@@ -178,10 +178,12 @@ const validateSlp = (tx, authoritative) => {
 // to destroy coins rather than to send them.
 //
 // Staying in the wallet means main can produce the key, not that the address
-// appears in the wallet's address lists. Those lists are public metadata that a
-// renderer updates without a password, so treating them as ownership would let a
-// compromised one list an address it controls and have its own payments
-// classified as change.
+// appears in the wallet's address lists. Those lists are public metadata: main
+// refuses to add to them on a renderer's word once a wallet holds keys, but a
+// renderer can still take entries out, and in neither direction are they proof
+// of anything. A key is. The preview below does read them, because nothing can
+// be derived until the wallet is open, and what it shows is checked against what
+// this establishes before any signature is granted.
 const outsidePayments = (tx, findKey, tokenOutputs) => {
     const payments = []
     for (let index = 0; index < tx.outs.length; index++) {
@@ -210,10 +212,13 @@ const outsidePayments = (tx, findKey, tokenOutputs) => {
     return payments
 }
 
-const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, authorizeSpend, confirmSpend}) => {
-    if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
-        throw new Error("watch-only-wallet")
-    }
+// What a transaction takes out of the wallet and where it takes it, read from
+// the authoritative prevout values rather than from anything the caller offered
+// alongside them. Shared by signing and by the preview below, so the figures a
+// person is shown and the ones a signature is granted against are worked out by
+// the same code and can only differ where their answer to "is this address the
+// wallet's own" differs.
+const analyzeSpend = async ({raw, inputs, wallet, getOutput, findKey}) => {
     if (!Array.isArray(inputs) || !inputs.length) {
         throw new Error("transaction has no inputs")
     }
@@ -223,7 +228,6 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, author
     }
 
     const owned = new Set(walletAddresses(wallet))
-    const findKey = keyFinder(wallet)
     const authoritative = []
     const seenInputs = new Set()
     let inputValue = 0
@@ -295,6 +299,31 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, author
     // transaction that isn't going to be signed.
     const outgoing = payments.reduce((total, {value}) => total + value, 0) + fee
     const carriesTokens = payments.some(({tokenAmount, baton}) => !!tokenAmount || baton)
+    return {tx, authoritative, fee, payments, outgoing, carriesTokens}
+}
+
+// The same reading of the transaction with the public address lists standing in
+// for the keys, for showing someone what they are about to approve before the
+// wallet has been decrypted - there is no seed to derive from until a password
+// is in. A wallet that can sign derives its own addresses and main refuses to
+// add any on a renderer's word, so the lists can only fall short of what the
+// keys prove, never reach past it. Signing checks anyway: what comes back here
+// is shown, and what the keys say is what the signature is granted against.
+const PreviewSpend = async ({raw, inputs, wallet, getOutput}) => {
+    const owned = new Set(walletAddresses(wallet))
+    const {fee, payments} = await analyzeSpend({
+        raw, inputs, wallet, getOutput, findKey: (address) => owned.has(address),
+    })
+    return {fee, payments}
+}
+
+const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, authorizeSpend, confirmSpend}) => {
+    if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
+        throw new Error("watch-only-wallet")
+    }
+    const {tx, authoritative, fee, payments, outgoing, carriesTokens} = await analyzeSpend({
+        raw, inputs, wallet, getOutput, findKey: keyFinder(wallet),
+    })
     if (typeof authorizeSpend === "function" && !authorizeSpend({outgoing, carriesTokens})) {
         throw new Error(WalletErrors.PasswordRequired)
     }
@@ -346,5 +375,6 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, author
 module.exports = {
     KeyFinder: keyFinder,
     MaxFeeRate,
+    PreviewSpend,
     SignTransaction,
 }

@@ -44,6 +44,16 @@ const AddTxWindow = (parentId, winId, win) => {
 
 const GetTxWindows = (parentId) => (txWindows[parentId] || []).map(({win}) => win)
 
+// The wallet window a transaction window was opened from, or undefined for a
+// window that is not a transaction window. A preview cannot spend on the budget
+// itself - the session key stays in the preload of the window that unlocked the
+// wallet - so a spend it asks for is carried back to the window that holds it.
+const TxWindowParent = (winId) => {
+    const found = Object.entries(txWindows).find(([, children]) =>
+        children.some((child) => child.winId === winId))
+    return found ? Number(found[0]) : undefined
+}
+
 // Everything a window put here goes when the window does. A transaction window
 // also has to come out of the list held under the window it was opened from,
 // which is not keyed by its own id: without that, opening and closing previews
@@ -94,4 +104,5 @@ module.exports = {
     SetStorage,
     SetWallet,
     SetWindow,
+    TxWindowParent,
 }

@@ -20,7 +20,7 @@ const Prefix = {
     "6d22": "LinkRevoke",
     "6d26": "SetAlias",
 }
-const setTx = async (outer_transaction, setModal, password) => {
+const setTx = async (outer_transaction, setModal) => {
     const wallet = await GetWallet()
     if (!wallet.canSign) {
         window.electron.showMessageDialog("Watch only wallet does not have private key and cannot sign.")
@@ -31,21 +31,14 @@ const setTx = async (outer_transaction, setModal, password) => {
         inputs: outer_transaction.outer_txInfo.inputs.map(({prev_hash, prev_index}) =>
             ({prev_hash, prev_index})),
         beatHash: outer_transaction.outer_beatHash.current,
-    }, password)
+    })
     if (error) {
-        // Declining main's send confirmation isn't a failure to report back: the
-        // person just said no, and main has already told them what they declined.
+        // Cancelling main's prompt isn't a failure to report back: the person
+        // just said no, to a question this page never saw them being asked.
         if (error === WalletErrors.SpendCancelled) {
             return WalletErrors.SpendCancelled
         }
-        // The session's budget doesn't cover this one. Nothing has gone wrong;
-        // the caller asks for the password and comes back.
-        if (error === WalletErrors.PasswordRequired) {
-            return WalletErrors.PasswordRequired
-        }
-        if (error !== WalletErrors.WrongPassword) {
-            window.electron.showMessageDialog("Unable to sign transaction: " + error)
-        }
+        window.electron.showMessageDialog("Unable to sign transaction: " + error)
         return false
     }
     const buf = Buffer.from(value.raw, "hex")
@@ -80,8 +73,8 @@ const pushTx = async (outer_txInfo) => {
     console.log("Broadcast successful")
 }
 
-const setAndPushTx = async (outer_transaction, setModal, onDone, password) => {
-    const signed = await setTx(outer_transaction, setModal, password)
+const setAndPushTx = async (outer_transaction, setModal, onDone) => {
+    const signed = await setTx(outer_transaction, setModal)
     if (signed !== true) {
         return signed
     }
@@ -96,7 +89,7 @@ const setAndPushTx = async (outer_transaction, setModal, onDone, password) => {
     }
     return true
 }
-const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePassword) => {
+const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
     let outer_transaction = {
         outer_size: 0,
         outer_txInfo: {
@@ -182,26 +175,10 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone, requirePass
         outer_transaction.outer_fee = fee
         outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
         outer_transaction.outer_beatHash.current = beatHash
-        // No password to begin with: an unencrypted wallet needs none, and an
-        // encrypted one may have a spend budget with room left in it. Main is
-        // the one that decides, and asks for a password when it has to.
-        const attempt = await setAndPushTx(outer_transaction, setModal, onDone)
-        if (attempt !== WalletErrors.PasswordRequired) {
-            return
-        }
-        setModal(Modals.Password, {
-            onCorrectPassword: async (password) => {
-                const result = await setAndPushTx(outer_transaction, setModal, onDone, password)
-                if (result === WalletErrors.SpendCancelled) {
-                    // The password was fine; the send was declined. Close rather
-                    // than accusing them of mistyping it.
-                    setModal(Modals.None)
-                    return true
-                }
-                return result
-            },
-            authenticate: false,
-        })
+        // No password crosses from here at all. Main signs on the session if the
+        // budget covers it, and otherwise asks for the password and confirms the
+        // destinations in a window of its own, which this page cannot reach.
+        await setAndPushTx(outer_transaction, setModal, onDone)
     }
 }
 export {DirectTx, setTx, pushTx, FormatTxError}

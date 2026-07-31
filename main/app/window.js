@@ -19,6 +19,7 @@ const {
     SetStorage,
     SetWallet,
     SetWindow,
+    TxWindowParent,
 } = require("./window_state");
 
 // Dev loads the Next dev server; prod loads the static export served over the
@@ -148,4 +149,5 @@ module.exports = {
     SetWallet,
     CreateWindow,
     CreateTxWindow,
+    TxWindowParent,
 }

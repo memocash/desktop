@@ -46,6 +46,9 @@ const Handlers = {
     GetWalletFileInfo: "get-wallet-file-info",
     SaveNetworkConfig: "save-network-config",
     SignTransaction: "sign-transaction",
+    SignOnParentSession: "sign-on-parent-session",
+    SignOnSessionResult: "sign-on-session-result",
+    SpendPromptReply: "spend-prompt-reply",
     UnlockWallet: "unlock-wallet",
     UpdateWallet: "update-wallet",
     WalletFileIsEncrypted: "wallet-file-is-encrypted",
@@ -89,6 +92,8 @@ const Handlers = {
 
 const Listeners = {
     DisplayModal: "display-modal",
+    SignOnSession: "sign-on-session",
+    SpendPromptStep: "spend-prompt-step",
     SelectTab: "select-tab",
     ToggleTab: "toggle-tab",
     GraphQLClosePrefix: "graphql-close-",

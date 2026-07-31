@@ -89,6 +89,46 @@
     margin-left: 20px;
 }
 
+/* Grouped preference rows for the settings dialog. Settings that live in the
+   wallet file wait for Save while the app-wide ones apply as they change, so
+   each group says which it is rather than leaving the Save button ambiguous. */
+.section {
+    margin-bottom: 20px;
+}
+
+.sectionTitle {
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 14px;
+    margin: 0 0 10px;
+    padding-bottom: 5px;
+}
+
+.sectionTitle span {
+    color: var(--text-faint);
+    font-weight: normal;
+    float: right;
+}
+
+.option {
+    margin-bottom: 10px;
+}
+
+.option:last-child {
+    margin-bottom: 0;
+}
+
+/* Satoshi amounts are short, and a full-width number input reads as if a long
+   value belongs in it. */
+.option input[type="number"] {
+    width: 100px;
+}
+
+/* Indented to line up with the label beside a checkbox rather than its box. */
+.hint {
+    color: var(--text-faint);
+    margin: 3px 0 0 20px;
+}
+
 .flex {
     align-items: center;
     display: flex;

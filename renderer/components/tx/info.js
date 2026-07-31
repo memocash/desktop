@@ -6,11 +6,7 @@ import ShortHash from "../util/txs";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
 import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
-import styles from "../../styles/modal.module.css"
-import Password from "../modal/modals/password";
-import Modal from "../modal/modal";
 import {FormatTxError, setTx} from "./direct_tx";
-import {WalletErrors} from "../../../main/common/util";
 import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
 import Link from "next/link";
 
@@ -143,7 +139,6 @@ const Info = () => {
     const [fee, feeRef, setFee] = useReferredState(0)
     const [feeRate, setFeeRate] = useState(0)
     const transactionIdEleRef = useRef()
-    const [showPasswordForSign, setShowPasswordForSign] = useState(false)
     const [_, beatHashRef, setBeatHash] = useReferredState("")
     //take this prefix table and re-write it with keys and values swapped
     const Prefix = {
@@ -415,19 +410,10 @@ const Info = () => {
         }
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
+    // Nothing is asked for here. Main signs on the session if the budget covers
+    // it, and otherwise asks for the password and confirms the destinations in a
+    // window of its own - this page never handles either.
     const clickSign = async () => {
-        // Try without a password: unencrypted wallets never need one, and an
-        // encrypted one may have budget left in its session. Main asks when it
-        // has to.
-        if (await onCorrectPassword() === WalletErrors.PasswordRequired) {
-            setShowPasswordForSign(true)
-        }
-    }
-    const onClose = () => {
-        setShowPasswordForSign(false)
-    }
-    const onCorrectPassword = async (password) => {
-        setShowPasswordForSign(false)
         const feeRate = feeRef.current / size
         let outer_transaction = {
             outer_size: size,
@@ -438,15 +424,11 @@ const Info = () => {
             outer_feeRate: feeRate
         }
 
-        const signed = await setTx(outer_transaction, null, password)
+        const signed = await setTx(outer_transaction, null)
         if (signed !== true) {
-            // A declined send confirmation leaves the password prompt closed and
-            // the transaction unsigned, with nothing to correct. A budget that
-            // doesn't reach is passed back so the caller can ask.
-            if (signed === WalletErrors.PasswordRequired) {
-                return signed
-            }
-            return signed === WalletErrors.SpendCancelled
+            // A cancelled send leaves the transaction unsigned, with nothing to
+            // correct and nothing to report - main has already been told no.
+            return
         }
         console.log(outer_transaction)
         txInfoRef.current = outer_transaction.outer_txInfo
@@ -455,7 +437,6 @@ const Info = () => {
         transactionIdEleRef.current.value = outer_transaction.outer_transactionIDEleRef.value
         setFeeRate(feeRate)
         setSigned(true)
-        return true
     }
     const clickBroadcast = async () => {
         if (!txInfoRef.current.raw) {
@@ -546,11 +527,6 @@ const Info = () => {
                 <span className={styleTx.footerRight}>
                         <button onClick={clickClose}>Close</button></span>
             </div>
-            {showPasswordForSign && <Modal onClose={onClose}>
-                <div className={styles.root}>
-                    <Password onClose={onClose} onCorrectPassword={onCorrectPassword} authenticate={false}/>
-                </div>
-            </Modal>}
         </div>
     )
 }

@@ -103,7 +103,7 @@ const finishSlpTx = async ({wallet, utxos, inputs, totalInput, outputs, setModal
     if (preview) {
         await window.electron.openPreviewSend({inputs, outputs: outputStrings, beatHash: ""})
     } else {
-        await DirectTx(inputs, outputStrings, "", setModal, onDone, true)
+        await DirectTx(inputs, outputStrings, "", setModal, onDone)
     }
     return true
 }

@@ -8,7 +8,7 @@
   "repository": "github.com/memocash/desktop",
   "scripts": {
     "build:preload": "node scripts/build-preload.js",
-    "prestart": "node scripts/build-preload.js",
+    "prestart": "node scripts/build-preload.js && node scripts/clean-stale-next.js",
     "start": "electron .",
     "test": "node --test \"main/**/*.test.js\"",
     "create": "npm run build && electron-packager . Memo --overwrite --icon ./main/assets/memo-logo-small.icns --out dist",

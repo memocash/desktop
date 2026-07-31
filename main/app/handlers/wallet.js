@@ -1,17 +1,20 @@
-const {dialog, ipcMain} = require("electron");
+const {ipcMain} = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
 const {Worker} = require("worker_threads");
-const {Dir, Handlers, WalletErrors} = require("../../common/util");
+const {Dir, Handlers, Listeners, WalletErrors} = require("../../common/util");
 const {GetOutput, GetWalletInfo} = require("../../data/tables");
 const menu = require("../../menu");
 const keystore = require("../keystore");
 const {Serialize} = require("../serial");
+const {OpenSpendPrompt} = require("../spend_prompt");
+const {CoversSpend} = require("../spend_match");
+const {CreateSignRelay} = require("../sign_relay");
 const session = require("../session");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
-const {KeyFinder, SignTransaction} = require("../transaction_signer");
-const {SetWallet, GetWallet, SetMenu, GetWindow, IsOpen, CreateWindow, eConf} = require("../window");
+const {KeyFinder, PreviewSpend, SignTransaction} = require("../transaction_signer");
+const {SetWallet, GetWallet, SetMenu, GetWindow, IsOpen, CreateWindow, TxWindowParent, eConf} = require("../window");
 
 // Runs key/address derivation in a worker thread so the CPU-intensive
 // secp256k1 work never blocks the main process or the renderer UI. The worker
@@ -270,6 +273,21 @@ const updateWallet = async (winId, op, values, password) => {
             })
         }
     })
+    // The new budget opens here, on the password that was just proved to set it.
+    // Waiting for the next spend to ask instead would charge the same password
+    // twice for one decision: once to say how much may go without it, and again
+    // for the first send under that limit. A threshold of zero opens nothing,
+    // which is how it goes back to asking every time.
+    if (!changingThreshold || !encrypted) {
+        return {}
+    }
+    const updated = GetWallet(winId)
+    if (!updated) {
+        return {}
+    }
+    const {sessionKey, session: sealed} = openSession(updated, password)
+    rememberWallet(winId, {session: sealed})
+    return {sessionKey}
 }
 
 const readForOperation = async (winId, password) => {
@@ -327,56 +345,11 @@ const removePrivateKey = async (winId, address, password) => {
     rememberWallet(winId, {...state, wallet: keystore.PublicWallet(stored)})
 }
 
-const satoshis = (value) => value.toLocaleString("en-US") + " satoshis"
-
-// Asked by main, in a window the renderer cannot draw over or dismiss, before
-// anything that pays an address the wallet doesn't own. The password gate alone
-// can't cover this: the renderer draws the password prompt, so it chooses the
-// moment to ask, and once it has a password nothing in the signer cares where
-// the outputs point. This is where the person at the keyboard sees where their
-// money is actually going. Cancel is the default button, so a stray return key
-// declines rather than sends.
-// A token output moves value the satoshis say nothing about, and a mint baton
-// hands over the authority to create more of the token, so both are named ahead
-// of the dust that carries them.
-const describePayment = ({address, value, tokenAmount, baton}) => {
-    const carried = []
-    if (tokenAmount) {
-        carried.push(tokenAmount + " tokens")
-    }
-    if (baton) {
-        carried.push("the mint baton, which is the authority to mint more of this token")
-    }
-    carried.push(satoshis(value))
-    return carried.join(" plus ") + "\nto " + (address || "an unrecognized script")
-}
-
-const confirmSpend = (e) => async ({payments, fee}) => {
-    const total = payments.reduce((sum, {value}) => sum + value, 0)
-    const destinations = payments.map(describePayment).join("\n\n")
-    const tokens = payments.some(({tokenAmount, baton}) => tokenAmount || baton)
-    const {response} = await dialog.showMessageBox(GetWindow(e.sender.id), {
-        type: "question",
-        title: "Confirm send",
-        message: (tokens ? "Send tokens and " : "Send ") + satoshis(total) +
-            " out of this wallet?",
-        detail: destinations + "\n\nNetwork fee: " + satoshis(fee),
-        buttons: ["Cancel", "Send"],
-        defaultId: 0,
-        cancelId: 0,
-        noLink: true,
-    })
-    return response === 1
-}
-
-// The password for this signature: the one that was typed, or the session's, if
-// the caller can produce the key that opens it. A session key that doesn't open
-// the envelope is treated exactly like having no session - the caller is asked
-// for the password rather than told which half was wrong.
-const spendPassword = (winId, password, sessionKey) => {
-    if (password !== undefined && password !== null) {
-        return password
-    }
+// The password behind this signature, if the caller can produce the key that
+// opens the session holding it. A key that doesn't open the envelope is treated
+// exactly like having no session - the caller is asked for the password rather
+// than told which half was wrong.
+const spendPassword = (winId, sessionKey) => {
     const state = GetWallet(winId)
     if (!state.encrypted) {
         return undefined
@@ -413,57 +386,186 @@ const chargeSession = (winId, outgoing) => {
     })
 }
 
-// One signature at a time per window. The budget is checked before the
-// confirmation dialog and charged after it, and a dialog waits on a person, so
-// without this two sends can both be told there is room and both be signed -
-// each of them inside the budget, together well past it. Queued per window
-// rather than globally, so one window's open dialog doesn't hold up another's.
-const signTransaction = async (e, request, password, sessionKey) =>
-    Serialize("sign:" + e.sender.id, () => signOne(e, request, password, sessionKey))
+// A preview window has no session key of its own: the key lives in the preload
+// of the window that unlocked the wallet, and a new window gets a new preload.
+// Moving the key here would put both halves in main for the length of the hop,
+// which is the one thing the split exists to prevent, so the request travels to
+// the parent window's preload instead and comes back signed. Main relays both
+// ways and never holds the key.
+//
+// This grants the preview nothing its parent didn't already have: the budget is
+// the parent's, checked and charged against the parent's session, and a payment
+// leaving the wallet is still confirmed - over the parent window, since that is
+// whose session pays for it.
+//
+// A parent that cannot answer - closed, or reloaded and no longer holding the
+// listener - leaves the preview to ask for itself, in main's own window. The one
+// thing that must not happen is the preview waiting on an answer that is never
+// coming, so every way out of here settles it.
+const relay = CreateSignRelay()
 
-const signOne = async (e, request, password, sessionKey) => {
+const signOnParentSession = async (e, request) => {
+    const parentId = TxWindowParent(e.sender.id)
+    const parent = parentId === undefined ? undefined : GetWindow(parentId)
+    if (!parent || parent.isDestroyed()) {
+        return signHere(e, request)
+    }
+    // Held rather than reached for again: a destroyed window throws on the way to
+    // its webContents, and the listeners still have to come off.
+    const contents = parent.webContents
+    let abandon
+    const relayed = await relay.Ask({
+        owner: parentId,
+        unanswered: undefined,
+        dispatch: (id) => {
+            // A prompt waits on a person, so there is no useful timeout here.
+            // What ends the wait early is the parent's document going away: a
+            // closed window, or a reload that takes the listener with it.
+            abandon = () => relay.Abandon(id, undefined)
+            contents.once("destroyed", abandon)
+            contents.once("did-start-loading", abandon)
+            contents.send(Listeners.SignOnSession, {id, request})
+        },
+        release: () => {
+            contents.off("destroyed", abandon)
+            contents.off("did-start-loading", abandon)
+        },
+    })
+    return relayed === undefined ? signHere(e, request) : relayed
+}
+
+// The reply comes from the preload the request was sent to, and only from there.
+const signOnSessionResult = (e, {id, result}) =>
+    relay.Answer({owner: e.sender.id, id, result})
+
+// One signature at a time per window. The budget is checked before anyone is
+// asked anything and charged after the signature, and a prompt waits on a
+// person, so without this two sends can both be told there is room and both be
+// signed - each of them inside the budget, together well past it. Queued per
+// window rather than globally, so one window's open prompt doesn't hold up
+// another's.
+const signTransaction = async (e, request, sessionKey) =>
+    Serialize("sign:" + e.sender.id, () => signOne(e, request, sessionKey))
+
+// Signing for a window with nowhere to relay to, which asks in main's own window
+// rather than offering the request back to a parent that has already declined it
+// or gone.
+const signHere = async (e, request) =>
+    Serialize("sign:" + e.sender.id, () => signOne(e, request, undefined, false))
+
+// Signing what the renderer built, on one of two authorities: a session with
+// budget left, which asks nobody anything, or a password typed into main's own
+// window, which also confirms where the money is going. Which one applies is
+// decided here and never by the caller - the renderer offers a session key it
+// cannot read and finds out whether that was enough.
+const signOne = async (e, request, sessionKey, mayRelay = true) => {
     const winId = e.sender.id
     try {
-        const spending = spendPassword(winId, password, sessionKey)
         const state = GetWallet(winId)
-        if (state.encrypted && spending === undefined) {
-            return {error: WalletErrors.PasswordRequired}
-        }
-        // Spending on the session's authority is metered; spending on a password
-        // that was just typed is not. The check happens inside the signer, where
-        // the outgoing amount is known from the authoritative input values and
-        // before any key work or any confirmation - nobody should be asked to
-        // approve a send that is about to be refused.
-        const onSession = (password === undefined || password === null) && state.encrypted
-        const {wallet} = await readForOperation(winId, spending)
-        const value = await SignTransaction({
+        const sign = async ({wallet, metered, confirmSpend}) => SignTransaction({
             raw: request.raw,
             inputs: request.inputs,
             beatHash: request.beatHash,
             wallet,
             getOutput: (hash, index) => GetOutput(eConf(e), hash, index),
-            authorizeSpend: onSession ? (spend) => withinBudget(winId, spend) : undefined,
-            confirmSpend: confirmSpend(e),
+            authorizeSpend: metered ? (spend) => withinBudget(winId, spend) : undefined,
+            confirmSpend,
         })
-        if (onSession) {
-            chargeSession(winId, value.outgoing)
-            return {ok: true, value}
+        // Nothing is ever asked of a wallet with no password, so by the same rule
+        // nothing is confirmed for one either.
+        if (!state.encrypted) {
+            return {ok: true, value: await sign({
+                wallet: (await readForOperation(winId)).wallet,
+                confirmSpend: async () => true,
+            })}
         }
-        if (password === undefined || password === null) {
-            return {ok: true, value}
+        const spending = spendPassword(winId, sessionKey)
+        if (spending !== undefined) {
+            try {
+                // Inside the budget is exactly what the budget means: it goes
+                // through with nothing shown. The check happens in the signer,
+                // where the outgoing amount is known from the authoritative input
+                // values rather than from anything the renderer said.
+                const value = await sign({
+                    wallet: (await readForOperation(winId, spending)).wallet,
+                    metered: true,
+                    confirmSpend: async () => true,
+                })
+                chargeSession(winId, value.outgoing)
+                return {ok: true, value}
+            } catch (error) {
+                if (error.message !== WalletErrors.PasswordRequired) {
+                    throw error
+                }
+                // Over the budget. Nothing has been signed and nobody has been
+                // asked anything yet, so fall through and ask properly.
+            }
+        } else if (mayRelay && TxWindowParent(winId) !== undefined) {
+            // A preview window holds no key, but the window it was opened from
+            // may hold one with budget to spare. Let it try there before anyone
+            // is asked to type anything; its preload relays and comes back here
+            // as that window.
+            return {error: WalletErrors.PasswordRequired}
         }
-        // Typing the password starts the budget again from the moment somebody
-        // proved they were there, which is also how a spent session is renewed.
-        const current = GetWallet(winId)
-        if (!current) {
-            return {ok: true, value}
-        }
-        const {sessionKey: renewed, session: sealed} = openSession(current, password)
-        rememberWallet(winId, {session: sealed})
-        return {ok: true, value, sessionKey: renewed}
+        // Read once with the public address lists, to have something true enough
+        // to show while asking for the password. What the keys say is checked
+        // against it before anything is signed.
+        const preview = await PreviewSpend({
+            raw: request.raw,
+            inputs: request.inputs,
+            wallet: state.wallet,
+            getOutput: (hash, index) => GetOutput(eConf(e), hash, index),
+        })
+        return await promptedSign(winId, sign, preview)
     } catch (error) {
         return {error: error.message === keystore.WrongPassword ?
             keystore.WrongPassword : error.message}
+    }
+}
+
+// Where the money goes and the password for it, together in main's own window.
+// The destinations come from the wallet's public address lists, which is as much
+// as can be read before the password is in - and for a wallet that can sign,
+// those lists are main's own work: it derives them and refuses to add any on a
+// renderer's word. Once the wallet is open the same transaction is read again
+// from the keys, and a signature is only granted on the strength of the first
+// answer where the second agrees. Where it doesn't, the window says so and asks
+// again against what the keys establish.
+const promptedSign = async (winId, sign, preview) => {
+    const prompt = await OpenSpendPrompt(GetWindow(winId))
+    try {
+        for (let wrong = false; ; wrong = true) {
+            const password = await prompt.askPassword({...preview, wrong})
+            if (password === undefined) {
+                return {error: WalletErrors.SpendCancelled}
+            }
+            let wallet
+            try {
+                wallet = (await readForOperation(winId, password)).wallet
+            } catch (error) {
+                if (error.message === keystore.WrongPassword) {
+                    continue
+                }
+                throw error
+            }
+            const value = await sign({
+                wallet,
+                confirmSpend: async (actual) =>
+                    CoversSpend(preview, actual) || prompt.confirm(actual),
+            })
+            // Typing the password starts the budget again from the moment
+            // somebody proved they were there, which is also how a session that
+            // has spent its budget is renewed.
+            const current = GetWallet(winId)
+            if (!current) {
+                return {ok: true, value}
+            }
+            const {sessionKey: renewed, session: sealed} = openSession(current, password)
+            rememberWallet(winId, {session: sealed})
+            return {ok: true, value, sessionKey: renewed}
+        }
+    } finally {
+        prompt.close()
     }
 }
 
@@ -502,10 +604,12 @@ const WalletHandlers = () => {
         unlockWallet(e.sender.id, walletName, password))
     ipcMain.handle(Handlers.CreateWallet, async (e, walletName, seedPhrase, keyList, addressList, password) =>
         createWallet(e.sender.id, walletName, seedPhrase, keyList, addressList, password))
-    ipcMain.handle(Handlers.UpdateWallet, async (e, op, values, password) =>
-        operationResult(async () => {
-            await updateWallet(e.sender.id, op, values, password)
-        }))
+    ipcMain.handle(Handlers.UpdateWallet, async (e, op, values, password) => {
+        const result = await operationResult(() => updateWallet(e.sender.id, op, values, password))
+        // A settings change that opened a budget hands its key back the way
+        // unlocking does, for the preload to keep out of the page.
+        return result.ok ? {ok: true, ...result.value} : result
+    })
     ipcMain.handle(Handlers.GetWalletFileInfo, async (e) => {
         const {filename, encrypted} = GetWallet(e.sender.id)
         return {filename, name: path.parse(filename).name, encrypted}
@@ -515,6 +619,8 @@ const WalletHandlers = () => {
         await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(networkConfig, null, 2) + "\n")
     })
     ipcMain.handle(Handlers.SignTransaction, signTransaction)
+    ipcMain.handle(Handlers.SignOnParentSession, signOnParentSession)
+    ipcMain.on(Handlers.SignOnSessionResult, signOnSessionResult)
     ipcMain.on(Handlers.WalletLoaded, (e) => {
         SetMenu(e.sender.id, menu.ShowMenu(GetWindow(e.sender.id), CreateWindow, GetWallet(e.sender.id).wallet))
         const walletName = path.parse(GetWallet(e.sender.id).filename).name

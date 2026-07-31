@@ -6,12 +6,14 @@ const {WindowTxHandlers} = require("./window_tx");
 const {DataHandlers} = require("./data");
 const {ThemeHandlers} = require("./theme");
 const {UpdateHandlers} = require("./update");
+const {SpendPromptHandlers} = require("../spend_prompt");
 
 module.exports = {
     AllHandlers: () => {
         DataHandlers()
         GraphQLHandlers()
         ProfileHandlers()
+        SpendPromptHandlers()
         ThemeHandlers()
         UpdateHandlers()
         WalletHandlers()

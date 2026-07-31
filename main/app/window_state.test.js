@@ -13,6 +13,7 @@ const {
     SetStorage,
     SetWallet,
     SetWindow,
+    TxWindowParent,
 } = require("./window_state")
 
 const open = (winId, wallet) => {
@@ -61,6 +62,20 @@ test("a transaction window is released by the window it was opened from", () => 
 
     ForgetWindow(2)
     assert.deepEqual(HeldWindowIds().windows, [])
+})
+
+test("a transaction window names the window that opened it", () => {
+    open(5, {filename: "wallet"})
+    open(6, GetWallet(5))
+    AddTxWindow(5, 6, {id: 6})
+    // A spend asked for in the transaction window is carried back to this one,
+    // which is the only side holding the key to the session it spends against.
+    assert.equal(TxWindowParent(6), 5)
+    // A wallet window has no parent, and neither does a window that has gone.
+    assert.equal(TxWindowParent(5), undefined)
+    ForgetWindow(6, 5)
+    assert.equal(TxWindowParent(6), undefined)
+    ForgetWindow(5)
 })
 
 test("forgetting a window that was never open is not an error", () => {
