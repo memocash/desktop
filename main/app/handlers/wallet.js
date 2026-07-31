@@ -445,7 +445,23 @@ const signOnParentSession = async (e, request) => {
             contents.off("did-start-loading", abandon)
         },
     })
-    return relayed === undefined ? signHere(e, request) : relayed
+    if (relayed === undefined) {
+        return signHere(e, request)
+    }
+    // An answer that took a prompt leaves the parent in front, because the
+    // prompt was modal to the parent and closing a modal focuses what it was
+    // modal to. That is the only displacement to repair, and it is what the
+    // parent holding focus now means: an answer straight off the budget asked
+    // nobody anything and moved focus nowhere, and wherever the person is
+    // looking by then - this window or another program - is where they chose
+    // to be. So only a parent in front hands focus back to the window that
+    // asked, signed or cancelled alike.
+    const asking = GetWindow(e.sender.id)
+    if (!parent.isDestroyed() && parent.isFocused() &&
+        asking && !asking.isDestroyed()) {
+        asking.focus()
+    }
+    return relayed
 }
 
 // The reply comes from the preload the request was sent to, and only from there.
