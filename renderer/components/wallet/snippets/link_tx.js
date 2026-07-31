@@ -38,7 +38,7 @@ const SendLinkAccept = async ({requestTxHash, walletAddress, setModal}) => {
         Buffer.from(requestTxHash, "hex"),
     ])
     const wallet = await GetWallet()
-    await CreateTransaction(wallet, [{script: acceptOpReturnOutput}], setModal, null, "", false, walletAddress)
+    await CreateTransaction(wallet, [{script: acceptOpReturnOutput}], setModal, null, "", walletAddress)
 }
 
 const SendLinkRevoke = async ({acceptTxHash, walletAddress, setModal}) => {
@@ -48,7 +48,7 @@ const SendLinkRevoke = async ({acceptTxHash, walletAddress, setModal}) => {
         Buffer.from(acceptTxHash, "hex"),
     ])
     const wallet = await GetWallet()
-    await CreateTransaction(wallet, [{script: revokeOpReturnOutput}], setModal, null, "", false, walletAddress)
+    await CreateTransaction(wallet, [{script: revokeOpReturnOutput}], setModal, null, "", walletAddress)
 }
 
 export {

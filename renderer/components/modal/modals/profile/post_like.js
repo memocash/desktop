@@ -43,11 +43,8 @@ const PostLike = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}
         let outputs = [{script: likeOpReturnOutput}]
         if (tip > 0) {
             outputs.push({value: tip, script: address.toOutputScript(postRef.current.address)})
-            await CreateTransaction(wallet, outputs, setModal, () => setModal(Modals.Post, {txHash}), "", true)
         }
-        else{
-            await CreateTransaction(wallet, outputs, setModal, () => setModal(Modals.Post, {txHash}))
-        }
+        await CreateTransaction(wallet, outputs, setModal, () => setModal(Modals.Post, {txHash}))
     }
     return (
         <Modal onClose={onClose}>

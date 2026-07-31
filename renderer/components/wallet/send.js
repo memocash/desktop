@@ -134,7 +134,7 @@ const Send = ({setModal}) => {
         if (e.type === "submit") {
             await CreateTransactionWithPreview(wallet, outputScripts, "", coinString)
         } else if (e.type === "click") {
-            await CreateDirectTransaction(wallet, outputScripts, setModal, null, true, "", coinString)
+            await CreateDirectTransaction(wallet, outputScripts, setModal, null, "", coinString)
         }
     }
     return (

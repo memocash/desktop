@@ -78,10 +78,10 @@ const CreateTransactionWithPreview = async (wallet, outputs, beatHash = "", coin
     await window.electron.openPreviewSend({inputs, outputs: outputStrings, beatHash})
 }
 
-const CreateTransaction = async (wallet, outputs, setModal, onDone, beatHash = "", requirePassword = false,
+const CreateTransaction = async (wallet, outputs, setModal, onDone, beatHash = "",
                                  fromAddress = "") => {
     if (wallet.settings.DirectTx) {
-        await CreateDirectTransaction(wallet, outputs, setModal, onDone, requirePassword, beatHash, "", fromAddress)
+        await CreateDirectTransaction(wallet, outputs, setModal, onDone, beatHash, "", fromAddress)
     } else {
         await CreateTransactionWithPreview(wallet, outputs, beatHash, "", fromAddress)
     }

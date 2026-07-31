@@ -59,7 +59,7 @@ const Aliases = ({basic: {setModal, onClose}}) => {
             Buffer.from(bitcoin.GetPkHashFromAddress(targetAddress), "hex"),
             Buffer.from(alias),
         ])
-        await CreateTransaction(walletRef.current, [{script: aliasOutput}], setModal, null, "", false,
+        await CreateTransaction(walletRef.current, [{script: aliasOutput}], setModal, null, "",
             signerRef.current)
     }
     return <Modal onClose={onClose}>

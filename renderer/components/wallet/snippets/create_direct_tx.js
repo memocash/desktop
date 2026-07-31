@@ -5,7 +5,7 @@ import {DirectTx} from "../../tx/direct_tx";
 
 // fromAddress: see CreateTransactionWithPreview - restricts inputs to one
 // address for actions the protocol attributes to the signing address.
-const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, requirePassword, beatHash = "", coin = "",
+const CreateDirectTransaction = async (wallet, outputs, setModal, onDone, beatHash = "", coin = "",
                                        fromAddress = "") => {
     let utxos = GetUtxos()
     if (fromAddress !== "") {
