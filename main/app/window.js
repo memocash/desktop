@@ -111,13 +111,19 @@ const ApplyWindowSecurity = (win) => {
         OpenExternalUrl(url)
         return {action: "deny"}
     })
-    win.webContents.on("will-navigate", (e, url) => {
-        if (IsSameOrigin(url, AppUrl + "/")) {
-            return
-        }
-        e.preventDefault()
-        console.log("will-navigate: blocked navigation to " + url)
-    })
+    // will-navigate sees where a page asked to go; will-redirect sees where a
+    // server answering a permitted navigation is sending it instead. app://
+    // serves local files and cannot redirect, but the dev server origin can, so
+    // the same rule is applied at both points.
+    for (const event of ["will-navigate", "will-redirect"]) {
+        win.webContents.on(event, (e, url) => {
+            if (IsSameOrigin(url, AppUrl + "/")) {
+                return
+            }
+            e.preventDefault()
+            console.log(event + ": blocked navigation to " + url)
+        })
+    }
 }
 
 const CreateWindow = async () => {
