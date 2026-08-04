@@ -4,8 +4,8 @@ module.exports = {
     // (see main/index.js) - there is no Next server in a shipped build. Replaces
     // the old `next export` command, which Next 15 removed.
     output: "export",
-    // Emit each route as <route>/index.html rather than <route>.html. electron-serve
-    // resolves an extensionless request like app://-/tx by looking for a directory
+    // Emit each route as <route>/index.html rather than <route>.html. The packaged
+    // server resolves an extensionless request like app://-/tx by looking for a directory
     // with an index.html; without this it would fall back to the root index.html and
     // the tx window (loaded directly by URL, not client-side routing) would be wrong.
     trailingSlash: true,

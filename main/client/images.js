@@ -1,4 +1,5 @@
 const {GetPicExists, SavePic} = require("../data/tables");
+const {DownloadExternalImage} = require("./external_image");
 
 // Magic bytes of the raster formats an <img> can decode. The renderer labels
 // every cached pic "data:image/png" and lets the decoder sniff the real format,
@@ -51,15 +52,14 @@ const SaveImagesFromProfiles = async (conf, profiles) => {
         }
         let data
         try {
-            const response = await fetch(profile.pic.pic)
-            if (!response.ok) {
-                console.log("SaveImagesFromProfiles: pic status " + response.status +
-                    " for " + profile.pic.pic)
-                continue
-            }
-            data = Buffer.from(await (await response.blob()).arrayBuffer())
+            data = await DownloadExternalImage(profile.pic.pic)
         } catch (e) {
             console.log("SaveImagesFromProfiles: pic download failed for " + profile.pic.pic, e)
+            if (e.permanent) {
+                data = Buffer.alloc(0)
+                profile.pic.data = data
+                await SavePic(conf, profile.pic.pic, data)
+            }
             continue
         }
         if (!isImage(data)) {

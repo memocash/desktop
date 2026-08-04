@@ -1,6 +1,7 @@
 import Linkify from "react-linkify";
 import {useState} from "react";
 import styles from "../../../styles/links.module.css";
+import {SafeExternalUrl} from "../../../../main/common/util/urls";
 
 const imageExtension = /^\/[a-zA-Z0-9]+\.(jpg|jpeg|png|gif|webp)$/
 
@@ -21,15 +22,34 @@ const GetImgurImage = (href) => {
 }
 
 const ImgurImage = ({href, src, text}) => {
+    const [loaded, setLoaded] = useState(false)
     const [failed, setFailed] = useState(false)
     if (failed) {
-        return <a target="_blank" href={href}>{text}</a>
+        return <ExternalLink href={href}>{text}</ExternalLink>
+    }
+    if (!loaded) {
+        return <span className={styles.image_prompt}>
+            <ExternalLink href={href}>{text}</ExternalLink>
+            {" (i.imgur.com) "}
+            <button type="button" onClick={() => setLoaded(true)}>Load image preview</button>
+        </span>
     }
     return (
-        <a target="_blank" href={href} className={styles.image_link}>
+        <ExternalLink href={href} className={styles.image_link}>
             <img alt={text} src={src} className={styles.image} onError={() => setFailed(true)}/>
-        </a>
+        </ExternalLink>
     )
+}
+
+const ExternalLink = ({href, className, children}) => {
+    const safeUrl = SafeExternalUrl(href)
+    if (!safeUrl) {
+        return children
+    }
+    return <a href={safeUrl} className={className} onClick={(e) => {
+        e.preventDefault()
+        window.electron.openExternal(safeUrl)
+    }}>{children}</a>
 }
 
 const componentDecorator = (decoratedHref, decoratedText, key) => {
@@ -37,11 +57,7 @@ const componentDecorator = (decoratedHref, decoratedText, key) => {
     if (imgurImage) {
         return <ImgurImage key={key} href={decoratedHref} src={imgurImage} text={decoratedText}/>
     }
-    return (
-        <a target="_blank" href={decoratedHref} key={key}>
-            {decoratedText}
-        </a>
-    )
+    return <ExternalLink href={decoratedHref} key={key}>{decoratedText}</ExternalLink>
 }
 
 const Links = ({children}) => {

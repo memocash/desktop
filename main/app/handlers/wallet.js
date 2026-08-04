@@ -13,6 +13,7 @@ const {CreateSignRelay} = require("../sign_relay");
 const session = require("../session");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
+const {ValidateNetworkConfig} = require("../../common/util/network_config");
 const {KeyFinder, PreviewSpend, SignTransaction, WalletAddresses} = require("../transaction_signer");
 const {
     SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, CopyPublicToFileWindows,
@@ -601,7 +602,8 @@ const promptedSign = async (winId, sign, preview) => {
 
 const readNetworkConfig = async () => {
     try {
-        return JSON.parse(await fs.readFile(Dir.NetworkConfigFile, {encoding: "utf8"}))
+        return ValidateNetworkConfig(JSON.parse(
+            await fs.readFile(Dir.NetworkConfigFile, {encoding: "utf8"})))
     } catch (e) {
         return undefined
     }
@@ -646,7 +648,8 @@ const WalletHandlers = () => {
     })
     ipcMain.handle(Handlers.GetNetworkConfig, async () => readNetworkConfig())
     ipcMain.handle(Handlers.SaveNetworkConfig, async (e, networkConfig) => {
-        await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(networkConfig, null, 2) + "\n")
+        const validated = ValidateNetworkConfig(networkConfig)
+        await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(validated, null, 2) + "\n")
     })
     ipcMain.handle(Handlers.SignTransaction, signTransaction)
     ipcMain.handle(Handlers.SignOnParentSession, signOnParentSession)

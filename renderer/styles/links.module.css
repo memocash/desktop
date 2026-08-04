@@ -3,6 +3,11 @@
     margin: 5px 0;
 }
 
+.image_prompt {
+    display: block;
+    margin: 5px 0;
+}
+
 .image {
     display: block;
     max-width: 100%;

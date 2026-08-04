@@ -62,15 +62,20 @@ const Index = () => {
         await loadWallet()
     }
     const loadWallet = async () => {
-        const networkConfig = await GetNetworkConfig()
-        for (let i = 0; i < networkConfig.Networks.length; i++) {
-            const option = networkConfig.Networks[i]
-            if (option.Id === networkValueRef.current) {
-                await SetWindowNetwork(option)
-                networkConfig.Last = i
-                await SaveNetworkConfig(networkConfig)
-                break
+        try {
+            const networkConfig = await GetNetworkConfig()
+            for (let i = 0; i < networkConfig.Networks.length; i++) {
+                const option = networkConfig.Networks[i]
+                if (option.Id === networkValueRef.current) {
+                    await SetWindowNetwork(option)
+                    networkConfig.Last = i
+                    await SaveNetworkConfig(networkConfig)
+                    break
+                }
             }
+        } catch (error) {
+            window.electron.showMessageDialog("Unable to select network: " + error.message)
+            return
         }
         let calledPushLatest
         setCalledPush(latest => {
