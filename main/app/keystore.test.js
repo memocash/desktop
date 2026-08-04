@@ -18,6 +18,7 @@ const {
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
+    TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,
     Version,
@@ -239,9 +240,11 @@ test("overlapping updates to one wallet each land, without tearing the file", as
     assert.deepEqual([...wallet.addresses].sort(), [...addresses].sort())
 })
 
-// Existing wallets are version 1. They have to keep opening, and the copy taken
-// before the rewrite is the user's way back if the new format has a problem.
-test("a version 1 wallet migrates on read, keeping the original beside it", async () => {
+// Existing wallets are version 1. They have to keep opening, but the rewrite
+// must not leave the original beside the new file: the old format's encryption
+// is what the migration exists to retire, and a surviving copy of it keeps the
+// seed exactly that guessable for anyone who can read the directory.
+test("a version 1 wallet migrates on read and leaves no copy of the old format", async () => {
     const walletPath = await tempWallet("legacy")
     const original = CryptoJS.AES.encrypt(
         JSON.stringify({seed: "old seed words", keys: [], addresses: ["addr1"]}), "hunter2").toString()
@@ -251,15 +254,14 @@ test("a version 1 wallet migrates on read, keeping the original beside it", asyn
     assert.equal(read.version, 1)
     assert.equal(read.wallet.seed, "old seed words")
 
-    const {backupPath} = await MigrateWallet(walletPath, read.wallet, "hunter2")
-    assert.equal(backupPath, walletPath + ".v1.bak")
-    assert.equal(await fs.readFile(backupPath, {encoding: "utf8"}), original)
+    await MigrateWallet(walletPath, read.wallet, "hunter2")
 
     const migrated = await ReadWallet(walletPath, "hunter2")
     assert.equal(migrated.version, Version)
     assert.equal(migrated.encrypted, true)
     assert.equal(migrated.wallet.seed, "old seed words")
     assert.deepEqual(migrated.wallet.addresses, ["addr1"])
+    assert.deepEqual(await fs.readdir(path.dirname(walletPath)), ["legacy"])
 })
 
 test("an unencrypted version 1 wallet migrates without gaining a password", async () => {
@@ -274,15 +276,107 @@ test("an unencrypted version 1 wallet migrates without gaining a password", asyn
     assert.equal(migrated.wallet.seed, "old seed words")
 })
 
-test("migrating twice never writes over the first backup", async () => {
-    const walletPath = await tempWallet("legacy_twice")
-    await fs.writeFile(walletPath, JSON.stringify({seed: "the original", keys: [], addresses: []}))
-    const {backupPath: first} =
-        await MigrateWallet(walletPath, {seed: "the original", keys: [], addresses: []}, undefined)
-    const {backupPath: second} =
-        await MigrateWallet(walletPath, {seed: "later", keys: [], addresses: []}, undefined)
-    assert.notEqual(first, second)
-    assert.match(JSON.parse(await fs.readFile(first, {encoding: "utf8"})).seed, /the original/)
+// The copy is the way back only while the rewrite can still fail; a rewrite
+// that never proved readable must leave it in place.
+test("a failed migration keeps the copy of the original", async () => {
+    const walletPath = await tempWallet("legacy_failed")
+    const original = JSON.stringify({seed: "the original", keys: [], addresses: []})
+    await fs.writeFile(walletPath, original)
+    // A BigInt makes the rewrite's JSON encoding throw after the copy is taken.
+    await assert.rejects(MigrateWallet(walletPath, {seed: 1n, keys: [], addresses: []}, undefined))
+    assert.equal(await fs.readFile(walletPath + ".v1.bak", {encoding: "utf8"}), original)
+})
+
+// Wallets migrated by earlier releases, which kept the copy forever, still have
+// one sitting beside the file. Opening the wallet is the moment the copy is
+// provably redundant - the current file just decoded with the user's password -
+// so that is when the leftovers go, and only the shapes migration wrote.
+test("leftover migration copies are removed when the wallet opens", async () => {
+    const walletPath = await tempWallet("tidied")
+    await WriteWallet(walletPath, NewWallet("seed words here", [], []), "hunter2")
+    await fs.writeFile(walletPath + ".v1.bak", "old ciphertext")
+    await fs.writeFile(walletPath + ".v1.bak.1", "old ciphertext")
+    await fs.writeFile(walletPath + ".v1.bakelite", "a neighbour that merely looks similar")
+    const read = await ReadAndMigrateWallet(walletPath, "hunter2")
+    assert.equal(read.version, Version)
+    assert.deepEqual((await fs.readdir(path.dirname(walletPath))).sort(),
+        ["tidied", "tidied.v1.bakelite"])
+})
+
+// A wallet file is worth exactly a wallet. Every path that writes one passes a
+// mode, and the open path re-modes files written back when no mode was passed
+// and the umask decided - which usually meant world-readable.
+test("wallet files are readable by their owner alone", async (t) => {
+    if (process.platform === "win32") {
+        return t.skip("posix file modes")
+    }
+    const mode = async (file) => (await fs.stat(file)).mode & 0o777
+    const created = await tempWallet("created")
+    await CreateWalletFile(created, NewWallet("seed words here", [], []), "hunter2")
+    assert.equal(await mode(created), 0o600)
+    await WriteWallet(created, NewWallet("seed words here", [], ["addr1"]), "hunter2")
+    assert.equal(await mode(created), 0o600)
+
+    const loose = await tempWallet("loose")
+    await WriteWallet(loose, NewWallet("seed words here", [], []), "hunter2")
+    await fs.chmod(loose, 0o644)
+    await ReadAndMigrateWallet(loose, "hunter2")
+    assert.equal(await mode(loose), 0o600)
+})
+
+// The startup pass is the only thing that repairs what earlier releases wrote
+// at the umask's mercy, so it gets its own test rather than hiding behind the
+// green write-path tests above. Dir.DefaultPath is pointed at a scratch tree
+// for the call and restored, the same object every keystore function reads.
+test("startup tightens the modes earlier releases left behind", async (t) => {
+    if (process.platform === "win32") {
+        return t.skip("posix file modes")
+    }
+    const mode = async (file) => (await fs.stat(file)).mode & 0o777
+    const memoDir = path.join(
+        await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-")), ".memo")
+    const walletDir = path.join(memoDir, "wallets")
+    await fs.mkdir(walletDir, {recursive: true})
+    await fs.chmod(memoDir, 0o755)
+    await fs.chmod(walletDir, 0o755)
+    const wallet = path.join(walletDir, "old_wallet")
+    await fs.writeFile(wallet, "{}")
+    await fs.chmod(wallet, 0o644)
+    // A subdirectory is not a wallet; only regular files are re-moded.
+    const subdir = path.join(walletDir, "not_a_file")
+    await fs.mkdir(subdir)
+    await fs.chmod(subdir, 0o755)
+    const original = Dir.DefaultPath
+    Dir.DefaultPath = walletDir
+    try {
+        await TightenWalletPermissions()
+    } finally {
+        Dir.DefaultPath = original
+    }
+    assert.equal(await mode(memoDir), 0o700)
+    assert.equal(await mode(walletDir), 0o700)
+    assert.equal(await mode(wallet), 0o600)
+    assert.equal(await mode(subdir), 0o755)
+})
+
+// A first run has no directory to tighten yet, and startup must not fail on
+// that - the pass is best-effort by design. The absent path hangs under a
+// fresh mkdtemp root so it is provably absent, rather than a fixed /tmp name
+// that a previous run or another process could have left something at.
+test("the startup permission pass tolerates a missing wallet directory", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const absent = path.join(root, ".memo", "wallets")
+    await assert.rejects(fs.access(absent))
+    const original = Dir.DefaultPath
+    Dir.DefaultPath = absent
+    try {
+        await TightenWalletPermissions()
+        // Tightening what exists must not include inventing what does not.
+        await assert.rejects(fs.access(absent))
+    } finally {
+        Dir.DefaultPath = original
+        await fs.rm(root, {recursive: true, force: true})
+    }
 })
 
 test("concurrent unlocks migrate a legacy wallet only once", async () => {
@@ -297,7 +391,7 @@ test("concurrent unlocks migrate a legacy wallet only once", async () => {
     assert.deepEqual(first.wallet.addresses, ["addr1"])
     assert.deepEqual(second.wallet.addresses, ["addr1"])
     const files = await fs.readdir(path.dirname(walletPath))
-    assert.deepEqual(files.filter((name) => name.includes(".v1.bak")), ["legacy_concurrent.v1.bak"])
+    assert.deepEqual(files.filter((name) => name.includes(".v1.bak")), [])
 })
 
 // The routine writes - a new address, a changed setting - must not need the

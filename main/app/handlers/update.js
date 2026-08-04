@@ -33,7 +33,7 @@ const ReadPrefs = () => {
 
 const WritePrefs = (prefs) => {
     try {
-        fs.mkdirSync(path.dirname(Dir.UpdateConfigFile), {recursive: true})
+        fs.mkdirSync(path.dirname(Dir.UpdateConfigFile), {recursive: true, mode: 0o700})
         fs.writeFileSync(Dir.UpdateConfigFile, JSON.stringify(prefs))
     } catch (e) {
         // Non-fatal: the choice still applies for this session.

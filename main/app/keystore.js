@@ -54,9 +54,29 @@ const ResolveWalletPath = (winId, walletName) => {
 const IsWalletArtifact = (file) => /(\.v1\.bak(\.\d+)?|\.\d+\.\d+\.tmp)$/.test(file)
 
 const ListWalletFiles = async () => {
-    await fs.mkdir(Dir.DefaultPath, {recursive: true})
+    await fs.mkdir(Dir.DefaultPath, {recursive: true, mode: 0o700})
     const files = await fs.readdir(Dir.DefaultPath)
     return files.filter(file => !IsWalletArtifact(file))
+}
+
+// A wallet file is worth exactly a wallet, so nobody else on the machine gets
+// to read one. Every write here passes a mode, but mkdir and writeFile only
+// apply theirs when they create - what earlier releases wrote landed at
+// whatever the umask allowed, which is usually world-readable. Run once at
+// startup to tighten what already exists: the directory holding the wallets,
+// its parent holding the databases and configs, and every file inside. Each
+// step is best-effort - a wallet that cannot be re-moded is still a wallet.
+const TightenWalletPermissions = async () => {
+    await fs.chmod(path.dirname(Dir.DefaultPath), 0o700).catch(() => {})
+    await fs.chmod(Dir.DefaultPath, 0o700).catch(() => {})
+    let entries
+    try {
+        entries = await fs.readdir(Dir.DefaultPath, {withFileTypes: true})
+    } catch (e) {
+        return
+    }
+    await Promise.all(entries.filter((entry) => entry.isFile()).map((entry) =>
+        fs.chmod(path.join(Dir.DefaultPath, entry.name), 0o600).catch(() => {})))
 }
 
 // What the load screen needs to know about a name before it can offer anything:
@@ -100,7 +120,7 @@ let writeCount = 0
 // makes the check part of the write rather than a test before it.
 const CreateWalletFile = async (walletPath, wallet, password) => {
     const encoded = await walletFile.EncodeWallet(wallet, password)
-    await fs.writeFile(walletPath, encoded.contents, {flag: "wx"})
+    await fs.writeFile(walletPath, encoded.contents, {flag: "wx", mode: 0o600})
     return encoded.integrityKey
 }
 
@@ -134,7 +154,9 @@ const writeContents = async (walletPath, contents) => {
     // even outside WithWalletLock.
     const tempPath = walletPath + "." + process.pid + "." + (writeCount++) + ".tmp"
     try {
-        await fs.writeFile(tempPath, contents)
+        // The rename carries the scratch file's mode with it, so this is also
+        // what fixes an old wallet's permissions on its next write.
+        await fs.writeFile(tempPath, contents, {mode: 0o600})
         await fs.rename(tempPath, walletPath)
     } catch (e) {
         await fs.rm(tempPath, {force: true})
@@ -149,7 +171,7 @@ const backupWalletFile = async (walletPath, contents) => {
     for (let attempt = 0; ; attempt++) {
         const backupPath = walletPath + ".v1.bak" + (attempt ? "." + attempt : "")
         try {
-            await fs.writeFile(backupPath, contents, {flag: "wx"})
+            await fs.writeFile(backupPath, contents, {flag: "wx", mode: 0o600})
             return backupPath
         } catch (e) {
             if (e.code !== "EEXIST") {
@@ -159,14 +181,45 @@ const backupWalletFile = async (walletPath, contents) => {
     }
 }
 
-// Rewrites a version 1 wallet in the current format, keeping a copy of the
-// original first. Migration happens on unlock, before anything can write to the
-// file, so a wallet is only ever read in the old format and never written in it.
+// Rewrites a version 1 wallet in the current format. The original is copied
+// aside first so a rewrite that fails cannot cost the wallet - but the copy
+// does not outlive the migration. The old format is passphrase encryption over
+// an MD5-derived key, which is what the migration exists to retire, and a copy
+// of it kept beside the scrypt file leaves the seed exactly as guessable as it
+// ever was for anyone who can read the directory. So the copy stays only until
+// the rewritten file proves it decodes with the same password, and a failure
+// anywhere before that leaves it in place as the way back.
+//
+// Migration happens on unlock, before anything can write to the file, so a
+// wallet is only ever read in the old format and never written in it.
 const MigrateWallet = async (walletPath, wallet, password) => {
     const contents = await fs.readFile(walletPath, {encoding: "utf8"})
     const backupPath = await backupWalletFile(walletPath, contents)
     const integrityKey = await WriteWallet(walletPath, wallet, password)
-    return {backupPath, integrityKey}
+    await ReadWallet(walletPath, password)
+    await fs.rm(backupPath, {force: true})
+    return {integrityKey}
+}
+
+// The copies left beside wallets by earlier releases, which kept them forever.
+// They go once the current file has opened: decoding it with the password the
+// user just supplied is what proves the copy holds nothing the wallet does
+// not, and that its weaker encryption is a liability rather than a fallback.
+// The match is exact about the shapes backupWalletFile writes, so a wallet
+// somebody named to look similar is not swept up with them.
+const removeStaleBackups = async (walletPath) => {
+    const backupOf = path.basename(walletPath) + ".v1.bak"
+    const dir = path.dirname(walletPath)
+    let names
+    try {
+        names = await fs.readdir(dir)
+    } catch (e) {
+        return
+    }
+    const isBackup = (name) => name.startsWith(backupOf) &&
+        (name.length === backupOf.length || /^\.\d+$/.test(name.slice(backupOf.length)))
+    await Promise.all(names.filter(isBackup).map((name) =>
+        fs.rm(path.join(dir, name), {force: true}).catch(() => {})))
 }
 
 // The preload did its read-modify-write with the synchronous fs calls, which
@@ -184,11 +237,18 @@ const WithWalletLock = (walletPath, run) => Serialize("wallet:" + walletPath, ru
 const ReadAndMigrateWallet = (walletPath, password) =>
     WithWalletLock(walletPath, async () => {
         const read = await ReadWallet(walletPath, password)
+        // The unlock path sees every wallet that matters, including ones the
+        // user keeps outside the default directory, which the startup pass
+        // never visits. Decoding proved this file is a wallet; make sure it is
+        // readable by its owner alone.
+        await fs.chmod(walletPath, 0o600).catch(() => {})
         const secretPassword = read.encrypted ? password : undefined
         if (read.version !== walletFile.Version) {
             const migrated = await MigrateWallet(walletPath, read.wallet, secretPassword)
+            await removeStaleBackups(walletPath)
             return {...read, version: walletFile.Version, integrityKey: migrated.integrityKey}
         }
+        await removeStaleBackups(walletPath)
         if (!read.publicSecrets) {
             return read
         }
@@ -300,6 +360,7 @@ module.exports = {
     ReadWallet,
     ResolveWalletPath,
     ThresholdSetting,
+    TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,
     Version: walletFile.Version,

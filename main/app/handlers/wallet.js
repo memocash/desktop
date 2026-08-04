@@ -130,7 +130,7 @@ const unlockWallet = async (winId, walletName, password) => {
 
 const createWallet = async (winId, walletName, seedPhrase, keyList, addressList, password) => {
     if (!Dir.IsFullPath(walletName)) {
-        await fs.mkdir(Dir.DefaultPath, {recursive: true})
+        await fs.mkdir(Dir.DefaultPath, {recursive: true, mode: 0o700})
     }
     const filename = keystore.ResolveWalletPath(winId, walletName)
     const wallet = keystore.NewWallet(seedPhrase, keyList, addressList)
