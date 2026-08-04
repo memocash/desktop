@@ -12,7 +12,8 @@ const SettingsModal = ({onClose, setModal}) => {
     const [loaded, setLoaded] = useState(false)
     const [directTx, setDirectTx] = useState(true)
     const [threshold, setThreshold] = useState("0")
-    const [saved, setSaved] = useState({directTx: true, threshold: 0})
+    const [confirmMode, setConfirmMode] = useState("every")
+    const [saved, setSaved] = useState({directTx: true, threshold: 0, confirmMode: "every"})
     const [encrypted, setEncrypted] = useState(false)
     const [error, setError] = useState("")
     const [theme, setTheme] = useState("system")
@@ -20,9 +21,15 @@ const SettingsModal = ({onClose, setModal}) => {
     useEffect(() => {(async () => {
         let wallet = await GetWallet()
         const walletThreshold = wallet.settings.PasswordThreshold || 0
+        // A passwordless wallet confirms its sends instead of asking for a
+        // password: every time, over a running total, or - deliberately - not
+        // at all. The same threshold field carries the total in both cases.
+        const mode = wallet.settings.ConfirmSends === false ? "never" :
+            (walletThreshold > 0 ? "limit" : "every")
         setDirectTx(wallet.settings.DirectTx)
         setThreshold(String(walletThreshold))
-        setSaved({directTx: wallet.settings.DirectTx, threshold: walletThreshold})
+        setConfirmMode(mode)
+        setSaved({directTx: wallet.settings.DirectTx, threshold: walletThreshold, confirmMode: mode})
         setEncrypted((await window.electron.getWalletFileInfo()).encrypted)
         setTheme(await window.electron.getTheme())
         setCheckUpdates((await window.electron.getUpdatePrefs()).checkAutomatically)
@@ -44,9 +51,13 @@ const SettingsModal = ({onClose, setModal}) => {
     }
 
     const save = async (password) => {
-        const {error} = await window.electron.changeSettings({
+        const {error} = await window.electron.changeSettings(encrypted ? {
             DirectTx: directTx,
             PasswordThreshold: Number(threshold),
+        } : {
+            DirectTx: directTx,
+            PasswordThreshold: confirmMode === "limit" ? Number(threshold) : 0,
+            ConfirmSends: confirmMode !== "never",
         }, password)
         if (error) {
             // A wrong password lands here too, and the password modal is the one
@@ -61,13 +72,18 @@ const SettingsModal = ({onClose, setModal}) => {
         return true
     }
 
-    const changed = directTx !== saved.directTx || Number(threshold) !== saved.threshold
+    const thresholdMatters = encrypted || confirmMode === "limit"
+    const changed = directTx !== saved.directTx ||
+        (!encrypted && confirmMode !== saved.confirmMode) ||
+        (thresholdMatters && Number(threshold) !== saved.threshold)
 
     const formSubmit = async (e) => {
         e.preventDefault()
         const wanted = Number(threshold)
-        if (!threshold.trim().length || !Number.isSafeInteger(wanted) || wanted < 0) {
-            setError("Enter a whole number of satoshis, or 0 to always ask.")
+        if (thresholdMatters &&
+            (!threshold.trim().length || !Number.isSafeInteger(wanted) || wanted < (encrypted ? 0 : 1))) {
+            setError(encrypted ? "Enter a whole number of satoshis, or 0 to always ask." :
+                "Enter a whole number of satoshis above zero.")
             return
         }
         setError("")
@@ -75,7 +91,9 @@ const SettingsModal = ({onClose, setModal}) => {
         // wallet, since the settings decide when the password is asked for.
         // Asking here means the prompt appears before the save rather than as a
         // failure after it. No comparison against the loaded values: this
-        // window's copy can be stale, and main asks regardless.
+        // window's copy can be stale, and main asks regardless. A passwordless
+        // wallet has nothing to prove here; main puts any loosening of the
+        // send confirmation in front of the user in its own dialog instead.
         if (encrypted) {
             setModal(Modals.Password, {onCorrectPassword: save, authenticate: false})
             return
@@ -99,7 +117,7 @@ const SettingsModal = ({onClose, setModal}) => {
                                 Skips the preview and broadcasts as soon as a send is confirmed.
                             </div>
                         </div>
-                        <div className={styles.option}>
+                        {encrypted ? <div className={styles.option}>
                             <label htmlFor="passwordThreshold">Ask for the password after sending</label>
                             {} <input id="passwordThreshold" type="number" min="0" step="1"
                                       value={threshold} onChange={(e) => setThreshold(e.target.value)}/>
@@ -109,7 +127,29 @@ const SettingsModal = ({onClose, setModal}) => {
                                 password and without showing you where they pay, until it is used up.
                                 Token sends and exports always ask.
                             </div>
-                        </div>
+                        </div> : <div className={styles.option}>
+                            <label htmlFor="confirmMode">Confirm sends</label>
+                            {} <select id="confirmMode" value={confirmMode}
+                                       onChange={(e) => setConfirmMode(e.target.value)}>
+                                <option value="every">Every send</option>
+                                <option value="limit">After a running total</option>
+                                <option value="never">Never</option>
+                            </select>
+                            {confirmMode === "limit" && <>
+                                {} <input id="confirmThreshold" type="number" min="1" step="1"
+                                          value={threshold} onChange={(e) => setThreshold(e.target.value)}/>
+                                {} satoshis
+                            </>}
+                            <div className={styles.hint}>
+                                {confirmMode === "every" && "Every payment out of this wallet is shown " +
+                                    "for approval before it is signed. Posts and likes don't ask."}
+                                {confirmMode === "limit" && "Sends up to that total go through without " +
+                                    "asking. Once it is used up, the next send asks, and approving it " +
+                                    "starts the total again. Token sends always ask."}
+                                {confirmMode === "never" && "Sends are signed with nothing shown. " +
+                                    "Anything running in this window can spend this wallet."}
+                            </div>
+                        </div>}
                     </div>
                     <div className={styles.section}>
                         <h3 className={styles.sectionTitle}>Application <span>Saved right away</span></h3>

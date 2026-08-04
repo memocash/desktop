@@ -204,18 +204,27 @@ test("list updates add, de-duplicate, and remove", () => {
 test("changing settings fills in the defaults and keeps untouched values", () => {
     const wallet = {}
     ApplyWalletUpdate(wallet, "changeSettings", {})
-    // A wallet asks for its password on every send until someone says otherwise.
-    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 0})
+    // A wallet asks for its password - or, passwordless, an approval - on every
+    // send until someone says otherwise.
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 0, ConfirmSends: true})
     ApplyWalletUpdate(wallet, "changeSettings", {PasswordThreshold: 10000})
-    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 10000})
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 10000, ConfirmSends: true})
     ApplyWalletUpdate(wallet, "changeSettings", {DirectTx: true})
-    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000})
+    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ConfirmSends: true})
+    ApplyWalletUpdate(wallet, "changeSettings", {ConfirmSends: false})
+    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ConfirmSends: false})
 })
 
 test("a spend budget has to be a whole number of satoshis", () => {
     for (const threshold of ["10000", 1.5, -1, Infinity, NaN, null]) {
         assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {PasswordThreshold: threshold}),
             {message: /whole number of satoshis/}, "accepted " + threshold)
+    }
+    // The confirmation switch is policy the same way, so its shape is held to
+    // the same standard: a boolean or nothing.
+    for (const confirm of ["off", 0, 1, null]) {
+        assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {ConfirmSends: confirm}),
+            {message: /on or off/}, "accepted " + confirm)
     }
     // Zero is a policy, not a missing value: it means ask every time.
     const wallet = {}

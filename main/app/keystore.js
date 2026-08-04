@@ -270,13 +270,18 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
 
 // PasswordThreshold is how many satoshis may leave the wallet, in total, before
 // the password is asked for again. Zero means every send is asked for, which is
-// what a wallet gets until someone deliberately raises it.
+// what a wallet gets until someone deliberately raises it. For a wallet with no
+// password the same threshold meters an approval window instead: ConfirmSends
+// decides whether such a wallet confirms its sends at all - on by default, and
+// turning it off is the owner's deliberate choice, made in main's own window.
 const DefaultSettings = {
     DirectTx: false,
     PasswordThreshold: 0,
+    ConfirmSends: true,
 }
 
 const ThresholdSetting = "PasswordThreshold"
+const ConfirmSetting = "ConfirmSends"
 
 // What may cross to the renderer, and equally what may be written outside the
 // envelope: the same fields walletFile keeps inside it are dropped here, so the
@@ -329,6 +334,12 @@ const ApplyWalletUpdate = (wallet, op, values) => {
             (!Number.isSafeInteger(threshold) || threshold < 0)) {
             throw new Error("password threshold must be a whole number of satoshis")
         }
+        // The same certainty for the confirmation switch: anything but a plain
+        // boolean would make "is confirmation on" a judgment call.
+        const confirm = values && values[ConfirmSetting]
+        if (confirm !== undefined && typeof confirm !== "boolean") {
+            throw new Error("send confirmation must be on or off")
+        }
         wallet.settings = {...DefaultSettings, ...wallet.settings, ...values}
         return
     }
@@ -360,6 +371,7 @@ module.exports = {
     ReadWallet,
     ResolveWalletPath,
     ThresholdSetting,
+    ConfirmSetting,
     TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,

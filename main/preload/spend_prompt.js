@@ -44,7 +44,9 @@ window.addEventListener("DOMContentLoaded", () => {
     let asking = "password"
 
     const submit = () => {
-        if (asking === "confirm") {
+        // The two steps with no password box: the mismatch re-confirmation, and
+        // a passwordless wallet's approval. Seeing the payments is the answer.
+        if (asking === "confirm" || asking === "approve") {
             reply({confirmed: true})
             return
         }
@@ -69,9 +71,10 @@ window.addEventListener("DOMContentLoaded", () => {
         asking = step.name
         ok.disabled = false
         const confirming = step.name === "confirm"
+        const typing = step.name === "password"
         show(el("mismatch"), confirming)
-        show(passwordStep, !confirming)
-        show(wrong, !confirming && step.wrong === true)
+        show(passwordStep, typing)
+        show(wrong, typing && step.wrong === true)
         const total = step.payments.reduce((sum, {value}) => sum + value, 0)
         const tokens = step.payments.some(({tokenAmount, baton}) => tokenAmount || baton)
         el("heading").textContent = confirming ? "This pays somewhere else" :
@@ -95,7 +98,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }))
         el("fee").textContent = "Network fee: " + satoshis(step.fee)
         ok.textContent = confirming ? "Send anyway" : (step.payments.length ? "Send" : "Sign")
-        if (!confirming) {
+        if (typing) {
             password.focus()
         }
     })
