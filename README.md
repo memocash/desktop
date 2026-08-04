@@ -11,6 +11,8 @@ cd desktop
 ```
 
 ### Install dependencies
+Requires Node.js 22.12 or newer (Electron's tooling enforces this; `.nvmrc`
+selects a matching version for nvm users).
 ```bash
 npm ci
 npm run rebuild

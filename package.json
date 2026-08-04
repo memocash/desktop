@@ -21,6 +21,9 @@
   },
   "author": "Memo Technology, Inc.",
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "build": {
     "appId": "cash.memo.desktop",
     "productName": "Memo",
@@ -72,7 +75,7 @@
   "devDependencies": {
     "@electron/rebuild": "^4.2.0",
     "crypto-js": "^4.2.0",
-    "electron": "39.8.5",
+    "electron": "43.3.0",
     "electron-builder": "^26.15.3",
     "electron-next": "^3.1.5",
     "esbuild": "^0.28.1",
