@@ -3,6 +3,7 @@ const path = require("path");
 const isDev = !app.isPackaged;
 const menu = require("../menu");
 const {IsSameOrigin, SafeExternalUrl} = require("../common/util");
+const {AppUrl} = require("./ipc");
 const {ForgetPaths} = require("./keystore");
 const {
     AddTxWindow,
@@ -24,9 +25,6 @@ const {
     TxWindowParent,
 } = require("./window_state");
 
-// Dev loads the Next dev server; prod loads the static export served over the
-// app:// protocol (see main/index.js). The rest of the URL is identical.
-const AppUrl = isDev ? "http://localhost:8000" : "app://-";
 const AppIcon = path.join(__dirname, "..", "..", "build", "icon.png")
 
 // Match the CSS --bg values so the window paints the right base color before
@@ -102,21 +100,26 @@ const OpenExternalUrl = (url) => {
 //   somewhere else is either a bug or someone trying to load their own page into
 //   a window that can read the wallet.
 //
-// Applied through one function because these two windows had drifted apart
-// before: only the main window installed an open handler, which left the
-// transaction viewer - the window that renders arbitrary on-chain urls - as the
-// one without it, the way WebPreferences is now shared for the same reason.
-const ApplyWindowSecurity = (win) => {
-    win.webContents.setWindowOpenHandler(({url}) => {
+// Applied to every WebContents from one app-level hook (see main/index.js)
+// rather than opted into per window. Per-window application drifted before:
+// only the main window installed an open handler, which left the transaction
+// viewer - the window that renders arbitrary on-chain urls - as the one
+// without it. A hook on web-contents-created cannot miss a window, present or
+// future, the spend prompt included.
+const ApplyContentsSecurity = (contents) => {
+    contents.setWindowOpenHandler(({url}) => {
         OpenExternalUrl(url)
         return {action: "deny"}
     })
     // will-navigate sees where a page asked to go; will-redirect sees where a
     // server answering a permitted navigation is sending it instead. app://
     // serves local files and cannot redirect, but the dev server origin can, so
-    // the same rule is applied at both points.
+    // the same rule is applied at both points. Programmatic loads by main
+    // (loadURL, loadFile) fire neither event, so the spend prompt's file: page
+    // still loads while anywhere the page itself asks to go is held to the app
+    // origin.
     for (const event of ["will-navigate", "will-redirect"]) {
-        win.webContents.on(event, (e, url) => {
+        contents.on(event, (e, url) => {
             if (IsSameOrigin(url, AppUrl + "/")) {
                 return
             }
@@ -146,7 +149,6 @@ const CreateWindow = async () => {
         webPreferences: WebPreferences,
         icon: AppIcon,
     })
-    ApplyWindowSecurity(win)
     SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
     SetWindow(win.webContents.id, win)
     ForgetWindowOnClose(win)
@@ -165,7 +167,6 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         webPreferences: WebPreferences,
         icon: AppIcon,
     })
-    ApplyWindowSecurity(win)
     AddTxWindow(winId, win.webContents.id)
     SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
     SetWindow(win.webContents.id, win)
@@ -201,6 +202,7 @@ const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
 module.exports = {
     eConf,
+    ApplyContentsSecurity,
     BackgroundColor,
     CopyPublicToFileWindows,
     CopyWalletToTxWindows,

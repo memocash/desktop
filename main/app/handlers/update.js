@@ -1,4 +1,5 @@
-const {ipcMain, app, BrowserWindow, Notification} = require("electron");
+const {app, BrowserWindow, Notification} = require("electron");
+const {ipcMain} = require("../ipc");
 const fs = require("fs");
 const path = require("path");
 const {Dir, Handlers, Listeners, Modals} = require("../../common/util");

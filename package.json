@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.0",
+    "crypto-js": "^4.2.0",
     "electron": "39.8.5",
     "electron-builder": "^26.15.3",
     "electron-next": "^3.1.5",
@@ -84,7 +85,6 @@
     "better-sqlite3": "^12.11.1",
     "bip32": "^5.0.1",
     "bip39": "^3.0.4",
-    "crypto-js": "^4.2.0",
     "react-icons": "^4.4.0",
     "react-linkify": "^1.0.0-alpha",
     "tiny-secp256k1": "^2.2.4",

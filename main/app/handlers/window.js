@@ -1,4 +1,5 @@
-const {ipcMain, Menu, MenuItem, Notification, app, clipboard, dialog} = require("electron");
+const {Menu, MenuItem, Notification, app, clipboard, dialog} = require("electron");
+const {ipcMain} = require("../ipc");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
 const {AllowPath} = require("../keystore");
 const {ValidateNetworkOption} = require("../../common/util/network_config");

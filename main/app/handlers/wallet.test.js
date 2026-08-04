@@ -35,7 +35,10 @@ const {GetWallet, SetWindow, ForgetWindow} = require("../window_state")
 const {Handlers} = require("../../common/util")
 require("./wallet.js").WalletHandlers()
 
-const e = (id) => ({sender: {id}})
+// Events carry the frame url the guarded ipc surface checks; these tests play
+// the app's own page, so requests present the app origin the way a real
+// renderer frame would.
+const e = (id) => ({sender: {id}, senderFrame: {url: "app://-/wallet"}})
 const unlock = (id, walletPath) => handlers[Handlers.UnlockWallet](e(id), walletPath, "pw")
 const change = (id, threshold, password) => handlers[Handlers.UpdateWallet](
     e(id), "changeSettings", {PasswordThreshold: threshold}, password)

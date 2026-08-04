@@ -1,6 +1,8 @@
-const {BrowserWindow, ipcMain} = require("electron");
+const {BrowserWindow} = require("electron");
 const path = require("path");
+const {pathToFileURL} = require("url");
 const {Handlers, Listeners} = require("../common/util");
+const {GuardedIpc} = require("./ipc");
 const {BackgroundColor} = require("./window");
 
 // Where a spend is authorised. Main opens this window itself, from a file on
@@ -94,8 +96,12 @@ const OpenSpendPrompt = async (parent) => {
 
 const SpendPromptHandlers = () => {
     // Answers come from the prompt's own preload and are matched to the window
-    // they came from, so nothing can answer for a prompt it was not asked.
-    ipcMain.on(Handlers.SpendPromptReply, (e, message) => settle(e.sender.id, message))
+    // they came from, so nothing can answer for a prompt it was not asked. The
+    // prompt page is not on the app origin - it is a file main loads itself -
+    // so this channel accepts exactly that file and nothing else: not the app
+    // pages, and not any other file: frame.
+    const promptIpc = GuardedIpc((url) => url === pathToFileURL(PromptPage).href)
+    promptIpc.on(Handlers.SpendPromptReply, (e, message) => settle(e.sender.id, message))
 }
 
 module.exports = {

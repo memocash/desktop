@@ -1,6 +1,5 @@
 const crypto = require("crypto")
 const {promisify} = require("util")
-const CryptoJS = require("crypto-js")
 const {WalletErrors} = require("../common/util")
 
 const scrypt = promisify(crypto.scrypt)
@@ -158,17 +157,49 @@ const decryptSecret = async (keystore, password) => {
     }
 }
 
+// What CryptoJS passphrase encryption actually wrote: base64 of the OpenSSL
+// salted layout - "Salted__", 8 bytes of salt, then AES-256-CBC ciphertext
+// under a key and iv derived by EVP_BytesToKey with MD5 and one iteration.
+// Plain node:crypto covers all of that, so reading the legacy format does not
+// need the discontinued crypto-js package in the shipped app. Decrypt only;
+// nothing has written this format since version 2.
+const md5 = (...parts) => {
+    const hash = crypto.createHash("md5")
+    for (const part of parts) {
+        hash.update(part)
+    }
+    return hash.digest()
+}
+
 const decryptV1 = (contents, password) => {
     if (!password || !password.length) {
         throw new Error(WrongPassword)
     }
+    const pass = Buffer.from(password, "utf8")
+    let keyMaterial = []
     let text
     try {
-        text = CryptoJS.AES.decrypt(contents, password).toString(CryptoJS.enc.Utf8)
+        const raw = Buffer.from(contents, "base64")
+        if (raw.length < 17 || !raw.subarray(0, 8).equals(Buffer.from("Salted__"))) {
+            throw new Error("not a v1 passphrase blob")
+        }
+        const salt = raw.subarray(8, 16)
+        // Each MD5 block is 16 bytes: two for the 32-byte key, a third for the iv.
+        const first = md5(pass, salt)
+        const second = md5(first, pass, salt)
+        const iv = md5(second, pass, salt)
+        keyMaterial = [first, second, iv]
+        const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.concat([first, second]), iv)
+        text = Buffer.concat([decipher.update(raw.subarray(16)), decipher.final()]).toString("utf8")
     } catch (e) {
-        // The old format is unauthenticated, so a wrong password usually
-        // surfaces as a UTF-8 decode failure rather than as anything explicit.
+        // The old format is unauthenticated, so a wrong password surfaces as a
+        // padding or UTF-8 decode failure rather than as anything explicit.
         throw new Error(WrongPassword)
+    } finally {
+        for (const block of keyMaterial) {
+            block.fill(0)
+        }
+        pass.fill(0)
     }
     if (!text.startsWith("{")) {
         throw new Error(WrongPassword)

@@ -1,4 +1,4 @@
-const {ipcMain} = require("electron");
+const {ipcMain} = require("../ipc");
 const {
     GetAddressAliases, GetFollowers, GetFollowing, GetLikes, GetLinkedAddresses, GetNewPosts, GetPost, GetPostParent, GetPostReplies,
     GetPosts, GetProfileInfo, GetProfileLinks, GetRecentFollow, GetRecentSetName,

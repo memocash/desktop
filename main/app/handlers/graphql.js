@@ -1,4 +1,4 @@
-const {ipcMain} = require("electron");
+const {ipcMain} = require("../ipc");
 const {GraphQL, Subscribe, CloseSocket} = require("../../client/graphql");
 const {Handlers, Listeners} = require("../../common/util");
 const {GetNetworkOption} = require("../window");

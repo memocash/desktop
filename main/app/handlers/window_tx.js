@@ -1,4 +1,4 @@
-const {ipcMain} = require("electron");
+const {ipcMain} = require("../ipc");
 const {Handlers} = require("../../common/util");
 const {CreateTxWindow} = require("../window");
 

@@ -1,4 +1,4 @@
-const {ipcMain} = require("electron");
+const {ipcMain} = require("../ipc");
 const fs = require("fs/promises");
 const path = require("path");
 const {Worker} = require("worker_threads");

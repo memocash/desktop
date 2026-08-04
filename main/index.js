@@ -1,7 +1,7 @@
 const {app, nativeImage, session} = require('electron')
 const path = require('path')
 const isDev = !app.isPackaged
-const {CreateWindow} = require("./app/window");
+const {ApplyContentsSecurity, CreateWindow} = require("./app/window");
 const {AllHandlers} = require("./app/handlers");
 const {ApplyStoredTheme} = require("./app/handlers/theme");
 const {TightenWalletPermissions} = require("./app/keystore");
@@ -26,6 +26,12 @@ process.on("uncaughtException", (err) => {
 if (!isDev) {
     RegisterRendererProtocol("renderer/out")
 }
+
+// Every WebContents the app will ever create - wallet windows, transaction
+// viewers, the spend prompt, anything a future feature opens - gets the
+// window-open and navigation lockdown at creation, before it has loaded a
+// byte. Structural, so no window type can be added without it.
+app.on("web-contents-created", (_e, contents) => ApplyContentsSecurity(contents))
 
 app.whenReady().then(async () => {
     // The wallet has no feature that needs a Chromium permission. Deny at the

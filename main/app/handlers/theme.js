@@ -1,4 +1,5 @@
-const {ipcMain, nativeTheme} = require("electron");
+const {nativeTheme} = require("electron");
+const {ipcMain} = require("../ipc");
 const fs = require("fs");
 const {Dir, Handlers} = require("../../common/util");
 
