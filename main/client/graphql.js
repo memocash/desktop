@@ -33,33 +33,46 @@ const Subscribe = ({network, id, query, variables, callback, onopen, onclose}) =
     }
     socket.onmessage = (ev) => {
         resetWatchdog()
-        const data = JSON.parse(ev.data)
-        switch (data.type) {
-            case "connection_ack":
-                socket.send(JSON.stringify({
-                    id: "1",
-                    type: "start",
-                    payload: {
-                        query: query,
-                        variables: variables,
-                    },
-                }))
-                break
-            case "ka":
-                break
-            case "data":
-                // A subscription payload can carry errors and still arrive as a
-                // "data" message - a null in a non-null field nulls the whole
-                // payload. Log them like the query path does, so a subscription
-                // that silently delivers nothing is visible.
-                if (data.payload.errors && data.payload.errors.length) {
-                    console.log("error with graphql subscription payload")
-                    console.log(data.payload.errors)
-                }
-                callback(data.payload.data)
-                break
-            default:
-                console.log(data)
+        // The frame contents are whatever the server chose to send - and the
+        // server is whatever the user typed into settings, possibly reached
+        // over plaintext ws://. A frame that doesn't parse, or parses to a
+        // shape the cases below don't expect, is that one peer speaking the
+        // protocol wrong, not grounds for an uncaught throw in the process
+        // every wallet window depends on. Terminate so onclose fires and the
+        // renderer's reconnect loop takes over.
+        try {
+            const data = JSON.parse(ev.data)
+            switch (data.type) {
+                case "connection_ack":
+                    socket.send(JSON.stringify({
+                        id: "1",
+                        type: "start",
+                        payload: {
+                            query: query,
+                            variables: variables,
+                        },
+                    }))
+                    break
+                case "ka":
+                    break
+                case "data":
+                    // A subscription payload can carry errors and still arrive
+                    // as a "data" message - a null in a non-null field nulls
+                    // the whole payload. Log them like the query path does, so
+                    // a subscription that silently delivers nothing is visible.
+                    if (data.payload.errors && data.payload.errors.length) {
+                        console.log("error with graphql subscription payload")
+                        console.log(data.payload.errors)
+                    }
+                    callback(data.payload.data)
+                    break
+                default:
+                    console.log(data)
+            }
+        } catch (e) {
+            console.log("malformed graphql subscription frame")
+            console.log(e)
+            socket.terminate()
         }
     }
     socket.onopen = () => {

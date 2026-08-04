@@ -17,6 +17,7 @@ const stub = (request, exports) => {
     require.cache[filename] = {id: filename, filename, loaded: true, exports}
 }
 stub("electron", {
+    app: {isPackaged: true},
     ipcMain: {
         handle: (channel, fn) => handlers[channel] = fn,
         on: (channel, fn) => handlers[channel] = fn,
@@ -26,7 +27,6 @@ stub("electron", {
     screen: {},
     shell: {},
 })
-stub("electron-is-dev", false)
 stub("../../data/tables", {GetOutput: async () => undefined, GetWalletInfo: async () => ({})})
 stub("../../menu", {ShowMenu: () => ({}), SimpleMenu: () => ({})})
 

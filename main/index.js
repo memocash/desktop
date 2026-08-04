@@ -1,13 +1,22 @@
 const {app, nativeImage, session} = require('electron')
 const path = require('path')
-const isDev = require('electron-is-dev')
-const prepareNext = require('electron-next')
+const isDev = !app.isPackaged
 const {CreateWindow} = require("./app/window");
 const {AllHandlers} = require("./app/handlers");
 const {ApplyStoredTheme} = require("./app/handlers/theme");
 const {TightenWalletPermissions} = require("./app/keystore");
 const {ScheduleUpdateChecks} = require("./app/handlers/update");
 const {RegisterRendererProtocol} = require("./static_server");
+
+// A throw that escapes every handler would otherwise kill the process that
+// holds the keys and every wallet window with it, mid-operation and with no
+// record of why. Nothing about the process state is trustworthy after one, so
+// log it and exit deliberately instead of limping on.
+process.on("uncaughtException", (err) => {
+    console.error("uncaught exception in main process")
+    console.error(err)
+    app.exit(1)
+})
 
 // In dev, electron-next runs the Next dev server on localhost:8000 (with hot
 // reload). In a packaged build there is no Next process, so serve the static
@@ -30,7 +39,9 @@ app.whenReady().then(async () => {
         app.dock.setIcon(nativeImage.createFromPath(iconPath))
     }
     if (isDev) {
-        await prepareNext('./renderer')
+        // electron-next is a devDependency and does not exist in packaged
+        // builds, so it can only be required on this branch.
+        await require('electron-next')('./renderer')
     }
     // Before any window can list or open a wallet, so nothing races the files
     // while they are still sitting at the modes an earlier release left.

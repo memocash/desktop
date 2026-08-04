@@ -16,8 +16,8 @@ import "../public/style.css"
 //   script, and there is no way to allow them without this.
 // - img-src covers profile pics, which render as data: urls built from the
 //   local cache, and the inline images linked in posts, which come from imgur.
-// - connect-src keeps the previous value: graphql goes out through the main
-//   process over ipc, so the renderer itself only talks to its own origin.
+// - connect-src: graphql goes out through the main process over ipc, so the
+//   renderer itself only ever talks to its own origin.
 // - object-src/base-uri close off plugin embedding and <base> rewriting.
 //
 // frame-ancestors and sandbox are deliberately absent: both are ignored when a
@@ -29,7 +29,7 @@ const ContentSecurityPolicy = [
     "script-src 'self'" + (isDev ? " 'unsafe-eval'" : ""),
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://i.imgur.com",
-    "connect-src 'self' http://localhost:10000",
+    "connect-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
 ].join("; ")

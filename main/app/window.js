@@ -1,6 +1,6 @@
-const {BrowserWindow, nativeTheme, screen, shell} = require("electron");
+const {app, BrowserWindow, nativeTheme, screen, shell} = require("electron");
 const path = require("path");
-const isDev = require("electron-is-dev");
+const isDev = !app.isPackaged;
 const menu = require("../menu");
 const {IsSameOrigin, SafeExternalUrl} = require("../common/util");
 const {ForgetPaths} = require("./keystore");
