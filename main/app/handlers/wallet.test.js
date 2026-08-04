@@ -339,3 +339,62 @@ test("raising a passwordless budget is asked in main's dialog, lowering is not",
         cleanup(13, dir)
     }
 })
+
+// The creation flow, driven over its channels: the seed is born in main, the
+// confirmation is judged in main, and the create call carries a flag where the
+// words used to travel.
+const pendingSeed = require("../pending_seed")
+
+test("a seed wallet is created from main's pending seed, and only once confirmed", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const walletPath = path.join(dir, "seeded")
+    try {
+        SetWindow(14, {id: 14})
+        keystore.AllowPath(14, walletPath)
+        const create = (target) =>
+            handlers[Handlers.CreateWallet](e(14), target, true, [], [], undefined)
+
+        // Nothing pending, then pending but unconfirmed, then a confirmation
+        // that misses: no wallet at any of those stops.
+        assert.match((await create(walletPath)).error, /no confirmed seed/)
+        const words = await handlers[Handlers.GenerateSeed](e(14))
+        assert.match((await create(walletPath)).error, /no confirmed seed/)
+        assert.equal(await handlers[Handlers.ConfirmSeed](e(14), "abandon about"), false)
+        assert.match((await create(walletPath)).error, /no confirmed seed/)
+
+        // Confirmed with main's own words, the wallet is written - holding
+        // exactly what main generated, not anything the renderer chose.
+        assert.equal(await handlers[Handlers.ConfirmSeed](e(14), words), true)
+        assert.equal((await create(walletPath)).ok, true)
+        assert.equal((await keystore.ReadWallet(walletPath)).wallet.seed, words)
+        assert.equal(GetWallet(14).wallet.seed, undefined)
+
+        // Creation consumed the pending seed: the next seed wallet starts its
+        // own flow rather than reusing words already bound to a wallet.
+        const againPath = path.join(dir, "seeded_again")
+        keystore.AllowPath(14, againPath)
+        assert.match((await create(againPath)).error, /no confirmed seed/)
+    } finally {
+        pendingSeed.Discard(14)
+        cleanup(14, dir)
+    }
+})
+
+test("an imported seed is what the wallet stores, spacing aside", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const walletPath = path.join(dir, "imported_seed")
+    const phrase = "abandon abandon abandon abandon abandon abandon " +
+        "abandon abandon abandon abandon abandon about"
+    try {
+        SetWindow(15, {id: 15})
+        keystore.AllowPath(15, walletPath)
+        assert.equal(await handlers[Handlers.ImportSeed](e(15), "not a mnemonic"), false)
+        assert.equal(await handlers[Handlers.ImportSeed](e(15), " " + phrase.split(" ").join("  ")), true)
+        const created = await handlers[Handlers.CreateWallet](e(15), walletPath, true, [], [], undefined)
+        assert.equal(created.ok, true)
+        assert.equal((await keystore.ReadWallet(walletPath)).wallet.seed, phrase)
+    } finally {
+        pendingSeed.Discard(15)
+        cleanup(15, dir)
+    }
+})

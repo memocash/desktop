@@ -12,6 +12,7 @@ const {OpenSpendPrompt} = require("../spend_prompt");
 const {CoversSpend} = require("../spend_match");
 const {CreateSignRelay} = require("../sign_relay");
 const session = require("../session");
+const pendingSeed = require("../pending_seed");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
 const {ValidateNetworkConfig} = require("../../common/util/network_config");
@@ -129,7 +130,12 @@ const unlockWallet = async (winId, walletName, password) => {
     return {ok: true, sessionKey}
 }
 
-const createWallet = async (winId, walletName, seedPhrase, keyList, addressList, password) => {
+// The seed never arrives in this call: a seed wallet says so with a flag, and
+// the words come from the pending seed main has been holding for this window -
+// generated or imported there, and confirmed there. The renderer's part in
+// naming the seed ended when it could generate one; see ../pending_seed.
+const createWallet = async (winId, walletName, useSeed, keyList, addressList, password) => {
+    const seedPhrase = useSeed ? pendingSeed.Use(winId) : undefined
     if (!Dir.IsFullPath(walletName)) {
         await fs.mkdir(Dir.DefaultPath, {recursive: true, mode: 0o700})
     }
@@ -166,6 +172,10 @@ const createWallet = async (winId, walletName, seedPhrase, keyList, addressList,
         }
         throw e
     }
+    // The wallet holds the seed now; nothing is waiting to be created anymore.
+    // Dropped only on success, so a refused name doesn't cost the words the
+    // person just finished confirming.
+    pendingSeed.Discard(winId)
     return {ok: true}
 }
 
@@ -764,8 +774,14 @@ const WalletHandlers = () => {
     // named wallet that is in the way - so only the failure needs wrapping.
     ipcMain.handle(Handlers.UnlockWallet, async (e, walletName, password) =>
         unlockWallet(e.sender.id, walletName, password).catch(asError))
-    ipcMain.handle(Handlers.CreateWallet, async (e, walletName, seedPhrase, keyList, addressList, password) =>
-        createWallet(e.sender.id, walletName, seedPhrase, keyList, addressList, password).catch(asError))
+    // The creation flow's seed, kept on this side for its whole life: the
+    // renderer asks for words to display, offers a typed phrase for checking,
+    // and learns only whether it matched.
+    ipcMain.handle(Handlers.GenerateSeed, async (e) => pendingSeed.Generate(e.sender.id))
+    ipcMain.handle(Handlers.ImportSeed, async (e, phrase) => pendingSeed.Import(e.sender.id, phrase))
+    ipcMain.handle(Handlers.ConfirmSeed, async (e, typed) => pendingSeed.Confirm(e.sender.id, typed))
+    ipcMain.handle(Handlers.CreateWallet, async (e, walletName, useSeed, keyList, addressList, password) =>
+        createWallet(e.sender.id, walletName, useSeed, keyList, addressList, password).catch(asError))
     ipcMain.handle(Handlers.UpdateWallet, async (e, op, values, password) => {
         const result = await operationResult(() => updateWallet(e.sender.id, op, values, password))
         // A settings change that opened a budget hands its key back the way

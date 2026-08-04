@@ -1,28 +1,36 @@
 import {useEffect, useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
 import {Panes} from "./common";
-import {validateMnemonic} from "bip39";
 
 const SeedTypeOptions = {
     Create: "create",
     Import: "import",
 }
 
-const AddSeed = ({setPane, setSeedPhrase, onBack, seedPhrase}) => {
+// The seed on display here is main's: asked for once when the pane mounts, and
+// shown so it can be written down. Coming back to this pane is a fresh mount,
+// which asks main for fresh words - the seed behind a step the person backed
+// out of is not the seed they end up storing. A typed-in seed goes the other
+// way exactly once, for main to validate and hold; whether it was a valid
+// phrase is all that comes back.
+const AddSeed = ({setPane, onBack}) => {
     const [hasOwnSeed, setHasOwnSeed] = useState(false)
     const [hasEnteredInvalidSeedPhrase, setHasEnteredInvalidSeedPhrase] = useState(false)
+    const [seedWords, setSeedWords] = useState("")
     const userProvidedSeed = useRef()
     const defaultOption = useRef()
     useEffect(() => {
         defaultOption.current.checked = true
+        window.electron.generateSeed().then(setSeedWords)
     }, [])
     const handleChooseAddSeed = (e) => {
         setHasOwnSeed(e.target.value !== SeedTypeOptions.Create)
     }
-    const handleEnteredSeed = () => {
-        const userSeed = userProvidedSeed.current.value
-        const isInvalidSeedPhrase = onUserProvidedSeed(userSeed)
-        if (isInvalidSeedPhrase) {
+    const handleEnteredSeed = async () => {
+        const imported = await window.electron.importSeed(userProvidedSeed.current.value)
+        if (imported) {
+            setPane(Panes.Step5SetPassword)
+        } else {
             setHasEnteredInvalidSeedPhrase(true)
         }
     }
@@ -34,15 +42,6 @@ const AddSeed = ({setPane, setSeedPhrase, onBack, seedPhrase}) => {
     const onStoredSeed = () => {
         window.electron.clearClipboard()
         setPane(Panes.Step4ConfirmSeed)
-    }
-    const onUserProvidedSeed = (seed) => {
-        const isValidSeed = validateMnemonic(seed)
-        if (isValidSeed) {
-            setSeedPhrase(seed)
-            setPane(Panes.Step5SetPassword)
-        } else {
-            return true
-        }
     }
     return (
         <div className={styles.root}>
@@ -69,7 +68,7 @@ const AddSeed = ({setPane, setSeedPhrase, onBack, seedPhrase}) => {
                             :
                             <div>
                                 <p>Here is the seed phrase for your new wallet:</p>
-                                <textarea key={"generate"} className={styles.seedPhrase} value={seedPhrase} readOnly/>
+                                <textarea key={"generate"} className={styles.seedPhrase} value={seedWords} readOnly/>
                                 <p>Store this seed securely. It will be used to recover your wallet.</p>
                             </div>
                         }

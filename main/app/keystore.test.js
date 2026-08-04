@@ -11,6 +11,8 @@ const {
     CreateWalletFile,
     DefaultSettings,
     ForgetPaths,
+    FreeGuesses,
+    GuessDelayMs,
     IsWalletArtifact,
     MigrateWallet,
     NewWallet,
@@ -463,4 +465,61 @@ test("an update the keystore doesn't define is refused", () => {
         assert.throws(() => ApplyWalletUpdate({}, op, ["addr"]), {message: /unknown wallet update/})
     }
     assert.throws(() => ApplyWalletUpdate({}, "addAddresses", "not-a-list"), {message: /list of values/})
+})
+
+test("the guess delay is free at first, then doubles, then stops climbing", () => {
+    for (let misses = 0; misses <= FreeGuesses; misses++) {
+        assert.equal(GuessDelayMs(misses), 0)
+    }
+    assert.equal(GuessDelayMs(FreeGuesses + 1), 1000)
+    assert.equal(GuessDelayMs(FreeGuesses + 2), 2000)
+    assert.equal(GuessDelayMs(FreeGuesses + 3), 4000)
+    assert.equal(GuessDelayMs(FreeGuesses + 50), 30000)
+})
+
+test("wrong passwords slow a file down, and the right one clears the slate", async () => {
+    const walletPath = await tempWallet("guessed_at")
+    await CreateWalletFile(walletPath, NewWallet("seed words", [], []), "hunter2")
+    const miss = () => assert.rejects(ReadWallet(walletPath, "wrong"), {message: WrongPassword})
+
+    // The free misses, plus the attempt that reaches the first priced delay.
+    for (let guess = 0; guess <= FreeGuesses; guess++) {
+        await miss()
+    }
+    // The next attempt pays: it waits out the schedule before it even reads.
+    const slowed = Date.now()
+    await miss()
+    assert.ok(Date.now() - slowed >= GuessDelayMs(FreeGuesses + 1),
+        "the attempt after the free misses must wait out the delay")
+
+    // The right password still opens the wallet - slower, never locked out -
+    // and resets the count: the next miss is back on the house.
+    const opened = await ReadWallet(walletPath, "hunter2")
+    assert.equal(opened.wallet.seed, "seed words")
+    const fresh = Date.now()
+    await miss()
+    assert.ok(Date.now() - fresh < GuessDelayMs(FreeGuesses + 1),
+        "a miss after a successful open must be free again")
+    await ReadWallet(walletPath, "hunter2")
+})
+
+// The burst case: guesses fired together, before any miss has been recorded.
+// A gate keyed on the recorded count would admit them all at once; queueing
+// from the first offered password makes the tail of the burst wait out the
+// schedule exactly as sequential guesses would.
+test("a parallel burst of guesses lines up instead of slipping past the meter", async () => {
+    const walletPath = await tempWallet("burst_guessed")
+    await CreateWalletFile(walletPath, NewWallet("seed words", [], []), "hunter2")
+    const start = Date.now()
+    const burst = await Promise.allSettled(Array.from(
+        {length: FreeGuesses + 2}, () => ReadWallet(walletPath, "wrong")))
+    for (const attempt of burst) {
+        assert.equal(attempt.status, "rejected")
+        assert.equal(attempt.reason.message, WrongPassword)
+    }
+    assert.ok(Date.now() - start >= GuessDelayMs(FreeGuesses + 1),
+        "the last guess of the burst must pay for the misses queued ahead of it")
+    // The owner is still not locked out, and being right still clears the count.
+    const opened = await ReadWallet(walletPath, "hunter2")
+    assert.equal(opened.wallet.seed, "seed words")
 })

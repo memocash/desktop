@@ -5,6 +5,7 @@ const menu = require("../menu");
 const {IsSameOrigin, SafeExternalUrl} = require("../common/util");
 const {AppUrl} = require("./ipc");
 const {ForgetPaths} = require("./keystore");
+const {Discard: DiscardPendingSeed} = require("./pending_seed");
 const {
     AddTxWindow,
     CopyPublicToFileWindows,
@@ -65,6 +66,7 @@ const ForgetWindowOnClose = (win) => {
         // would also pin every preview on top of the wallet window.
         const children = TxWindowIds(winId)
         ForgetPaths(winId)
+        DiscardPendingSeed(winId)
         ForgetWindow(winId)
         for (const childId of children) {
             const child = GetWindow(childId)

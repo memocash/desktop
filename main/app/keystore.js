@@ -101,13 +101,65 @@ const WalletFileState = async (winId, walletName) => {
     return {exists: true, encrypted: walletFile.IsEncrypted(contents)}
 }
 
+// Wrong guesses at a file's password, counted so guessing gets slower. scrypt
+// prices a single guess, but nothing else priced the stream of them an IPC
+// caller can produce; this is that limiter, and it lives here because this is
+// the one place every password in the app is proven - unlock, exports,
+// settings changes, and the spend prompt all arrive at ReadWallet.
+//
+// Every attempt that offers a password goes one at a time through a queue,
+// each waiting out the current delay first - so a burst of parallel guesses
+// buys nothing, it just lines up. From the very first attempt, not from the
+// first recorded miss: a gate that opens on the recorded count would admit
+// every guess fired before the first one finishes recording, which is exactly
+// the burst an IPC caller can produce. A few misses are free, since a person
+// mistyping is the common case; past those the wait doubles per miss, and the
+// right password clears the slate. Only a read offering no password on a file
+// with no misses on record skips the queue - there is no guess in that to
+// meter, and it is the shape of every routine read of a passwordless wallet.
+// Slower rather than refused: a lockout would need its own error for every
+// screen to explain, and would let anything that can reach these channels
+// lock the owner out of their own wallet at will.
+const passwordMisses = new Map()
+
+const FreeGuesses = 3
+const MaxGuessDelayMs = 30000
+
+const GuessDelayMs = (misses) => misses <= FreeGuesses ? 0 :
+    Math.min(1000 * 2 ** (misses - FreeGuesses - 1), MaxGuessDelayMs)
+
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const readWalletCounted = async (walletPath, password) => {
+    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
+    try {
+        const read = await walletFile.DecodeContents(contents, password)
+        passwordMisses.delete(walletPath)
+        return read
+    } catch (e) {
+        if (e.message === WrongPassword) {
+            passwordMisses.set(walletPath, (passwordMisses.get(walletPath) || 0) + 1)
+        }
+        throw e
+    }
+}
+
 // Returns the decrypted wallet, or throws WrongPassword. Reports whether the
 // file was encrypted so the caller knows if there is a password worth keeping
 // for later writes, and which version it was written in so the caller can
 // migrate it; the password itself never travels back toward the renderer.
 const ReadWallet = async (walletPath, password) => {
-    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
-    return walletFile.DecodeContents(contents, password)
+    if (password === undefined && !passwordMisses.has(walletPath)) {
+        return readWalletCounted(walletPath, password)
+    }
+    // Its own queue, not the file's write lock: a wallet being guessed at can
+    // still be read and written by the windows that already hold it open. The
+    // delay is read at the attempt's own turn, so each guess in a lined-up
+    // burst pays for the misses of the ones ahead of it.
+    return Serialize("guess:" + walletPath, async () => {
+        await pause(GuessDelayMs(passwordMisses.get(walletPath) || 0))
+        return readWalletCounted(walletPath, password)
+    })
 }
 
 let writeCount = 0
@@ -362,6 +414,8 @@ module.exports = {
     CreateWalletFile,
     DefaultSettings,
     ForgetPaths,
+    FreeGuesses,
+    GuessDelayMs,
     IsWalletArtifact,
     ListWalletFiles,
     MigrateWallet,
