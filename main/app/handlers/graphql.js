@@ -16,9 +16,14 @@ const GraphQLHandlers = () => {
         const onclose = (data) => {
             !e.sender.isDestroyed() && e.sender.send(Listeners.GraphQLClosePrefix + id, data)
         }
-        Subscribe({network: GetNetworkOption(e.sender.id), id, query, variables, callback, onopen, onclose})
+        // The window half of the socket's name comes from the sender, so one
+        // window's subscriptions are never reachable by another window's ids.
+        Subscribe({
+            network: GetNetworkOption(e.sender.id), windowId: e.sender.id,
+            id, query, variables, callback, onopen, onclose,
+        })
     })
-    ipcMain.on(Handlers.GraphQLSubscribeClose, (e, {id}) => CloseSocket({id}))
+    ipcMain.on(Handlers.GraphQLSubscribeClose, (e, {id}) => CloseSocket({windowId: e.sender.id, id}))
 }
 
 module.exports = {

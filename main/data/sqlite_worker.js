@@ -46,6 +46,12 @@ const GetStatement = (db, query) => {
     return statement
 }
 
+// A failed statement answers the query that sent it, like any other result.
+// Throwing here instead - which is what these catches used to do - kills the
+// whole worker: the throw surfaces as an unhandled rejection, the main side
+// matched it back to a query by searching the message for the query id, and
+// every other pending promise on this worker was left waiting forever on a
+// thread that no longer existed.
 const Insert = async ({queryId, query, variables}) => {
     try {
         if (variables === undefined) {
@@ -55,7 +61,7 @@ const Insert = async ({queryId, query, variables}) => {
         const result = GetStatement(db, query).run(...variables)
         parentPort.postMessage({queryId, result});
     } catch (e) {
-        throw new Error(queryId + ": " + e)
+        parentPort.postMessage({queryId, error: String(e)})
     }
 }
 
@@ -73,7 +79,7 @@ const Batch = async ({queryId, statements}) => {
         })()
         parentPort.postMessage({queryId, result: {statements: statements.length}});
     } catch (e) {
-        throw new Error(queryId + ": " + e)
+        parentPort.postMessage({queryId, error: String(e)})
     }
 }
 
@@ -86,7 +92,7 @@ const Select = async ({queryId, query, variables}) => {
         const result = GetStatement(db, query).all(...variables)
         parentPort.postMessage({queryId, result});
     } catch (e) {
-        throw new Error(queryId + ": " + e)
+        parentPort.postMessage({queryId, error: String(e)})
     }
 }
 

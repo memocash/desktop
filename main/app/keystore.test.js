@@ -20,6 +20,7 @@ const {
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
+    SweepStrandedTempFiles,
     TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,
@@ -522,4 +523,38 @@ test("a parallel burst of guesses lines up instead of slipping past the meter", 
     // The owner is still not locked out, and being right still clears the count.
     const opened = await ReadWallet(walletPath, "hunter2")
     assert.equal(opened.wallet.seed, "seed words")
+})
+
+// The scratch files a crashed write strands: hidden from the wallet list, and
+// for a passwordless wallet holding the seed in the clear. Which ones may go
+// is decided by who wrote them - a name carrying a live process's pid is a
+// write in progress somewhere, not a leftover.
+test("startup sweeps the scratch files whose writer is gone, and no others", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const original = Dir.DefaultPath
+    Dir.DefaultPath = dir
+    try {
+        // A pid that really ran and really exited, so liveness is answered by
+        // the OS rather than assumed.
+        const deadPid = require("node:child_process").spawnSync("true").pid
+        // Pid 1 is init: alive for the whole test, and not ours to signal -
+        // the EPERM answer must read as alive.
+        const files = {
+            ["w." + deadPid + ".0.tmp"]: false,
+            ["w." + process.pid + ".3.tmp"]: false,
+            "w.1.2.tmp": true,
+            "wallet_normal": true,
+            "wallet.v1.bak": true,
+        }
+        for (const name of Object.keys(files)) {
+            await fs.writeFile(path.join(dir, name), "x")
+        }
+        await SweepStrandedTempFiles()
+        const kept = new Set(await fs.readdir(dir))
+        for (const [name, stays] of Object.entries(files)) {
+            assert.equal(kept.has(name), stays, name)
+        }
+    } finally {
+        Dir.DefaultPath = original
+    }
 })

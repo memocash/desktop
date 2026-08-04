@@ -2,14 +2,39 @@ const http = require("http");
 const https = require("https");
 const WebSocket = require('ws');
 
+// Subscriptions are held per window as well as per id: the id is whatever the
+// renderer chose, and with one flat namespace any window could close another's
+// subscription by guessing its id. The window half of the key comes from the
+// sender in main, which no renderer picks for itself.
 const sockets = {}
 
-const CloseSocket = ({id}) => {
-    if (!sockets[id]) {
+const socketKey = (windowId, id) => windowId + ":" + id
+
+// A subscription frame arrives from whatever server the user configured. ws
+// would buffer up to 100MB for a single frame before the handler ever sees
+// it; no real subscription payload is within orders of magnitude of this cap,
+// so past it the peer is either broken or hostile, and the socket closes.
+const MaxFrameBytes = 8 * 1024 * 1024
+
+const CloseSocket = ({windowId, id}) => {
+    const key = socketKey(windowId, id)
+    if (!sockets[key]) {
         return
     }
-    sockets[id].close()
-    delete sockets[id]
+    sockets[key].close()
+    delete sockets[key]
+}
+
+// Everything a window subscribed to goes when the window does - otherwise the
+// sockets outlive their audience, holding connections and pushing frames at a
+// callback whose sender is destroyed.
+const CloseWindowSockets = (windowId) => {
+    for (const key of Object.keys(sockets)) {
+        if (key.startsWith(windowId + ":")) {
+            sockets[key].close()
+            delete sockets[key]
+        }
+    }
 }
 
 // If no traffic (not even server "ka" keepalives) arrives within this window we
@@ -18,8 +43,12 @@ const CloseSocket = ({id}) => {
 // reconnects.
 const KeepAliveTimeoutMs = 60000
 
-const Subscribe = ({network, id, query, variables, callback, onopen, onclose}) => {
-    let socket = new WebSocket(httpUrlToWs(network.Server) + "/graphql")
+const Subscribe = ({network, windowId, id, query, variables, callback, onopen, onclose}) => {
+    const key = socketKey(windowId, id)
+    // Reusing an id ends the socket that was using it, rather than leaving
+    // the old one connected under a name nothing can reach anymore.
+    CloseSocket({windowId, id})
+    let socket = new WebSocket(httpUrlToWs(network.Server) + "/graphql", {maxPayload: MaxFrameBytes})
     let watchdog = null
     const clearWatchdog = () => {
         if (watchdog) {
@@ -90,12 +119,14 @@ const Subscribe = ({network, id, query, variables, callback, onopen, onclose}) =
     }
     socket.onclose = () => {
         clearWatchdog()
-        if (sockets[id]) {
-            delete sockets[id]
+        // Only its own entry: by the time an old socket's close fires, the
+        // key may already name its replacement.
+        if (sockets[key] === socket) {
+            delete sockets[key]
         }
         onclose()
     }
-    sockets[id] = socket
+    sockets[key] = socket
 }
 
 const httpUrlToWs = (url) => {
@@ -128,7 +159,11 @@ const GraphQL = async ({network, query, variables, retries = 3}) => {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Content-Length": body.length,
+                // Bytes, not code units: a query carrying anything outside
+                // ascii - a profile name, an emoji in a post - is longer on
+                // the wire than in the string, and a short declared length
+                // truncates the request body at the server.
+                "Content-Length": Buffer.byteLength(body),
             },
         }, (res) => {
             let data = "";
@@ -163,4 +198,5 @@ module.exports = {
     GraphQL: GraphQL,
     Subscribe: Subscribe,
     CloseSocket: CloseSocket,
+    CloseWindowSockets: CloseWindowSockets,
 }

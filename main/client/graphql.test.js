@@ -10,10 +10,12 @@ const assert = require("node:assert")
 // pin both the recovery path and the normal protocol exchange around it.
 const created = []
 class StubWebSocket {
-    constructor(url) {
+    constructor(url, options) {
         this.url = url
+        this.options = options
         this.sent = []
         this.terminateCalls = 0
+        this.closeCalls = 0
         created.push(this)
     }
 
@@ -24,20 +26,25 @@ class StubWebSocket {
     terminate() {
         this.terminateCalls++
     }
+
+    close() {
+        this.closeCalls++
+    }
 }
 
 const filename = require.resolve("ws")
 require.cache[filename] = {id: filename, filename, loaded: true, exports: StubWebSocket}
 
-const {Subscribe} = require("./graphql")
+const {Subscribe, CloseSocket, CloseWindowSockets} = require("./graphql")
 
 // Each subscription gets its own socket and its own delivery log. Every test
 // ends by firing onclose: that is the recovery path under test, and it also
 // clears the keep-alive watchdog timer the handler arms on every frame.
-const subscribe = (id) => {
+const subscribe = (id, windowId = 1) => {
     const state = {delivered: [], opened: 0, closed: 0}
     Subscribe({
         network: {Server: "http://server.test"},
+        windowId,
         id,
         query: "subscription { blocks { height } }",
         variables: {},
@@ -81,4 +88,52 @@ test("the normal exchange still flows: init on open, start on ack, payloads to t
     assert.equal(socket.terminateCalls, 0)
     socket.onclose()
     assert.equal(state.closed, 1)
+})
+
+test("a socket says up front how much one frame may carry", () => {
+    const {socket} = subscribe("capped")
+    assert.equal(socket.options.maxPayload, 8 * 1024 * 1024)
+    socket.onclose()
+})
+
+test("a subscription is closable by the window that opened it, and only that window", () => {
+    const ours = subscribe("shared_id", 1)
+    const theirs = subscribe("shared_id", 2)
+    // A third window aiming at the shared id hits nothing at all.
+    CloseSocket({windowId: 3, id: "shared_id"})
+    assert.equal(ours.socket.closeCalls + theirs.socket.closeCalls, 0)
+    // The owner's close reaches its own socket and leaves the same id alone
+    // under every other window.
+    CloseSocket({windowId: 1, id: "shared_id"})
+    assert.equal(ours.socket.closeCalls, 1)
+    assert.equal(theirs.socket.closeCalls, 0)
+    ours.socket.onclose()
+    theirs.socket.onclose()
+})
+
+test("a window's sockets all close when the window does, nobody else's do", () => {
+    const first = subscribe("one", 7)
+    const second = subscribe("two", 7)
+    const other = subscribe("one", 8)
+    CloseWindowSockets(7)
+    assert.equal(first.socket.closeCalls, 1)
+    assert.equal(second.socket.closeCalls, 1)
+    assert.equal(other.socket.closeCalls, 0)
+    first.socket.onclose()
+    second.socket.onclose()
+    CloseSocket({windowId: 8, id: "one"})
+    other.socket.onclose()
+})
+
+test("reusing an id ends the socket that held it, and a late close cannot evict the replacement", () => {
+    const first = subscribe("dup", 9)
+    const second = subscribe("dup", 9)
+    assert.equal(first.socket.closeCalls, 1)
+    assert.equal(second.socket.closeCalls, 0)
+    // The evicted socket's close event arrives after the replacement took the
+    // key; the key must still name the replacement.
+    first.socket.onclose()
+    CloseSocket({windowId: 9, id: "dup"})
+    assert.equal(second.socket.closeCalls, 1)
+    second.socket.onclose()
 })

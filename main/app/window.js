@@ -6,6 +6,7 @@ const {IsSameOrigin, SafeExternalUrl} = require("../common/util");
 const {AppUrl} = require("./ipc");
 const {ForgetPaths} = require("./keystore");
 const {Discard: DiscardPendingSeed} = require("./pending_seed");
+const {CloseWindowSockets} = require("../client/graphql");
 const {
     AddTxWindow,
     CopyPublicToFileWindows,
@@ -67,6 +68,7 @@ const ForgetWindowOnClose = (win) => {
         const children = TxWindowIds(winId)
         ForgetPaths(winId)
         DiscardPendingSeed(winId)
+        CloseWindowSockets(winId)
         ForgetWindow(winId)
         for (const childId of children) {
             const child = GetWindow(childId)

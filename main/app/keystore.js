@@ -79,6 +79,47 @@ const TightenWalletPermissions = async () => {
         fs.chmod(path.join(Dir.DefaultPath, entry.name), 0o600).catch(() => {})))
 }
 
+// A crash between writing a scratch file and renaming it over the wallet
+// strands the copy: a whole wallet - the plaintext seed, for a passwordless
+// one - under a name the wallet list hides and nobody knows to look for. The
+// name embeds the writer's pid, so a file whose writer is gone is a stranded
+// copy and nothing else. Run at startup for the wallet directory; a wallet
+// kept elsewhere never has its directory visited without the wallet being
+// opened, and a fresh write there replaces the file anyway.
+const StrandedTemp = /\.(\d+)\.\d+\.tmp$/
+
+const writerGone = (pid) => {
+    if (pid === process.pid) {
+        // This run has written nothing yet - a file carrying our pid is a
+        // previous owner's, left by a recycled pid.
+        return true
+    }
+    try {
+        process.kill(pid, 0)
+        return false
+    } catch (e) {
+        // EPERM is an answer from a live process that is not ours to signal;
+        // anything else means nobody is home.
+        return e.code !== "EPERM"
+    }
+}
+
+const SweepStrandedTempFiles = async () => {
+    let names
+    try {
+        names = await fs.readdir(Dir.DefaultPath)
+    } catch (e) {
+        return
+    }
+    await Promise.all(names.map((name) => {
+        const match = StrandedTemp.exec(name)
+        if (!match || !writerGone(Number(match[1]))) {
+            return
+        }
+        return fs.rm(path.join(Dir.DefaultPath, name), {force: true}).catch(() => {})
+    }))
+}
+
 // What the load screen needs to know about a name before it can offer anything:
 // whether there is a wallet there, and whether opening it will need a password.
 // Answered together because the screen has no use for one without the other, and
@@ -424,6 +465,7 @@ module.exports = {
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
+    SweepStrandedTempFiles,
     ThresholdSetting,
     ConfirmSetting,
     TightenWalletPermissions,

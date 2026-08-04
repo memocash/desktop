@@ -5,6 +5,13 @@ const ConfigKeys = ["Last", "Networks"]
 const Rulesets = new Set(["bch", "bsv"])
 const MemoDatabase = /^~\/\.memo\/[^/\\]+\.db$/
 
+// The hosts plaintext may speak to: traffic to these never leaves the
+// machine, so there is no wire for it to be read from. URL lowercases the
+// hostname and keeps an IPv6 literal in its brackets.
+const IsLoopbackHost = (hostname) =>
+    hostname === "localhost" || hostname === "[::1]" ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)
+
 const exactKeys = (value, allowed) => {
     const keys = Object.keys(value).sort()
     return keys.every((key) => allowed.includes(key)) && allowed.every((key) => keys.includes(key))
@@ -33,6 +40,14 @@ const ValidateNetworkOption = (option) => {
     const parsed = new URL(server)
     if (parsed.pathname !== "/" || parsed.search || parsed.hash || parsed.username || parsed.password) {
         throw new TypeError("Network server must not contain credentials, a path, query, or fragment")
+    }
+    // Everything the app knows about a wallet - its addresses, its history,
+    // its subscriptions - travels to this server, and the websocket side
+    // follows the same scheme. Plaintext is fine on the loopback presets,
+    // where it never touches a wire; a server anywhere else gets https or is
+    // refused here, before anything is saved or connected to.
+    if (parsed.protocol === "http:" && !IsLoopbackHost(parsed.hostname)) {
+        throw new TypeError("A network server outside this machine must use https")
     }
     return {...option, Server: server.replace(/\/$/, "")}
 }

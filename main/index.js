@@ -4,7 +4,7 @@ const isDev = !app.isPackaged
 const {ApplyContentsSecurity, CreateWindow} = require("./app/window");
 const {AllHandlers} = require("./app/handlers");
 const {ApplyStoredTheme} = require("./app/handlers/theme");
-const {TightenWalletPermissions} = require("./app/keystore");
+const {SweepStrandedTempFiles, TightenWalletPermissions} = require("./app/keystore");
 const {ScheduleUpdateChecks} = require("./app/handlers/update");
 const {RegisterRendererProtocol} = require("./static_server");
 
@@ -52,6 +52,7 @@ app.whenReady().then(async () => {
     // Before any window can list or open a wallet, so nothing races the files
     // while they are still sitting at the modes an earlier release left.
     await TightenWalletPermissions()
+    await SweepStrandedTempFiles()
     ApplyStoredTheme()
     AllHandlers()
     await CreateWindow()

@@ -1,7 +1,19 @@
-const {Menu} = require("electron");
+const {app, Menu} = require("electron");
 const {Modals, Listeners, ToggleableTabs} = require("../common/util");
 
 const isMac = process.platform === "darwin"
+
+// DevTools is a development tool, and in a shipped wallet it is also a console
+// with the bridge in scope - the thing "paste this to get free coins" needs
+// its victim to have a shortcut to. Packaged builds get neither the menu item
+// nor its accelerator; nothing else binds one.
+const DevToolsItems = (win) => app.isPackaged ? [] : [{
+    label: "Developer Tools",
+    accelerator: "CommandOrControl+Shift+I",
+    click: () => {
+        win.webContents.openDevTools()
+    },
+}]
 
 const ShowMenu = (win, newWindow, wallet) => {
     const submenu = [
@@ -102,13 +114,7 @@ const ShowMenu = (win, newWindow, wallet) => {
             {type: "separator"},
             {role: 'reload'},
             {role: 'forceReload'},
-            {
-                label: "Developer Tools",
-                accelerator: "CommandOrControl+Shift+I",
-                click: () => {
-                    win.webContents.openDevTools()
-                },
-            },
+            ...DevToolsItems(win),
         ]
     }])
     if (isMac) {
@@ -167,13 +173,7 @@ const SimpleMenu = (win, hide) => {
         submenu: [
             {role: 'reload'},
             {role: 'forceReload'},
-            {
-                label: "Developer Tools",
-                accelerator: "CommandOrControl+Shift+I",
-                click: () => {
-                    win.webContents.openDevTools()
-                },
-            },
+            ...DevToolsItems(win),
         ],
     }])
     if (isMac) {
