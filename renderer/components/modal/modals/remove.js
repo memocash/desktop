@@ -1,4 +1,3 @@
-import {useEffect, useState} from "react"
 import Modal from "../modal"
 import styles from "../../../styles/modal.module.css"
 import GetWallet from "../../util/wallet"

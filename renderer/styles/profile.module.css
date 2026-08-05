@@ -216,12 +216,6 @@
     left: 3px;
 }
 
-.followers .address {
-    cursor: pointer;
-    word-wrap: break-word;
-    word-break: break-word;
-}
-
 .img {
     width: 30px;
     height: 30px;
@@ -295,15 +289,6 @@
     cursor: pointer;
 }
 
-.header_buttons {
-    display: inline-block;
-    margin-left: 10px;
-}
-
-.header_buttons button {
-    margin-right: 2px;
-}
-
 .selected {
     box-shadow: inset 0 -2px var(--accent);
     font-weight: bold;
@@ -357,10 +342,6 @@
     margin-right: 15px;
     margin-bottom: 5px;
     min-width: 50px;
-}
-
-.post_footer .like_link button {
-    cursor: pointer;
 }
 
 .post_footer button {

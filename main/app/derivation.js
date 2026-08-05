@@ -60,9 +60,7 @@ const addressesForKeys = (keys) => keys.map((key) => {
 const derivePrivateWallet = (seedPhrase, keyList = []) => {
     const keys = []
     const addresses = []
-    const changeKeys = []
     const changeList = []
-    const slpKeys = []
     const slpList = []
     let derivation
 
@@ -70,14 +68,14 @@ const derivePrivateWallet = (seedPhrase, keyList = []) => {
         const root = bip32.fromSeed(mnemonicToSeedSync(seedPhrase))
         const bch = root.derivePath(AccountPath.bch)
         const slp = root.derivePath(AccountPath.slp)
+        // Only the receive branch needs private keys (legacy-WIF recognition);
+        // change and token keys would only ride the worker message to no reader.
         const receive = deriveBranch(bch, 0, AddressCount, true)
-        const change = deriveBranch(bch, 1, AddressCount, true)
-        const token = deriveBranch(slp, 0, AddressCount, true)
+        const change = deriveBranch(bch, 1)
+        const token = deriveBranch(slp, 0)
         keys.push(...receive.keys)
         addresses.push(...receive.addresses)
-        changeKeys.push(...change.keys)
         changeList.push(...change.addresses)
-        slpKeys.push(...token.keys)
         slpList.push(...token.addresses)
         derivation = {
             version: DerivationVersion,
@@ -92,7 +90,7 @@ const derivePrivateWallet = (seedPhrase, keyList = []) => {
     for (const key of keyList || []) {
         addresses.push(ECPair.fromWIF(key).getAddress())
     }
-    return {keys, addresses, changeKeys, changeList, slpKeys, slpList, derivation}
+    return {keys, addresses, changeList, slpList, derivation}
 }
 
 module.exports = {

@@ -1,5 +1,5 @@
 import Modal from "../../modal";
-import {useEffect, useRef} from "react";
+import {useEffect} from "react";
 import profile from "../../../../styles/profile.module.css"
 import modalStyles from "../../../../styles/modal.module.css"
 import {TitleCol} from "../../../wallet/snippets/title_col";
@@ -19,7 +19,6 @@ const RoomFollowers = ({basic: {setModal, onClose}, modalProps: {room}}) => {
     const [follows, followsRef, setFollows] = useReferredState([])
     useEffect(() => {(async () => {
         const follows = await window.electron.getChatRoomFollows({room})
-        console.log(follows)
         setFollows(follows)
     })()}, [room])
     const sortFollows = (field) => {

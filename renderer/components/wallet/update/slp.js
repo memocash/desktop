@@ -97,5 +97,4 @@ const checkSlp = async ({unchecked, setLastUpdate, activity}) => {
     }
 }
 
-export {SlpScopes}
 export default UpdateSlp

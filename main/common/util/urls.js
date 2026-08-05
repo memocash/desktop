@@ -36,8 +36,6 @@ const SafeExternalUrl = (url) => {
     return parsed.href
 }
 
-const IsExternalUrl = (url) => SafeExternalUrl(url) !== null
-
 // Whether a url belongs to the app itself, i.e. is somewhere a window is allowed
 // to navigate. The app:// scheme used by packaged builds is not a "special"
 // scheme, so its origin parses as null and cannot be compared - protocol and
@@ -55,7 +53,6 @@ const IsSameOrigin = (url, appUrl) => {
 }
 
 module.exports = {
-    IsExternalUrl: IsExternalUrl,
     IsSameOrigin: IsSameOrigin,
     SafeExternalUrl: SafeExternalUrl,
 }

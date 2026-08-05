@@ -5,7 +5,7 @@ const {Modals} = require("./modals");
 const {GetId} = require("./id");
 const {Handlers, Listeners} = require("./handlers");
 const {DefaultHiddenTabs, Tabs, ToggleableTabs} = require("./tabs");
-const {IsExternalUrl, IsSameOrigin, SafeExternalUrl} = require("./urls");
+const {IsSameOrigin, SafeExternalUrl} = require("./urls");
 
 module.exports = {
     ContentSecurityPolicy: ContentSecurityPolicy,
@@ -13,7 +13,6 @@ module.exports = {
     DefaultHiddenTabs: DefaultHiddenTabs,
     Dir: Dir,
     Handlers: Handlers,
-    IsExternalUrl: IsExternalUrl,
     IsSameOrigin: IsSameOrigin,
     Listeners: Listeners,
     Modals: Modals,

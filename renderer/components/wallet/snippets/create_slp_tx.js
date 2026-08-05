@@ -205,9 +205,6 @@ const CreateSlpMintTransaction = async ({wallet, token, amount, keepBaton, setMo
 }
 
 export {
-    BuildSlpSendScript,
-    BuildSlpGenesisScript,
-    BuildSlpMintScript,
     CreateSlpTransaction,
     CreateSlpGenesisTransaction,
     CreateSlpMintTransaction,

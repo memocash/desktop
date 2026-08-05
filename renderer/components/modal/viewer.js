@@ -20,7 +20,6 @@ import GetPassword from "./modals/get_password";
 import WalletInfoModal from "./modals/wallet_info";
 import AboutModal from "./modals/about";
 import UpdateModal from "./modals/update";
-import remove from "./modals/remove";
 import RemoveModal from "./modals/remove";
 
 const Viewer = ({setLastUpdate, setModal, modalWindow, setChatRoom, modalProps = {}}) => {

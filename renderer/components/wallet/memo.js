@@ -36,7 +36,6 @@ const Memo = ({lastUpdate, setModal, setChatRoom, initialSync}) => {
     // flight. Acting on anything less would move the user off a feed that was
     // about to fill in.
     const [feedEmpty, setFeedEmpty] = useState(null)
-    const utxosRef = useRef([])
     useEffect(() => {(async () => {
         const wallet = await GetWallet()
         // Expand to the wallet's linked-address cluster (already synced to the
@@ -55,10 +54,6 @@ const Memo = ({lastUpdate, setModal, setChatRoom, initialSync}) => {
                 setPicData(picData)
             }
         }
-        utxosRef.current.value = await window.electron.getUtxos(wallet.addresses)
-        utxosRef.current.value.sort((a, b) => {
-            return b.value - a.value
-        })
     })()}, [lastUpdate])
     // A new account has nothing in its Feed - it follows nobody, or the people
     // it follows haven't posted - so start it on Popular, where the best of what
@@ -74,11 +69,11 @@ const Memo = ({lastUpdate, setModal, setChatRoom, initialSync}) => {
         }
         setTab(Tabs.Ranked)
     }, [initialSync, feedEmpty])
-    const clickEditName = () => setModal(Modals.ProfileSetName, {utxosRef})
-    const clickEditProfile = () => setModal(Modals.ProfileSetText, {utxosRef})
-    const clickEditPic = () => setModal(Modals.ProfileSetPic, {utxosRef})
-    const setProfile = (address) => setModal(Modals.ProfileView, {address, utxosRef, lastUpdate})
-    const createPost = () => setModal(Modals.PostCreate, {utxosRef})
+    const clickEditName = () => setModal(Modals.ProfileSetName)
+    const clickEditProfile = () => setModal(Modals.ProfileSetText)
+    const clickEditPic = () => setModal(Modals.ProfileSetPic)
+    const setProfile = (address) => setModal(Modals.ProfileView, {address, lastUpdate})
+    const createPost = () => setModal(Modals.PostCreate)
     return (
         <div className={profile.wrapper}>
             <div className={profile.header}>

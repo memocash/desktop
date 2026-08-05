@@ -1,5 +1,5 @@
 import Modal from "../../modal";
-import {useEffect, useRef, useState} from "react";
+import {useEffect} from "react";
 import profile from "../../../../styles/profile.module.css"
 import modalStyles from "../../../../styles/modal.module.css"
 import {TitleCol} from "../../../wallet/snippets/title_col";

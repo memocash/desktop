@@ -10,7 +10,6 @@ const CoinStatus = {
     Unknown: "unknown",     // not a coin this wallet holds (partial text, typo, spent)
     Token: "token",         // holds an SLP amount or a mint baton
     Dust: "dust",
-    DustChange: "dust-change", // covers the outputs, but the leftover is dust
 }
 
 // Looks a named coin up in the wallet's own utxo set, given the

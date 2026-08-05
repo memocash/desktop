@@ -23,12 +23,12 @@ const {
     TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,
-    Version,
     WalletFileState,
     WithWalletLock,
     WriteWallet,
     WrongPassword,
 } = require("./keystore");
+const {Version} = require("./wallet_file");
 
 // Stands in for a webContents id. Grants are per window, so tests that care
 // about the boundary use two.

@@ -381,15 +381,6 @@ const GetRecentSetPic = async (conf, addresses) => {
     return results[0]
 }
 
-const GetPicsExist = async (conf, urls) => {
-    const query = "" +
-        "SELECT " +
-        "   urls " +
-        "FROM images " +
-        "WHERE urls IN (" + Array(urls.length).fill("?").join(", ") + ") "
-    return await Select(conf, "images-exists-multi", query, urls)
-}
-
 const GetPicExists = async (conf, url) => {
     const query = "" +
         "SELECT " +
@@ -432,7 +423,6 @@ module.exports = {
     GetRecentSetName,
     GetRecentSetProfile,
     GetRecentSetPic,
-    GetPicsExist,
     GetPicExists,
     SavePic,
     GetPic,

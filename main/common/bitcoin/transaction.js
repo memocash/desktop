@@ -9,9 +9,6 @@ const {hash256} = require("./hash")
 
 const DEFAULT_SEQUENCE = 0xffffffff
 const SIGHASH_ALL = 0x01
-const SIGHASH_NONE = 0x02
-const SIGHASH_SINGLE = 0x03
-const SIGHASH_ANYONECANPAY = 0x80
 // BIP143 sighash activated in BCH via the 0x40 bit ("forkid").
 const SIGHASH_BITCOINCASHBIP143 = 0x40
 
@@ -139,10 +136,6 @@ class Transaction {
         return tx
     }
 
-    static fromHex(hex) {
-        return Transaction.fromBuffer(Buffer.from(hex, "hex"))
-    }
-
     addInput(hash, index, sequence = DEFAULT_SEQUENCE, script = Buffer.alloc(0)) {
         if (!Buffer.isBuffer(hash) || hash.length !== 32) {
             throw new TypeError("Expected 32-byte hash")
@@ -218,58 +211,48 @@ class Transaction {
     // The BIP143 preimage BCH adopted as its replay-protected sighash. The
     // input scripts play no part in it, so inputs can be signed in any order
     // against the same unsigned transaction.
+    //
+    // Only SIGHASH_ALL with the forkid bit is accepted: every signature this
+    // wallet grants commits to the whole transaction, so the NONE/SINGLE/
+    // ANYONECANPAY preimage variants were unreachable and are not ported.
     hashForCashSignature(inIndex, prevOutScript, value, hashType) {
         if (!(hashType & SIGHASH_BITCOINCASHBIP143)) {
             throw new Error("legacy sighash is not supported: BCH requires the forkid bit")
         }
+        if (hashType !== (SIGHASH_ALL | SIGHASH_BITCOINCASHBIP143)) {
+            throw new Error("unsupported sighash type: this wallet signs SIGHASH_ALL only")
+        }
         if (!Number.isSafeInteger(value) || value < 0) {
             throw new Error("Bitcoin Cash sighash requires value of input to be signed.")
         }
-        const zero = Buffer.alloc(32)
-        let hashPrevouts = zero
-        let hashSequence = zero
-        let hashOutputs = zero
+        const prevoutsBuffer = Buffer.allocUnsafe(36 * this.ins.length)
+        let prevoutsOffset = 0
+        for (const input of this.ins) {
+            input.hash.copy(prevoutsBuffer, prevoutsOffset)
+            prevoutsOffset += 32
+            prevoutsBuffer.writeUInt32LE(input.index, prevoutsOffset)
+            prevoutsOffset += 4
+        }
+        const hashPrevouts = hash256(prevoutsBuffer)
 
-        if (!(hashType & SIGHASH_ANYONECANPAY)) {
-            const buffer = Buffer.allocUnsafe(36 * this.ins.length)
-            let offset = 0
-            for (const input of this.ins) {
-                input.hash.copy(buffer, offset)
-                offset += 32
-                buffer.writeUInt32LE(input.index, offset)
-                offset += 4
-            }
-            hashPrevouts = hash256(buffer)
+        const sequenceBuffer = Buffer.allocUnsafe(4 * this.ins.length)
+        let sequenceOffset = 0
+        for (const input of this.ins) {
+            sequenceBuffer.writeUInt32LE(input.sequence, sequenceOffset)
+            sequenceOffset += 4
         }
-        if (!(hashType & SIGHASH_ANYONECANPAY) &&
-            (hashType & 0x1f) !== SIGHASH_SINGLE && (hashType & 0x1f) !== SIGHASH_NONE) {
-            const buffer = Buffer.allocUnsafe(4 * this.ins.length)
-            let offset = 0
-            for (const input of this.ins) {
-                buffer.writeUInt32LE(input.sequence, offset)
-                offset += 4
-            }
-            hashSequence = hash256(buffer)
+        const hashSequence = hash256(sequenceBuffer)
+
+        const outsSize = this.outs.reduce((sum, output) => sum + 8 + varSliceSize(output.script), 0)
+        const outsBuffer = Buffer.allocUnsafe(outsSize)
+        let outsOffset = 0
+        for (const output of this.outs) {
+            outsOffset = writeUInt64LE(outsBuffer, output.value, outsOffset)
+            outsOffset = writeVarInt(outsBuffer, output.script.length, outsOffset)
+            output.script.copy(outsBuffer, outsOffset)
+            outsOffset += output.script.length
         }
-        if ((hashType & 0x1f) !== SIGHASH_SINGLE && (hashType & 0x1f) !== SIGHASH_NONE) {
-            const size = this.outs.reduce((sum, output) => sum + 8 + varSliceSize(output.script), 0)
-            const buffer = Buffer.allocUnsafe(size)
-            let offset = 0
-            for (const output of this.outs) {
-                offset = writeUInt64LE(buffer, output.value, offset)
-                offset = writeVarInt(buffer, output.script.length, offset)
-                output.script.copy(buffer, offset)
-                offset += output.script.length
-            }
-            hashOutputs = hash256(buffer)
-        } else if ((hashType & 0x1f) === SIGHASH_SINGLE && inIndex < this.outs.length) {
-            const output = this.outs[inIndex]
-            const buffer = Buffer.allocUnsafe(8 + varSliceSize(output.script))
-            let offset = writeUInt64LE(buffer, output.value, 0)
-            offset = writeVarInt(buffer, output.script.length, offset)
-            output.script.copy(buffer, offset)
-            hashOutputs = hash256(buffer)
-        }
+        const hashOutputs = hash256(outsBuffer)
 
         const input = this.ins[inIndex]
         const preimage = Buffer.allocUnsafe(156 + varSliceSize(prevOutScript))
@@ -299,7 +282,6 @@ class Transaction {
     }
 }
 
-Transaction.DEFAULT_SEQUENCE = DEFAULT_SEQUENCE
 Transaction.SIGHASH_ALL = SIGHASH_ALL
 Transaction.SIGHASH_BITCOINCASHBIP143 = SIGHASH_BITCOINCASHBIP143
 

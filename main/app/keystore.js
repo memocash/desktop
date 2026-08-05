@@ -471,7 +471,6 @@ module.exports = {
     TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,
-    Version: walletFile.Version,
     WalletFileState,
     WithWalletLock,
     WriteWallet,

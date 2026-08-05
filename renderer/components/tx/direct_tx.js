@@ -177,4 +177,4 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
         await setAndPushTx(outer_transaction, setModal, onDone)
     }
 }
-export {DirectTx, setTx, pushTx, FormatTxError}
+export {DirectTx, setTx, FormatTxError}

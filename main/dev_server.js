@@ -75,7 +75,6 @@ const StartDevServer = async (serverScript, app, port = Port) => {
 }
 
 module.exports = {
-    Port: Port,
     Reachable: Reachable,
     StartDevServer: StartDevServer,
     WaitForReady: WaitForReady,

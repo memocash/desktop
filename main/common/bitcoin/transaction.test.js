@@ -69,6 +69,28 @@ test("legacy sighash without the forkid bit is refused", () => {
     assert.throws(() => tx.hashForCashSignature(0, prevOutScript, input.value, Transaction.SIGHASH_ALL))
 })
 
+// Every signature this wallet grants is SIGHASH_ALL: the NONE/SINGLE/
+// ANYONECANPAY preimage variants were deleted rather than ported, so a
+// forkid-bearing hashType that asks for any of them must be refused, not
+// silently hashed as something else.
+test("forkid sighash variants other than ALL are refused", () => {
+    const tx = Transaction.fromBuffer(unsignedRaw())
+    const input = golden.transaction.inputs[0]
+    const prevOutScript = address.toOutputScript(ECPair.fromWIF(input.wif).getAddress())
+    const forkid = Transaction.SIGHASH_BITCOINCASHBIP143
+    for (const hashType of [
+        0x02 | forkid, // NONE
+        0x03 | forkid, // SINGLE
+        0x01 | 0x80 | forkid, // ALL | ANYONECANPAY
+        0x03 | 0x80 | forkid, // SINGLE | ANYONECANPAY
+    ]) {
+        assert.throws(
+            () => tx.hashForCashSignature(0, prevOutScript, input.value, hashType),
+            /unsupported sighash type/,
+        )
+    }
+})
+
 // The end-to-end check: signing every input the way the signer does
 // reproduces the library's captured transactions byte for byte, across the
 // locktime bumps the beat-hash loop performs.
