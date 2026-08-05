@@ -4,6 +4,9 @@
 const WalletErrors = {
     // The session's spend budget doesn't cover this one: ask for the password
     // and try again. Not a failure, and not something to show as an error.
+    // The person at the machine declined main's dialog in front of a
+    // passwordless wallet's seed or key: not a failure, nothing to show.
+    ExportCancelled: "export-cancelled",
     PasswordRequired: "password-required",
     SpendCancelled: "spend-cancelled",
     // A wallet already occupies the name. The renderer names the file in the

@@ -29,6 +29,12 @@ const KeyModal = ({onClose, modalProps: {address}}) => {
             // prompt; with no prompt in the way, it is reported here instead of
             // showing an empty key box.
             const error = await loadKey()
+            if (error === WalletErrors.ExportCancelled) {
+                // The person said no in main's dialog; that is an answer, not
+                // an error to display.
+                onClose()
+                return
+            }
             if (error) {
                 setLoadError(error)
             } else {

@@ -401,3 +401,75 @@ test("an imported seed is what the wallet stores, spacing aside", async () => {
         cleanup(15, dir)
     }
 })
+
+// The audit's M4 tail: an encrypted wallet's exports are gated by knowing the
+// password, but a passwordless wallet answered a bare bridge call with the
+// seed. The gate is main's own dialog - the page cannot draw, cover, or
+// answer it - and declining leaves nothing read.
+test("a passwordless wallet's secrets go through main's dialog, or nowhere", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const seedPath = path.join(dir, "export_seed")
+    const keyPath = path.join(dir, "export_key")
+    const encryptedPath = path.join(dir, "export_encrypted")
+    const phrase = "abandon abandon abandon abandon abandon abandon " +
+        "abandon abandon abandon abandon abandon about"
+    try {
+        SetWindow(16, {id: 16})
+        keystore.AllowPath(16, seedPath)
+        assert.equal(await handlers[Handlers.ImportSeed](e(16), phrase), true)
+        assert.equal((await handlers[Handlers.CreateWallet](
+            e(16), seedPath, true, [], [], undefined)).ok, true)
+
+        // Declined: no seed crosses, and the refusal is an answer the modal
+        // matches on rather than an error to display.
+        dialogResponse = 0
+        const refusedSeed = await handlers[Handlers.ExportSeed](e(16), undefined)
+        assert.equal(refusedSeed.error, "export-cancelled")
+        assert.equal(refusedSeed.value, undefined)
+        assert.equal(dialogCalls.length, 1)
+
+        // Allowed: the seed in the file, and only after the dialog said so.
+        dialogResponse = 1
+        const allowedSeed = await handlers[Handlers.ExportSeed](e(16), undefined)
+        assert.equal(allowedSeed.ok, true)
+        assert.equal(allowedSeed.value, phrase)
+        assert.equal(dialogCalls.length, 2)
+
+        // A private key stands behind the same dialog.
+        await passwordlessWallet(keyPath)
+        await openPasswordless(17, keyPath)
+        dialogResponse = 0
+        const refusedKey = await handlers[Handlers.ExportPrivateKey](
+            e(17), walletAddress, undefined)
+        assert.equal(refusedKey.error, "export-cancelled")
+        assert.equal(refusedKey.value, undefined)
+        assert.equal(dialogCalls.length, 3)
+        dialogResponse = 1
+        const allowedKey = await handlers[Handlers.ExportPrivateKey](
+            e(17), walletAddress, undefined)
+        assert.equal(allowedKey.ok, true)
+        assert.equal(allowedKey.value, walletKey.toWIF())
+        assert.equal(dialogCalls.length, 4)
+
+        // An encrypted wallet's gate is the password: the dialog never opens,
+        // and the exports answer as they always have.
+        await keystore.CreateWalletFile(encryptedPath,
+            keystore.NewWallet(undefined, [walletKey.toWIF()], [walletAddress]), "pw")
+        SetWindow(18, {id: 18})
+        keystore.AllowPath(18, encryptedPath)
+        assert.equal((await unlock(18, encryptedPath)).ok, true)
+        dialogResponse = 0
+        const encryptedKey = await handlers[Handlers.ExportPrivateKey](
+            e(18), walletAddress, "pw")
+        assert.equal(encryptedKey.ok, true)
+        assert.equal(encryptedKey.value, walletKey.toWIF())
+        assert.equal(dialogCalls.length, 4)
+    } finally {
+        pendingSeed.Discard(16)
+        for (const id of [16, 17]) {
+            ForgetWindow(id)
+            keystore.ForgetPaths(id)
+        }
+        cleanup(18, dir)
+    }
+})

@@ -387,6 +387,32 @@ const confirmLoosenedSpending = async (winId, filename, values) => {
     }
 }
 
+// Puts a person in front of a passwordless wallet's secrets. An encrypted
+// wallet's exports are gated by the password itself; with no password to know,
+// the gate is the same native dialog the settings path uses - drawn by main,
+// modal to the asking window, impossible for the page to cover or answer.
+// Declining throws, so no secret is read, let alone returned.
+const confirmPasswordlessExport = async (winId, message, detail) => {
+    const stored = GetWallet(winId)
+    // No wallet is the caller's problem, reported by the read that follows;
+    // an encrypted wallet's gate is knowing the password.
+    if (!stored || stored.encrypted) {
+        return
+    }
+    const {response} = await dialog.showMessageBox(GetWindow(winId), {
+        type: "warning",
+        buttons: ["Cancel", "Reveal"],
+        defaultId: 0,
+        cancelId: 0,
+        title: "Wallet export",
+        message: message,
+        detail: detail,
+    })
+    if (response !== 1) {
+        throw new Error(WalletErrors.ExportCancelled)
+    }
+}
+
 // Every caller of these reads a result rather than catching: `const {error} =
 // await ...`. Letting anything but WrongPassword reject would make that
 // destructuring throw at the call site, so the message a handler raises
@@ -760,9 +786,22 @@ const WalletHandlers = () => {
             await readForOperation(e.sender.id, password)
         }))
     ipcMain.handle(Handlers.ExportSeed, async (e, password) =>
-        operationResult(async () => (await readForOperation(e.sender.id, password)).wallet.seed))
+        operationResult(async () => {
+            await confirmPasswordlessExport(e.sender.id,
+                "Reveal this wallet's seed phrase?",
+                "This wallet has no password. The seed phrase is the whole " +
+                "wallet: anyone who reads it can take everything it holds, " +
+                "now or on any later day.")
+            return (await readForOperation(e.sender.id, password)).wallet.seed
+        }))
     ipcMain.handle(Handlers.ExportPrivateKey, async (e, address, password) =>
-        operationResult(() => exportPrivateKey(e.sender.id, address, password)))
+        operationResult(async () => {
+            await confirmPasswordlessExport(e.sender.id,
+                "Reveal the private key for this address?",
+                "This wallet has no password. Anyone who reads the key can " +
+                "spend everything the address holds.")
+            return exportPrivateKey(e.sender.id, address, password)
+        }))
     ipcMain.handle(Handlers.RemovePrivateKey, async (e, address, password) =>
         operationResult(() => keystore.WithWalletLock(
             GetWallet(e.sender.id).filename,

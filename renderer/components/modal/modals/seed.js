@@ -7,10 +7,25 @@ import {WalletErrors} from "../../../../main/common/util"
 const SeedModal = ({onClose}) => {
     const [showSeed, setShowSeed] = useState(false)
     const [seedPhrase, setSeedPhrase] = useState("")
+    const [loadError, setLoadError] = useState("")
     useEffect(() => {(async () => {
         const {encrypted} = await window.electron.getWalletFileInfo()
         if (!encrypted) {
-            const {value} = await window.electron.exportSeed()
+            // Main asks the person in its own dialog before the seed crosses.
+            const {error, value} = await window.electron.exportSeed()
+            if (error === WalletErrors.ExportCancelled) {
+                // A no in that dialog is an answer, not an error to display.
+                onClose()
+                return
+            }
+            if (error) {
+                // Anything else is a wallet that could not be read; the
+                // encrypted path reports that through the password prompt,
+                // and with no prompt in the way it is shown here rather than
+                // dressed up as a cancellation.
+                setLoadError(error)
+                return
+            }
             setSeedPhrase(value || "")
             setShowSeed(true)
         }
@@ -25,6 +40,18 @@ const SeedModal = ({onClose}) => {
         setSeedPhrase(value || "")
         setShowSeed(true)
         return true
+    }
+    if (loadError) {
+        return (
+            <Modal onClose={onClose}>
+                <div className={styles.root}>
+                    <div className={styles.text}>{"Could not export the seed: " + loadError}</div>
+                    <div className={styles.buttons}>
+                        <button onClick={onClose}>Close</button>
+                    </div>
+                </div>
+            </Modal>
+        )
     }
     return (
         <Modal onClose={onClose}>
