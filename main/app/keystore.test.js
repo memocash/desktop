@@ -35,11 +35,21 @@ const {
 const Window = 1
 const OtherWindow = 2
 
+// Every temp tree is remembered and removed once the file's tests are done -
+// scattering mkdtemp calls without cleanup left thousands of them behind.
+const tempDirs = []
+test.after(() => Promise.all(tempDirs.map((dir) => fs.rm(dir, {recursive: true, force: true}))))
+const tempDir = async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    tempDirs.push(dir)
+    return dir
+}
+
 // Wallets written by these tests go to a scratch directory, reached the same way
 // the import flow reaches a wallet outside Dir.DefaultPath: the path is vouched
 // for first, as the file dialog does.
 const tempWallet = async (name) => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const walletPath = path.join(dir, name)
     AllowPath(Window, walletPath)
     return walletPath
@@ -101,7 +111,7 @@ test("a name that would escape the wallet directory is refused", () => {
 })
 
 test("a full path is refused unless the user chose it in a dialog", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const outside = path.join(dir, "somewhere_else")
     assert.throws(() => ResolveWalletPath(Window, outside), {message: /not chosen by the user/})
     AllowPath(Window, outside)
@@ -112,7 +122,7 @@ test("a full path is refused unless the user chose it in a dialog", async () => 
 // reach it. Otherwise one import opens that file to any renderer in the process
 // - to read an unencrypted wallet's seed, or to write over it.
 test("a path one window was granted is not reachable from another", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const outside = path.join(dir, "imported")
     AllowPath(Window, outside)
     assert.equal(ResolveWalletPath(Window, outside), outside)
@@ -120,7 +130,7 @@ test("a path one window was granted is not reachable from another", async () => 
 })
 
 test("a window's grants go when the window does", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const outside = path.join(dir, "imported")
     AllowPath(OtherWindow, outside)
     assert.equal(ResolveWalletPath(OtherWindow, outside), outside)
@@ -133,7 +143,7 @@ test("a window's grants go when the window does", async () => {
 // refusal reported as "no wallet yet" walks someone through type, seed, seed
 // confirmation and password before the write fails.
 test("a name with no file is not the same answer as a name that cannot be used", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const missing = path.join(dir, "not_here_yet")
     AllowPath(Window, missing)
     assert.deepEqual(await WalletFileState(Window, missing), {exists: false, encrypted: false})
@@ -346,7 +356,7 @@ test("startup tightens the modes earlier releases left behind", async (t) => {
     }
     const mode = async (file) => (await fs.stat(file)).mode & 0o777
     const memoDir = path.join(
-        await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-")), ".memo")
+        await tempDir(), ".memo")
     const walletDir = path.join(memoDir, "wallets")
     await fs.mkdir(walletDir, {recursive: true})
     await fs.chmod(memoDir, 0o755)
@@ -376,7 +386,7 @@ test("startup tightens the modes earlier releases left behind", async (t) => {
 // fresh mkdtemp root so it is provably absent, rather than a fixed /tmp name
 // that a previous run or another process could have left something at.
 test("the startup permission pass tolerates a missing wallet directory", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const root = await tempDir()
     const absent = path.join(root, ".memo", "wallets")
     await assert.rejects(fs.access(absent))
     const original = Dir.DefaultPath
@@ -530,7 +540,7 @@ test("a parallel burst of guesses lines up instead of slipping past the meter", 
 // is decided by who wrote them - a name carrying a live process's pid is a
 // write in progress somewhere, not a leftover.
 test("startup sweeps the scratch files whose writer is gone, and no others", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const original = Dir.DefaultPath
     Dir.DefaultPath = dir
     try {

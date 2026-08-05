@@ -8,8 +8,9 @@ const {Resolve} = require("./dev-renderer")
 // The development twin of main/static_server.test.js's containment tests:
 // the dev resolver serves files and directory indexes from inside the export
 // and nothing from outside it, however the request spells the path.
-test("the dev resolver serves the export and only the export", () => {
+test("the dev resolver serves the export and only the export", (t) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "memo-dev-"))
+    t.after(() => fs.rmSync(dir, {recursive: true, force: true}))
     const root = path.join(dir, "out")
     fs.mkdirSync(path.join(root, "tx"), {recursive: true})
     fs.writeFileSync(path.join(root, "index.html"), "root")

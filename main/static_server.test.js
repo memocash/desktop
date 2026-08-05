@@ -21,8 +21,9 @@ test("renderer paths remain inside the static export", () => {
 // The handler as registration wires it up, driven with a real file on disk and
 // net.fetch stubbed to answer the way Electron's does - a Response whose
 // headers are already set.
-test("everything the app protocol serves carries the security policy header", async () => {
+test("everything the app protocol serves carries the security policy header", async (t) => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-static-"))
+    t.after(() => fs.rm(dir, {recursive: true, force: true}))
     await fs.mkdir(path.join(dir, "renderer", "out"), {recursive: true})
     await fs.writeFile(path.join(dir, "renderer", "out", "index.html"), "<!doctype html>")
     electronStub.app.getAppPath = () => dir
@@ -54,8 +55,9 @@ test("everything the app protocol serves carries the security policy header", as
 
 // The traversal check vets the requested name; a symlink is the filesystem
 // answering that name with a different location. Both are on trial here.
-test("a symlink inside the export cannot serve what lies outside it", async () => {
+test("a symlink inside the export cannot serve what lies outside it", async (t) => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-static-"))
+    t.after(() => fs.rm(dir, {recursive: true, force: true}))
     const root = path.join(dir, "renderer", "out")
     await fs.mkdir(root, {recursive: true})
     await fs.writeFile(path.join(dir, "outside.txt"), "not for serving")

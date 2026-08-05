@@ -12,8 +12,11 @@ const {ContentSecurityPolicy} = require("../main/common/util")
 // one policy and pointing only at assets the build actually emits. A dropped
 // shell, a renamed bundle, or a drifted policy fails here instead of at the
 // first launched window.
-test("the export carries every shell, the policy, and only assets the build emits", async () => {
+test("the export carries every shell, the policy, and only assets the build emits", async (t) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "memo-export-"))
+    // Registered before anything can fail, so an assertion failure cleans up
+    // the ~4MB of unminified bundles the same as a pass does.
+    t.after(() => fs.rmSync(dir, {recursive: true, force: true}))
     WriteStatic(dir)
     await esbuild.build({...BuildOptions, outdir: path.join(dir, "assets"), logLevel: "silent"})
 

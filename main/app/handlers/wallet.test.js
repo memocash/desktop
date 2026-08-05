@@ -65,6 +65,20 @@ const {GetWallet, SetWindow, ForgetWindow} = require("../window_state")
 const {Handlers} = require("../../common/util")
 require("./wallet.js").WalletHandlers()
 
+// Every temp tree is remembered and removed once the file's tests are done -
+// scattering mkdtemp calls without cleanup left them accumulating in /tmp.
+const tempDirs = []
+test.after(() => {
+    for (const dir of tempDirs) {
+        fs.rmSync(dir, {recursive: true, force: true})
+    }
+})
+const tempDir = () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    tempDirs.push(dir)
+    return dir
+}
+
 // Events carry the frame url the guarded ipc surface checks; these tests play
 // the app's own page, so requests present the app origin the way a real
 // renderer frame would.
@@ -79,7 +93,7 @@ const change = (id, threshold, password) => handlers[Handlers.UpdateWallet](
 // against any cache - a request for exactly the value a window already holds is
 // the one the original comparison waved through.
 test("a settings change on an encrypted wallet always proves the password, in every window", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const walletPath = path.join(dir, "two_windows")
     try {
         await keystore.CreateWalletFile(walletPath,
@@ -207,7 +221,7 @@ const cleanup = (id, dir) => {
 }
 
 test("a passwordless wallet's send is approved in main's window, or does not happen", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const walletPath = path.join(dir, "confirm_default")
     try {
         await passwordlessWallet(walletPath)
@@ -243,7 +257,7 @@ test("a passwordless wallet's send is approved in main's window, or does not hap
 })
 
 test("a passwordless budget opens only on approval, meters silently, and closes spent", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const walletPath = path.join(dir, "confirm_budget")
     try {
         // Room for two silent sends of 10000 after the approved one, not three.
@@ -277,7 +291,7 @@ test("a passwordless budget opens only on approval, meters silently, and closes 
 })
 
 test("confirmation off means exactly that, and turning it off is asked in main's dialog", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const walletPath = path.join(dir, "confirm_off")
     try {
         await passwordlessWallet(walletPath)
@@ -312,7 +326,7 @@ test("confirmation off means exactly that, and turning it off is asked in main's
 })
 
 test("raising a passwordless budget is asked in main's dialog, lowering is not", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const walletPath = path.join(dir, "confirm_raise")
     try {
         await passwordlessWallet(walletPath)
@@ -349,7 +363,7 @@ test("raising a passwordless budget is asked in main's dialog, lowering is not",
 const pendingSeed = require("../pending_seed")
 
 test("a seed wallet is created from main's pending seed, and only once confirmed", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const walletPath = path.join(dir, "seeded")
     try {
         SetWindow(14, {id: 14})
@@ -384,7 +398,7 @@ test("a seed wallet is created from main's pending seed, and only once confirmed
 })
 
 test("an imported seed is what the wallet stores, spacing aside", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const walletPath = path.join(dir, "imported_seed")
     const phrase = "abandon abandon abandon abandon abandon abandon " +
         "abandon abandon abandon abandon abandon about"
@@ -407,7 +421,7 @@ test("an imported seed is what the wallet stores, spacing aside", async () => {
 // seed. The gate is main's own dialog - the page cannot draw, cover, or
 // answer it - and declining leaves nothing read.
 test("a passwordless wallet's secrets go through main's dialog, or nowhere", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wallet-handler-test-"))
+    const dir = tempDir()
     const seedPath = path.join(dir, "export_seed")
     const keyPath = path.join(dir, "export_key")
     const encryptedPath = path.join(dir, "export_encrypted")
