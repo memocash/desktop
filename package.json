@@ -88,15 +88,19 @@
     "better-sqlite3": "^12.11.1",
     "bip32": "^5.0.1",
     "bip39": "^3.0.4",
+    "bitcoincash-ops": "file:./vendor/bitcoincash-ops",
+    "linkify-it": "^5.0.2",
+    "pushdata-bitcoin": "file:./vendor/pushdata-bitcoin",
     "react-icons": "^4.4.0",
-    "react-linkify": "^1.0.0-alpha",
     "tiny-secp256k1": "^2.2.4",
+    "tlds": "^1.261.0",
     "ws": "^8.21.0"
   },
   "overrides": {
     "sharp": "^0.35.3",
-    "linkify-it": "^5.0.2",
-    "postcss": "^8.5.25"
+    "postcss": "^8.5.25",
+    "pushdata-bitcoin": "$pushdata-bitcoin",
+    "bitcoincash-ops": "$bitcoincash-ops"
   },
   "trustedDependencies": [
     "electron"

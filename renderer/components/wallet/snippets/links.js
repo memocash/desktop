@@ -1,25 +1,7 @@
-import Linkify from "react-linkify";
 import {useState} from "react";
 import styles from "../../../styles/links.module.css";
 import {SafeExternalUrl} from "../../../../main/common/util/urls";
-
-const imageExtension = /^\/[a-zA-Z0-9]+\.(jpg|jpeg|png|gif|webp)$/
-
-const GetImgurImage = (href) => {
-    let url
-    try {
-        url = new URL(href)
-    } catch (e) {
-        return null
-    }
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-        return null
-    }
-    if (url.hostname !== "i.imgur.com" || !imageExtension.test(url.pathname)) {
-        return null
-    }
-    return "https://i.imgur.com" + url.pathname
-}
+import {LinkSegments} from "../../../../main/common/util/linkify";
 
 const ImgurImage = ({href, src, text}) => {
     const [loaded, setLoaded] = useState(false)
@@ -52,20 +34,22 @@ const ExternalLink = ({href, className, children}) => {
     }}>{children}</a>
 }
 
-const componentDecorator = (decoratedHref, decoratedText, key) => {
-    const imgurImage = GetImgurImage(decoratedHref)
-    if (imgurImage) {
-        return <ImgurImage key={key} href={decoratedHref} src={imgurImage} text={decoratedText}/>
-    }
-    return <ExternalLink href={decoratedHref} key={key}>{decoratedText}</ExternalLink>
-}
-
+// All decisions - what matched, what is safe to click, what gets a preview
+// offer - are made (and tested) in LinkSegments; this only maps segments to
+// elements.
 const Links = ({children}) => {
-    return (
-        <Linkify componentDecorator={componentDecorator}>
-            {children}
-        </Linkify>
-    );
+    if (typeof children !== "string" || children === "") {
+        return children
+    }
+    return LinkSegments(children).map((segment, i) => {
+        if (!segment.url) {
+            return segment.text
+        }
+        if (segment.imgurSrc) {
+            return <ImgurImage key={i} href={segment.url} src={segment.imgurSrc} text={segment.text}/>
+        }
+        return <ExternalLink key={i} href={segment.url}>{segment.text}</ExternalLink>
+    })
 }
 
 export default Links

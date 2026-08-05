@@ -1,0 +1,11 @@
+{
+  "name": "pushdata-bitcoin",
+  "version": "1.2.1",
+  "description": "encode/decode value as bitcoin OP_PUSHDATA integer",
+  "license": "MIT",
+  "author": "Daniel Cousens",
+  "main": "index.js",
+  "dependencies": {
+    "bitcoincash-ops": "file:../bitcoincash-ops"
+  }
+}
