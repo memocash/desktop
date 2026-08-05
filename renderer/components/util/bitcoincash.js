@@ -1,11 +1,28 @@
-// The renderer's single doorway to @bitcoin-dot-com/bitcoincashjs2-lib, a
-// library unmaintained since 2019 that is slated for replacement (audit D4).
-// Every component imports these pieces from here rather than from the lib, so
-// each capability - script building, address codecs, key handling, transaction
-// assembly - can be swapped for a maintained implementation by changing this
-// one file.
+// The renderer's single doorway to bitcoin primitives (audit D4). Script
+// building, address codecs, and opcodes are internal modules over the
+// vendored pushdata-bitcoin/bitcoincash-ops and bs58check, tested for parity
+// in main/common/bitcoin. Key handling and transaction assembly still come
+// from @bitcoin-dot-com/bitcoincashjs2-lib until the exit's final phase
+// replaces them; components import from here either way, so that swap will
+// also be confined to this file.
 import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import addressModule from "../../../main/common/bitcoin/address";
+import networksModule from "../../../main/common/bitcoin/networks";
+import scriptModule from "../../../main/common/bitcoin/script";
+import opcodesModule from "bitcoincash-ops";
 
-export const {address, script, opcodes, ECPair, Transaction, TransactionBuilder, networks} = bitcoin
+export const address = addressModule
+export const networks = networksModule
+export const script = scriptModule
+export const opcodes = opcodesModule
+export const {ECPair, Transaction, TransactionBuilder} = bitcoin
 
-export default bitcoin
+export default {
+    address: addressModule,
+    networks: networksModule,
+    script: scriptModule,
+    opcodes: opcodesModule,
+    ECPair: bitcoin.ECPair,
+    Transaction: bitcoin.Transaction,
+    TransactionBuilder: bitcoin.TransactionBuilder,
+}
