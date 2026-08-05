@@ -3,13 +3,13 @@
 // segwit bech32 addresses the library's other branches served. Parity with
 // the library on every reachable input is held by address.test.js against
 // its outputs captured in golden.json before its removal (audit D4).
-const bs58check = require("bs58check")
+const bs58check = require("bs58check").default
 const OPS = require("bitcoincash-ops")
 const bscript = require("./script")
 const networks = require("./networks")
 
 const fromBase58Check = (address) => {
-    const payload = bs58check.decode(address)
+    const payload = Buffer.from(bs58check.decode(address))
     if (payload.length < 21) throw new TypeError(address + " is too short")
     if (payload.length > 21) throw new TypeError(address + " is too long")
     const version = payload.readUInt8(0)

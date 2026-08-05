@@ -3,7 +3,6 @@ const assert = require("node:assert");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
-const CryptoJS = require("crypto-js");
 const {Dir} = require("../common/util");
 const {
     AllowPath,
@@ -258,21 +257,22 @@ test("overlapping updates to one wallet each land, without tearing the file", as
 // seed exactly that guessable for anyone who can read the directory.
 test("a version 1 wallet migrates on read and leaves no copy of the old format", async () => {
     const walletPath = await tempWallet("legacy")
-    const original = CryptoJS.AES.encrypt(
-        JSON.stringify({seed: "old seed words", keys: [], addresses: ["addr1"]}), "hunter2").toString()
-    await fs.writeFile(walletPath, original)
+    // A CryptoJS passphrase blob captured from crypto-js itself before its
+    // removal - the real legacy bytes, pinned in v1_golden.json.
+    const legacy = require("./v1_golden.json").keystore
+    await fs.writeFile(walletPath, legacy.contents)
 
-    const read = await ReadWallet(walletPath, "hunter2")
+    const read = await ReadWallet(walletPath, legacy.password)
     assert.equal(read.version, 1)
-    assert.equal(read.wallet.seed, "old seed words")
+    assert.equal(read.wallet.seed, legacy.wallet.seed)
 
-    await MigrateWallet(walletPath, read.wallet, "hunter2")
+    await MigrateWallet(walletPath, read.wallet, legacy.password)
 
-    const migrated = await ReadWallet(walletPath, "hunter2")
+    const migrated = await ReadWallet(walletPath, legacy.password)
     assert.equal(migrated.version, Version)
     assert.equal(migrated.encrypted, true)
-    assert.equal(migrated.wallet.seed, "old seed words")
-    assert.deepEqual(migrated.wallet.addresses, ["addr1"])
+    assert.equal(migrated.wallet.seed, legacy.wallet.seed)
+    assert.deepEqual(migrated.wallet.addresses, legacy.wallet.addresses)
     assert.deepEqual(await fs.readdir(path.dirname(walletPath)), ["legacy"])
 })
 

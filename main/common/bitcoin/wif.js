@@ -3,7 +3,9 @@
 // mainnet version byte, one of the two valid lengths, and a scalar in [1, n).
 // Deriving the address a key controls stays in main (ecpair.js), which is the
 // only side that should ever hold key material anyway.
-const bs58check = require("bs58check")
+// bs58check 4 is compiled ESM: CommonJS reaches the codec at .default, and
+// decode hands back a Uint8Array rather than a Buffer.
+const bs58check = require("bs58check").default
 
 const WifVersion = 0x80
 
@@ -11,7 +13,7 @@ const WifVersion = 0x80
 const CurveOrder = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")
 
 const DecodeWif = (string) => {
-    const payload = bs58check.decode(string)
+    const payload = Buffer.from(bs58check.decode(string))
     if (payload[0] !== WifVersion) {
         throw new Error("Invalid network version")
     }

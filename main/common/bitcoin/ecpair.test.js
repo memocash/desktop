@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const bs58check = require("bs58check");
+const bs58check = require("bs58check").default;
 const {ECPair, ScriptSignature} = require("./ecpair");
 const {DecodeWif, IsValidWif} = require("./wif");
 const golden = require("./golden.json");
