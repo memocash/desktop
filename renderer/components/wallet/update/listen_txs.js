@@ -1,4 +1,4 @@
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib"
+import {opcodes, script} from "../../util/bitcoincash"
 import bitcoin from "../../util/bitcoin"
 import {LogActivity} from "../../util/activity"
 import {HistoryScopes} from "./history"

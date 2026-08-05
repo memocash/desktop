@@ -1,5 +1,5 @@
 import bitcoin from "../../util/bitcoin";
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {address} from "../../util/bitcoincash";
 import {FormatTokenAmount} from "../../util/slp";
 import {DirectTx} from "../../tx/direct_tx";
 

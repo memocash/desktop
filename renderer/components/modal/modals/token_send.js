@@ -1,5 +1,5 @@
 import {useRef, useState} from "react"
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib"
+import {address} from "../../util/bitcoincash"
 import Modal from "../modal"
 import styles from "../../../styles/modal.module.css"
 import form from "../../../styles/form.module.css"

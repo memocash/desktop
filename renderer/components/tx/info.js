@@ -5,7 +5,7 @@ import styleTx from "../../styles/tx.module.css";
 import ShortHash from "../util/txs";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin from "../util/bitcoincash";
 import {FormatTxError, setTx} from "./direct_tx";
 import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
 import Link from "next/link";

@@ -1,7 +1,6 @@
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin, {script as bscript} from "../util/bitcoincash";
 import GetWallet from "../util/wallet";
 import {Modals, WalletErrors} from "../../../main/common/util"
-import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
 const Prefix = {
     "6d01": "SetName",

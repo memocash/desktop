@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from "react";
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {opcodes, script} from "../../../util/bitcoincash";
 import Modal from "../../modal";
 import css from "../../../../styles/account_links.module.css";
 import styles from "../../../../styles/modal.module.css";
