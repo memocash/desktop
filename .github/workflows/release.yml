@@ -46,6 +46,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Run tests
+        run: npm test
       - name: Decode notarization API key
         if: matrix.target == 'mac'
         run: echo "${{ secrets.APPLE_API_KEY_BASE64 }}" | base64 -d > "$RUNNER_TEMP/AuthKey.p8"
