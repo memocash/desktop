@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import GetWallet from "../util/wallet";
 import profile from "../../styles/profile.module.css";
-import {BsFiles, BsFire, BsGlobe, BsPencil, BsPencilSquare, BsPeople, BsPerson} from "react-icons/bs";
+import {BsFiles, BsFire, BsGlobe, BsPencil, BsPencilSquare, BsPeople, BsPerson} from "../util/icons";
 import FollowList from "./memo/follow_list";
 import {Modals} from "../../../main/common/util";
 import NewPostList from "./memo/new_post_list";

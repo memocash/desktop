@@ -7,7 +7,7 @@ import Post from "../../../wallet/memo/post";
 import {TitleCol} from "../../../wallet/snippets/title_col";
 import {useReferredState} from "../../../util/state";
 import {TimeSince} from "../../../util/time";
-import {BsBoxArrowInUpRight} from "react-icons/bs";
+import {BsBoxArrowInUpRight} from "../../../util/icons";
 import {SyncLinkedProfiles} from "../../../wallet/update/index.js";
 
 const Column = {

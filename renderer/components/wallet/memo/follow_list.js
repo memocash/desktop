@@ -9,7 +9,7 @@ import {SyncProfileLinks, UpdateMemoProfile} from "../update/index";
 import {EmptyState} from "../../util/empty";
 import {Loading} from "../../util/loading";
 import {useScopeActivity} from "../../util/activity";
-import {BsExclamationTriangle, BsPeople, BsPersonPlus} from "react-icons/bs";
+import {BsExclamationTriangle, BsPeople, BsPersonPlus} from "../../util/icons";
 
 const Column = {
     Name: "name",

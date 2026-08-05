@@ -11,7 +11,7 @@ import {SendLinkAccept, SendLinkRevoke} from "../../../wallet/snippets/link_tx";
 import Links from "../../../wallet/snippets/links";
 import {BackfillPosts, SyncAliases, SyncProfileLinks, UpdateMemoHistory} from "../../../wallet/update/index";
 import Modal from "../../modal";
-import {BsArrowLeft, BsArrowRight, BsChatQuote, BsPeople, BsPerson, BsXLg} from "react-icons/bs";
+import {BsArrowLeft, BsArrowRight, BsChatQuote, BsPeople, BsPerson, BsXLg} from "../../../util/icons";
 import {BeginActivity, Scopes, useScopeActivity} from "../../../util/activity";
 import {Loading, Spinner} from "../../../util/loading";
 import {EmptyState} from "../../../util/empty";

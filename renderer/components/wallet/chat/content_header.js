@@ -1,5 +1,5 @@
 import styles from "../../../styles/chat.module.css";
-import {BsDoorOpen} from "react-icons/bs";
+import {BsDoorOpen} from "../../util/icons";
 import {useEffect, useState} from "react";
 import {Modals} from "../../../../main/common/util";
 

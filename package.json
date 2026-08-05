@@ -37,6 +37,8 @@
       "!main/**/*.test.js",
       "!main/common/bitcoin/golden.json",
       "!main/app/v1_golden.json",
+      "licenses/**/*",
+      "LICENSE.md",
       "build/icon.png",
       "renderer/out/**/*",
       "package.json"
@@ -89,10 +91,8 @@
     "bip32": "^5.0.1",
     "bip39": "^3.0.4",
     "bitcoincash-ops": "file:./vendor/bitcoincash-ops",
-    "bs58check": "^4.0.0",
     "linkify-it": "^5.0.2",
     "pushdata-bitcoin": "file:./vendor/pushdata-bitcoin",
-    "react-icons": "^4.4.0",
     "tiny-secp256k1": "^2.2.4",
     "tlds": "^1.261.0",
     "ws": "^8.21.0"

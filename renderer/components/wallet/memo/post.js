@@ -4,7 +4,7 @@ import Links from "../snippets/links";
 import {
     BsBoxArrowInUpRight, BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText, BsListCheck, BsPerson,
     BsThreeDots
-} from "react-icons/bs";
+} from "../../util/icons";
 import {Modals} from "../../../../main/common/util";
 import {useEffect, useRef, useState} from "react";
 import {createPortal} from "react-dom";

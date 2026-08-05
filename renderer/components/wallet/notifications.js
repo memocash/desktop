@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react"
-import {BsArrowDownCircle, BsBell, BsBoxArrowInUpRight, BsChatLeft, BsHeart, BsLink45Deg} from "react-icons/bs"
+import {BsArrowDownCircle, BsBell, BsBoxArrowInUpRight, BsChatLeft, BsHeart, BsLink45Deg} from "../util/icons"
 import {TimeSince} from "../util/time"
 import {Modals, Tabs} from "../../../main/common/util"
 import {EmptyState} from "../util/empty"

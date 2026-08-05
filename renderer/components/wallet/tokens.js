@@ -9,7 +9,7 @@ import {Modals} from "../../../main/common/util";
 import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
 import {EmptyState} from "../util/empty";
-import {BsGem} from "react-icons/bs";
+import {BsGem} from "../util/icons";
 import {useScopeActivity} from "../util/activity";
 import {Tabs} from "../../../main/common/util";
 

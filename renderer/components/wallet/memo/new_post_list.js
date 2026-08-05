@@ -8,7 +8,7 @@ import Post from "./post";
 import {UpdateNewPosts} from "../update/index";
 import {Loading} from "../../util/loading";
 import {EmptyState} from "../../util/empty";
-import {BsExclamationTriangle, BsFire, BsGlobe} from "react-icons/bs";
+import {BsExclamationTriangle, BsFire, BsGlobe} from "../../util/icons";
 
 // Pull the newest posts network-wide from the server first, then read them back
 // out of the local db so likes/replies/names render the same way they do

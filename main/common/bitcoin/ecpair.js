@@ -6,7 +6,7 @@
 // that parity against the library's outputs captured in golden.json before
 // its removal.
 const ecc = require("tiny-secp256k1")
-const bs58check = require("bs58check").default
+const bs58check = require("./base58check")
 const {hash160} = require("./hash")
 const {toBase58Check} = require("./address")
 const {DecodeWif, WifVersion} = require("./wif")

@@ -2,7 +2,7 @@ import styles from "../../styles/log.module.css"
 import {ClearActivityLog, Level, useActivity} from "../util/activity"
 import {EmptyState} from "../util/empty"
 import {Spinner} from "../util/loading"
-import {BsJournalText, BsTrash} from "react-icons/bs"
+import {BsJournalText, BsTrash} from "../util/icons"
 
 // Times here are for following work as it happens - which of two downloads
 // started first, how long a sync sat on one phase - so they're to the second and

@@ -8,7 +8,7 @@ import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
 import {EmptyState} from "../util/empty";
 import {FormatTimestamp} from "../util/time";
-import {BsClockHistory} from "react-icons/bs";
+import {BsClockHistory} from "../util/icons";
 import {useScopeActivity} from "../util/activity";
 import {Tabs} from "../../../main/common/util";
 

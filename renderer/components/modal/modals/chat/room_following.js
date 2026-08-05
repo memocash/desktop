@@ -4,7 +4,7 @@ import profile from "../../../../styles/profile.module.css"
 import modalStyles from "../../../../styles/modal.module.css"
 import {TitleCol} from "../../../wallet/snippets/title_col";
 import {TimeSince} from "../../../util/time";
-import {BsBoxArrowInUpRight} from "react-icons/bs";
+import {BsBoxArrowInUpRight} from "../../../util/icons";
 import {useReferredState} from "../../../util/state";
 import {Modals} from "../../../../../main/common/util";
 import ProfileInfoLight from "../snippets/profile_info_light";

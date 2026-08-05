@@ -1,6 +1,6 @@
 import profile from "../../../../styles/profile.module.css";
 import {Modals} from "../../../../../main/common/util";
-import {BsPerson} from "react-icons/bs";
+import {BsPerson} from "../../../util/icons";
 import {useEffect, useState} from "react";
 
 const ProfileInfoLight = ({setModal, address, addresses, children}) => {

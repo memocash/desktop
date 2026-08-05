@@ -1,6 +1,6 @@
 import styles from "../../../styles/chat.module.css";
 import {TimeSince} from "../../util/time";
-import {BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
+import {BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText} from "../../util/icons";
 import Links from "../snippets/links";
 import {Modals} from "../../../../main/common/util";
 import {useEffect, useState} from "react";
