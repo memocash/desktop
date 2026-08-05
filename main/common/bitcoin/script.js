@@ -1,12 +1,16 @@
 // The compile/decompile/toASM trio ported from
 // @bitcoin-dot-com/bitcoincashjs2-lib src/script.js (MIT), over the same
-// vendored pushdata-bitcoin and bitcoincash-ops it used. Byte-for-byte parity
-// with the library is the contract: script.test.js holds this port to the
-// library's own outputs, captured in golden.json before its removal
-// (audit D4).
-const pushdata = require("pushdata-bitcoin")
-const OPS = require("bitcoincash-ops")
-const REVERSE_OPS = require("bitcoincash-ops/map")
+// pushdata encoding and opcode table it used (now ./pushdata.js and
+// ./opcodes.json). Byte-for-byte parity with the library is the contract:
+// script.test.js holds this port to the library's own outputs, captured in
+// golden.json before its removal (audit D4).
+const pushdata = require("./pushdata")
+const OPS = require("./opcodes.json")
+
+// Aliases share a code (OP_0/OP_FALSE); the later name wins, as in the
+// original bitcoincash-ops reverse map.
+const REVERSE_OPS = {}
+for (const op in OPS) REVERSE_OPS[OPS[op]] = op
 
 const OP_INT_BASE = OPS.OP_RESERVED // OP_1 - 1
 

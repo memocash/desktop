@@ -1,13 +1,12 @@
 // The renderer's single doorway to bitcoin primitives (audit D4). Everything
-// here is the app's own code over vendored pushdata-bitcoin/bitcoincash-ops,
-// bs58check, and @noble/hashes - the unmaintained
-// @bitcoin-dot-com/bitcoincashjs2-lib these modules replaced is gone. Key
-// material never enters the renderer: WIF handling here is the structural
-// check only, and deriving or signing stays in main.
+// here is the app's own code in main/common/bitcoin over @noble/hashes - the
+// unmaintained @bitcoin-dot-com/bitcoincashjs2-lib these modules replaced is
+// gone. Key material never enters the renderer: WIF handling here is the
+// structural check only, and deriving or signing stays in main.
 import addressModule from "../../../main/common/bitcoin/address";
 import networksModule from "../../../main/common/bitcoin/networks";
 import scriptModule from "../../../main/common/bitcoin/script";
-import opcodesModule from "bitcoincash-ops";
+import opcodesModule from "../../../main/common/bitcoin/opcodes.json";
 import {Transaction} from "../../../main/common/bitcoin/transaction";
 import {IsValidWif} from "../../../main/common/bitcoin/wif";
 

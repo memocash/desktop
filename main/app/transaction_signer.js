@@ -7,7 +7,7 @@ const {ECPair, ScriptSignature} = require("../common/bitcoin/ecpair")
 const {Transaction} = require("../common/bitcoin/transaction")
 const baddress = require("../common/bitcoin/address")
 const bscript = require("../common/bitcoin/script")
-const opcodes = require("bitcoincash-ops")
+const opcodes = require("../common/bitcoin/opcodes.json")
 
 // Every signature this wallet grants: SIGHASH_ALL over the BIP143 preimage
 // with BCH's forkid bit, 0x41 on the wire.

@@ -11,6 +11,12 @@ which ships alongside this directory.
 - `bitcoincashjs2-lib.txt` — the bitcoin primitives ported into
   `main/common/bitcoin/` from `@bitcoin-dot-com/bitcoincashjs2-lib` 4.1.0
   (MIT, bitcoinjs-lib contributors) before that dependency's removal.
-
-The forks vendored under `vendor/` carry their own upstream `LICENSE` files
-in place.
+- `bitcoincash-ops.txt` — the opcode table in
+  `main/common/bitcoin/opcodes.json`, copied byte-for-byte from
+  `bitcoincash-ops` 2.0.0 (MIT, a Bitcoin-com fork of bitcoin-ops by Daniel
+  Cousens; upstream `github.com/Bitcoin-com/bitcoincash-ops` @ `6ab82cc`)
+  when the vendored fork moved in-house.
+- `pushdata-bitcoin.txt` — the OP_PUSHDATA encoding ported into
+  `main/common/bitcoin/pushdata.js` from `pushdata-bitcoin` 1.2.1 (MIT,
+  Daniel Cousens; upstream `github.com/Bitcoin-com/pushdata-bitcoin` @
+  `9b75eeb`) when the vendored fork moved in-house.

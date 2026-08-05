@@ -4,7 +4,7 @@
 // the library on every reachable input is held by address.test.js against
 // its outputs captured in golden.json before its removal (audit D4).
 const bs58check = require("./base58check")
-const OPS = require("bitcoincash-ops")
+const OPS = require("./opcodes.json")
 const bscript = require("./script")
 const networks = require("./networks")
 
