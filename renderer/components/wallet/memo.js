@@ -6,6 +6,7 @@ import FollowList from "./memo/follow_list";
 import {Modals} from "../../../main/common/util";
 import NewPostList from "./memo/new_post_list";
 import FeedPostList from "./memo/feed_post_list";
+import {ProfilePicSrc} from "../util/profile_pic";
 
 const Tabs = {
     Feed: "feed",
@@ -78,9 +79,7 @@ const Memo = ({lastUpdate, setModal, setChatRoom, initialSync}) => {
         <div className={profile.wrapper}>
             <div className={profile.header}>
                 <div className={profile.pic} onClick={clickEditPic}>
-                    <img alt={"Profile image"} className={profile.img} src={(picData && picData.length) ?
-                        `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
-                        "/default-profile.jpg"}/>
+                    <img alt={"Profile image"} className={profile.img} src={ProfilePicSrc(picData)}/>
                     <a className={profile.editLink}><BsPencil/></a>
                 </div>
                 <div className={profile.summary}>

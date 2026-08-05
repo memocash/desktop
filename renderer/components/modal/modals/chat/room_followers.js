@@ -5,8 +5,9 @@ import modalStyles from "../../../../styles/modal.module.css"
 import {TitleCol} from "../../../wallet/snippets/title_col";
 import {TimeSince} from "../../../util/time";
 import {BsBoxArrowInUpRight} from "../../../util/icons";
-import {useReferredState} from "../../../util/state";
+import {useReferredState, useSortToggle} from "../../../util/state";
 import {Modals} from "../../../../../main/common/util";
+import {ProfilePicSrc} from "../../../util/profile_pic";
 
 const Column = {
     Name: "name",
@@ -14,29 +15,12 @@ const Column = {
 }
 
 const RoomFollowers = ({basic: {setModal, onClose}, modalProps: {room}}) => {
-    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
-    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
+    const {sortCol, sortDesc, sortBy: sortFollows} = useSortToggle(followsRef, setFollows, Column.Timestamp)
     useEffect(() => {(async () => {
         const follows = await window.electron.getChatRoomFollows({room})
         setFollows(follows)
     })()}, [room])
-    const sortFollows = (field) => {
-        let desc = sortDescRef.current
-        if (sortColRef.current === field) {
-            desc = !desc
-        } else {
-            desc = true
-        }
-        if (desc) {
-            followsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
-        } else {
-            followsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
-        }
-        setFollows([...followsRef.current])
-        setSortDesc(desc)
-        setSortCol(field)
-    }
     const setProfile = (address) => setModal(Modals.ProfileView, {address})
     const openTx = async (txHash) => await window.electron.openTransaction({txHash})
     return (
@@ -54,9 +38,7 @@ const RoomFollowers = ({basic: {setModal, onClose}, modalProps: {room}}) => {
                     return (
                         <div key={i} className={profile.row}>
                             <div className={profile.imgWrapper} onClick={() => setProfile(follow.address)}>
-                                <img alt={"Pic"} className={profile.img} src={(follow.pic_data && follow.pic_data.length) ?
-                                    `data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}` :
-                                    "/default-profile.jpg"}/>
+                                <img alt={"Pic"} className={profile.img} src={ProfilePicSrc(follow.pic_data)}/>
                                 {follow.name}
                             </div>
                             <div>

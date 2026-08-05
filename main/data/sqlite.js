@@ -54,13 +54,19 @@ const GetWorker = (dbFile) => {
     return workers[dbFile]
 }
 
-const Insert = async (conf, tableId, query, variables) => {
+// One pending-promise registration per message: the queryId routes the
+// worker's answer back, and dbFile scopes the promise to the worker that owes
+// it. The action doubles as the queryId prefix.
+const post = (conf, action, tableId, message) => {
     return new Promise((resolve, reject) => {
-        const queryId = "INSERT_" + tableId + "_" + GetId()
+        const queryId = action + "_" + tableId + "_" + GetId()
         queries[queryId] = {resolve, reject, dbFile: conf.DatabaseFile}
-        GetWorker(conf.DatabaseFile).postMessage({action: "INSERT", queryId, query, variables})
+        GetWorker(conf.DatabaseFile).postMessage({action, queryId, ...message})
     })
 }
+
+const Insert = async (conf, tableId, query, variables) =>
+    post(conf, "INSERT", tableId, {query, variables})
 
 // Runs a set of {query, variables} statements in one transaction, from one
 // message to the worker. Callers that write several tables from the same batch
@@ -70,20 +76,11 @@ const InsertBatch = async (conf, tableId, statements) => {
     if (!statements || !statements.length) {
         return
     }
-    return new Promise((resolve, reject) => {
-        const queryId = "BATCH_" + tableId + "_" + GetId()
-        queries[queryId] = {resolve, reject, dbFile: conf.DatabaseFile}
-        GetWorker(conf.DatabaseFile).postMessage({action: "BATCH", queryId, statements})
-    })
+    return post(conf, "BATCH", tableId, {statements})
 }
 
-const Select = async (conf, tableId, query, variables) => {
-    return new Promise((resolve, reject) => {
-        const queryId = "SELECT_" + tableId + "_" + GetId()
-        queries[queryId] = {resolve, reject, dbFile: conf.DatabaseFile}
-        GetWorker(conf.DatabaseFile).postMessage({action: "SELECT", queryId, query, variables})
-    })
-}
+const Select = async (conf, tableId, query, variables) =>
+    post(conf, "SELECT", tableId, {query, variables})
 
 // SQLite binds at most 32766 variables to one statement, so a multi-row insert
 // can only carry so many rows before it fails with "too many SQL variables".

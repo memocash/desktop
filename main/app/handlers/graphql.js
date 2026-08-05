@@ -1,7 +1,7 @@
 const {ipcMain} = require("../ipc");
 const {GraphQL, Subscribe, CloseSocket} = require("../../client/graphql");
 const {Handlers, Listeners} = require("../../common/util");
-const {GetNetworkOption} = require("../window");
+const {GetNetworkOption} = require("../window_state");
 
 const GraphQLHandlers = () => {
     ipcMain.handle(Handlers.GraphQL, async (e, {query, variables}) =>

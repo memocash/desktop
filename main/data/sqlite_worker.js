@@ -71,55 +71,35 @@ const GetStatement = (db, query) => {
 // matched it back to a query by searching the message for the query id, and
 // every other pending promise on this worker was left waiting forever on a
 // thread that no longer existed.
-const Insert = async ({queryId, query, variables}) => {
+const answer = (queryId, run) => {
     try {
-        if (variables === undefined) {
-            variables = []
-        }
-        const db = await GetDb()
-        const result = GetStatement(db, query).run(...variables)
-        parentPort.postMessage({queryId, result});
+        parentPort.postMessage({queryId, result: run()});
     } catch (e) {
         parentPort.postMessage({queryId, error: String(e)})
     }
 }
+
+const Insert = ({queryId, query, variables = []}) =>
+    answer(queryId, () => GetStatement(_db, query).run(...variables))
 
 // Runs a caller's whole set of inserts from one message, inside one
 // transaction. Each Insert() otherwise costs a postMessage round trip plus its
 // own commit, which is what the save paths spend nearly all their time on: the
 // round trips alone measured ~17x the cost of the inserts themselves.
-const Batch = async ({queryId, statements}) => {
-    try {
-        const db = await GetDb()
-        Transaction(db, () => {
-            for (const {query, variables} of statements) {
-                GetStatement(db, query).run(...(variables === undefined ? [] : variables))
+const Batch = ({queryId, statements}) =>
+    answer(queryId, () => {
+        Transaction(_db, () => {
+            for (const {query, variables = []} of statements) {
+                GetStatement(_db, query).run(...variables)
             }
         })
-        parentPort.postMessage({queryId, result: {statements: statements.length}});
-    } catch (e) {
-        parentPort.postMessage({queryId, error: String(e)})
-    }
-}
+        return {statements: statements.length}
+    })
 
-const Select = async ({queryId, query, variables}) => {
-    try {
-        if (variables === undefined) {
-            variables = []
-        }
-        const db = await GetDb()
-        const result = GetStatement(db, query).all(...variables)
-        parentPort.postMessage({queryId, result});
-    } catch (e) {
-        parentPort.postMessage({queryId, error: String(e)})
-    }
-}
+const Select = ({queryId, query, variables = []}) =>
+    answer(queryId, () => GetStatement(_db, query).all(...variables))
 
 let _db
-
-const GetDb = async () => {
-    return _db
-}
 
 const SetDb = async (db) => {
     // Prepared statements belong to the connection they were compiled against.

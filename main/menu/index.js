@@ -15,6 +15,21 @@ const DevToolsItems = (win) => app.isPackaged ? [] : [{
     },
 }]
 
+// A function, not a shared const: buildFromTemplate feeds these objects to
+// MenuItem, so each menu gets its own copy rather than one both builds touch.
+const EditMenu = () => ({
+    label: "Edit",
+    submenu: [
+        {label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:"},
+        {label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:"},
+        {type: "separator"},
+        {label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:"},
+        {label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:"},
+        {label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:"},
+        {label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:"}
+    ]
+})
+
 const ShowMenu = (win, newWindow, wallet) => {
     const submenu = [
         {
@@ -30,18 +45,7 @@ const ShowMenu = (win, newWindow, wallet) => {
     const menu = Menu.buildFromTemplate([{
         label: "File",
         submenu
-    }, {
-        label: "Edit",
-        submenu: [
-            {label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:"},
-            {label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:"},
-            {type: "separator"},
-            {label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:"},
-            {label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:"},
-            {label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:"},
-            {label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:"}
-        ]
-    }, {
+    }, EditMenu(), {
         label: "Wallet",
         submenu: [
             {
@@ -153,22 +157,11 @@ const GetBasicFileSubMenu = () => {
     return submenu
 }
 
-const SimpleMenu = (win, hide) => {
+const SimpleMenu = (win) => {
     const menu = Menu.buildFromTemplate([{
         label: "File",
         submenu: GetBasicFileSubMenu(),
-    }, {
-        label: "Edit",
-        submenu: [
-            {label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:"},
-            {label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:"},
-            {type: "separator"},
-            {label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:"},
-            {label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:"},
-            {label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:"},
-            {label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:"}
-        ]
-    }, {
+    }, EditMenu(), {
         label: "Help",
         submenu: [
             {role: 'reload'},
@@ -181,9 +174,7 @@ const SimpleMenu = (win, hide) => {
         return menu
     }
     win.setMenu(menu)
-    if (hide) {
-        win.setMenuBarVisibility(false)
-    }
+    win.setMenuBarVisibility(false)
 }
 
 module.exports = {

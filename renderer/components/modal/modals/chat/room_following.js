@@ -5,7 +5,7 @@ import modalStyles from "../../../../styles/modal.module.css"
 import {TitleCol} from "../../../wallet/snippets/title_col";
 import {TimeSince} from "../../../util/time";
 import {BsBoxArrowInUpRight} from "../../../util/icons";
-import {useReferredState} from "../../../util/state";
+import {useReferredState, useSortToggle} from "../../../util/state";
 import {Modals} from "../../../../../main/common/util";
 import ProfileInfoLight from "../snippets/profile_info_light";
 
@@ -15,9 +15,8 @@ const Column = {
 }
 
 const RoomFollowing = ({basic: {setModal, setChatRoom}, modalProps: {address}}) => {
-    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
-    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [follows, followsRef, setFollows] = useReferredState([])
+    const {sortCol, sortDesc, sortBy: sortFollows} = useSortToggle(followsRef, setFollows, Column.Timestamp)
     useEffect(() => {(async () => {
         // The profile that opens this modal counts rooms across the linked-address
         // cluster (and synced it on open), so list them from the cluster too.
@@ -26,22 +25,6 @@ const RoomFollowing = ({basic: {setModal, setChatRoom}, modalProps: {address}}) 
         setFollows(follows)
     })()}, [address])
     const onClose = () => setModal(Modals.None)
-    const sortFollows = (field) => {
-        let desc = sortDescRef.current
-        if (sortColRef.current === field) {
-            desc = !desc
-        } else {
-            desc = true
-        }
-        if (desc) {
-            followsRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
-        } else {
-            followsRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
-        }
-        setFollows([...followsRef.current])
-        setSortDesc(desc)
-        setSortCol(field)
-    }
     const openTx = async (txHash) => await window.electron.openTransaction({txHash})
     const clickRoom = (room) => {
         setChatRoom(room)

@@ -8,6 +8,7 @@ import GetWallet from "../../util/wallet";
 import {ListenPosts} from "../update/index";
 import {Spinner} from "../../util/loading";
 import {EmptyState} from "../../util/empty";
+import {ProfilePicSrc} from "../../util/profile_pic";
 
 const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
     const [counter, setCounter] = useState(0)
@@ -66,9 +67,7 @@ const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
                     <div key={index} className={styles.post}>
                         <div className={styles.post_header}>
                             <a onClick={() => clickViewProfile(post.address)}>
-                                <img alt={"Pic"} src={(post.pic && post.pic.length) ?
-                                    `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
-                                    "/default-profile.jpg"}/>
+                                <img alt={"Pic"} src={ProfilePicSrc(post.pic)}/>
                                 {post.name}
                             </a>
                             {" "}

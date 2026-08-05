@@ -69,7 +69,7 @@ const GetMaxValue = async (coin = "", extraOutputScripts = []) => {
 }
 
 // Whether the builders will actually take a single input of totalInput against
-// these outputs. CreateTransactionWithPreview / CreateDirectTransaction only
+// these outputs. BuildTx (util/tx_build) only
 // add the input when it funds the outputs exactly or leaves more than a dust
 // change output; in the band between those two they add no input at all, so
 // anything in that band has to count as unusable rather than as a cheap send.
@@ -78,7 +78,7 @@ const CoinFunds = (totalInput, requiredInput) =>
     totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.Fee.DustLimit
 
 // What a set of outputs will actually cost to send. Mirrors the input selection
-// in CreateTransactionWithPreview / CreateDirectTransaction so the figure shown
+// in BuildTx (util/tx_build) so the figure shown
 // before signing matches the transaction that gets built: a named coin is spent
 // on its own as the single input, otherwise the largest utxos are taken in turn
 // (skipping token outputs and dust) until they cover the outputs plus fee. Keep

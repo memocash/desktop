@@ -17,10 +17,11 @@ const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
 const {ValidateNetworkConfig} = require("../../common/util/network_config");
 const {KeyFinder, PreviewSpend, SignTransaction, WalletAddresses} = require("../transaction_signer");
+const {CreateWindow, eConf} = require("../window");
 const {
-    SetWallet, GetWallet, SetMenu, GetWindow, CreateWindow, CopyPublicToFileWindows,
-    CopyWalletToTxWindows, TxWindowParent, eConf,
-} = require("../window");
+    SetWallet, GetWallet, SetMenu, GetWindow, CopyPublicToFileWindows,
+    CopyWalletToTxWindows, TxWindowParent,
+} = require("../window_state");
 
 // Runs key/address derivation in a worker thread so the CPU-intensive
 // secp256k1 work never blocks the main process or the renderer UI. The worker

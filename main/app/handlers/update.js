@@ -4,7 +4,8 @@ const fs = require("fs");
 const path = require("path");
 const {Dir, Handlers, Listeners, Modals} = require("../../common/util");
 const {CompareVersions, PickAsset, PickLatestRelease} = require("../../common/util/release");
-const {IsWalletWindow, OpenExternalUrl} = require("../window");
+const {OpenExternalUrl} = require("../window");
+const {IsWalletWindow} = require("../window_state");
 
 // Releases are published to GitHub by .github/workflows/release.yml, so the
 // releases API is the source of truth for what is available - the same list the

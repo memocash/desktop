@@ -3,17 +3,16 @@ const {ipcMain} = require("../ipc");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
 const {AllowPath} = require("../keystore");
 const {ValidateNetworkOption} = require("../../common/util/network_config");
+const {OpenExternalUrl, GetRuntimeNetworkOption} = require("../window");
 const {
     GetMenu,
     GetStorage,
     SetStorage,
     GetWindow,
     GetWallet,
-    OpenExternalUrl,
     SetNetworkOption,
     GetNetworkOption,
-    GetRuntimeNetworkOption,
-} = require("../window");
+} = require("../window_state");
 
 const WindowHandlers = () => {
     ipcMain.handle(Handlers.GetWindowId, async (e) => e.sender.id)

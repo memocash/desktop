@@ -10,6 +10,7 @@ import {EmptyState} from "../../util/empty";
 import {Loading} from "../../util/loading";
 import {useScopeActivity} from "../../util/activity";
 import {BsExclamationTriangle, BsPeople, BsPersonPlus} from "../../util/icons";
+import {ProfilePicSrc} from "../../util/profile_pic";
 
 const Column = {
     Name: "name",
@@ -163,9 +164,7 @@ const FollowList = ({addresses, setModal, showFollowers = false, scope = Tabs.Me
                         <div className={profile.imgWrapper}
                              onClick={() => setProfile(showFollowers ? follow.address : follow.follow_address)}>
                             <img alt={"Profile image"} className={profile.img}
-                                 src={(follow.pic_data && follow.pic_data.length) ?
-                                     `data:image/png;base64,${Buffer.from(follow.pic_data).toString("base64")}` :
-                                     "/default-profile.jpg"}/>
+                                 src={ProfilePicSrc(follow.pic_data)}/>
                             {(follow.name && follow.name.length) ? follow.name :
                                 (showFollowers ? follow.address : follow.follow_address)}
                         </div>

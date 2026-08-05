@@ -1,5 +1,6 @@
 const {Insert, InsertBatch, Select} = require("../sqlite")
 const {KeepFirst, KeepLast, Rows, Statements} = require("../common/rows")
+const {txJoinTimestamp} = require("../common/profile_links")
 const {AddSlpOutput, SlpRows} = require("./slp")
 
 // Writes a whole page of downloaded transactions as one batch of multi-row
@@ -94,8 +95,7 @@ const GenerateHistory = async (conf, addresses) => {
         "SELECT " +
         "   outputs.address, " +
         "   txs.hash AS hash, " +
-        "   MIN(COALESCE(tx_seens.timestamp, blocks.timestamp)," +
-        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) AS timestamp, " +
+        "   " + txJoinTimestamp + " AS timestamp, " +
         "   MIN(blocks.height) AS height, " +
         "   SUM(CASE WHEN inputs.hash = txs.hash THEN 0 ELSE outputs.value END) - " +
         "   SUM(CASE WHEN inputs.hash = txs.hash THEN outputs.value ELSE 0 END) AS value " +
@@ -107,8 +107,7 @@ const GenerateHistory = async (conf, addresses) => {
         "LEFT JOIN tx_seens ON (tx_seens.hash = txs.hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "GROUP BY outputs.address, txs.hash " +
-        "ORDER BY MIN(COALESCE(tx_seens.timestamp, blocks.timestamp), " +
-        "   COALESCE(blocks.timestamp, tx_seens.timestamp)) DESC" +
+        "ORDER BY " + txJoinTimestamp + " DESC" +
         "", addresses)
 }
 

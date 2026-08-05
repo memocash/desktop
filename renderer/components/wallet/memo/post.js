@@ -8,6 +8,7 @@ import {
 import {Modals} from "../../../../main/common/util";
 import {useEffect, useRef, useState} from "react";
 import {createPortal} from "react-dom";
+import {ProfilePicSrc} from "../../util/profile_pic";
 
 const Post = ({post, setModal, setChatRoom, isSingle = false, isFeedRow = false}) => {
     const [counter, setCounter] = useState(0)
@@ -102,9 +103,7 @@ const Post = ({post, setModal, setChatRoom, isSingle = false, isFeedRow = false}
              onClick={clickRow}>
             <div className={profile.post}>
                 <div className={profile.post_header}>
-                    <img alt={"Pic"} onClick={clickViewProfile} src={(post.pic && post.pic.length) ?
-                        `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
-                        "/default-profile.jpg"}/>
+                    <img alt={"Pic"} onClick={clickViewProfile} src={ProfilePicSrc(post.pic)}/>
                     <span className={profile.profile_link} onClick={clickViewProfile}>{post.name}</span>
                     {post.alias && post.alias !== post.name ?
                         <span className={profile.time}> ({post.alias})</span> : null}

@@ -15,6 +15,7 @@ import {BsChatQuote, BsXLg} from "../../../util/icons";
 import {BeginActivity, Scopes, useScopeActivity} from "../../../util/activity";
 import {Loading, Spinner} from "../../../util/loading";
 import {EmptyState} from "../../../util/empty";
+import {ProfilePicSrc} from "../../../util/profile_pic";
 
 // A profile opens on whatever is already saved locally - often nothing at all
 // for someone the wallet has never seen - and fills in as the sync lands. It
@@ -190,9 +191,7 @@ const View = ({basic: {setModal, onClose, setChatRoom}, modalProps: {address, la
             <div className={profile.header_modal}>
                 <div className={profile.pic}>
                     <img alt={"Profile image"} className={profile.img}
-                         src={(picData && picData.length) ?
-                             `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
-                             "/default-profile.jpg"}/>
+                         src={ProfilePicSrc(picData)}/>
                 </div>
                 <div className={profile.info}>
                     <h2>{profileInfo.name ? profileInfo.name : "Name not set"}

@@ -1,7 +1,7 @@
 const {Select, InsertBatch} = require("../sqlite");
 const {KeepFirst, KeepLast, Rows, Statements} = require("../common/rows");
 const {SaveTransactions} = require("./txs");
-const {historicallyValid} = require("../common/profile_links");
+const {clusterField, historicallyValid, linkedClusterCte, txJoinTimestamp} = require("../common/profile_links");
 
 const PostRows = () => ({
     posts: Rows("INSERT OR REPLACE INTO memo_posts (address, text, tx_hash)", KeepLast),
@@ -63,11 +63,7 @@ const GetRoomPosts = async ({conf, room, userAddresses}) => {
 // column) and by RankedOrder's recency term, which can't use the "timestamp"
 // alias - inside an expression SQLite reads it as the ambiguous real column on
 // blocks/tx_seens rather than the output alias.
-const timestampSelect = "" +
-    "MIN(" +
-    "   COALESCE(blocks.timestamp, tx_seens.timestamp), " +
-    "   COALESCE(tx_seens.timestamp, blocks.timestamp)" +
-    ")"
+const timestampSelect = txJoinTimestamp
 
 const NewestOrder = "timestamp DESC"
 
@@ -94,44 +90,22 @@ const getSelectQuery = ({join = "", userAddresses, where, orderBy = NewestOrder}
     // a field from another address in its transitive linked-address cluster is
     // used. Name and pic are selected independently because linked profiles
     // commonly split those fields across addresses.
-    const linkedAuthors = "" +
-        "WITH RECURSIVE active_profile_links(address, linked_address) AS (" +
-        "   SELECT link_requests.address, link_requests.parent_address " +
-        "   FROM link_requests " +
-        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-        "   UNION " +
-        "   SELECT link_requests.parent_address, link_requests.address " +
-        "   FROM link_requests " +
-        "   JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-        "), linked_author_addresses(origin, address) AS (" +
-        "   SELECT DISTINCT address, address FROM memo_posts " +
-        "   UNION " +
-        "   SELECT linked_author_addresses.origin, active_profile_links.linked_address " +
-        "   FROM linked_author_addresses " +
-        "   JOIN active_profile_links " +
-        "       ON (active_profile_links.address = linked_author_addresses.address)" +
-        ") "
-    const authorName = "(" +
-        "SELECT profile_names.name " +
-        "FROM linked_author_addresses " +
-        "JOIN profiles ON (profiles.address = linked_author_addresses.address) " +
-        "JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
-        "WHERE linked_author_addresses.origin = memo_posts.address " +
-        "AND " + historicallyValid("linked_author_addresses.address", "profile_names.tx_hash") + " " +
-        "ORDER BY (linked_author_addresses.address = memo_posts.address) DESC, " +
-        "   linked_author_addresses.address ASC LIMIT 1" +
-        ")"
-    const authorPic = "(" +
-        "SELECT images.data " +
-        "FROM linked_author_addresses " +
-        "JOIN profiles ON (profiles.address = linked_author_addresses.address) " +
-        "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
-        "JOIN images ON (images.url = profile_pics.pic) " +
-        "WHERE linked_author_addresses.origin = memo_posts.address " +
-        "AND " + historicallyValid("linked_author_addresses.address", "profile_pics.tx_hash") + " " +
-        "ORDER BY (linked_author_addresses.address = memo_posts.address) DESC, " +
-        "   linked_author_addresses.address ASC LIMIT 1" +
-        ")"
+    const linkedAuthors = linkedClusterCte({
+        cluster: "linked_author_addresses",
+        seedSelect: "address, address",
+        seedFrom: "memo_posts",
+    })
+    const authorName = clusterField({
+        cluster: "linked_author_addresses", origin: "memo_posts.address",
+        join: "JOIN profile_names ON (profile_names.tx_hash = profiles.name) ",
+        field: "profile_names.name", txHash: "profile_names.tx_hash",
+    })
+    const authorPic = clusterField({
+        cluster: "linked_author_addresses", origin: "memo_posts.address",
+        join: "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
+            "JOIN images ON (images.url = profile_pics.pic) ",
+        field: "images.data", txHash: "profile_pics.tx_hash",
+    })
     const authorAlias = "(" +
         "SELECT address_aliases.alias " +
         "FROM address_aliases " +

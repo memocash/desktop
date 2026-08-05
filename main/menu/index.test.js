@@ -31,13 +31,13 @@ const labels = () => lastTemplate.flatMap(({submenu}) => submenu || [])
 
 test("a packaged build's menus carry no DevTools entry; development's do", () => {
     electronStub.app.isPackaged = true
-    SimpleMenu(win, true)
+    SimpleMenu(win)
     assert.ok(!labels().includes("Developer Tools"), "SimpleMenu, packaged")
     ShowMenu(win, () => {}, {walletType: "seed"})
     assert.ok(!labels().includes("Developer Tools"), "ShowMenu, packaged")
 
     electronStub.app.isPackaged = false
-    SimpleMenu(win, true)
+    SimpleMenu(win)
     assert.ok(labels().includes("Developer Tools"), "SimpleMenu, development")
     ShowMenu(win, () => {}, {walletType: "seed"})
     assert.ok(labels().includes("Developer Tools"), "ShowMenu, development")

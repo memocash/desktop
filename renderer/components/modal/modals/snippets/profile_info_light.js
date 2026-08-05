@@ -2,6 +2,7 @@ import profile from "../../../../styles/profile.module.css";
 import {Modals} from "../../../../../main/common/util";
 import {BsPerson} from "../../../util/icons";
 import {useEffect, useState} from "react";
+import {ProfilePicSrc} from "../../../util/profile_pic";
 
 const ProfileInfoLight = ({setModal, address, addresses, children}) => {
     const [profileInfo, setProfileInfo] = useState({
@@ -26,9 +27,7 @@ const ProfileInfoLight = ({setModal, address, addresses, children}) => {
         <div className={profile.header_modal}>
             <div className={profile.pic}>
                 <img alt={"Profile image"} className={profile.img}
-                     src={(picData && picData.length) ?
-                         `data:image/png;base64,${Buffer.from(picData).toString("base64")}` :
-                         "/default-profile.jpg"}/>
+                     src={ProfilePicSrc(picData)}/>
             </div>
             <div className={profile.info}>
                 <h2>
