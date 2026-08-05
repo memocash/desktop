@@ -36,6 +36,7 @@
       "main/**/*",
       "!main/**/*.test.js",
       "!main/common/bitcoin/golden.json",
+      "!main/common/bitcoin/bip32_golden.json",
       "!main/app/v1_golden.json",
       "licenses/**/*",
       "LICENSE.md",
@@ -88,8 +89,7 @@
   "dependencies": {
     "@noble/hashes": "^1.8.0",
     "better-sqlite3": "^12.11.1",
-    "bip32": "^5.0.1",
-    "bip39": "^3.0.4",
+    "bip39": "^3.1.0",
     "bitcoincash-ops": "file:./vendor/bitcoincash-ops",
     "linkify-it": "^5.0.2",
     "pushdata-bitcoin": "file:./vendor/pushdata-bitcoin",

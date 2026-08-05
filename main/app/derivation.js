@@ -1,9 +1,7 @@
 const {mnemonicToSeedSync} = require("bip39")
-const {BIP32Factory} = require("bip32")
-const ecc = require("tiny-secp256k1")
+const bip32 = require("../common/bitcoin/bip32")
 const {ECPair} = require("../common/bitcoin/ecpair")
 
-const bip32 = BIP32Factory(ecc)
 const AddressCount = 20
 const DerivationVersion = 1
 
