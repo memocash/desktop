@@ -1,5 +1,5 @@
 const {parentPort, isMainThread} = require("worker_threads");
-const database = require("better-sqlite3")
+const {DatabaseSync} = require("node:sqlite")
 const homedir = require('os').homedir()
 const {Definitions, Indexes, Cleanups} = require("./schema")
 
@@ -33,6 +33,25 @@ parentPort.on("message", async ({action, queryId, query, variables, statements, 
 // grows past a session's worth rather than let prepared statements accumulate.
 const MaxCachedStatements = 200
 let cachedStatements = new Map()
+
+// node:sqlite has no transaction() helper; BEGIN/COMMIT by hand, rolling back
+// on failure so the connection isn't left stuck inside an open transaction.
+// COMMIT itself can be what fails (a deferred constraint, a full disk), and
+// some of those failures auto-rollback while others leave the transaction
+// open - so the rollback covers the commit too, tolerates already being out
+// of a transaction, and the original error wins over rollback's own.
+const Transaction = (db, fn) => {
+    db.exec("BEGIN")
+    try {
+        fn()
+        db.exec("COMMIT")
+    } catch (e) {
+        try {
+            db.exec("ROLLBACK")
+        } catch {}
+        throw e
+    }
+}
 
 const GetStatement = (db, query) => {
     let statement = cachedStatements.get(query)
@@ -72,11 +91,11 @@ const Insert = async ({queryId, query, variables}) => {
 const Batch = async ({queryId, statements}) => {
     try {
         const db = await GetDb()
-        db.transaction(() => {
+        Transaction(db, () => {
             for (const {query, variables} of statements) {
                 GetStatement(db, query).run(...(variables === undefined ? [] : variables))
             }
-        })()
+        })
         parentPort.postMessage({queryId, result: {statements: statements.length}});
     } catch (e) {
         parentPort.postMessage({queryId, error: String(e)})
@@ -105,7 +124,7 @@ const GetDb = async () => {
 const SetDb = async (db) => {
     // Prepared statements belong to the connection they were compiled against.
     cachedStatements = new Map()
-    _db = database(db.replace("~", homedir))
+    _db = new DatabaseSync(db.replace("~", homedir))
     // Every Insert() lands here as its own statement, so without WAL each one is
     // a separate autocommit against the default rollback journal: create the
     // -journal file, fsync it, fsync the db, delete it. On Windows that measures
@@ -115,13 +134,13 @@ const SetDb = async (db) => {
     // only fsyncs on checkpoint, which measures ~0.04ms per row here.
     // synchronous is per-connection so it has to be set on every open; the
     // journal mode is a property of the file and persists.
-    _db.pragma("journal_mode = WAL")
-    _db.pragma("synchronous = NORMAL")
+    _db.exec("PRAGMA journal_mode = WAL")
+    _db.exec("PRAGMA synchronous = NORMAL")
     const statements = Definitions.map(d => "CREATE TABLE IF NOT EXISTS " + d)
         .concat(Indexes).concat(Cleanups)
-    _db.transaction(() => {
+    Transaction(_db, () => {
         for (const statement of statements) {
             _db.prepare(statement).run()
         }
-    })()
+    })
 }

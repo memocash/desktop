@@ -186,7 +186,7 @@ const Definitions = [
 // These columns are joined/filtered on constantly (wallet balance, post lists,
 // follow lists) but aren't covered by the UNIQUE constraints above, which only
 // index their own leading columns. Without these, every one of those queries
-// does a full table scan, and since better-sqlite3 runs synchronously in a
+// does a full table scan, and since node:sqlite runs synchronously in a
 // single worker thread, a slow scan stalls every other pending DB call behind it.
 const Indexes = [
     "CREATE INDEX IF NOT EXISTS idx_outputs_address ON outputs (address)",

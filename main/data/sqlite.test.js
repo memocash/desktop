@@ -7,9 +7,8 @@ const {EventEmitter} = require("node:events")
 // it, and that a worker dying answers everything in flight on its database
 // rather than leaving promises pending forever - which is what the old
 // routing did, by searching the error's text for a query id. The worker
-// itself is stubbed (better-sqlite3 is compiled for Electron's ABI, and the
-// table tests already run the SQL against node:sqlite); the stub speaks the
-// worker's message shapes.
+// itself is stubbed (the table tests already run the SQL against
+// node:sqlite); the stub speaks the worker's message shapes.
 const spawned = []
 class StubWorker extends EventEmitter {
     constructor(file) {

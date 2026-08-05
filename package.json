@@ -13,7 +13,6 @@
     "test": "node --test \"main/**/*.test.js\"",
     "build": "node scripts/build-preload.js && next build renderer",
     "pack-app": "npm run build && electron-builder --dir",
-    "rebuild": "electron-rebuild",
     "dist": "npm run build && electron-builder",
     "dist:linux": "npm run build && electron-builder --linux",
     "dist:mac": "npm run build && electron-builder --mac",
@@ -43,9 +42,6 @@
       "build/icon.png",
       "renderer/out/**/*",
       "package.json"
-    ],
-    "asarUnpack": [
-      "**/*.node"
     ],
     "publish": null,
     "mac": {
@@ -78,7 +74,6 @@
     }
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.2.0",
     "electron": "43.3.0",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.28.1",
@@ -88,7 +83,6 @@
   },
   "dependencies": {
     "@noble/hashes": "^1.8.0",
-    "better-sqlite3": "^12.11.1",
     "bip39": "^3.1.0",
     "bitcoincash-ops": "file:./vendor/bitcoincash-ops",
     "linkify-it": "^5.0.2",
