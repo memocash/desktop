@@ -1,11 +1,9 @@
 /dist
 /node_modules
-/renderer/.next
 /renderer/out
 .DS_Store
 /memo.db
 /main/preload.bundle.cjs
-/.next/
 bun.lock
 /.claude
 /.idea

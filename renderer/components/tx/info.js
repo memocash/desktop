@@ -1,4 +1,4 @@
-import {useRouter} from "next/router";
+import {useRouter, Link} from "../util/router";
 import {useEffect, useRef, useState} from "react";
 import form from "../../styles/form.module.css";
 import styleTx from "../../styles/tx.module.css";
@@ -8,7 +8,6 @@ import {useReferredState} from "../util/state";
 import bitcoin from "../util/bitcoincash";
 import {FormatTxError, setTx} from "./direct_tx";
 import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
-import Link from "next/link";
 import {SafeExternalUrl} from "../../../main/common/util/urls";
 
 // Include each referenced output so an arbitrary transaction has enough

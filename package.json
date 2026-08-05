@@ -8,10 +8,10 @@
   "repository": "github.com/memocash/desktop",
   "scripts": {
     "build:preload": "node scripts/build-preload.js",
-    "prestart": "node scripts/build-preload.js && node scripts/clean-stale-next.js",
+    "prestart": "node scripts/build-preload.js",
     "start": "electron .",
-    "test": "node --test \"main/**/*.test.js\"",
-    "build": "node scripts/build-preload.js && next build renderer",
+    "test": "node --test \"main/**/*.test.js\" \"scripts/**/*.test.js\" \"renderer/**/*.test.js\"",
+    "build": "node scripts/build-preload.js && node scripts/build-renderer.js",
     "pack-app": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dist:linux": "npm run build && electron-builder --linux",
@@ -74,10 +74,10 @@
     }
   },
   "devDependencies": {
+    "buffer": "^6.0.3",
     "electron": "43.3.0",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.28.1",
-    "next": "^15.5.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -90,10 +90,6 @@
     "tiny-secp256k1": "^2.2.4",
     "tlds": "^1.261.0",
     "ws": "^8.21.0"
-  },
-  "overrides": {
-    "sharp": "^0.35.3",
-    "postcss": "^8.5.25"
   },
   "trustedDependencies": [
     "electron"

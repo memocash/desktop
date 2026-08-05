@@ -46,11 +46,12 @@ app.whenReady().then(async () => {
         app.dock.setIcon(nativeImage.createFromPath(iconPath))
     }
     if (isDev) {
-        // The dev server resolves `next` (a devDependency that does not exist
-        // in packaged builds), so it can only start on this branch. The app
-        // handle goes along so the child dies with the app even when quit
+        // The dev server script imports esbuild (a devDependency that does not
+        // exist in packaged builds), so it can only start on this branch. The
+        // app handle goes along so the child dies with the app even when quit
         // arrives before the server has turned ready.
-        await require("./dev_server").StartDevServer(path.join(__dirname, "..", "renderer"), app)
+        await require("./dev_server").StartDevServer(
+            path.join(__dirname, "..", "scripts", "dev-renderer.js"), app)
     }
     // Before any window can list or open a wallet, so nothing races the files
     // while they are still sitting at the modes an earlier release left.

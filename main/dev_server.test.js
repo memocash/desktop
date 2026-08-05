@@ -1,9 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const net = require("node:net");
+const path = require("node:path");
 const {EventEmitter, once} = require("node:events");
 const {PassThrough} = require("node:stream");
 const {Reachable, StartDevServer, WaitForReady} = require("./dev_server");
+
+const DevServerScript = path.join(__dirname, "..", "scripts", "dev-renderer.js")
 
 // The shape WaitForReady consumes: an exit/error emitter with piped output.
 const FakeChild = () => Object.assign(new EventEmitter(), {
@@ -24,21 +27,19 @@ const Listener = async () => {
 test("readiness is the child's own ready line, even split across chunks", async () => {
     const child = FakeChild()
     const ready = WaitForReady(child, Sink())
-    child.stdout.write("   ▲ Next.js 15.5.21\n")
-    child.stdout.write(" ✓ Starting...\n")
+    child.stdout.write("  renderer/out/assets/wallet.js  406.0kb\n")
     child.stderr.write(" ○ some warning\n")
-    child.stdout.write(" ✓ Rea")
-    child.stdout.write("dy in 765ms\n")
+    child.stdout.write("Rea")
+    child.stdout.write("dy on http://localhost:8000 - rebuilding on change, reload to pick up\n")
     await ready
 })
 
 test("a child that dies before readiness rejects - the EADDRINUSE path", async () => {
     const child = FakeChild()
     const ready = WaitForReady(child, Sink())
-    child.stderr.write(" ⨯ Failed to start server\n")
     child.stderr.write("Error: listen EADDRINUSE: address already in use 127.0.0.1:8000\n")
     child.emit("exit", 1)
-    await assert.rejects(ready, {message: "next dev exited with code 1"})
+    await assert.rejects(ready, {message: "renderer dev server exited with code 1"})
 })
 
 // The finding under test: a listener that wins the port must not read as
@@ -50,14 +51,14 @@ test("a foreign listener on the port is not readiness", async () => {
     try {
         const child = FakeChild()
         const ready = WaitForReady(child, Sink())
-        child.stdout.write(" ✓ Starting...\n")
+        child.stdout.write("  renderer/out/assets/wallet.js  406.0kb\n")
         const settled = await Promise.race([
             ready.then(() => "ready"),
             new Promise((resolve) => setTimeout(() => resolve("pending"), 100)),
         ])
         assert.equal(settled, "pending")
         child.emit("exit", 1)
-        await assert.rejects(ready, {message: "next dev exited with code 1"})
+        await assert.rejects(ready, {message: "renderer dev server exited with code 1"})
     } finally {
         server.close()
     }
@@ -76,7 +77,7 @@ test("an occupied port is refused before anything spawns", async () => {
     const server = await Listener()
     try {
         await assert.rejects(
-            StartDevServer("renderer", new EventEmitter(), server.address().port),
+            StartDevServer(DevServerScript, new EventEmitter(), server.address().port),
             {message: /something is already listening on localhost:/})
     } finally {
         server.close()
@@ -93,10 +94,10 @@ test("quitting while readiness is pending kills the child", async () => {
     server.close()
     await once(server, "close")
     const app = new EventEmitter()
-    const pending = StartDevServer("renderer", app, port)
+    const pending = StartDevServer(DevServerScript, app, port)
     while (!app.listenerCount("before-quit")) {
         await new Promise((resolve) => setTimeout(resolve, 5))
     }
     app.emit("before-quit")
-    await assert.rejects(pending, {message: /next dev exited with/})
+    await assert.rejects(pending, {message: /renderer dev server exited with/})
 })

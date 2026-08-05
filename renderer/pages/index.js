@@ -1,5 +1,5 @@
 import {useRef, useState} from "react"
-import {useRouter} from "next/router"
+import {useRouter} from "../components/util/router"
 import LoadHome from "../components/load"
 import AddSeed from "../components/load/add_seed"
 import ConfirmSeed from "../components/load/confirm_seed"
