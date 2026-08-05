@@ -1,16 +1,7 @@
-const crypto = require("crypto")
-
-// bitcoincashjs2-lib asks Node for the historical rmd160 alias. Electron's
-// BoringSSL only exposes the canonical name, so normalize it before loading the
-// library in either the main process or a worker.
-const originalCreateHash = crypto.createHash
-crypto.createHash = (algorithm, options) =>
-    originalCreateHash.call(crypto, algorithm === "rmd160" ? "ripemd160" : algorithm, options)
-
 const {mnemonicToSeedSync} = require("bip39")
 const {BIP32Factory} = require("bip32")
 const ecc = require("tiny-secp256k1")
-const {ECPair} = require("@bitcoin-dot-com/bitcoincashjs2-lib")
+const {ECPair} = require("../common/bitcoin/ecpair")
 
 const bip32 = BIP32Factory(ecc)
 const AddressCount = 20

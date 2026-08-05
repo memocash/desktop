@@ -1,11 +1,17 @@
-// First, and before the transaction library: derivation installs the rmd160
-// alias that bitcoincashjs2-lib asks OpenSSL for and Electron's BoringSSL does
-// not have, and it owns the paths a wallet's addresses come from.
+// Derivation owns the paths a wallet's addresses come from.
 const {AccountPath, Bip32} = require("./derivation")
 
-const bitcoin = require("@bitcoin-dot-com/bitcoincashjs2-lib")
 const {mnemonicToSeedSync} = require("bip39")
 const {WalletErrors} = require("../common/util")
+const {ECPair, ScriptSignature} = require("../common/bitcoin/ecpair")
+const {Transaction} = require("../common/bitcoin/transaction")
+const baddress = require("../common/bitcoin/address")
+const bscript = require("../common/bitcoin/script")
+const opcodes = require("bitcoincash-ops")
+
+// Every signature this wallet grants: SIGHASH_ALL over the BIP143 preimage
+// with BCH's forkid bit, 0x41 on the wire.
+const SigHashType = Transaction.SIGHASH_ALL | Transaction.SIGHASH_BITCOINCASHBIP143
 
 const MaxFeeRate = 100
 // Every attempt re-signs all the inputs, synchronously on the main process's
@@ -21,7 +27,7 @@ const walletAddresses = (wallet) =>
 
 const keyForAddress = (wallet, address, seedRoot) => {
     for (const wif of wallet.keys || []) {
-        const key = bitcoin.ECPair.fromWIF(wif)
+        const key = ECPair.fromWIF(wif)
         if (key.getAddress() === address) {
             return key
         }
@@ -44,7 +50,7 @@ const keyForAddress = (wallet, address, seedRoot) => {
         // one a renderer added to a list, sits at an index whose derived key
         // belongs to some other address. Signing with it would produce a
         // transaction no node accepts, so treat a mismatch as no key at all.
-        const key = bitcoin.ECPair.fromWIF(node.derivePath(path + index).toWIF())
+        const key = ECPair.fromWIF(node.derivePath(path + index).toWIF())
         if (key.getAddress() === address) {
             return key
         }
@@ -89,12 +95,12 @@ const uint64 = (buffer) => {
 // MINT baton field arrives as OP_0 when the baton is being destroyed, as OP_1 to
 // OP_16 for the usual output indexes, and as a one-byte push beyond that.
 const batonOutput = (chunk) => {
-    if (chunk === bitcoin.opcodes.OP_0) {
+    if (chunk === opcodes.OP_0) {
         return undefined
     }
     if (typeof chunk === "number" &&
-        chunk >= bitcoin.opcodes.OP_1 && chunk <= bitcoin.opcodes.OP_16) {
-        return chunk - bitcoin.opcodes.OP_1 + 1
+        chunk >= opcodes.OP_1 && chunk <= opcodes.OP_16) {
+        return chunk - opcodes.OP_1 + 1
     }
     if (Buffer.isBuffer(chunk) && chunk.length === 1) {
         return chunk[0]
@@ -112,8 +118,8 @@ const validateSlp = (tx, authoritative) => {
     if (!tokenInputs.length && !batonInputs.length) {
         return new Map()
     }
-    const chunks = bitcoin.script.decompile(tx.outs[0] && tx.outs[0].script)
-    if (!chunks || chunks[0] !== bitcoin.opcodes.OP_RETURN ||
+    const chunks = bscript.decompile(tx.outs[0] && tx.outs[0].script)
+    if (!chunks || chunks[0] !== opcodes.OP_RETURN ||
         !Buffer.isBuffer(chunks[1]) || chunks[1].toString("hex") !== "534c5000" ||
         !Buffer.isBuffer(chunks[3])) {
         throw new Error("token inputs require a valid SLP transaction")
@@ -187,13 +193,13 @@ const outsidePayments = (tx, findKey, tokenOutputs) => {
     const payments = []
     for (let index = 0; index < tx.outs.length; index++) {
         const {script, value} = tx.outs[index]
-        const chunks = bitcoin.script.decompile(script)
-        if (chunks && chunks[0] === bitcoin.opcodes.OP_RETURN && value === 0) {
+        const chunks = bscript.decompile(script)
+        if (chunks && chunks[0] === opcodes.OP_RETURN && value === 0) {
             continue
         }
         let address
         try {
-            address = bitcoin.address.fromOutputScript(script)
+            address = baddress.fromOutputScript(script)
         } catch (e) {
             address = undefined
         }
@@ -221,7 +227,7 @@ const analyzeSpend = async ({raw, inputs, wallet, getOutput, findKey}) => {
     if (!Array.isArray(inputs) || !inputs.length) {
         throw new Error("transaction has no inputs")
     }
-    const tx = bitcoin.Transaction.fromBuffer(Buffer.from(raw, "hex"))
+    const tx = Transaction.fromBuffer(Buffer.from(raw, "hex"))
     if (tx.ins.length !== inputs.length) {
         throw new Error("input metadata count does not match transaction")
     }
@@ -253,7 +259,7 @@ const analyzeSpend = async ({raw, inputs, wallet, getOutput, findKey}) => {
         if (!owned.has(output.address)) {
             throw new Error("input does not belong to this wallet")
         }
-        const expectedScript = bitcoin.address.toOutputScript(output.address)
+        const expectedScript = baddress.toOutputScript(output.address)
         if (output.script && Buffer.from(output.script, "hex").compare(expectedScript) !== 0) {
             throw new Error("input script does not match its address")
         }
@@ -345,12 +351,18 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, author
 
     let signed
     for (let attempt = 0; attempt < MaxBeatHashAttempts; attempt++) {
-        const txb = bitcoin.TransactionBuilder.fromTransaction(tx)
+        signed = tx.clone()
+        // The BIP143 preimage never includes input scripts, so each input is
+        // signed against the same unsigned transaction regardless of order.
         for (let i = 0; i < authoritative.length; i++) {
-            txb.sign(i, authoritative[i].key, undefined,
-                bitcoin.Transaction.SIGHASH_ALL, authoritative[i].output.value)
+            const {output, key} = authoritative[i]
+            const sighash = signed.hashForCashSignature(
+                i, baddress.toOutputScript(output.address), output.value, SigHashType)
+            signed.ins[i].script = bscript.compile([
+                ScriptSignature(key.sign(sighash), SigHashType),
+                key.getPublicKeyBuffer(),
+            ])
         }
-        signed = txb.build()
         if (!beatHash || signed.getId() > beatHash) {
             break
         }
