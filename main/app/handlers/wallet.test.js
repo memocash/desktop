@@ -146,19 +146,22 @@ test("a settings change on an encrypted wallet always proves the password, in ev
 // the prompt shows is the one the keys establish - same fixture shape as the
 // signer's own tests: one 10000-satoshi input the wallet controls, 9000 paid
 // outside, 1000 in fee.
-const bitcoin = require("@bitcoin-dot-com/bitcoincashjs2-lib")
-const walletKey = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 7)})
+const {ECPair} = require("../../common/bitcoin/ecpair")
+const {Transaction} = require("../../common/bitcoin/transaction")
+const baddress = require("../../common/bitcoin/address")
+const bscript = require("../../common/bitcoin/script")
+const opcodes = require("bitcoincash-ops")
+const walletKey = ECPair.fromPrivateKey(Buffer.alloc(32, 7))
 const walletAddress = walletKey.getAddress()
-const outsideAddress = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 9)}).getAddress()
+const outsideAddress = ECPair.fromPrivateKey(Buffer.alloc(32, 9)).getAddress()
 const prevHash = "11".repeat(32)
 
 const spendRequest = () => {
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(walletAddress))
-    txb.addOutput(bitcoin.address.toOutputScript(outsideAddress), 9000)
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(baddress.toOutputScript(outsideAddress), 9000)
     return {
-        raw: txb.__build(true).toBuffer().toString("hex"),
+        raw: txb.toBuffer().toString("hex"),
         inputs: [{prev_hash: prevHash, prev_index: 1}],
     }
 }
@@ -169,7 +172,7 @@ const servePrevout = () => {
         index: 1,
         address: walletAddress,
         value: 10000,
-        script: bitcoin.address.toOutputScript(walletAddress).toString("hex"),
+        script: baddress.toOutputScript(walletAddress).toString("hex"),
     }
 }
 

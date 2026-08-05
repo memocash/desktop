@@ -3,14 +3,14 @@
 // both ways, pubkey-only pairs for derived addresses, P2PKH addresses, and
 // deterministic ECDSA signing. tiny-secp256k1 and the library both sign plain
 // RFC6979 with low-S, so signatures are byte-identical - ecpair.test.js holds
-// that parity while the library stays installed.
+// that parity against the library's outputs captured in golden.json before
+// its removal.
 const ecc = require("tiny-secp256k1")
 const bs58check = require("bs58check")
 const {hash160} = require("./hash")
 const {toBase58Check} = require("./address")
+const {DecodeWif, WifVersion} = require("./wif")
 const networks = require("./networks")
-
-const WifVersion = 0x80
 
 class ECPair {
     constructor(privateKey, publicKey, compressed) {
@@ -20,28 +20,15 @@ class ECPair {
     }
 
     static fromWIF(string) {
-        const payload = bs58check.decode(string)
-        if (payload[0] !== WifVersion) {
-            throw new Error("Invalid network version")
-        }
-        let privateKey
-        let compressed
-        if (payload.length === 34) {
-            if (payload[33] !== 0x01) {
-                throw new Error("Invalid compression flag")
-            }
-            privateKey = payload.slice(1, 33)
-            compressed = true
-        } else if (payload.length === 33) {
-            privateKey = payload.slice(1)
-            compressed = false
-        } else {
-            throw new Error("Invalid WIF length")
-        }
+        const {privateKey, compressed} = DecodeWif(string)
+        return new ECPair(privateKey, null, compressed)
+    }
+
+    static fromPrivateKey(privateKey, compressed = true) {
         if (!ecc.isPrivate(privateKey)) {
             throw new Error("Private key not in range [1, n)")
         }
-        return new ECPair(privateKey, null, compressed)
+        return new ECPair(Buffer.from(privateKey), null, compressed)
     }
 
     static fromPublicKeyBuffer(buffer) {

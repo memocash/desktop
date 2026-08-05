@@ -1,37 +1,18 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const script = require("./script");
-const OPS = require("bitcoincash-ops");
-const lib = require("@bitcoin-dot-com/bitcoincashjs2-lib");
+const golden = require("./golden.json");
 
-// The port's contract is byte-for-byte parity with the library it replaces,
-// so most cases below assert the two implementations against each other
-// rather than against hand-written expectations.
+// golden.json holds the replaced library's own outputs, captured before its
+// removal, across every pushdata encoding boundary (76/256/65536 from both
+// sides), the minimal-push special values, standard templates, and
+// opcode-only scripts. The port's contract is matching them byte for byte.
 
-// Pushdata encoding changes shape at 76 (OP_PUSHDATA1), 256 (OP_PUSHDATA2)
-// and 65536 (OP_PUSHDATA4); minimal-push kicks in for empty and one-byte
-// data. Cover each boundary from both sides.
-const dataSizes = [0, 1, 2, 20, 75, 76, 77, 255, 256, 257, 65535, 65536]
+const toChunks = (encoded) => encoded.map(c => c.op !== undefined ? c.op : Buffer.from(c.data, "hex"))
 
-const chunkCases = () => {
-    const cases = dataSizes.map(size => [OPS.OP_RETURN, Buffer.from("6d02", "hex"), Buffer.alloc(size, 0xab)])
-    // one-byte buffers around the minimal-push special values
-    for (const byte of [0x00, 0x01, 0x10, 0x11, 0x80, 0x81, 0x82, 0xff]) {
-        cases.push([OPS.OP_RETURN, Buffer.from([byte])])
-    }
-    // opcode-only and mixed shapes
-    cases.push([OPS.OP_DUP, OPS.OP_HASH160, Buffer.alloc(20, 0x11), OPS.OP_EQUALVERIFY, OPS.OP_CHECKSIG])
-    cases.push([OPS.OP_HASH160, Buffer.alloc(20, 0x22), OPS.OP_EQUAL])
-    cases.push([OPS.OP_0, OPS.OP_1, OPS.OP_16, OPS.OP_1NEGATE])
-    cases.push([])
-    return cases
-}
-
-test("compile matches the library on every boundary case", () => {
-    for (const chunks of chunkCases()) {
-        const ours = script.compile(chunks)
-        const theirs = lib.script.compile(chunks)
-        assert.equal(ours.toString("hex"), theirs.toString("hex"))
+test("compile matches the library's captured output on every boundary case", () => {
+    for (const {chunks, compiled} of golden.script) {
+        assert.equal(script.compile(toChunks(chunks)).toString("hex"), compiled)
     }
 })
 
@@ -40,48 +21,33 @@ test("compile passes through an already compiled buffer", () => {
     assert.equal(script.compile(buffer), buffer)
 })
 
-test("decompile matches the library and round-trips compile", () => {
-    for (const chunks of chunkCases()) {
-        const compiled = script.compile(chunks)
-        const ours = script.decompile(compiled)
-        const theirs = lib.script.decompile(compiled)
-        assert.equal(ours.length, theirs.length)
-        for (let i = 0; i < ours.length; i++) {
-            if (Buffer.isBuffer(ours[i])) {
-                assert.equal(ours[i].toString("hex"), theirs[i].toString("hex"))
-            } else {
-                assert.equal(ours[i], theirs[i])
-            }
-        }
-        assert.equal(script.compile(ours).toString("hex"), compiled.toString("hex"))
+test("decompile round-trips every compiled case", () => {
+    for (const {compiled} of golden.script) {
+        const chunks = script.decompile(Buffer.from(compiled, "hex"))
+        assert.equal(script.compile(chunks).toString("hex"), compiled)
     }
 })
 
 // A pushdata opcode cut off before its length bytes is not a script; the
-// library answers [] and callers count on that. A length that merely
-// overruns the data is different: the library shortens the slice and keeps
-// going, so only parity is asserted there.
-test("decompile of a truncated pushdata matches the library", () => {
-    const missingLength = Buffer.from("4c", "hex") // OP_PUSHDATA1, no length byte
-    assert.deepStrictEqual(script.decompile(missingLength), lib.script.decompile(missingLength))
-    assert.deepStrictEqual(script.decompile(missingLength), [])
-    const overrunLength = Buffer.from("4cff", "hex") // declares 255 bytes, has none
-    assert.deepStrictEqual(script.decompile(overrunLength), lib.script.decompile(overrunLength))
+// library answered [] and callers rely on that. A length that merely
+// overruns the data is different: the slice shortens and decompilation
+// continues, minimally re-encoding what remains.
+test("truncated pushdata behavior is preserved", () => {
+    assert.deepStrictEqual(script.decompile(Buffer.from("4c", "hex")), [])
+    const overrun = script.decompile(Buffer.from("4cff", "hex"))
+    assert.equal(script.compile(overrun).toString("hex"), "00")
 })
 
-test("toASM matches the library", () => {
-    for (const chunks of chunkCases()) {
-        const compiled = script.compile(chunks)
-        assert.equal(script.toASM(compiled), lib.script.toASM(compiled))
+test("toASM matches the library's captured output", () => {
+    for (const {chunks, compiled, asm} of golden.script) {
+        assert.equal(script.toASM(Buffer.from(compiled, "hex")), asm)
+        assert.equal(script.toASM(toChunks(chunks)), asm)
     }
-    // chunk-array input, not just buffers
-    const chunks = [OPS.OP_RETURN, Buffer.from("6d01", "hex")]
-    assert.equal(script.toASM(chunks), lib.script.toASM(chunks))
 })
 
 test("a memo post script compiles to the known bytes", () => {
     const compiled = script.compile([
-        OPS.OP_RETURN,
+        0x6a,
         Buffer.from("6d02", "hex"),
         Buffer.from("hello", "utf8"),
     ])

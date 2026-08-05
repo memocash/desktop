@@ -1,11 +1,11 @@
 # Vendored packages
 
-These two packages are dependencies of `@bitcoin-dot-com/bitcoincashjs2-lib`
-that upstream resolves as `git+ssh://` URLs into the abandoned Bitcoin-com
-GitHub org. That resolution has no registry integrity metadata, requires SSH
-access to GitHub on every install, and breaks unreproducibly if the org or
-repos ever disappear. The code itself is tiny and frozen, so it lives here
-instead, wired in through the `overrides` block in the root `package.json`.
+These two packages upstream resolved as `git+ssh://` URLs into the abandoned
+Bitcoin-com GitHub org. That resolution has no registry integrity metadata,
+requires SSH access to GitHub on every install, and breaks unreproducibly if
+the org or repos ever disappear. The code itself is tiny and frozen, so it
+lives here instead, wired in as `file:` dependencies from the root
+`package.json`.
 
 Provenance — files are byte-for-byte copies of the shipped files at the
 commits the old lockfile pinned:
@@ -20,5 +20,6 @@ dropped; `pushdata-bitcoin`'s dependency on `bitcoincash-ops` now points at
 its sibling directory here rather than at GitHub). Everything else — code,
 LICENSE, README — is unmodified.
 
-Both packages exist only to serve `@bitcoin-dot-com/bitcoincashjs2-lib`;
-when that library is replaced (audit finding D4), this directory goes with it.
+They were vendored while serving `@bitcoin-dot-com/bitcoincashjs2-lib`
+(audit finding D3); that library is gone (D4), and these now serve the app's
+own script and opcode handling in `main/common/bitcoin/`.

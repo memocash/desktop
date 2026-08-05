@@ -301,7 +301,7 @@ const Info = () => {
                 inputs: [],
                 outputs: [],
             }
-            let txb = new bitcoin.TransactionBuilder()
+            let txb = new bitcoin.Transaction()
             const wallet = await GetWallet()
             const walletAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
             const isHighlight = (address) => {
@@ -327,9 +327,7 @@ const Info = () => {
                     },
                 })
                 fee += valueInt
-                const outputScript = bitcoin.address.toOutputScript(inputAddress)
-                txb.addInput(Buffer.from(inputPrevHash, 'hex').reverse(), prevIndex,
-                    bitcoin.Transaction.DEFAULT_SEQUENCE, outputScript)
+                txb.addInput(Buffer.from(inputPrevHash, 'hex').reverse(), prevIndex)
             }
             for (let i = 0; i < outputStrings.length; i++) {
                 const [outputScript, outputValue] = outputStrings[i].split(":")
@@ -345,14 +343,13 @@ const Info = () => {
                 txb.addOutput(scriptBuffer, valueInt)
                 fee -= valueInt
             }
-            const txBuild = txb.__build(true)
-            const buf = txBuild.toBuffer()
+            const buf = txb.toBuffer()
             tx.raw = buf
             setSize(buf.length)
             await annotateSlp(tx)
             setTxInfo(tx)
             setFee(fee)
-            transactionIdEleRef.current.value = txBuild.getId()
+            transactionIdEleRef.current.value = txb.getId()
             setBeatHash(beatHash)
         }
     })()}, [router])

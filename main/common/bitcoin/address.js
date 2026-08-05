@@ -1,8 +1,8 @@
 // The base58check half of @bitcoin-dot-com/bitcoincashjs2-lib src/address.js
 // (MIT) - the only half this wallet can reach, since BCH never adopted the
 // segwit bech32 addresses the library's other branches served. Parity with
-// the library on every reachable input is held by address.test.js while the
-// library stays installed (audit D4).
+// the library on every reachable input is held by address.test.js against
+// its outputs captured in golden.json before its removal (audit D4).
 const bs58check = require("bs58check")
 const OPS = require("bitcoincash-ops")
 const bscript = require("./script")

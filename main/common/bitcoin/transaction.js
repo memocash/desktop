@@ -3,7 +3,8 @@
 // everything BCH cannot carry: no segwit serialization, no witness fields,
 // and no pre-fork legacy sighash - every BCH signature since 2017 is BIP143
 // with the forkid bit. Byte parity with the library on every reachable input
-// is held by transaction.test.js while the library stays installed (audit D4).
+// is held by transaction.test.js against its outputs captured in golden.json
+// before its removal (audit D4).
 const {hash256} = require("./hash")
 
 const DEFAULT_SEQUENCE = 0xffffffff
