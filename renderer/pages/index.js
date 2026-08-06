@@ -11,6 +11,7 @@ import {Panes} from "../components/load/common"
 import {WalletErrors} from "../../main/common/util"
 import NetworkConfiguration from "../components/load/network/configuration";
 import {GetNetworkConfig, SaveNetworkConfig, SetWindowNetwork} from "../components/load/network/common"
+import {SelectedNetwork} from "../components/load/network/selector_core"
 
 const Index = () => {
     const router = useRouter()
@@ -66,15 +67,14 @@ const Index = () => {
     const loadWallet = async () => {
         try {
             const networkConfig = await GetNetworkConfig()
-            for (let i = 0; i < networkConfig.Networks.length; i++) {
-                const option = networkConfig.Networks[i]
-                if (option.Id === networkValueRef.current) {
-                    await SetWindowNetwork(option)
-                    networkConfig.Last = i
-                    await SaveNetworkConfig(networkConfig)
-                    break
-                }
-            }
+            // Throws on a selection that matches no configured network, so the
+            // dialog below can say so. Falling through used to open the wallet
+            // with no network set at all, leaving every data call in the
+            // window to fail against a network nobody chose.
+            const {index, option} = SelectedNetwork(networkConfig, networkValueRef.current)
+            await SetWindowNetwork(option)
+            networkConfig.Last = index
+            await SaveNetworkConfig(networkConfig)
         } catch (error) {
             window.electron.showMessageDialog("Unable to select network: " + error.message)
             return

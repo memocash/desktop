@@ -70,4 +70,4 @@ const ValidateNetworkConfig = (config) => {
     return config.Last === undefined ? {Networks: networks} : {Networks: networks, Last: config.Last}
 }
 
-module.exports = {ValidateNetworkConfig, ValidateNetworkOption}
+module.exports = {IsLoopbackHost, ValidateNetworkConfig, ValidateNetworkOption}

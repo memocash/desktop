@@ -1,6 +1,6 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const {ValidateNetworkConfig, ValidateNetworkOption} = require("./network_config")
+const {IsLoopbackHost, ValidateNetworkConfig, ValidateNetworkOption} = require("./network_config")
 
 const option = {
     Name: "BCH", Ruleset: "bch", DatabaseFile: "~/.memo/memo.db",
@@ -44,4 +44,13 @@ test("plaintext stays on this machine: a remote server must use https", () => {
     }
     assert.equal(ValidateNetworkOption({...option, Server: "https://example.com"}).Server,
         "https://example.com")
+})
+
+test("the loopback rule answers the same on its own: the network editor asks it while typing", () => {
+    for (const host of ["localhost", "127.0.0.1", "127.255.0.1", "[::1]"]) {
+        assert.equal(IsLoopbackHost(host), true, host)
+    }
+    for (const host of ["example.com", "192.168.1.5", "127.0.0.1.example.com", "::1"]) {
+        assert.equal(IsLoopbackHost(host), false, host)
+    }
 })
