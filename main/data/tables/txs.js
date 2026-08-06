@@ -238,10 +238,12 @@ const decodeSlpAmount = (row) => {
 const GetOutput = async (conf, txHash, outputIndex) =>
     decodeSlpAmount((await Select(conf, "transaction-output",
         "SELECT outputs.*, slp_outputs.token_hash AS slp_token_hash, " +
-        "slp_outputs.amount AS slp_amount, slp_batons.token_hash AS slp_baton_token_hash " +
+        "slp_outputs.amount AS slp_amount, slp_batons.token_hash AS slp_baton_token_hash, " +
+        "slp_geneses.token_type AS slp_token_type " +
         "FROM outputs " +
         "LEFT JOIN slp_outputs ON slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index` " +
         "LEFT JOIN slp_batons ON slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index` " +
+        "LEFT JOIN slp_geneses ON slp_geneses.hash = COALESCE(slp_outputs.token_hash, slp_batons.token_hash) " +
         "WHERE outputs.hash = ? AND outputs.`index` = ? LIMIT 1",
         [txHash, outputIndex]))[0])
 

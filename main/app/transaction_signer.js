@@ -103,6 +103,26 @@ const slpInputAmount = (output) => {
     return BigInt(output.slp_amount)
 }
 
+// The 1-2 byte token type field, as consensus validators read it. bitcoinjs
+// re-minimalizes small pushes (see batonOutput below), so the field can arrive
+// as an opcode: OP_1..OP_16 for 1-16, and OP_1NEGATE for a lone 0x81 byte -
+// which in SLP's reading is the NFT1 group type, not negative one.
+const slpTokenType = (chunk) => {
+    if (typeof chunk === "number") {
+        if (chunk >= opcodes.OP_1 && chunk <= opcodes.OP_16) {
+            return chunk - opcodes.OP_1 + 1
+        }
+        if (chunk === opcodes.OP_1NEGATE) {
+            return 0x81
+        }
+        throw new Error("invalid SLP token type")
+    }
+    if (Buffer.isBuffer(chunk) && chunk.length >= 1 && chunk.length <= 2) {
+        return chunk.readUIntBE(0, chunk.length)
+    }
+    throw new Error("invalid SLP token type")
+}
+
 // bitcoinjs normalizes a minimal single-byte push back into its opcode, so the
 // MINT baton field arrives as OP_0 when the baton is being destroyed, as OP_1 to
 // OP_16 for the usual output indexes, and as a one-byte push beyond that.
@@ -135,6 +155,20 @@ const validateSlp = (tx, authoritative) => {
         !Buffer.isBuffer(chunks[1]) || chunks[1].toString("hex") !== "534c5000" ||
         !Buffer.isBuffer(chunks[3])) {
         throw new Error("token inputs require a valid SLP transaction")
+    }
+    // The type byte is part of what consensus validators check: a SEND or MINT
+    // whose declared type disagrees with the token's genesis is invalid on
+    // chain, and invalid means every token input is burned. The type each
+    // token was created with comes from the local genesis record, and an input
+    // whose recorded type is missing is refused rather than guessed at.
+    const declaredType = slpTokenType(chunks[2])
+    for (const {output} of tokenInputs.concat(batonInputs)) {
+        if (!Number.isInteger(output.slp_token_type)) {
+            throw new Error("token input type is not known")
+        }
+        if (output.slp_token_type !== declaredType) {
+            throw new Error("SLP token type does not match its inputs")
+        }
     }
     const action = chunks[3].toString("ascii")
     if (action === "SEND") {

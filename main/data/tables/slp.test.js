@@ -161,7 +161,11 @@ test("a uint64 amount round-trips exactly from save to every read", async () => 
     assert.strictEqual(amounts.get(0), Uint64Max)
     assert.strictEqual(amounts.get(1), PastFloat)
     assert.strictEqual(amounts.get(2), 5000n)
-    assert.strictEqual((await GetOutput(conf, "txOne", 0)).slp_amount, Uint64Max)
+    const output = await GetOutput(conf, "txOne", 0)
+    assert.strictEqual(output.slp_amount, Uint64Max)
+    // The genesis type rides along, which is what the signer checks the
+    // OP_RETURN's declared type against.
+    assert.strictEqual(output.slp_token_type, 1)
     // An output carrying no tokens is untouched by the decoding.
     await SaveTransactions(conf, [{
         hash: "txTwo", seen: "2026-01-23T20:30:08-08:00", raw: "ccdd", inputs: [],

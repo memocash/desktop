@@ -234,6 +234,7 @@ test("signs an SLP SEND only when it preserves the authoritative token amount", 
         script: baddress.toOutputScript(address).toString("hex"),
         slp_token_hash: tokenHash,
         slp_amount: "100",
+        slp_token_type: 1,
     })
     assert.ok((await SignTransaction(send)).raw)
 
@@ -267,6 +268,7 @@ test("a full uint64 token amount arrives as a BigInt and signs exactly", async (
         script: baddress.toOutputScript(address).toString("hex"),
         slp_token_hash: tokenHash,
         slp_amount: max,
+        slp_token_type: 1,
     })
     assert.ok((await SignTransaction(send)).raw)
 })
@@ -299,8 +301,62 @@ test("refuses a token amount the database can only hold approximately", async ()
         script: baddress.toOutputScript(address).toString("hex"),
         slp_token_hash: tokenHash,
         slp_amount: stored,
+        slp_token_type: 1,
     })
     await assert.rejects(SignTransaction(send), {message: /too large to represent/})
+})
+
+// A self-contained SEND for the type agreement checks: the declared type rides
+// in the script's 1-2 byte type field, the genesis type in the fixture, and
+// everything else - hash, amounts, destination - is in order.
+const typedSend = (declared, genesisType) => {
+    const tokenHash = "aa".repeat(32)
+    const sendScript = Buffer.concat([
+        Buffer.from([opcodes.OP_RETURN]),
+        slpPush(Buffer.from("534c5000", "hex")),
+        slpPush(Buffer.from(declared)),
+        slpPush(Buffer.from("SEND")),
+        slpPush(Buffer.from(tokenHash, "hex")),
+        slpPush(slpAmount(100n)),
+    ])
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(sendScript, 0)
+    txb.addOutput(baddress.toOutputScript(address), 546)
+    const send = request()
+    send.raw = txb.toBuffer().toString("hex")
+    send.getOutput = async () => ({
+        address,
+        value: 2000,
+        script: baddress.toOutputScript(address).toString("hex"),
+        slp_token_hash: tokenHash,
+        slp_amount: "100",
+        slp_token_type: genesisType,
+    })
+    return send
+}
+
+test("a declared type that disagrees with the genesis is refused, not signed into a burn", async () => {
+    // NFT1-child inputs (0x41) framed as a type-1 SEND - or the reverse - is
+    // a transfer consensus validators reject, which burns the inputs.
+    await assert.rejects(SignTransaction(typedSend([1], 0x41)),
+        {message: /token type does not match/})
+    await assert.rejects(SignTransaction(typedSend([0x41], 1)),
+        {message: /token type does not match/})
+})
+
+test("a genesis type the database does not record refuses the spend outright", async () => {
+    await assert.rejects(SignTransaction(typedSend([1], undefined)),
+        {message: /type is not known/})
+})
+
+test("non-type-1 tokens sign when the declared type agrees, in every encoding", async () => {
+    // 0x41 rides as a plain one-byte push; a lone 0x81 byte is re-minimalized
+    // to OP_1NEGATE by decompile and must still read as the NFT1 group type;
+    // the 2-byte form of the field names the same type.
+    assert.ok((await SignTransaction(typedSend([0x41], 0x41))).raw)
+    assert.ok((await SignTransaction(typedSend([0x81], 0x81))).raw)
+    assert.ok((await SignTransaction(typedSend([0, 0x41], 0x41))).raw)
 })
 
 // A transaction paying someone else, otherwise identical to the one above.
@@ -419,6 +475,7 @@ test("confirmation reports the token amount an outside output carries", async ()
         script: baddress.toOutputScript(address).toString("hex"),
         slp_token_hash: tokenHash,
         slp_amount: "100",
+        slp_token_type: 1,
     })
     let asked
     const signed = await SignTransaction({...send, confirmSpend: async (request) => {
@@ -459,6 +516,7 @@ const mint = ({mintTo, batonTo, batonVout = Buffer.from([2])}) => {
             value: 2000,
             script: baddress.toOutputScript(address).toString("hex"),
             slp_baton_token_hash: tokenHash,
+            slp_token_type: 1,
         }),
     }
 }
@@ -488,6 +546,13 @@ test("confirmation reports a mint baton leaving the wallet", async () => {
 
 test("a mint keeping its tokens and baton needs no confirmation", async () => {
     assert.ok((await SignTransaction(mint({mintTo: address, batonTo: address}))).raw)
+})
+
+test("a mint whose declared type disagrees with the baton's genesis is refused", async () => {
+    const disagreeing = mint({mintTo: address, batonTo: address})
+    const output = await disagreeing.getOutput()
+    disagreeing.getOutput = async () => ({...output, slp_token_type: 0x41})
+    await assert.rejects(SignTransaction(disagreeing), {message: /token type does not match/})
 })
 
 test("refuses a mint whose baton names an output the transaction lacks", async () => {
