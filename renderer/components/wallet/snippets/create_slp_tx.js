@@ -1,5 +1,5 @@
 import bitcoin from "../../util/bitcoin";
-import {Spendable} from "../../util/tx_build";
+import {CompleteTx} from "../../util/tx_build";
 import {address} from "../../util/bitcoincash";
 import {FormatTokenAmount} from "../../util/slp";
 import {DirectTx} from "../../tx/direct_tx";
@@ -66,46 +66,23 @@ const BuildSlpMintScript = (tokenHash, tokenType, batonVout, amount) => {
     ])
 }
 
-// Shared tail for SLP transactions: adds regular (non-token, non-dust) UTXOs
-// to cover the BCH fee, appends BCH change to the wallet's first address, then
-// either previews or signs+broadcasts. inputs/outputs arrive with the
-// token-specific parts already in place.
+// Shared tail for SLP transactions: CompleteTx (util/tx_build, tested
+// directly) adds regular UTXOs to cover the BCH fee and appends BCH change to
+// the wallet's first address, then this either previews or signs+broadcasts.
+// inputs/outputs arrive with the token-specific parts already in place.
 const finishSlpTx = async ({wallet, utxos, inputs, totalInput, outputs, setModal, onDone, preview}) => {
-    let requiredInput = bitcoin.Fee.Base + inputs.length * bitcoin.Fee.InputP2PKH
-    for (let i = 0; i < outputs.length; i++) {
-        const {script, value} = outputs[i]
-        requiredInput += script.length + (value || 0) + bitcoin.Fee.OutputValueSize
-    }
-    const feeUtxos = utxos.filter(Spendable)
-    feeUtxos.sort((a, b) => b.value - a.value)
-    for (let i = 0; i < feeUtxos.length; i++) {
-        if (totalInput === requiredInput ||
-            totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.Fee.DustLimit) {
-            break
-        }
-        inputs.push([feeUtxos[i].hash, feeUtxos[i].index, feeUtxos[i].value, feeUtxos[i].address].join(":"))
-        requiredInput += bitcoin.Fee.InputP2PKH
-        totalInput += feeUtxos[i].value
-    }
-    if (totalInput < requiredInput) {
+    const built = CompleteTx({
+        utxos, inputs, totalInput, outputs,
+        changeScript: address.toOutputScript(wallet.addresses[0]).toString("hex"),
+    })
+    if (!built) {
         window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
         return
     }
-    // Change below the dust limit would make the transaction unrelayable, so
-    // it rides as fee instead (mirror BuildTx in util/tx_build).
-    const change = totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
-    let outputStrings = []
-    for (let i = 0; i < outputs.length; i++) {
-        const {script, value} = outputs[i]
-        outputStrings.push(script.toString("hex") + ":" + (value ? value : 0).toString())
-    }
-    if (change >= bitcoin.Fee.DustLimit) {
-        outputStrings.push(address.toOutputScript(wallet.addresses[0]).toString("hex") + ":" + change)
-    }
     if (preview) {
-        await window.electron.openPreviewSend({inputs, outputs: outputStrings, beatHash: ""})
+        await window.electron.openPreviewSend({inputs: built.inputs, outputs: built.outputs, beatHash: ""})
     } else {
-        await DirectTx(inputs, outputStrings, "", setModal, onDone)
+        await DirectTx(built.inputs, built.outputs, "", setModal, onDone)
     }
     return true
 }

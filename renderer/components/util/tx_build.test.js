@@ -1,6 +1,6 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const {BuildTx, Fee, Spendable} = require("./tx_build")
+const {BuildTx, CompleteTx, EstimateSend, Fee, MaxSendValue, Spendable} = require("./tx_build")
 
 // Fixtures speak the builder's own units. One 10-byte OP_RETURN-style output
 // with no value needs Base + 10 + OutputValueSize = 29 satoshis of fee, plus
@@ -151,4 +151,147 @@ test("output values ride along and count toward the requirement", () => {
     const built = BuildTx({utxos: [utxo], outputs: [payment], changeScript})
     assert.deepEqual(built.inputs, [coinOf(utxo)])
     assert.deepEqual(built.outputs, [payment.script.toString("hex") + ":5000"])
+})
+
+// The fee a built transaction actually pays: input values minus output values,
+// read back from the strings BuildTx/CompleteTx assemble.
+const builtFee = (built) =>
+    built.inputs.reduce((sum, input) => sum + parseInt(input.split(":")[2]), 0) -
+    built.outputs.reduce((sum, output) => sum + parseInt(output.split(":")[1]), 0)
+
+test("the maximum send counts only coins the builders will select", () => {
+    const spendables = [plain("a", 10000), plain("b", 5000)]
+    const cluttered = [...spendables,
+        {...plain("tok", 5000), slp_token_hash: "t"},
+        {...plain("bat", 5000), slp_baton_token_hash: "b"},
+        plain("dst", Fee.DustLimit)]
+    const max = MaxSendValue(cluttered)
+    // Token, baton, and dust coins neither add value nor charge an input fee.
+    assert.equal(max, MaxSendValue(spendables))
+    assert.equal(max, 15000 - 2 * Fee.InputP2PKH - Fee.Base - Fee.OutputP2PKH)
+    // The advertised maximum is fundable: BuildTx takes exactly the spendable
+    // coins against it, with nothing left over.
+    const payment = {script: Buffer.alloc(25, 0x76), value: max}
+    const built = BuildTx({utxos: cluttered, outputs: [payment], changeScript})
+    assert.equal(built.inputs.length, 2)
+    assert.deepEqual(built.outputs, [payment.script.toString("hex") + ":" + max])
+})
+
+test("a named coin's maximum is that coin's alone; an unusable one is costed normally", () => {
+    const rich = plain("rich", 10000)
+    const spare = plain("spare", 99999)
+    assert.equal(MaxSendValue([rich, spare], coinOf(rich)),
+        10000 - Fee.InputP2PKH - Fee.Base - Fee.OutputP2PKH)
+    // A named token coin cannot be the input; the form blocks submitting it,
+    // and the maximum falls back to the ordinary whole-wallet figure.
+    const token = {...plain("tok", 5000), slp_token_hash: "t"}
+    assert.equal(MaxSendValue([token, spare], coinOf(token)), MaxSendValue([spare]))
+})
+
+test("extra output scripts come off the maximum", () => {
+    const utxos = [plain("a", 10000)]
+    const extra = Buffer.alloc(20, 0x6a)
+    assert.equal(MaxSendValue(utxos, "", [extra]),
+        MaxSendValue(utxos) - 20 - Fee.OutputValueSize)
+})
+
+test("the estimate's fee is the fee of the transaction BuildTx assembles", () => {
+    const cases = [
+        [plain("a", singleInputRequired)],                                    // exact funding
+        [plain("a", 400)],                                                    // sub-dust surplus rides as fee
+        [plain("a", singleInputRequired + Fee.OutputP2PKH + Fee.DustLimit)],  // change exactly at dust
+        [plain("a", 5000)],                                                   // ordinary change
+        [plain("a", 400), plain("b", 600)],                                   // selection walks past the band
+        [{...plain("tok", 100000), slp_token_hash: "t"}, plain("a", 5000)],   // tokens skipped by both
+    ]
+    for (const utxos of cases) {
+        const estimate = EstimateSend(utxos, [opReturn])
+        const built = build(utxos)
+        assert.equal(estimate.enough, true)
+        assert.equal(estimate.fee, builtFee(built), JSON.stringify(utxos))
+        // The outputs carry no value, so the whole cost is the fee.
+        assert.equal(estimate.total, estimate.fee)
+    }
+    const payment = {script: Buffer.alloc(25, 0x76), value: 5000}
+    const estimate = EstimateSend([plain("a", 10000)], [payment])
+    const built = BuildTx({utxos: [plain("a", 10000)], outputs: [payment], changeScript})
+    assert.equal(estimate.fee, builtFee(built))
+    assert.equal(estimate.total, 5000 + estimate.fee)
+})
+
+test("the estimate refuses exactly when BuildTx refuses", () => {
+    const short = [plain("a", 100)]
+    assert.equal(EstimateSend(short, [opReturn]).enough, false)
+    assert.equal(build(short), null)
+    // The named-coin dust-change band: unusable for the estimate, refused by
+    // the builder.
+    const band = plain("band", singleInputRequired + Fee.OutputP2PKH + Fee.DustLimit)
+    assert.equal(EstimateSend([band], [opReturn], coinOf(band)).enough, false)
+    assert.equal(build([band], {coin: coinOf(band)}), null)
+})
+
+// CompleteTx fixtures speak an SLP send's shape: a token input already in
+// place carrying its dust, and outputs of a 30-byte OP_RETURN plus two dust
+// carriers, needing Base + (30 + 9) + 2 * (25 + DustLimit + 9) + InputP2PKH
+// per input satoshis of funding.
+const slpOutputs = () => [
+    {script: Buffer.alloc(30, 0x6a), value: 0},
+    {script: Buffer.alloc(25, 0x76), value: Fee.DustLimit},
+    {script: Buffer.alloc(25, 0x76), value: Fee.DustLimit},
+]
+const slpRequired = (inputCount) => Fee.Base + 30 + Fee.OutputValueSize +
+    2 * (25 + Fee.DustLimit + Fee.OutputValueSize) + inputCount * Fee.InputP2PKH
+const tokenInput = {...plain("tok", Fee.DustLimit), slp_token_hash: "t"}
+const complete = (utxos) => CompleteTx({
+    utxos,
+    inputs: [coinOf(tokenInput)],
+    totalInput: tokenInput.value,
+    outputs: slpOutputs(),
+    changeScript,
+})
+
+test("SLP completion pays the fee from spendable coins, largest first", () => {
+    // The token input's own utxo is in the set and must never be taken again,
+    // and the fee comes from the largest spendable coin, not the dust.
+    const small = plain("small", 1000)
+    const large = plain("large", 5000)
+    const built = complete([tokenInput, plain("dst", Fee.DustLimit), small, large])
+    assert.deepEqual(built.inputs, [coinOf(tokenInput), coinOf(large)])
+    const change = tokenInput.value + 5000 - slpRequired(2) - Fee.OutputP2PKH
+    assert.ok(change >= Fee.DustLimit)
+    assert.equal(built.outputs.length, 4)
+    assert.equal(built.outputs[3], changeScript + ":" + change)
+})
+
+test("SLP completion folds sub-dust change into the fee", () => {
+    // The fee coin covers the requirement with less than a dust change output
+    // to spare, so the transaction carries no change rather than an output no
+    // node would relay.
+    const fee = plain("fee", slpRequired(2) - tokenInput.value + 100)
+    const built = complete([tokenInput, fee])
+    assert.deepEqual(built.inputs, [coinOf(tokenInput), coinOf(fee)])
+    assert.equal(built.outputs.length, 3)
+    assert.equal(builtFee(built), 100 + slpRequired(2) - 2 * Fee.DustLimit)
+})
+
+test("SLP completion refuses a wallet whose only remaining coins are tokens or dust", () => {
+    assert.equal(complete([tokenInput, plain("dst", Fee.DustLimit),
+        {...plain("bat", 5000), slp_baton_token_hash: "b"}]), null)
+    assert.equal(complete([tokenInput]), null)
+})
+
+test("inputs already covering the outputs need no fee coin at all", () => {
+    // Checked before adding: a completion whose seeded inputs already fund the
+    // outputs exactly takes nothing more.
+    const outputs = [{script: Buffer.alloc(30, 0x6a), value: 0}]
+    const required = Fee.Base + 30 + Fee.OutputValueSize + Fee.InputP2PKH
+    const built = CompleteTx({
+        utxos: [plain("spare", 100000)],
+        inputs: [coinOf(plain("seed", required))],
+        totalInput: required,
+        outputs,
+        changeScript,
+    })
+    assert.deepEqual(built.inputs, [coinOf(plain("seed", required))])
+    assert.equal(built.outputs.length, 1)
 })
