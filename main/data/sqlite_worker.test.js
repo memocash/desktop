@@ -101,6 +101,11 @@ test("the one-time sweep forgets approximate amounts and spares exact ones, once
         for (const hash of ["txReal", "txRounded", "txExact"]) {
             check.run(hash)
         }
+        // One suspect output is already spent. The UTXO-bounded half of the
+        // backfill query can never re-select its transaction, so nothing short
+        // of the repair queue would ever restore what the sweep deletes.
+        seed.prepare("INSERT INTO inputs (hash, `index`, prev_hash, prev_index) VALUES (?, ?, ?, ?)")
+            .run("txSpend", 0, "txReal", 1)
         seed.close()
 
         const first = StartWorker()
@@ -115,6 +120,13 @@ test("the one-time sweep forgets approximate amounts and spares exact ones, once
             const checks = await first.send({action: "SELECT",
                 query: "SELECT hash FROM slp_checks ORDER BY hash"})
             assert.deepStrictEqual(checks.result, [{hash: "txExact"}])
+            // Both swept transactions are queued for repair - the spent one
+            // included, since the backfill's UTXO half cannot see it. The
+            // tables' side of the contract (GetUncheckedSlpTxs draining the
+            // queue and SaveSlp retiring it) is pinned in slp.test.js.
+            const repairs = await first.send({action: "SELECT",
+                query: "SELECT hash FROM slp_repairs ORDER BY hash"})
+            assert.deepStrictEqual(repairs.result, [{hash: "txReal"}, {hash: "txRounded"}])
             // A legitimate amount from the top half of the uint64 range is
             // stored as its two's-complement negative - the shape the sweep
             // treats as suspect, which is why the sweep may only run once.

@@ -44,10 +44,14 @@ const AddSlpGenesis = (rows, genesis) => {
 
 // Saves SLP data from backfill tx queries (trimmed txs with just hash and
 // outputs' SLP fields) and marks the txs checked. Doesn't touch the outputs
-// table, so it can't clobber rows saved by full transaction syncs.
+// table, so it can't clobber rows saved by full transaction syncs. A saved
+// transaction also comes off the repair queue: whatever the sweep deleted for
+// it has just been rewritten exactly (or the server knows nothing of it, which
+// is as answered as it gets).
 const SaveSlp = async (conf, txs) => {
     const rows = SlpRows()
     const checks = Rows("INSERT OR IGNORE INTO slp_checks (hash)", KeepFirst)
+    const repaired = []
     for (let i = 0; i < txs.length; i++) {
         if (!txs[i]) {
             continue
@@ -56,12 +60,19 @@ const SaveSlp = async (conf, txs) => {
             AddSlpOutput(rows, txs[i].hash, txs[i].outputs[j])
         }
         checks.add(txs[i].hash, [txs[i].hash])
+        repaired.push({
+            query: "DELETE FROM slp_repairs WHERE hash = ?",
+            variables: [txs[i].hash],
+        })
     }
-    await InsertBatch(conf, "slp", [...Statements(rows), ...checks.statements()])
+    await InsertBatch(conf, "slp", [...Statements(rows), ...checks.statements(), ...repaired])
 }
 
-// UTXO transactions that haven't been checked against the index server for SLP
-// data yet. Used to backfill wallets whose history synced before SLP support.
+// Transactions that haven't been checked against the index server for SLP data
+// yet: UTXO transactions, for wallets whose history synced before SLP support,
+// plus everything the exactness sweep queued for repair - those may be fully
+// spent, which is exactly why the queue exists (see healApproximateAmounts in
+// the sqlite worker).
 const GetUncheckedSlpTxs = (conf, addresses) => {
     const query = "" +
         "SELECT DISTINCT outputs.hash " +
@@ -70,7 +81,12 @@ const GetUncheckedSlpTxs = (conf, addresses) => {
         "LEFT JOIN slp_checks ON (slp_checks.hash = outputs.hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL " +
-        "AND slp_checks.hash IS NULL "
+        "AND slp_checks.hash IS NULL " +
+        "UNION " +
+        "SELECT slp_repairs.hash " +
+        "FROM slp_repairs " +
+        "LEFT JOIN slp_checks ON (slp_checks.hash = slp_repairs.hash) " +
+        "WHERE slp_checks.hash IS NULL "
     return Select(conf, "slp-unchecked-txs", query, addresses)
 }
 

@@ -139,12 +139,20 @@ const SetDb = async (db) => {
 // large - only this one-time sweep, gated on the schema version, may treat
 // those shapes as suspect. It forgets the suspect rows and unmarks their
 // transactions, and the SLP backfill re-fetches them through the exact parse.
+//
+// Unmarking alone is not enough to get them back: the unchecked-transactions
+// query is bounded to transactions with an unspent wallet output, and a spent
+// token's transaction would never re-enter it - its history would simply be
+// gone. Every swept transaction therefore also goes into slp_repairs, which
+// the backfill drains regardless of whether anything is still unspent.
 const healApproximateAmounts = () => {
     if (_db.prepare("PRAGMA user_version").get().user_version >= 1) {
         return
     }
     const suspect = "amount > 9007199254740991 OR amount < 0 OR typeof(amount) = 'real'"
     Transaction(_db, () => {
+        _db.prepare("INSERT OR IGNORE INTO slp_repairs (hash) " +
+            "SELECT DISTINCT hash FROM slp_outputs WHERE " + suspect).run()
         _db.prepare("DELETE FROM slp_checks WHERE hash IN " +
             "(SELECT hash FROM slp_outputs WHERE " + suspect + ")").run()
         _db.prepare("DELETE FROM slp_outputs WHERE " + suspect).run()

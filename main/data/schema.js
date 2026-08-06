@@ -155,6 +155,10 @@ const Definitions = [
         hash CHAR,
         UNIQUE(hash)
     )`,
+    `slp_repairs (
+        hash CHAR,
+        UNIQUE(hash)
+    )`,
     `link_requests (
         tx_hash CHAR,
         address CHAR,

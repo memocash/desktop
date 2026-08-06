@@ -23,7 +23,7 @@ sqlite.InsertBatch = async (conf, name, statements) => {
     }
 }
 
-const {GetAddressTokenBalances, GetTokenBalances, SaveSlp} = require("./slp")
+const {GetAddressTokenBalances, GetTokenBalances, GetUncheckedSlpTxs, SaveSlp} = require("./slp")
 const {GetOutput, GetUtxos, SaveTransactions} = require("./txs")
 const {GetNotifications} = require("./notifications")
 
@@ -187,6 +187,39 @@ test("token balances sum exactly past every float and int64 boundary", async () 
     assert.strictEqual(byAddress.length, 1)
     assert.strictEqual(byAddress[0].amount, 2n * Uint64Max + 7n)
     assert.strictEqual(byAddress[0].address, "addrOne")
+})
+
+// The exactness sweep in the sqlite worker deletes a suspect row, unmarks its
+// transaction, and queues it in slp_repairs. This picks up from that state:
+// the transaction's token output is already spent, which keeps it out of the
+// UTXO half of the unchecked query, and the repair queue is what still brings
+// it back.
+test("a repair-queued transaction is re-fetched and restored even when fully spent", async () => {
+    await SaveTransactions(conf, [{
+        hash: "txOne", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+        outputs: [slpOutput(0, 5000)],
+    }])
+    db.prepare("INSERT INTO inputs (hash, `index`, prev_hash, prev_index) VALUES (?, ?, ?, ?)")
+        .run("txSpend", 0, "txOne", 0)
+    // What the sweep leaves behind: the SLP row and its checked mark gone, the
+    // hash queued for repair.
+    db.prepare("DELETE FROM slp_outputs WHERE hash = ?").run("txOne")
+    db.prepare("DELETE FROM slp_checks WHERE hash = ?").run("txOne")
+    db.prepare("INSERT INTO slp_repairs (hash) VALUES (?)").run("txOne")
+
+    // Spent, so the UTXO half of the query cannot see it; the repair queue can.
+    const unchecked = await GetUncheckedSlpTxs(conf, ["addrOne"])
+    assert.deepStrictEqual(unchecked.map(row => row.hash), ["txOne"])
+
+    // The backfill's save restores the exact row, marks the transaction
+    // checked, and retires the repair - so the queue drains rather than
+    // re-fetching forever.
+    await SaveSlp(conf, [{hash: "txOne", outputs: [slpOutput(0, Uint64Max)]}])
+    const stored = db.prepare("SELECT amount FROM slp_outputs WHERE hash = ?")
+    stored.setReadBigInts(true)
+    assert.deepStrictEqual(stored.all("txOne").map(row => row.amount), [-1n])
+    assert.deepStrictEqual(rows("slp_repairs", "hash"), [])
+    assert.deepStrictEqual(await GetUncheckedSlpTxs(conf, ["addrOne"]), [])
 })
 
 test("a token notification reports the exact received amount, however large", async () => {
