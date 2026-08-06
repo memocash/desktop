@@ -1,7 +1,7 @@
 const {Insert, InsertBatch, Select} = require("../sqlite")
 const {KeepFirst, KeepLast, Rows, Statements} = require("../common/rows")
 const {txJoinTimestamp} = require("../common/profile_links")
-const {AddSlpOutput, SlpRows} = require("./slp")
+const {AddSlpOutput, SlpAmount, SlpRows} = require("./slp")
 
 // Writes a whole page of downloaded transactions as one batch of multi-row
 // inserts. A history page holds up to 1000 transactions per address across
@@ -226,15 +226,24 @@ const GetTransaction = async (conf, txHash) => {
     return {outputs, inputs, seen, block, raw}
 }
 
+// The stored amount is signed 64-bit two's-complement; the on-chain uint64
+// every caller works with comes back through SlpAmount.
+const decodeSlpAmount = (row) => {
+    if (row && row.slp_amount != null) {
+        row.slp_amount = SlpAmount(row.slp_amount)
+    }
+    return row
+}
+
 const GetOutput = async (conf, txHash, outputIndex) =>
-    (await Select(conf, "transaction-output",
+    decodeSlpAmount((await Select(conf, "transaction-output",
         "SELECT outputs.*, slp_outputs.token_hash AS slp_token_hash, " +
         "slp_outputs.amount AS slp_amount, slp_batons.token_hash AS slp_baton_token_hash " +
         "FROM outputs " +
         "LEFT JOIN slp_outputs ON slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index` " +
         "LEFT JOIN slp_batons ON slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index` " +
         "WHERE outputs.hash = ? AND outputs.`index` = ? LIMIT 1",
-        [txHash, outputIndex]))[0]
+        [txHash, outputIndex]))[0])
 
 const GetUtxos = async (conf, addresses) => {
     const query = "" +
@@ -249,7 +258,7 @@ const GetUtxos = async (conf, addresses) => {
         "LEFT JOIN slp_batons ON (slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index`) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL"
-    return Select(conf, "outputs-utxos", query, addresses)
+    return (await Select(conf, "outputs-utxos", query, addresses)).map(decodeSlpAmount)
 }
 
 module.exports = {

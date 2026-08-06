@@ -35,7 +35,7 @@ class StubWebSocket {
 const filename = require.resolve("ws")
 require.cache[filename] = {id: filename, filename, loaded: true, exports: StubWebSocket}
 
-const {Subscribe, CloseSocket, CloseWindowSockets} = require("./graphql")
+const {ParseJson, Subscribe, CloseSocket, CloseWindowSockets} = require("./graphql")
 
 // Each subscription gets its own socket and its own delivery log. Every test
 // ends by firing onclose: that is the recovery path under test, and it also
@@ -136,4 +136,22 @@ test("reusing an id ends the socket that held it, and a late close cannot evict 
     CloseSocket({windowId: 9, id: "dup"})
     assert.equal(second.socket.closeCalls, 1)
     second.socket.onclose()
+})
+
+// The server writes 64-bit token amounts as bare JSON numbers. JSON.parse
+// alone rounds those past 2^53 before any code sees the digits, and a rounded
+// token amount is a burn waiting to be signed - so the parse reads the digits
+// itself where a number cannot hold them.
+test("integers a number cannot hold exactly arrive as BigInts, everything else as itself", () => {
+    const parsed = ParseJson('{"amount":18446744073709551615,"debt":-9007199254740993,' +
+        '"value":546,"ratio":1.5,"huge":1e300,"note":"9007199254740993"}')
+    assert.strictEqual(parsed.amount, 18446744073709551615n)
+    assert.strictEqual(parsed.debt, -9007199254740993n)
+    assert.strictEqual(parsed.value, 546)
+    assert.strictEqual(parsed.ratio, 1.5)
+    // Scientific notation was never an exact integer on the wire; it stays
+    // the float it always was rather than becoming a parse error.
+    assert.strictEqual(parsed.huge, 1e300)
+    // Strings are not numbers, however many digits they carry.
+    assert.strictEqual(parsed.note, "9007199254740993")
 })

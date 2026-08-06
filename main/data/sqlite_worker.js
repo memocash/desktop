@@ -2,6 +2,7 @@ const {parentPort, isMainThread} = require("worker_threads");
 const {DatabaseSync} = require("node:sqlite")
 const homedir = require('os').homedir()
 const {Definitions, Indexes, Cleanups} = require("./schema")
+const {SafeRow} = require("./big_ints")
 
 if (isMainThread) {
     throw new Error('Its not a worker');
@@ -60,6 +61,11 @@ const GetStatement = (db, query) => {
             cachedStatements = new Map()
         }
         statement = db.prepare(query)
+        // Reading an integer past 2^53 as a number either throws or rounds.
+        // Read everything as BigInt instead and let SafeRow hand back numbers
+        // wherever a number is exact - which is everywhere except an oversized
+        // token amount.
+        statement.setReadBigInts(true)
         cachedStatements.set(query, statement)
     }
     return statement
@@ -80,7 +86,7 @@ const answer = (queryId, run) => {
 }
 
 const Insert = ({queryId, query, variables = []}) =>
-    answer(queryId, () => GetStatement(_db, query).run(...variables))
+    answer(queryId, () => SafeRow(GetStatement(_db, query).run(...variables)))
 
 // Runs a caller's whole set of inserts from one message, inside one
 // transaction. Each Insert() otherwise costs a postMessage round trip plus its
@@ -97,7 +103,7 @@ const Batch = ({queryId, statements}) =>
     })
 
 const Select = ({queryId, query, variables = []}) =>
-    answer(queryId, () => GetStatement(_db, query).all(...variables))
+    answer(queryId, () => GetStatement(_db, query).all(...variables).map(SafeRow))
 
 let _db
 
@@ -122,5 +128,26 @@ const SetDb = async (db) => {
         for (const statement of statements) {
             _db.prepare(statement).run()
         }
+    })
+    healApproximateAmounts()
+}
+
+// Token amounts written before the exact-read work may hold a float's
+// approximation of the on-chain figure: JSON parsing rounded past 2^53, and
+// anything past 2^63 landed in the column as a REAL. Stored amounts are signed
+// 64-bit now (see tables/slp.js), so a legitimate row can be negative or
+// large - only this one-time sweep, gated on the schema version, may treat
+// those shapes as suspect. It forgets the suspect rows and unmarks their
+// transactions, and the SLP backfill re-fetches them through the exact parse.
+const healApproximateAmounts = () => {
+    if (_db.prepare("PRAGMA user_version").get().user_version >= 1) {
+        return
+    }
+    const suspect = "amount > 9007199254740991 OR amount < 0 OR typeof(amount) = 'real'"
+    Transaction(_db, () => {
+        _db.prepare("DELETE FROM slp_checks WHERE hash IN " +
+            "(SELECT hash FROM slp_outputs WHERE " + suspect + ")").run()
+        _db.prepare("DELETE FROM slp_outputs WHERE " + suspect).run()
+        _db.exec("PRAGMA user_version = 1")
     })
 }

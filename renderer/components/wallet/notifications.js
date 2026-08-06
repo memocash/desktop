@@ -5,13 +5,12 @@ import {Modals, Tabs} from "../../../main/common/util"
 import {EmptyState} from "../util/empty"
 import {Loading} from "../util/loading"
 import {useScopeActivity} from "../util/activity"
+import {FormatTokenAmount} from "../util/slp"
 import styles from "../../styles/notifications.module.css"
 
-const formatTokenAmount = ({amount, decimals}) => {
-    const places = decimals || 0
-    const value = Number(amount) / Math.pow(10, places)
-    return value.toLocaleString(undefined, {maximumFractionDigits: places})
-}
+// The shared formatter works in strings and BigInts, never floats: a received
+// amount past 2^53 displays as itself, not as the nearest float's rendering.
+const formatTokenAmount = ({amount, decimals}) => FormatTokenAmount(amount, decimals)
 
 // Stable identity for a notification, matching the derived rows in
 // GetNotifications (a coin/token/social event keyed by its transaction).

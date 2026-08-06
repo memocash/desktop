@@ -7,9 +7,15 @@ const {Definitions, Indexes} = require("../schema");
 // before the modules destructure them, so these run the production SQL against
 // real rows.
 const sqlite = require("../sqlite")
+const {SafeRow} = require("../big_ints")
 let db
-sqlite.Select = async (conf, name, query, variables = []) =>
-    db.prepare(query).all(...variables).map(row => ({...row}))
+// Reads mirror the worker: everything comes out as BigInt so nothing rounds,
+// and SafeRow hands back numbers wherever a number is exact.
+sqlite.Select = async (conf, name, query, variables = []) => {
+    const statement = db.prepare(query)
+    statement.setReadBigInts(true)
+    return statement.all(...variables).map(row => SafeRow({...row}))
+}
 sqlite.Insert = async (conf, name, query, variables = []) => db.prepare(query).run(...variables)
 sqlite.InsertBatch = async (conf, name, statements) => {
     for (const {query, variables = []} of statements) {
@@ -17,8 +23,9 @@ sqlite.InsertBatch = async (conf, name, statements) => {
     }
 }
 
-const {SaveSlp} = require("./slp")
-const {SaveTransactions} = require("./txs")
+const {GetAddressTokenBalances, GetTokenBalances, SaveSlp} = require("./slp")
+const {GetOutput, GetUtxos, SaveTransactions} = require("./txs")
+const {GetNotifications} = require("./notifications")
 
 const conf = {}
 
@@ -132,4 +139,66 @@ test("a synced transaction with no SLP outputs stores no SLP rows", async () => 
     assert.strictEqual(rows("slp_outputs", "hash").length, 0)
     assert.strictEqual(rows("slp_batons", "hash").length, 0)
     assert.strictEqual(rows("slp_geneses", "hash").length, 0)
+})
+
+// Amounts are uint64 on chain. Stored as signed 64-bit two's-complement -
+// exact, with no string column - and handed back as BigInts by every read.
+const Uint64Max = 18446744073709551615n
+const PastFloat = 9007199254740993n // 2^53 + 1: the first integer a float misses
+
+test("a uint64 amount round-trips exactly from save to every read", async () => {
+    await SaveTransactions(conf, [{
+        hash: "txOne", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+        outputs: [slpOutput(0, Uint64Max), slpOutput(1, PastFloat), slpOutput(2, 5000)],
+    }])
+    // On disk the top half of the range is its two's-complement negative.
+    const stored = db.prepare("SELECT amount FROM slp_outputs ORDER BY `index`")
+    stored.setReadBigInts(true)
+    assert.deepStrictEqual(stored.all().map(row => row.amount), [-1n, PastFloat, 5000n])
+    // Every read hands back the on-chain amount, always as a BigInt.
+    const utxos = await GetUtxos(conf, ["addrOne"])
+    const amounts = new Map(utxos.map(utxo => [utxo.index, utxo.slp_amount]))
+    assert.strictEqual(amounts.get(0), Uint64Max)
+    assert.strictEqual(amounts.get(1), PastFloat)
+    assert.strictEqual(amounts.get(2), 5000n)
+    assert.strictEqual((await GetOutput(conf, "txOne", 0)).slp_amount, Uint64Max)
+    // An output carrying no tokens is untouched by the decoding.
+    await SaveTransactions(conf, [{
+        hash: "txTwo", seen: "2026-01-23T20:30:08-08:00", raw: "ccdd", inputs: [],
+        outputs: [plainOutput(0)],
+    }])
+    assert.strictEqual((await GetOutput(conf, "txTwo", 0)).slp_amount, null)
+})
+
+test("token balances sum exactly past every float and int64 boundary", async () => {
+    // Two coins of uint64 max together overflow even sqlite's own SUM
+    // accumulator, which answers "integer overflow" where a BigInt keeps
+    // counting.
+    await SaveTransactions(conf, [{
+        hash: "txOne", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+        outputs: [slpOutput(0, Uint64Max), slpOutput(1, Uint64Max), slpOutput(2, 7)],
+    }])
+    const balances = await GetTokenBalances(conf, ["addrOne"])
+    assert.strictEqual(balances.length, 1)
+    assert.strictEqual(balances[0].amount, 2n * Uint64Max + 7n)
+    assert.strictEqual(balances[0].utxo_count, 3)
+    assert.strictEqual(balances[0].token_type, 1)
+    const byAddress = await GetAddressTokenBalances(conf, ["addrOne"])
+    assert.strictEqual(byAddress.length, 1)
+    assert.strictEqual(byAddress[0].amount, 2n * Uint64Max + 7n)
+    assert.strictEqual(byAddress[0].address, "addrOne")
+})
+
+test("a token notification reports the exact received amount, however large", async () => {
+    // A received transfer whose outputs include a top-half amount - stored as
+    // its two's-complement negative, which SQL's own SUM would read as -1.
+    await SaveTransactions(conf, [{
+        hash: "txOne", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+        outputs: [slpOutput(1, Uint64Max), slpOutput(2, 7)],
+    }])
+    const notifications = await GetNotifications(conf, ["addrOne"])
+    const token = notifications.find(notification => notification.type === "token")
+    assert.strictEqual(token.amount, Uint64Max + 7n)
+    assert.strictEqual(token.token_hash, "tokenOne")
+    assert.strictEqual(token.ticker, "TKN")
 })

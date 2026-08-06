@@ -1,6 +1,18 @@
 const {InsertBatch, Select} = require("../sqlite")
 const {KeepFirst, KeepLast, Rows, Statements} = require("../common/rows")
 
+// Token amounts are uint64 on chain and arrive as a number or - past 2^53 - a
+// BigInt (see the exact parse in client/graphql.js). sqlite's INTEGER is a
+// signed 64-bit, so the top half of the range is stored as its two's-complement
+// negative and read back through SlpAmount below. Exact both ways, with no
+// string column and no float anywhere in between.
+const wrapAmount = (amount) => BigInt.asIntN(64, BigInt(amount))
+
+// The stored two's-complement back to the on-chain amount. Always a BigInt, so
+// a token amount has one shape everywhere instead of changing type at 2^53;
+// null and undefined pass through for outputs that carry no tokens.
+const SlpAmount = (stored) => stored == null ? stored : BigInt.asUintN(64, BigInt(stored))
+
 // The SLP tables an output writes to. Transaction saves build these alongside
 // their own tables so an output's SLP rows ride along in the same batch.
 const SlpRows = () => ({
@@ -13,7 +25,7 @@ const SlpRows = () => ({
 const AddSlpOutput = (rows, hash, output) => {
     if (output.slp) {
         rows.outputs.add(hash + "-" + output.index,
-            [hash, output.index, output.slp.token_hash, output.slp.amount])
+            [hash, output.index, output.slp.token_hash, wrapAmount(output.slp.amount)])
         AddSlpGenesis(rows, output.slp.genesis)
     }
     if (output.slp_baton) {
@@ -67,7 +79,26 @@ const GetSlpGenesis = async (conf, hash) => {
     return rows && rows.length ? rows[0] : undefined
 }
 
-const GetAddressTokenBalances = (conf, addresses) => {
+// The balances sum in JS rather than in SQL: amounts are stored as signed
+// 64-bit two's-complement, which SUM would read as negatives, and a genuine
+// total can exceed what SUM's int64 accumulator holds - it answers "integer
+// overflow" where a BigInt just keeps counting.
+const sumBalances = (rows, keyOf) => {
+    const balances = new Map()
+    for (const row of rows) {
+        const key = keyOf(row)
+        const balance = balances.get(key)
+        if (balance) {
+            balance.amount += SlpAmount(row.amount)
+            balance.utxo_count++
+        } else {
+            balances.set(key, {...row, amount: SlpAmount(row.amount), utxo_count: 1})
+        }
+    }
+    return [...balances.values()]
+}
+
+const GetAddressTokenBalances = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   outputs.address, " +
@@ -75,15 +106,15 @@ const GetAddressTokenBalances = (conf, addresses) => {
         "   slp_geneses.ticker, " +
         "   slp_geneses.name, " +
         "   slp_geneses.decimals, " +
-        "   SUM(slp_outputs.amount) AS amount " +
+        "   slp_outputs.amount " +
         "FROM outputs " +
         "JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "LEFT JOIN slp_geneses ON (slp_geneses.hash = slp_outputs.token_hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "AND inputs.hash IS NULL " +
-        "GROUP BY outputs.address, slp_outputs.token_hash "
-    return Select(conf, "slp-address-token-balances", query, addresses)
+        "AND inputs.hash IS NULL "
+    const rows = await Select(conf, "slp-address-token-balances", query, addresses)
+    return sumBalances(rows, (row) => row.address + ":" + row.token_hash)
 }
 
 // Unspent mint batons held by the wallet, grouped by token. Used to enable
@@ -108,7 +139,7 @@ const GetTokenBatons = (conf, addresses) => {
     return Select(conf, "slp-token-batons", query, addresses)
 }
 
-const GetTokenBalances = (conf, addresses) => {
+const GetTokenBalances = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   slp_outputs.token_hash, " +
@@ -116,16 +147,15 @@ const GetTokenBalances = (conf, addresses) => {
         "   slp_geneses.name, " +
         "   slp_geneses.decimals, " +
         "   slp_geneses.token_type, " +
-        "   SUM(slp_outputs.amount) AS amount, " +
-        "   COUNT(*) AS utxo_count " +
+        "   slp_outputs.amount " +
         "FROM outputs " +
         "JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "LEFT JOIN slp_geneses ON (slp_geneses.hash = slp_outputs.token_hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "AND inputs.hash IS NULL " +
-        "GROUP BY slp_outputs.token_hash "
-    return Select(conf, "slp-token-balances", query, addresses)
+        "AND inputs.hash IS NULL "
+    const rows = await Select(conf, "slp-token-balances", query, addresses)
+    return sumBalances(rows, (row) => row.token_hash)
 }
 
 module.exports = {
@@ -136,5 +166,6 @@ module.exports = {
     GetUncheckedSlpTxs,
     AddSlpOutput,
     SaveSlp,
+    SlpAmount,
     SlpRows,
 }

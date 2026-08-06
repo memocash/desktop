@@ -242,6 +242,35 @@ test("signs an SLP SEND only when it preserves the authoritative token amount", 
     await assert.rejects(SignTransaction(burn), {message: /does not preserve/})
 })
 
+test("a full uint64 token amount arrives as a BigInt and signs exactly", async () => {
+    // What GetOutput now hands the signer for an oversized amount: the exact
+    // BigInt, not a float's approximation.
+    const tokenHash = "aa".repeat(32)
+    const max = 18446744073709551615n
+    const sendScript = Buffer.concat([
+        Buffer.from([opcodes.OP_RETURN]),
+        slpPush(Buffer.from("534c5000", "hex")),
+        slpPush(Buffer.from([1])),
+        slpPush(Buffer.from("SEND")),
+        slpPush(Buffer.from(tokenHash, "hex")),
+        slpPush(slpAmount(max)),
+    ])
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(sendScript, 0)
+    txb.addOutput(baddress.toOutputScript(address), 546)
+    const send = request()
+    send.raw = txb.toBuffer().toString("hex")
+    send.getOutput = async () => ({
+        address,
+        value: 2000,
+        script: baddress.toOutputScript(address).toString("hex"),
+        slp_token_hash: tokenHash,
+        slp_amount: max,
+    })
+    assert.ok((await SignTransaction(send)).raw)
+})
+
 test("refuses a token amount the database can only hold approximately", async () => {
     // A uint64-scale amount reaches the database as the nearest float, not the
     // on-chain amount. A SEND balanced against that float claims tokens the

@@ -100,7 +100,9 @@ const CreateSlpTransaction = async ({wallet, token, payTo, amount, setModal, onD
     const allAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
     const utxos = await window.electron.getUtxos(allAddresses)
     const tokenUtxos = utxos.filter(utxo => utxo.slp_token_hash === token.token_hash)
-    tokenUtxos.sort((a, b) => b.slp_amount - a.slp_amount)
+    // Amounts are BigInts, and BigInt subtraction is no sort comparator;
+    // compare rather than subtract.
+    tokenUtxos.sort((a, b) => a.slp_amount < b.slp_amount ? 1 : a.slp_amount > b.slp_amount ? -1 : 0)
     let inputs = []
     let totalInput = 0
     let tokenInput = 0n

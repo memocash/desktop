@@ -2,6 +2,19 @@ const http = require("http");
 const https = require("https");
 const WebSocket = require('ws');
 
+// The server serializes 64-bit token amounts as bare JSON numbers, and plain
+// JSON.parse would round anything past 2^53 to the nearest float before this
+// process ever saw the digits. The reviver's source access reads the digits
+// themselves, so an integer a number cannot hold exactly arrives as a BigInt
+// instead, and every other value keeps its usual shape. Only plain digit runs
+// are promoted: an oversized value in scientific notation stays the float it
+// always was rather than becoming a parse error.
+const exactInteger = (key, value, context) =>
+    typeof value === "number" && !Number.isSafeInteger(value) &&
+    /^-?\d+$/.test(context.source) ? BigInt(context.source) : value
+
+const ParseJson = (text) => JSON.parse(text, exactInteger)
+
 // Subscriptions are held per window as well as per id: the id is whatever the
 // renderer chose, and with one flat namespace any window could close another's
 // subscription by guessing its id. The window half of the key comes from the
@@ -70,7 +83,7 @@ const Subscribe = ({network, windowId, id, query, variables, callback, onopen, o
         // every wallet window depends on. Terminate so onclose fires and the
         // renderer's reconnect loop takes over.
         try {
-            const data = JSON.parse(ev.data)
+            const data = ParseJson(ev.data)
             switch (data.type) {
                 case "connection_ack":
                     socket.send(JSON.stringify({
@@ -172,7 +185,7 @@ const GraphQL = async ({network, query, variables, retries = 3}) => {
             })
             res.on("end", () => {
                 try {
-                    const jsonData = JSON.parse(data)
+                    const jsonData = ParseJson(data)
                     if (jsonData.errors && jsonData.errors.length) {
                         console.log("error with graphql response")
                         console.log(jsonData.errors)
@@ -196,6 +209,7 @@ const GraphQL = async ({network, query, variables, retries = 3}) => {
 
 module.exports = {
     GraphQL: GraphQL,
+    ParseJson: ParseJson,
     Subscribe: Subscribe,
     CloseSocket: CloseSocket,
     CloseWindowSockets: CloseWindowSockets,
