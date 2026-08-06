@@ -1,6 +1,6 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const {BuildTx, Fee} = require("./tx_build")
+const {BuildTx, Fee, Spendable} = require("./tx_build")
 
 // Fixtures speak the builder's own units. One 10-byte OP_RETURN-style output
 // with no value needs Base + 10 + OutputValueSize = 29 satoshis of fee, plus
@@ -118,6 +118,30 @@ test("exact multi-input funding adds no change output", () => {
 test("a wallet that cannot cover the outputs is refused", () => {
     assert.equal(build([plain("a", 100)]), null)
     assert.equal(build([]), null)
+})
+
+test("a leftover below a dust change output rides as fee, not as a sub-dust output", () => {
+    // The eligible utxos run out inside the dust-change band: 400 covers the
+    // 177 required, but the 189 left after the change output's own cost is
+    // below the dust limit. An output that small is one no node relays, so the
+    // transaction must absorb the leftover as fee rather than carry it.
+    const only = plain("a", 400)
+    const built = build([only])
+    assert.deepEqual(built.inputs, [coinOf(only)])
+    assert.deepEqual(built.outputs, [opReturn.script.toString("hex") + ":0"])
+})
+
+test("change exactly at the dust limit is still an output", () => {
+    const utxo = plain("a", singleInputRequired + Fee.OutputP2PKH + Fee.DustLimit)
+    const built = build([utxo])
+    assert.equal(built.outputs[1], changeScript + ":" + Fee.DustLimit)
+})
+
+test("token, baton, and dust outputs are never spendable; a plain output is", () => {
+    assert.equal(Spendable({...plain("t", 5000), slp_token_hash: "t"}), false)
+    assert.equal(Spendable({...plain("b", 5000), slp_baton_token_hash: "b"}), false)
+    assert.equal(Spendable(plain("d", Fee.DustLimit)), false)
+    assert.equal(Spendable(plain("p", 5000)), true)
 })
 
 test("output values ride along and count toward the requirement", () => {

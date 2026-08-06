@@ -242,6 +242,38 @@ test("signs an SLP SEND only when it preserves the authoritative token amount", 
     await assert.rejects(SignTransaction(burn), {message: /does not preserve/})
 })
 
+test("refuses a token amount the database can only hold approximately", async () => {
+    // A uint64-scale amount reaches the database as the nearest float, not the
+    // on-chain amount. A SEND balanced against that float claims tokens the
+    // inputs do not exactly carry - claiming more is SLP-invalid on chain and
+    // burns every token input - so it is refused outright, even though the
+    // OP_RETURN agrees with the stored figure, as it does here.
+    const tokenHash = "aa".repeat(32)
+    const stored = 9223372036854775808 // 2^63: exactly representable, not safe
+    const sendScript = Buffer.concat([
+        Buffer.from([opcodes.OP_RETURN]),
+        slpPush(Buffer.from("534c5000", "hex")),
+        slpPush(Buffer.from([1])),
+        slpPush(Buffer.from("SEND")),
+        slpPush(Buffer.from(tokenHash, "hex")),
+        slpPush(slpAmount(BigInt(stored))),
+    ])
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(sendScript, 0)
+    txb.addOutput(baddress.toOutputScript(address), 546)
+    const send = request()
+    send.raw = txb.toBuffer().toString("hex")
+    send.getOutput = async () => ({
+        address,
+        value: 2000,
+        script: baddress.toOutputScript(address).toString("hex"),
+        slp_token_hash: tokenHash,
+        slp_amount: stored,
+    })
+    await assert.rejects(SignTransaction(send), {message: /too large to represent/})
+})
+
 // A transaction paying someone else, otherwise identical to the one above.
 const outside = ECPair.fromPrivateKey(Buffer.alloc(32, 13)).getAddress()
 

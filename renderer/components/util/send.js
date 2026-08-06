@@ -1,4 +1,5 @@
 import bitcoin from "./bitcoin";
+import {Spendable} from "./tx_build";
 import {GetUtxos} from "./utxos";
 
 // Reasons a named coin cannot be used as a transaction's input. Anything other
@@ -54,11 +55,18 @@ const GetMaxValue = async (coin = "", extraOutputScripts = []) => {
                 setTimeout(check, 100)
                 return
             }
-            const {utxo} = ResolveCoin(coin)
-            if (utxo) {
+            const {status, utxo} = ResolveCoin(coin)
+            if (utxo && status === CoinStatus.Ok) {
                 totalUtxoValue += utxo.value - bitcoin.Fee.InputP2PKH
             } else {
+                // Only what the builders will actually select counts toward the
+                // max: a token, baton, or dust coin never becomes an input, so
+                // counting its value here offered a maximum the wallet then
+                // refused to fund.
                 for (let i = 0; i < utxos.length; i++) {
+                    if (!Spendable(utxos[i])) {
+                        continue
+                    }
                     totalUtxoValue += utxos[i].value - bitcoin.Fee.InputP2PKH
                 }
             }
@@ -110,7 +118,7 @@ const EstimateSend = (outputs, coin = "") => {
         const utxos = GetUtxos() || []
         for (let i = 0; i < utxos.length; i++) {
             const utxo = utxos[i]
-            if (utxo.slp_token_hash || utxo.slp_baton_token_hash || utxo.value === bitcoin.Fee.DustLimit) {
+            if (!Spendable(utxo)) {
                 continue
             }
             inputCount++
@@ -123,10 +131,15 @@ const EstimateSend = (outputs, coin = "") => {
         }
         enough = totalInput >= requiredInput
     }
-    const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
-    // Everything the inputs cover beyond the outputs is fee, including the
-    // change output's own cost when there is change.
-    const fee = requiredInput - outputValue + (change > 0 ? bitcoin.Fee.OutputP2PKH : 0)
+    // Everything the inputs cover beyond the outputs is fee. A change output
+    // exists only when it clears the dust limit (mirror BuildTx); a smaller
+    // surplus rides as fee, so it is part of the figure shown.
+    const surplus = totalInput - requiredInput
+    let fee = requiredInput - outputValue
+    if (enough) {
+        fee += surplus >= bitcoin.Fee.OutputP2PKH + bitcoin.Fee.DustLimit ?
+            bitcoin.Fee.OutputP2PKH : surplus
+    }
     return {fee, inputCount, enough, total: outputValue + fee}
 }
 

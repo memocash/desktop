@@ -20,6 +20,14 @@ const Fee = {
     },
 }
 
+// Whether a utxo may fund an ordinary spend. Token outputs and mint batons
+// would burn what they carry, and an exactly-dust output could be a token
+// output the SLP check has not reached yet. Every selection site uses this one
+// predicate - BuildTx below, EstimateSend and GetMaxValue in util/send.js, the
+// fee loop in wallet/snippets/create_slp_tx.js - so they cannot drift.
+const Spendable = (utxo) =>
+    !utxo.slp_token_hash && !utxo.slp_baton_token_hash && utxo.value !== Fee.DustLimit
+
 // Input selection and output assembly shared by the preview and direct paths -
 // one copy so the two transactions a setting toggles between cannot drift.
 // EstimateSend in util/send.js mirrors this selection for the pre-sign
@@ -63,12 +71,9 @@ const BuildTx = ({utxos, outputs, coin = "", fromAddress = "", changeScript}) =>
             if (!coinUtxo) {
                 break
             }
-            if (coinUtxo.slp_token_hash || coinUtxo.slp_baton_token_hash) {
-                // Don't spend SLP token outputs or mint batons, would burn the tokens
-                break
-            }
-            if (coinUtxo.value === Fee.DustLimit) {
-                // Don't spend dust outputs, could be an SLP token that hasn't been checked yet
+            if (!Spendable(coinUtxo)) {
+                // A token output, mint baton, or unchecked dust: spending it
+                // could burn tokens, so the send fails instead.
                 break
             }
             requiredInput += Fee.InputP2PKH
@@ -80,12 +85,7 @@ const BuildTx = ({utxos, outputs, coin = "", fromAddress = "", changeScript}) =>
             break
         }
         const utxo = utxos[i]
-        if (utxo.slp_token_hash || utxo.slp_baton_token_hash) {
-            // Don't spend SLP token outputs or mint batons, would burn the tokens
-            continue
-        }
-        if (utxo.value === Fee.DustLimit) {
-            // Don't spend dust outputs, could be an SLP token that hasn't been checked yet
+        if (!Spendable(utxo)) {
             continue
         }
         inputs.push([utxo.hash, utxo.index, utxo.value, utxo.address].join(":"))
@@ -104,16 +104,21 @@ const BuildTx = ({utxos, outputs, coin = "", fromAddress = "", changeScript}) =>
     if (totalInput < requiredInput || !inputs.length) {
         return null
     }
-    const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - Fee.OutputP2PKH
+    // Change below the dust limit is an output no node would relay, so the
+    // whole transaction would sit unbroadcastable; that leftover rides as fee
+    // instead. Only reachable when the eligible utxos ran out inside the stop
+    // band above - the loop otherwise keeps adding until the change clears
+    // dust, and the named-coin branch refuses the band outright.
+    const change = totalInput - requiredInput - Fee.OutputP2PKH
     let outputStrings = []
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
         outputStrings.push(script.toString("hex") + ":" + (value ? value : 0).toString())
     }
-    if (change > 0) {
+    if (change >= Fee.DustLimit) {
         outputStrings.push(changeScript + ":" + change)
     }
     return {inputs, outputs: outputStrings}
 }
 
-module.exports = {BuildTx, Fee}
+module.exports = {BuildTx, Fee, Spendable}

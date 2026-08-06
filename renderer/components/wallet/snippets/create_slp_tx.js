@@ -1,4 +1,5 @@
 import bitcoin from "../../util/bitcoin";
+import {Spendable} from "../../util/tx_build";
 import {address} from "../../util/bitcoincash";
 import {FormatTokenAmount} from "../../util/slp";
 import {DirectTx} from "../../tx/direct_tx";
@@ -75,8 +76,7 @@ const finishSlpTx = async ({wallet, utxos, inputs, totalInput, outputs, setModal
         const {script, value} = outputs[i]
         requiredInput += script.length + (value || 0) + bitcoin.Fee.OutputValueSize
     }
-    const feeUtxos = utxos.filter(utxo => !utxo.slp_token_hash && !utxo.slp_baton_token_hash &&
-        utxo.value !== bitcoin.Fee.DustLimit)
+    const feeUtxos = utxos.filter(Spendable)
     feeUtxos.sort((a, b) => b.value - a.value)
     for (let i = 0; i < feeUtxos.length; i++) {
         if (totalInput === requiredInput ||
@@ -91,13 +91,15 @@ const finishSlpTx = async ({wallet, utxos, inputs, totalInput, outputs, setModal
         window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
         return
     }
-    const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
+    // Change below the dust limit would make the transaction unrelayable, so
+    // it rides as fee instead (mirror BuildTx in util/tx_build).
+    const change = totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
     let outputStrings = []
     for (let i = 0; i < outputs.length; i++) {
         const {script, value} = outputs[i]
         outputStrings.push(script.toString("hex") + ":" + (value ? value : 0).toString())
     }
-    if (change > 0) {
+    if (change >= bitcoin.Fee.DustLimit) {
         outputStrings.push(address.toOutputScript(wallet.addresses[0]).toString("hex") + ":" + change)
     }
     if (preview) {

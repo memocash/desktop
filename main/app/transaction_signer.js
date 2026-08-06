@@ -91,6 +91,18 @@ const uint64 = (buffer) => {
     return BigInt("0x" + buffer.toString("hex"))
 }
 
+// A stored token amount above Number.MAX_SAFE_INTEGER is not the on-chain
+// amount, only the nearest float JSON and sqlite could carry. A SEND balanced
+// against it claims more or less than the inputs really hold - claiming more is
+// SLP-invalid and burns every token input - so an amount this process cannot
+// represent exactly is an amount it refuses to spend.
+const slpInputAmount = (output) => {
+    if (typeof output.slp_amount === "number" && !Number.isSafeInteger(output.slp_amount)) {
+        throw new Error("token input amount is too large to represent exactly")
+    }
+    return BigInt(output.slp_amount)
+}
+
 // bitcoinjs normalizes a minimal single-byte push back into its opcode, so the
 // MINT baton field arrives as OP_0 when the baton is being destroyed, as OP_1 to
 // OP_16 for the usual output indexes, and as a one-byte push beyond that.
@@ -134,7 +146,7 @@ const validateSlp = (tx, authoritative) => {
             throw new Error("SLP SEND token does not match its inputs")
         }
         const inputAmount = tokenInputs.reduce(
-            (sum, {output}) => sum + BigInt(output.slp_amount), 0n)
+            (sum, {output}) => sum + slpInputAmount(output), 0n)
         const amounts = chunks.slice(5).map(uint64)
         if (amounts.reduce((sum, amount) => sum + amount, 0n) !== inputAmount) {
             throw new Error("SLP SEND does not preserve its input amount")
