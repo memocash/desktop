@@ -84,6 +84,13 @@ const OpenSpendPrompt = async (parent) => {
             const {confirmed} = await ask({name: "confirm", payments, fee})
             return confirmed === true
         },
+        // A send from a wallet with no password: the same window and the same
+        // main-derived destinations, with nothing to type - the answer is the
+        // person seeing where it pays and saying send.
+        approve: async ({payments, fee}) => {
+            const {confirmed} = await ask({name: "approve", payments, fee})
+            return confirmed === true
+        },
         close: () => {
             win.off("closed", cancelOnClose)
             waiting.delete(id)

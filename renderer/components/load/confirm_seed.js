@@ -2,13 +2,17 @@ import {useRef, useState} from "react"
 import styles from "../../styles/addWallet.module.css"
 import {Panes} from "./common";
 
-const ConfirmSeed = ({seedPhrase, generateSeedPhrase, setPane}) => {
+// The typed phrase is checked by main against the seed it is holding, not
+// against a copy kept here - the phrase that passes this step is the phrase
+// the wallet will actually store. Going back lands on a remounted seed pane,
+// which asks main for new words.
+const ConfirmSeed = ({setPane}) => {
     const [isWrongSeedPhrase, setIsWrongSeedPhrase] = useState(false)
     const seedPhraseInput = useRef()
-    const validateSeedPhrase = () => {
-        const typedPhrase = seedPhraseInput.current.value.trim()
-        if (typedPhrase === seedPhrase) {
-            onSeedPhraseConfirmed()
+    const validateSeedPhrase = async () => {
+        const confirmed = await window.electron.confirmSeed(seedPhraseInput.current.value)
+        if (confirmed) {
+            setPane(Panes.Step5SetPassword)
         } else {
             setIsWrongSeedPhrase(true)
         }
@@ -18,11 +22,7 @@ const ConfirmSeed = ({seedPhrase, generateSeedPhrase, setPane}) => {
             setIsWrongSeedPhrase(false)
         }
     }
-    const onBack = () => {
-        generateSeedPhrase()
-        setPane(Panes.Step3SetSeed)
-    }
-    const onSeedPhraseConfirmed = () => setPane(Panes.Step5SetPassword)
+    const onBack = () => setPane(Panes.Step3SetSeed)
     return (
         <div className={styles.root}>
             <div className={styles.box}>

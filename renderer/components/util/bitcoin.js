@@ -1,20 +1,7 @@
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
-
-const Fee = {
-    Base: 10,
-    InputP2PKH: 148,
-    OutputP2PKH: 34,
-    OutputFeeOpReturn: 20,
-    OutputValueSize: 9, // 8 + 1
-    DustLimit: 546,
-    TxHashByteLength: 32,
-    OpPushDataBase: 3,
-    MaxOpReturn: 217,
-    MaxOpReturnBsv: 100000,
-    GetMaxContentWithTxHash: () => {
-        return Fee.MaxOpReturn - Fee.OpPushDataBase - Fee.TxHashByteLength
-    },
-}
+import bitcoin from "./bitcoincash";
+// Fee lives with the selection logic in tx_build (commonjs, for the tests);
+// re-exported here so bitcoin.Fee keeps working everywhere.
+import {Fee} from "./tx_build";
 
 const Prefix = {
     SetName: "6d01",

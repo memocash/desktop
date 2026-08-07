@@ -21,7 +21,9 @@ const FormatTokenAmount = (amount, decimals) => {
         return ""
     }
     const {whole, frac} = splitTokenAmount(amount, decimals)
-    return Number(whole).toLocaleString() + (frac.length ? "." + frac : "")
+    // Grouped through BigInt, not Number: a whole part past 2^53 would come
+    // out rounded.
+    return BigInt(whole).toLocaleString() + (frac.length ? "." + frac : "")
 }
 
 // Same as FormatTokenAmount but without thousands grouping, so the result can

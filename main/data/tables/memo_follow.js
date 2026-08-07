@@ -1,25 +1,13 @@
 const {Select} = require("../sqlite")
 const {MaxFollows} = require("../common/memo_follow");
-const {historicallyValid} = require("../common/profile_links");
+const {clusterField, historicallyValid, linkedClusterCte, txJoinTimestamp} = require("../common/profile_links");
 
-const LinkedCluster = (origin, followsWhere) => "" +
-    "WITH RECURSIVE active_profile_links(address, linked_address) AS (" +
-    "    SELECT link_requests.address, link_requests.parent_address " +
-    "    FROM link_requests " +
-    "    JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-    "    UNION " +
-    "    SELECT link_requests.parent_address, link_requests.address " +
-    "    FROM link_requests " +
-    "    JOIN link_accepts ON (link_accepts.request_tx_hash = link_requests.tx_hash) " +
-    "), linked_cluster(origin, address) AS (" +
-    "    SELECT DISTINCT " + origin + ", " + origin + " " +
-    "    FROM memo_follows " +
-    "    WHERE " + followsWhere +
-    "    UNION " +
-    "    SELECT linked_cluster.origin, active_profile_links.linked_address " +
-    "    FROM linked_cluster " +
-    "    JOIN active_profile_links ON (active_profile_links.address = linked_cluster.address)" +
-    ") "
+const LinkedCluster = (origin, followsWhere) => linkedClusterCte({
+    cluster: "linked_cluster",
+    seedSelect: origin + ", " + origin,
+    seedFrom: "memo_follows",
+    seedWhere: followsWhere,
+})
 
 // Most recent post by each followed identity, used as the "last active" signal
 // in the following list. Aggregating the followed addresses' posts once and
@@ -29,10 +17,7 @@ const LinkedCluster = (origin, followsWhere) => "" +
 const LastClusterPosts = "" +
     "SELECT " +
     "    linked_cluster.origin AS address, " +
-    "    MAX(MIN(" +
-    "        COALESCE(blocks.timestamp, tx_seens.timestamp), " +
-    "        COALESCE(tx_seens.timestamp, blocks.timestamp)" +
-    "    )) AS timestamp " +
+    "    MAX(" + txJoinTimestamp + ") AS timestamp " +
     "FROM linked_cluster " +
     "JOIN memo_posts ON (memo_posts.address = linked_cluster.address) " +
     "LEFT JOIN block_txs ON (block_txs.tx_hash = memo_posts.tx_hash) " +
@@ -41,25 +26,17 @@ const LastClusterPosts = "" +
     "WHERE " + historicallyValid("memo_posts.address", "memo_posts.tx_hash") + " " +
     "GROUP BY linked_cluster.origin "
 
-const clusterField = (origin, join, field, txHash) => "(" +
-    "SELECT " + field + " " +
-    "FROM linked_cluster " +
-    "JOIN profiles ON (profiles.address = linked_cluster.address) " +
-    join + " " +
-    "WHERE linked_cluster.origin = " + origin + " " +
-    "AND " + historicallyValid("linked_cluster.address", txHash) + " " +
-    "ORDER BY (linked_cluster.address = " + origin + ") DESC, " +
-    "   linked_cluster.address ASC " +
-    "LIMIT 1" +
-    ")"
+const clusterName = (origin) => clusterField({
+    cluster: "linked_cluster", origin,
+    join: "JOIN profile_names ON (profile_names.tx_hash = profiles.name) ",
+    field: "profile_names.name", txHash: "profile_names.tx_hash",
+})
 
-const clusterName = (origin) => clusterField(origin,
-    "JOIN profile_names ON (profile_names.tx_hash = profiles.name) ",
-    "profile_names.name", "profile_names.tx_hash")
-
-const clusterPic = (origin) => clusterField(origin,
-    "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) ",
-    "profile_pics.pic", "profile_pics.tx_hash")
+const clusterPic = (origin) => clusterField({
+    cluster: "linked_cluster", origin,
+    join: "JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) ",
+    field: "profile_pics.pic", txHash: "profile_pics.tx_hash",
+})
 
 const clusterPicData = (origin) => "(" +
     "SELECT images.data FROM images WHERE images.url = " + clusterPic(origin) +

@@ -324,71 +324,36 @@ const SaveMemoProfiles = async (conf, profiles) => {
     await SaveTransactions(conf, rows.txs)
 }
 
-const GetRecentSetName = async (conf, addresses) => {
+// The newest field-setting transaction for any of the addresses,
+// unconfirmed-first (height 1000000) so a pending update wins. One query per
+// profile field, identical apart from the field's table and column.
+const getRecentProfileField = async (conf, id, table, column, addresses) => {
     const query = "" +
         "SELECT " +
-        "   profile_names.*, " +
+        "   " + table + ".*, " +
         "   block_txs.block_hash AS block_hash " +
         "FROM profiles " +
-        "LEFT JOIN profile_names ON (profile_names.tx_hash = profiles.name) " +
-        "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.name) " +
+        "LEFT JOIN " + table + " ON (" + table + ".tx_hash = profiles." + column + ") " +
+        "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles." + column + ") " +
         "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
         "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_names.tx_hash ASC " +
+        "ORDER BY COALESCE(blocks.height, 1000000) DESC, " + table + ".tx_hash ASC " +
         "LIMIT 1"
-    const results = await Select(conf, "recent-set-name", query, addresses)
+    const results = await Select(conf, id, query, addresses)
     if (!results || !results.length) {
         return undefined
     }
     return results[0]
 }
 
-const GetRecentSetProfile = async (conf, addresses) => {
-    const query = "" +
-        "SELECT " +
-        "   profile_texts.*, " +
-        "   block_txs.block_hash AS block_hash " +
-        "FROM profiles " +
-        "LEFT JOIN profile_texts ON (profile_texts.tx_hash = profiles.profile) " +
-        "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.profile) " +
-        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
-        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_texts.tx_hash ASC " +
-        "LIMIT 1"
-    const results = await Select(conf, "recent-set-profile", query, addresses)
-    if (!results || !results.length) {
-        return undefined
-    }
-    return results[0]
-}
+const GetRecentSetName = (conf, addresses) =>
+    getRecentProfileField(conf, "recent-set-name", "profile_names", "name", addresses)
 
-const GetRecentSetPic = async (conf, addresses) => {
-    const query = "" +
-        "SELECT " +
-        "   profile_pics.*, " +
-        "   block_txs.block_hash AS block_hash " +
-        "FROM profiles " +
-        "LEFT JOIN profile_pics ON (profile_pics.tx_hash = profiles.pic) " +
-        "LEFT JOIN block_txs ON (block_txs.tx_hash = profiles.pic) " +
-        "LEFT JOIN blocks ON (blocks.hash = block_txs.block_hash) " +
-        "WHERE profiles.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "ORDER BY COALESCE(blocks.height, 1000000) DESC, profile_pics.tx_hash ASC " +
-        "LIMIT 1"
-    const results = await Select(conf, "recent-set-pic", query, addresses)
-    if (!results || !results.length) {
-        return undefined
-    }
-    return results[0]
-}
+const GetRecentSetProfile = (conf, addresses) =>
+    getRecentProfileField(conf, "recent-set-profile", "profile_texts", "profile", addresses)
 
-const GetPicsExist = async (conf, urls) => {
-    const query = "" +
-        "SELECT " +
-        "   urls " +
-        "FROM images " +
-        "WHERE urls IN (" + Array(urls.length).fill("?").join(", ") + ") "
-    return await Select(conf, "images-exists-multi", query, urls)
-}
+const GetRecentSetPic = (conf, addresses) =>
+    getRecentProfileField(conf, "recent-set-pic", "profile_pics", "pic", addresses)
 
 const GetPicExists = async (conf, url) => {
     const query = "" +
@@ -432,7 +397,6 @@ module.exports = {
     GetRecentSetName,
     GetRecentSetProfile,
     GetRecentSetPic,
-    GetPicsExist,
     GetPicExists,
     SavePic,
     GetPic,

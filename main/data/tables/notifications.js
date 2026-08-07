@@ -1,6 +1,14 @@
 const {Select} = require("../sqlite")
+const {SlpAmount} = require("./slp")
 
 const placeholders = (values) => Array(values.length).fill("?").join(", ")
+
+// The token leg cannot SUM in SQL: amounts are stored as signed 64-bit
+// two's-complement (see tables/slp.js), which SUM would read as negatives -
+// and a genuine total can overflow SUM's int64 accumulator besides. The
+// concatenated per-output amounts are summed here instead, exactly.
+const tokenAmount = (concatenated) => String(concatenated).split(",")
+    .reduce((sum, amount) => sum + SlpAmount(amount), 0n)
 
 // User-relevant activity assembled from the wallet cache. Incoming payments
 // exclude transactions spending one of our own outputs, which filters change.
@@ -33,7 +41,7 @@ const GetNotifications = async (conf, addresses) => {
         },
         {
             sql: "SELECT 'token' AS type, outputs.hash AS tx_hash, NULL AS actor_address, NULL AS actor_name, " +
-                "NULL AS post_tx_hash, NULL AS text, SUM(slp_outputs.amount) AS amount, slp_outputs.token_hash, " +
+                "NULL AS post_tx_hash, NULL AS text, GROUP_CONCAT(slp_outputs.amount) AS amount, slp_outputs.token_hash, " +
                 "slp_geneses.ticker, slp_geneses.decimals, " + timestamp("outputs.hash") + " AS timestamp " +
                 "FROM outputs JOIN slp_outputs ON slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index` " +
                 "LEFT JOIN slp_geneses ON slp_geneses.hash = slp_outputs.token_hash " +
@@ -84,7 +92,8 @@ const GetNotifications = async (conf, addresses) => {
     ]
     const sql = queries.map(query => query.sql).join(" UNION ALL ") +
         " ORDER BY timestamp DESC LIMIT 100"
-    return Select(conf, "notifications", sql, queries.map(query => query.params).flat())
+    const rows = await Select(conf, "notifications", sql, queries.map(query => query.params).flat())
+    return rows.map(row => row.type === "token" ? {...row, amount: tokenAmount(row.amount)} : row)
 }
 
 module.exports = {GetNotifications}

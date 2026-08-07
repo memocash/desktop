@@ -1,0 +1,48 @@
+{
+ "provenance": "Generated from crypto-js 4.2.0 before its removal as the test oracle (audit hygiene follow-up, 2026-08-04). Each entry is what CryptoJS.AES.encrypt(JSON.stringify(wallet), password).toString() wrote - the version 1 passphrase format the migration code must keep reading.",
+ "walletFile": {
+  "password": "hunter2",
+  "wallet": {
+   "time": "2026-07-29T00:00:00.000Z",
+   "seed": "abandon abandon abandon",
+   "keys": [
+    "WIFone",
+    "WIFtwo"
+   ],
+   "addresses": [
+    "addr1",
+    "addr2"
+   ],
+   "changeList": [
+    "change1"
+   ],
+   "slpList": [
+    "slp1"
+   ],
+   "derivation": {
+    "version": 1,
+    "addressCount": 20,
+    "accounts": {
+     "bch": "xpub-public-bch",
+     "slp": "xpub-public-slp"
+    }
+   },
+   "settings": {
+    "DirectTx": false,
+    "SkipPassword": true
+   }
+  },
+  "contents": "U2FsdGVkX1+zB/Dn3flG7w+ckP1+oH+neGFMhuXPJc8um4E9r0zbMCtpiEiKAolk0hFLe0zUrjlqVYiUAzaXQHlb+9mUh+2UKB7kmzNRIJTqvJVD6THkqMn9nKY+L2khmm27RuGILBhDqVZsTok34Jva52YVX3VWjLmxi//EMCmQ7aP+0/nyeRvNQKwfvFTYd0s5WzJb5xxSCRr27MZx+CDY1lZJk04vIeSo5G8Pv7HMkwuUk8bN0t+TLfQP39UhuSusAHRvyrdhYpeU8Y3tdp61nuCqwTXhUCNYlVlDQojDOrIvST9HsfdXMbO79lHgbh4Gl7SvyduRuRVZjjxUgzBJaWtSBCAdnacJHRCqeq1JeaKp0mdIx4NDwmudBCO7UXVjuSlQfWqmzsSgg3zt1jtc4SgZLsQgAquruNJVOAsKghCOfjuMf1t4WuljnR+XHUMk7K99f+KJxnMFWgV3Mg=="
+ },
+ "keystore": {
+  "password": "hunter2",
+  "wallet": {
+   "seed": "old seed words",
+   "keys": [],
+   "addresses": [
+    "addr1"
+   ]
+  },
+  "contents": "U2FsdGVkX1+BoqnC+qqltvQCU9ClCzdtrFDqditQ1zgpXF7cOfsiPLzqTiJWD/X+Yb6BHOMkyIeR7dboLemCcQlY+LrC02PsmO02NMKw9UI="
+ }
+}

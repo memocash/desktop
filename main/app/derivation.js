@@ -1,18 +1,7 @@
-const crypto = require("crypto")
-
-// bitcoincashjs2-lib asks Node for the historical rmd160 alias. Electron's
-// BoringSSL only exposes the canonical name, so normalize it before loading the
-// library in either the main process or a worker.
-const originalCreateHash = crypto.createHash
-crypto.createHash = (algorithm, options) =>
-    originalCreateHash.call(crypto, algorithm === "rmd160" ? "ripemd160" : algorithm, options)
-
 const {mnemonicToSeedSync} = require("bip39")
-const {BIP32Factory} = require("bip32")
-const ecc = require("tiny-secp256k1")
-const {ECPair} = require("@bitcoin-dot-com/bitcoincashjs2-lib")
+const bip32 = require("../common/bitcoin/bip32")
+const {ECPair} = require("../common/bitcoin/ecpair")
 
-const bip32 = BIP32Factory(ecc)
 const AddressCount = 20
 const DerivationVersion = 1
 
@@ -71,9 +60,7 @@ const addressesForKeys = (keys) => keys.map((key) => {
 const derivePrivateWallet = (seedPhrase, keyList = []) => {
     const keys = []
     const addresses = []
-    const changeKeys = []
     const changeList = []
-    const slpKeys = []
     const slpList = []
     let derivation
 
@@ -81,14 +68,14 @@ const derivePrivateWallet = (seedPhrase, keyList = []) => {
         const root = bip32.fromSeed(mnemonicToSeedSync(seedPhrase))
         const bch = root.derivePath(AccountPath.bch)
         const slp = root.derivePath(AccountPath.slp)
+        // Only the receive branch needs private keys (legacy-WIF recognition);
+        // change and token keys would only ride the worker message to no reader.
         const receive = deriveBranch(bch, 0, AddressCount, true)
-        const change = deriveBranch(bch, 1, AddressCount, true)
-        const token = deriveBranch(slp, 0, AddressCount, true)
+        const change = deriveBranch(bch, 1)
+        const token = deriveBranch(slp, 0)
         keys.push(...receive.keys)
         addresses.push(...receive.addresses)
-        changeKeys.push(...change.keys)
         changeList.push(...change.addresses)
-        slpKeys.push(...token.keys)
         slpList.push(...token.addresses)
         derivation = {
             version: DerivationVersion,
@@ -103,7 +90,7 @@ const derivePrivateWallet = (seedPhrase, keyList = []) => {
     for (const key of keyList || []) {
         addresses.push(ECPair.fromWIF(key).getAddress())
     }
-    return {keys, addresses, changeKeys, changeList, slpKeys, slpList, derivation}
+    return {keys, addresses, changeList, slpList, derivation}
 }
 
 module.exports = {

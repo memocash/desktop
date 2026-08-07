@@ -1,7 +1,7 @@
 import Modal, {ModalFooter} from "../../modal";
 import styles from "../../../../styles/modal.module.css";
 import bitcoin from "../../../util/bitcoin";
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {opcodes, script} from "../../../util/bitcoincash";
 import GetWallet from "../../../util/wallet";
 import {CreateTransaction} from "../../../wallet/snippets/create_tx";
 import {useState} from "react";

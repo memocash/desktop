@@ -1,5 +1,6 @@
 import bitcoin from "../../util/bitcoin";
-import {address} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {CompleteTx} from "../../util/tx_build";
+import {address} from "../../util/bitcoincash";
 import {FormatTokenAmount} from "../../util/slp";
 import {DirectTx} from "../../tx/direct_tx";
 
@@ -65,51 +66,42 @@ const BuildSlpMintScript = (tokenHash, tokenType, batonVout, amount) => {
     ])
 }
 
-// Shared tail for SLP transactions: adds regular (non-token, non-dust) UTXOs
-// to cover the BCH fee, appends BCH change to the wallet's first address, then
-// either previews or signs+broadcasts. inputs/outputs arrive with the
-// token-specific parts already in place.
+// Shared tail for SLP transactions: CompleteTx (util/tx_build, tested
+// directly) adds regular UTXOs to cover the BCH fee and appends BCH change to
+// the wallet's first address, then this either previews or signs+broadcasts.
+// inputs/outputs arrive with the token-specific parts already in place.
 const finishSlpTx = async ({wallet, utxos, inputs, totalInput, outputs, setModal, onDone, preview}) => {
-    let requiredInput = bitcoin.Fee.Base + inputs.length * bitcoin.Fee.InputP2PKH
-    for (let i = 0; i < outputs.length; i++) {
-        const {script, value} = outputs[i]
-        requiredInput += script.length + (value || 0) + bitcoin.Fee.OutputValueSize
-    }
-    const feeUtxos = utxos.filter(utxo => !utxo.slp_token_hash && !utxo.slp_baton_token_hash &&
-        utxo.value !== bitcoin.Fee.DustLimit)
-    feeUtxos.sort((a, b) => b.value - a.value)
-    for (let i = 0; i < feeUtxos.length; i++) {
-        if (totalInput === requiredInput ||
-            totalInput > requiredInput + bitcoin.Fee.OutputP2PKH + bitcoin.Fee.DustLimit) {
-            break
-        }
-        inputs.push([feeUtxos[i].hash, feeUtxos[i].index, feeUtxos[i].value, feeUtxos[i].address].join(":"))
-        requiredInput += bitcoin.Fee.InputP2PKH
-        totalInput += feeUtxos[i].value
-    }
-    if (totalInput < requiredInput) {
+    const built = CompleteTx({
+        utxos, inputs, totalInput, outputs,
+        changeScript: address.toOutputScript(wallet.addresses[0]).toString("hex"),
+    })
+    if (!built) {
         window.electron.showMessageDialog("Not enough value in wallet to complete this transaction")
         return
     }
-    const change = totalInput === requiredInput ? 0 : totalInput - requiredInput - bitcoin.Fee.OutputP2PKH
-    let outputStrings = []
-    for (let i = 0; i < outputs.length; i++) {
-        const {script, value} = outputs[i]
-        outputStrings.push(script.toString("hex") + ":" + (value ? value : 0).toString())
-    }
-    if (change > 0) {
-        outputStrings.push(address.toOutputScript(wallet.addresses[0]).toString("hex") + ":" + change)
-    }
     if (preview) {
-        await window.electron.openPreviewSend({inputs, outputs: outputStrings, beatHash: ""})
+        await window.electron.openPreviewSend({inputs: built.inputs, outputs: built.outputs, beatHash: ""})
     } else {
-        await DirectTx(inputs, outputStrings, "", setModal, onDone)
+        await DirectTx(built.inputs, built.outputs, "", setModal, onDone)
     }
     return true
 }
 
 const getSlpAddress = (wallet) =>
     wallet.slpList && wallet.slpList.length ? wallet.slpList[0] : wallet.addresses[0]
+
+// A missing genesis row used to default the declared type to 1, and a wrong
+// type makes the transfer SLP-invalid on chain - which burns it - for any
+// non-type-1 token. No recorded type, no transaction; the signer refuses the
+// same way from its own record, this is just the friendlier message.
+const unknownTokenType = (token) => {
+    if (Number.isInteger(token.token_type)) {
+        return false
+    }
+    window.electron.showMessageDialog("The type of " + (token.ticker || "this token") +
+        " isn't recorded in the local database, so a transfer can't be built without risking it")
+    return true
+}
 
 // Builds and either previews or signs+broadcasts an SLP token send:
 // - inputs: enough token UTXOs of this token to cover the amount, then
@@ -118,10 +110,15 @@ const getSlpAddress = (wallet) =>
 //   the wallet's first SLP address, and BCH change
 // amount is a BigInt in base units.
 const CreateSlpTransaction = async ({wallet, token, payTo, amount, setModal, onDone, preview}) => {
+    if (unknownTokenType(token)) {
+        return
+    }
     const allAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
     const utxos = await window.electron.getUtxos(allAddresses)
     const tokenUtxos = utxos.filter(utxo => utxo.slp_token_hash === token.token_hash)
-    tokenUtxos.sort((a, b) => b.slp_amount - a.slp_amount)
+    // Amounts are BigInts, and BigInt subtraction is no sort comparator;
+    // compare rather than subtract.
+    tokenUtxos.sort((a, b) => a.slp_amount < b.slp_amount ? 1 : a.slp_amount > b.slp_amount ? -1 : 0)
     let inputs = []
     let totalInput = 0
     let tokenInput = 0n
@@ -137,7 +134,7 @@ const CreateSlpTransaction = async ({wallet, token, payTo, amount, setModal, onD
     }
     const tokenChange = tokenInput - amount
     const amounts = tokenChange > 0n ? [amount, tokenChange] : [amount]
-    const slpScript = BuildSlpSendScript(token.token_hash, token.token_type || 1, amounts)
+    const slpScript = BuildSlpSendScript(token.token_hash, token.token_type, amounts)
     let outputs = [
         {script: slpScript, value: 0},
         {script: address.toOutputScript(payTo), value: bitcoin.Fee.DustLimit},
@@ -183,6 +180,9 @@ const CreateSlpGenesisTransaction = async ({wallet, ticker, name, docUrl, decima
 // continues at output 2, otherwise it is destroyed and no further minting is
 // possible. amount is a BigInt in base units.
 const CreateSlpMintTransaction = async ({wallet, token, amount, keepBaton, setModal, onDone, preview}) => {
+    if (unknownTokenType(token)) {
+        return
+    }
     const allAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
     const utxos = await window.electron.getUtxos(allAddresses)
     const batonUtxo = utxos.find(utxo => utxo.slp_baton_token_hash === token.token_hash)
@@ -192,7 +192,7 @@ const CreateSlpMintTransaction = async ({wallet, token, amount, keepBaton, setMo
     }
     let inputs = [[batonUtxo.hash, batonUtxo.index, batonUtxo.value, batonUtxo.address].join(":")]
     let totalInput = batonUtxo.value
-    const slpScript = BuildSlpMintScript(token.token_hash, token.token_type || 1, keepBaton ? 2 : 0, amount)
+    const slpScript = BuildSlpMintScript(token.token_hash, token.token_type, keepBaton ? 2 : 0, amount)
     const slpAddress = getSlpAddress(wallet)
     let outputs = [
         {script: slpScript, value: 0},
@@ -205,9 +205,6 @@ const CreateSlpMintTransaction = async ({wallet, token, amount, keepBaton, setMo
 }
 
 export {
-    BuildSlpSendScript,
-    BuildSlpGenesisScript,
-    BuildSlpMintScript,
     CreateSlpTransaction,
     CreateSlpGenesisTransaction,
     CreateSlpMintTransaction,

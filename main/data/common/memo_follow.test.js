@@ -3,9 +3,9 @@ const assert = require("node:assert");
 const {DatabaseSync} = require("node:sqlite");
 const {Definitions, Indexes} = require("../schema");
 
-// The table queries reach the database through data/sqlite's worker, which needs
-// electron's better-sqlite3 build. Swap in a node:sqlite fixture before the
-// query modules destructure Select, so these tests run the production SQL
+// The table queries reach the database through data/sqlite's worker. Swap in
+// a node:sqlite fixture before the query modules destructure Select, so these
+// tests run the production SQL
 // (including the grouping MaxFollows/MaxChatRoomFollows choose) against real
 // rows under a plain `node --test`.
 const sqlite = require("../sqlite")

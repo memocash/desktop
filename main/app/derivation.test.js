@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict")
 const test = require("node:test")
-const {ECPair} = require("@bitcoin-dot-com/bitcoincashjs2-lib")
+const {ECPair} = require("../common/bitcoin/ecpair")
 const {
     AddressCount,
     addressesForKeys,
@@ -45,7 +45,7 @@ test("public derivation rejects private account keys and unreasonable counts", (
 })
 
 test("seed normalization removes legacy derived WIFs but preserves imported keys and addresses", () => {
-    const imported = ECPair.makeRandom().toWIF()
+    const imported = ECPair.fromPrivateKey(require("node:crypto").randomBytes(32)).toWIF()
     const importedAddress = ECPair.fromWIF(imported).getAddress()
     const derived = derivePrivateWallet(Seed, [imported])
     const publicDerived = derivePublicWallet(derived.derivation)

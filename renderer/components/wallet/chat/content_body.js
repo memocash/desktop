@@ -1,6 +1,6 @@
 import styles from "../../../styles/chat.module.css";
 import {TimeSince} from "../../util/time";
-import {BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText} from "react-icons/bs";
+import {BsChatLeft, BsCurrencyBitcoin, BsHeart, BsHeartFill, BsJournalText} from "../../util/icons";
 import Links from "../snippets/links";
 import {Modals} from "../../../../main/common/util";
 import {useEffect, useState} from "react";
@@ -8,6 +8,7 @@ import GetWallet from "../../util/wallet";
 import {ListenPosts} from "../update/index";
 import {Spinner} from "../../util/loading";
 import {EmptyState} from "../../util/empty";
+import {ProfilePicSrc} from "../../util/profile_pic";
 
 const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
     const [counter, setCounter] = useState(0)
@@ -66,9 +67,7 @@ const ContentBody = ({isLoading, lastUpdate, room, setModal}) => {
                     <div key={index} className={styles.post}>
                         <div className={styles.post_header}>
                             <a onClick={() => clickViewProfile(post.address)}>
-                                <img alt={"Pic"} src={(post.pic && post.pic.length) ?
-                                    `data:image/png;base64,${Buffer.from(post.pic).toString("base64")}` :
-                                    "/default-profile.jpg"}/>
+                                <img alt={"Pic"} src={ProfilePicSrc(post.pic)}/>
                                 {post.name}
                             </a>
                             {" "}

@@ -1,6 +1,5 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const CryptoJS = require("crypto-js");
 const {
     DecodeContents,
     EncodePublic,
@@ -28,9 +27,12 @@ const Wallet = {
     settings: {DirectTx: false, SkipPassword: true},
 }
 
-// What earlier releases wrote: bare JSON, or a CryptoJS passphrase blob.
+// What earlier releases wrote: bare JSON, or a CryptoJS passphrase blob. The
+// encrypted form is pinned in v1_golden.json, captured from crypto-js itself
+// before its removal, so reading the legacy bytes stays tested without the
+// discontinued package.
 const v1Plain = (wallet) => JSON.stringify(wallet)
-const v1Encrypted = (wallet, password) => CryptoJS.AES.encrypt(JSON.stringify(wallet), password).toString()
+const v1Golden = require("./v1_golden.json").walletFile
 
 test("an encrypted wallet round-trips and reports its version", async () => {
     const contents = await EncodeContents(Wallet, "hunter2")
@@ -138,12 +140,12 @@ test("a version 1 wallet without a password is read as version 1", async () => {
 })
 
 test("a version 1 wallet with a password is read as version 1", async () => {
-    const contents = v1Encrypted(Wallet, "hunter2")
+    const contents = v1Golden.contents
     assert.equal(IsEncrypted(contents), true)
-    const {wallet, encrypted, version} = await DecodeContents(contents, "hunter2")
+    const {wallet, encrypted, version} = await DecodeContents(contents, v1Golden.password)
     assert.equal(version, 1)
     assert.equal(encrypted, true)
-    assert.deepEqual(wallet, Wallet)
+    assert.deepEqual(wallet, v1Golden.wallet)
     await assert.rejects(DecodeContents(contents, "wrong"), {message: WrongPassword})
 })
 

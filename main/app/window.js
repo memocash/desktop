@@ -5,24 +5,19 @@ const menu = require("../menu");
 const {IsSameOrigin, SafeExternalUrl} = require("../common/util");
 const {AppUrl} = require("./ipc");
 const {ForgetPaths} = require("./keystore");
+const {Discard: DiscardPendingSeed} = require("./pending_seed");
+const {CloseWindowSockets} = require("../client/graphql");
 const {
     AddTxWindow,
-    CopyPublicToFileWindows,
-    CopyWalletToTxWindows,
     ForgetWindow,
-    GetMenu,
     GetNetworkOption,
-    GetStorage,
     GetWallet,
     GetWindow,
-    IsWalletWindow,
     SetMenu,
     SetNetworkOption,
-    SetStorage,
     SetWallet,
     SetWindow,
     TxWindowIds,
-    TxWindowParent,
 } = require("./window_state");
 
 const AppIcon = path.join(__dirname, "..", "..", "build", "icon.png")
@@ -65,6 +60,8 @@ const ForgetWindowOnClose = (win) => {
         // would also pin every preview on top of the wallet window.
         const children = TxWindowIds(winId)
         ForgetPaths(winId)
+        DiscardPendingSeed(winId)
+        CloseWindowSockets(winId)
         ForgetWindow(winId)
         for (const childId of children) {
             const child = GetWindow(childId)
@@ -149,7 +146,7 @@ const CreateWindow = async () => {
         webPreferences: WebPreferences,
         icon: AppIcon,
     })
-    SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
+    SetMenu(win.webContents.id, menu.SimpleMenu(win))
     SetWindow(win.webContents.id, win)
     ForgetWindowOnClose(win)
     await win.loadURL(AppUrl + "/")
@@ -168,7 +165,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
         icon: AppIcon,
     })
     AddTxWindow(winId, win.webContents.id)
-    SetMenu(win.webContents.id, menu.SimpleMenu(win, true))
+    SetMenu(win.webContents.id, menu.SimpleMenu(win))
     SetWindow(win.webContents.id, win)
     ForgetWindowOnClose(win)
     // The wallet as the parent holds it, minus its session. A transaction window
@@ -200,25 +197,14 @@ const GetRuntimeNetworkOption = (option) => {
 
 const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
+// Only what this module defines: window state accessors live in
+// window_state and are imported from there directly.
 module.exports = {
     eConf,
     ApplyContentsSecurity,
     BackgroundColor,
-    CopyPublicToFileWindows,
-    CopyWalletToTxWindows,
     OpenExternalUrl,
-    GetMenu,
-    GetNetworkOption,
-    GetStorage,
     GetRuntimeNetworkOption,
-    GetWallet,
-    GetWindow,
-    IsWalletWindow,
-    SetMenu,
-    SetNetworkOption,
-    SetStorage,
-    SetWallet,
     CreateWindow,
     CreateTxWindow,
-    TxWindowParent,
 }

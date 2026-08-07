@@ -7,21 +7,19 @@ const TypeOptions = {
     Import: "import",
 }
 
-const SelectType = ({setPane, generateSeedPhrase}) => {
+const SelectType = ({setPane, onChooseSeedWallet}) => {
     const [isStandard, setIsStandard] = useState(true)
     const changeWalletType = (e) => {
         setIsStandard(e.target.value === TypeOptions.Standard)
     }
     const handleClickNext = () => {
         if (isStandard) {
-            onSelectStandard()
+            // The seed pane asks main for the words itself; choosing the
+            // standard type only decides which pane comes next.
+            onChooseSeedWallet()
         } else {
             onSelectImport()
         }
-    }
-    const onSelectStandard = () => {
-        generateSeedPhrase()
-        setPane(Panes.Step3SetSeed)
     }
     const onSelectImport = () => setPane(Panes.Step3SetKeys)
     const onBack = () => setPane(Panes.Step1ChooseFile)

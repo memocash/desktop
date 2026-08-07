@@ -1,5 +1,5 @@
 const {
-    GetAddressAliases, GetLinkedAddresses, GetPic, GetPicExists, GetPicsExist,
+    GetAddressAliases, GetLinkedAddresses, GetPic, GetPicExists,
     GetProfileInfo, GetProfileLinks, GetRecentSetName, GetRecentSetPic, GetRecentSetProfile, GetWalletLinks,
     SaveAddressAliases, SaveMemoProfiles, SavePic,
 } = require("./memo")
@@ -39,7 +39,6 @@ module.exports = {
     GetOutput,
     GetPic,
     GetPicExists,
-    GetPicsExist,
     GetPost,
     GetPostParent,
     GetPostReplies,

@@ -1,6 +1,6 @@
 import Modal, {ModalFooter} from "../../modal";
 import styles from "../../../../styles/modal.module.css";
-import {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import {opcodes, script} from "../../../util/bitcoincash";
 import {useEffect, useState} from "react";
 import Post from "../../../wallet/memo/post";
 import bitcoin from "../../../util/bitcoin";

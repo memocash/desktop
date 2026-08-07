@@ -4,7 +4,7 @@ const isDev = !app.isPackaged
 const {ApplyContentsSecurity, CreateWindow} = require("./app/window");
 const {AllHandlers} = require("./app/handlers");
 const {ApplyStoredTheme} = require("./app/handlers/theme");
-const {TightenWalletPermissions} = require("./app/keystore");
+const {SweepStrandedTempFiles, TightenWalletPermissions} = require("./app/keystore");
 const {ScheduleUpdateChecks} = require("./app/handlers/update");
 const {RegisterRendererProtocol} = require("./static_server");
 
@@ -18,11 +18,12 @@ process.on("uncaughtException", (err) => {
     app.exit(1)
 })
 
-// In dev, electron-next runs the Next dev server on localhost:8000 (with hot
-// reload). In a packaged build there is no Next process, so serve the static
-// export over a custom app:// protocol, which needs no TCP port. Registering the
-// scheme has to happen before the app 'ready' event, so this is called at module
-// load rather than inside whenReady. The dev/prod URL split lives in window.js.
+// In dev, a spawned `next dev` child serves the renderer on localhost:8000
+// (with hot reload). In a packaged build there is no Next process, so serve the
+// static export over a custom app:// protocol, which needs no TCP port.
+// Registering the scheme has to happen before the app 'ready' event, so this is
+// called at module load rather than inside whenReady. The dev/prod URL split
+// lives in ipc.js.
 if (!isDev) {
     RegisterRendererProtocol("renderer/out")
 }
@@ -45,13 +46,17 @@ app.whenReady().then(async () => {
         app.dock.setIcon(nativeImage.createFromPath(iconPath))
     }
     if (isDev) {
-        // electron-next is a devDependency and does not exist in packaged
-        // builds, so it can only be required on this branch.
-        await require('electron-next')('./renderer')
+        // The dev server script imports esbuild (a devDependency that does not
+        // exist in packaged builds), so it can only start on this branch. The
+        // app handle goes along so the child dies with the app even when quit
+        // arrives before the server has turned ready.
+        await require("./dev_server").StartDevServer(
+            path.join(__dirname, "..", "scripts", "dev-renderer.js"), app)
     }
     // Before any window can list or open a wallet, so nothing races the files
     // while they are still sitting at the modes an earlier release left.
     await TightenWalletPermissions()
+    await SweepStrandedTempFiles()
     ApplyStoredTheme()
     AllHandlers()
     await CreateWindow()

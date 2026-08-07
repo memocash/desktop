@@ -1,14 +1,13 @@
-import {useRouter} from "next/router";
+import {useRouter, Link} from "../util/router";
 import {useEffect, useRef, useState} from "react";
 import form from "../../styles/form.module.css";
 import styleTx from "../../styles/tx.module.css";
 import ShortHash from "../util/txs";
 import GetWallet from "../util/wallet";
 import {useReferredState} from "../util/state";
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin from "../util/bitcoincash";
 import {FormatTxError, setTx} from "./direct_tx";
 import {FormatTokenAmount, ParseSlpScript} from "../util/slp";
-import Link from "next/link";
 import {SafeExternalUrl} from "../../../main/common/util/urls";
 
 // Include each referenced output so an arbitrary transaction has enough
@@ -301,7 +300,7 @@ const Info = () => {
                 inputs: [],
                 outputs: [],
             }
-            let txb = new bitcoin.TransactionBuilder()
+            let txb = new bitcoin.Transaction()
             const wallet = await GetWallet()
             const walletAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
             const isHighlight = (address) => {
@@ -327,9 +326,7 @@ const Info = () => {
                     },
                 })
                 fee += valueInt
-                const outputScript = bitcoin.address.toOutputScript(inputAddress)
-                txb.addInput(Buffer.from(inputPrevHash, 'hex').reverse(), prevIndex,
-                    bitcoin.Transaction.DEFAULT_SEQUENCE, outputScript)
+                txb.addInput(Buffer.from(inputPrevHash, 'hex').reverse(), prevIndex)
             }
             for (let i = 0; i < outputStrings.length; i++) {
                 const [outputScript, outputValue] = outputStrings[i].split(":")
@@ -345,14 +342,13 @@ const Info = () => {
                 txb.addOutput(scriptBuffer, valueInt)
                 fee -= valueInt
             }
-            const txBuild = txb.__build(true)
-            const buf = txBuild.toBuffer()
+            const buf = txb.toBuffer()
             tx.raw = buf
             setSize(buf.length)
             await annotateSlp(tx)
             setTxInfo(tx)
             setFee(fee)
-            transactionIdEleRef.current.value = txBuild.getId()
+            transactionIdEleRef.current.value = txb.getId()
             setBeatHash(beatHash)
         }
     })()}, [router])

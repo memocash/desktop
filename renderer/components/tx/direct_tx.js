@@ -1,7 +1,6 @@
-import bitcoin from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoin, {script as bscript} from "../util/bitcoincash";
 import GetWallet from "../util/wallet";
 import {Modals, WalletErrors} from "../../../main/common/util"
-import bscript from "@bitcoin-dot-com/bitcoincashjs2-lib/src/script";
 
 const Prefix = {
     "6d01": "SetName",
@@ -112,7 +111,7 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
             inputs: [],
             outputs: [],
         }
-        let txb = new bitcoin.TransactionBuilder()
+        let txb = new bitcoin.Transaction()
         const wallet = await GetWallet()
         const walletAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
         const isHighlight = (address) => {
@@ -138,9 +137,7 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
                 },
             })
             fee += valueInt
-            const outputScript = bitcoin.address.toOutputScript(inputAddress)
-            txb.addInput(Buffer.from(inputPrevHash, 'hex').reverse(), prevIndex,
-                bitcoin.Transaction.DEFAULT_SEQUENCE, outputScript)
+            txb.addInput(Buffer.from(inputPrevHash, 'hex').reverse(), prevIndex)
         }
         for (let i = 0; i < outputStrings.length; i++) {
             const [outputScript, outputValue] = outputStrings[i].split(":")
@@ -167,13 +164,12 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
             txb.addOutput(scriptBuffer, valueInt)
             fee -= valueInt
         }
-        const txBuild = txb.__build(true)
-        const buf = txBuild.toBuffer()
+        const buf = txb.toBuffer()
         tx.raw = buf
         outer_transaction.outer_size = buf.length
         outer_transaction.outer_txInfo = tx
         outer_transaction.outer_fee = fee
-        outer_transaction.outer_transactionIDEleRef.value = txBuild.getId()
+        outer_transaction.outer_transactionIDEleRef.value = txb.getId()
         outer_transaction.outer_beatHash.current = beatHash
         // No password crosses from here at all. Main signs on the session if the
         // budget covers it, and otherwise asks for the password and confirms the
@@ -181,4 +177,4 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
         await setAndPushTx(outer_transaction, setModal, onDone)
     }
 }
-export {DirectTx, setTx, pushTx, FormatTxError}
+export {DirectTx, setTx, FormatTxError}

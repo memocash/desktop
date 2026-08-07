@@ -56,8 +56,14 @@ module.exports = {
     // Answers {exists, encrypted} - what the load screen needs to decide whether
     // to offer opening, creating, or a password box.
     checkFile: async (walletName) => ipcRenderer.invoke(Handlers.CheckWalletFile, walletName),
-    createFile: async (walletName, seedPhrase, keyList, addressList, password) =>
-        ipcRenderer.invoke(Handlers.CreateWallet, walletName, seedPhrase, keyList, addressList, password),
+    // No seed crosses here: useSeed says the wallet should be built on the
+    // pending seed main already holds for this window - the one it generated
+    // or was handed to import, and saw confirmed.
+    createFile: async (walletName, useSeed, keyList, addressList, password) =>
+        ipcRenderer.invoke(Handlers.CreateWallet, walletName, useSeed, keyList, addressList, password),
+    generateSeed: async () => ipcRenderer.invoke(Handlers.GenerateSeed),
+    importSeed: async (phrase) => ipcRenderer.invoke(Handlers.ImportSeed, phrase),
+    confirmSeed: async (typed) => ipcRenderer.invoke(Handlers.ConfirmSeed, typed),
     getExistingWalletFiles: async () => ipcRenderer.invoke(Handlers.GetExistingWalletFiles),
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
     getWallet: async () => ipcRenderer.invoke(Handlers.GetWallet),

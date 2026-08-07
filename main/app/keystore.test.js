@@ -3,7 +3,6 @@ const assert = require("node:assert");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
-const CryptoJS = require("crypto-js");
 const {Dir} = require("../common/util");
 const {
     AllowPath,
@@ -11,6 +10,8 @@ const {
     CreateWalletFile,
     DefaultSettings,
     ForgetPaths,
+    FreeGuesses,
+    GuessDelayMs,
     IsWalletArtifact,
     MigrateWallet,
     NewWallet,
@@ -18,26 +19,37 @@ const {
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
+    SweepStrandedTempFiles,
     TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,
-    Version,
     WalletFileState,
     WithWalletLock,
     WriteWallet,
     WrongPassword,
 } = require("./keystore");
+const {Version} = require("./wallet_file");
 
 // Stands in for a webContents id. Grants are per window, so tests that care
 // about the boundary use two.
 const Window = 1
 const OtherWindow = 2
 
+// Every temp tree is remembered and removed once the file's tests are done -
+// scattering mkdtemp calls without cleanup left thousands of them behind.
+const tempDirs = []
+test.after(() => Promise.all(tempDirs.map((dir) => fs.rm(dir, {recursive: true, force: true}))))
+const tempDir = async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    tempDirs.push(dir)
+    return dir
+}
+
 // Wallets written by these tests go to a scratch directory, reached the same way
 // the import flow reaches a wallet outside Dir.DefaultPath: the path is vouched
 // for first, as the file dialog does.
 const tempWallet = async (name) => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const walletPath = path.join(dir, name)
     AllowPath(Window, walletPath)
     return walletPath
@@ -99,7 +111,7 @@ test("a name that would escape the wallet directory is refused", () => {
 })
 
 test("a full path is refused unless the user chose it in a dialog", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const outside = path.join(dir, "somewhere_else")
     assert.throws(() => ResolveWalletPath(Window, outside), {message: /not chosen by the user/})
     AllowPath(Window, outside)
@@ -110,7 +122,7 @@ test("a full path is refused unless the user chose it in a dialog", async () => 
 // reach it. Otherwise one import opens that file to any renderer in the process
 // - to read an unencrypted wallet's seed, or to write over it.
 test("a path one window was granted is not reachable from another", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const outside = path.join(dir, "imported")
     AllowPath(Window, outside)
     assert.equal(ResolveWalletPath(Window, outside), outside)
@@ -118,7 +130,7 @@ test("a path one window was granted is not reachable from another", async () => 
 })
 
 test("a window's grants go when the window does", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const outside = path.join(dir, "imported")
     AllowPath(OtherWindow, outside)
     assert.equal(ResolveWalletPath(OtherWindow, outside), outside)
@@ -131,7 +143,7 @@ test("a window's grants go when the window does", async () => {
 // refusal reported as "no wallet yet" walks someone through type, seed, seed
 // confirmation and password before the write fails.
 test("a name with no file is not the same answer as a name that cannot be used", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const dir = await tempDir()
     const missing = path.join(dir, "not_here_yet")
     AllowPath(Window, missing)
     assert.deepEqual(await WalletFileState(Window, missing), {exists: false, encrypted: false})
@@ -204,18 +216,27 @@ test("list updates add, de-duplicate, and remove", () => {
 test("changing settings fills in the defaults and keeps untouched values", () => {
     const wallet = {}
     ApplyWalletUpdate(wallet, "changeSettings", {})
-    // A wallet asks for its password on every send until someone says otherwise.
-    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 0})
+    // A wallet asks for its password - or, passwordless, an approval - on every
+    // send until someone says otherwise.
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 0, ConfirmSends: true})
     ApplyWalletUpdate(wallet, "changeSettings", {PasswordThreshold: 10000})
-    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 10000})
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 10000, ConfirmSends: true})
     ApplyWalletUpdate(wallet, "changeSettings", {DirectTx: true})
-    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000})
+    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ConfirmSends: true})
+    ApplyWalletUpdate(wallet, "changeSettings", {ConfirmSends: false})
+    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ConfirmSends: false})
 })
 
 test("a spend budget has to be a whole number of satoshis", () => {
     for (const threshold of ["10000", 1.5, -1, Infinity, NaN, null]) {
         assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {PasswordThreshold: threshold}),
             {message: /whole number of satoshis/}, "accepted " + threshold)
+    }
+    // The confirmation switch is policy the same way, so its shape is held to
+    // the same standard: a boolean or nothing.
+    for (const confirm of ["off", 0, 1, null]) {
+        assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {ConfirmSends: confirm}),
+            {message: /on or off/}, "accepted " + confirm)
     }
     // Zero is a policy, not a missing value: it means ask every time.
     const wallet = {}
@@ -246,21 +267,22 @@ test("overlapping updates to one wallet each land, without tearing the file", as
 // seed exactly that guessable for anyone who can read the directory.
 test("a version 1 wallet migrates on read and leaves no copy of the old format", async () => {
     const walletPath = await tempWallet("legacy")
-    const original = CryptoJS.AES.encrypt(
-        JSON.stringify({seed: "old seed words", keys: [], addresses: ["addr1"]}), "hunter2").toString()
-    await fs.writeFile(walletPath, original)
+    // A CryptoJS passphrase blob captured from crypto-js itself before its
+    // removal - the real legacy bytes, pinned in v1_golden.json.
+    const legacy = require("./v1_golden.json").keystore
+    await fs.writeFile(walletPath, legacy.contents)
 
-    const read = await ReadWallet(walletPath, "hunter2")
+    const read = await ReadWallet(walletPath, legacy.password)
     assert.equal(read.version, 1)
-    assert.equal(read.wallet.seed, "old seed words")
+    assert.equal(read.wallet.seed, legacy.wallet.seed)
 
-    await MigrateWallet(walletPath, read.wallet, "hunter2")
+    await MigrateWallet(walletPath, read.wallet, legacy.password)
 
-    const migrated = await ReadWallet(walletPath, "hunter2")
+    const migrated = await ReadWallet(walletPath, legacy.password)
     assert.equal(migrated.version, Version)
     assert.equal(migrated.encrypted, true)
-    assert.equal(migrated.wallet.seed, "old seed words")
-    assert.deepEqual(migrated.wallet.addresses, ["addr1"])
+    assert.equal(migrated.wallet.seed, legacy.wallet.seed)
+    assert.deepEqual(migrated.wallet.addresses, legacy.wallet.addresses)
     assert.deepEqual(await fs.readdir(path.dirname(walletPath)), ["legacy"])
 })
 
@@ -334,7 +356,7 @@ test("startup tightens the modes earlier releases left behind", async (t) => {
     }
     const mode = async (file) => (await fs.stat(file)).mode & 0o777
     const memoDir = path.join(
-        await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-")), ".memo")
+        await tempDir(), ".memo")
     const walletDir = path.join(memoDir, "wallets")
     await fs.mkdir(walletDir, {recursive: true})
     await fs.chmod(memoDir, 0o755)
@@ -364,7 +386,7 @@ test("startup tightens the modes earlier releases left behind", async (t) => {
 // fresh mkdtemp root so it is provably absent, rather than a fixed /tmp name
 // that a previous run or another process could have left something at.
 test("the startup permission pass tolerates a missing wallet directory", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "memo-keystore-"))
+    const root = await tempDir()
     const absent = path.join(root, ".memo", "wallets")
     await assert.rejects(fs.access(absent))
     const original = Dir.DefaultPath
@@ -454,4 +476,95 @@ test("an update the keystore doesn't define is refused", () => {
         assert.throws(() => ApplyWalletUpdate({}, op, ["addr"]), {message: /unknown wallet update/})
     }
     assert.throws(() => ApplyWalletUpdate({}, "addAddresses", "not-a-list"), {message: /list of values/})
+})
+
+test("the guess delay is free at first, then doubles, then stops climbing", () => {
+    for (let misses = 0; misses <= FreeGuesses; misses++) {
+        assert.equal(GuessDelayMs(misses), 0)
+    }
+    assert.equal(GuessDelayMs(FreeGuesses + 1), 1000)
+    assert.equal(GuessDelayMs(FreeGuesses + 2), 2000)
+    assert.equal(GuessDelayMs(FreeGuesses + 3), 4000)
+    assert.equal(GuessDelayMs(FreeGuesses + 50), 30000)
+})
+
+test("wrong passwords slow a file down, and the right one clears the slate", async () => {
+    const walletPath = await tempWallet("guessed_at")
+    await CreateWalletFile(walletPath, NewWallet("seed words", [], []), "hunter2")
+    const miss = () => assert.rejects(ReadWallet(walletPath, "wrong"), {message: WrongPassword})
+
+    // The free misses, plus the attempt that reaches the first priced delay.
+    for (let guess = 0; guess <= FreeGuesses; guess++) {
+        await miss()
+    }
+    // The next attempt pays: it waits out the schedule before it even reads.
+    const slowed = Date.now()
+    await miss()
+    assert.ok(Date.now() - slowed >= GuessDelayMs(FreeGuesses + 1),
+        "the attempt after the free misses must wait out the delay")
+
+    // The right password still opens the wallet - slower, never locked out -
+    // and resets the count: the next miss is back on the house.
+    const opened = await ReadWallet(walletPath, "hunter2")
+    assert.equal(opened.wallet.seed, "seed words")
+    const fresh = Date.now()
+    await miss()
+    assert.ok(Date.now() - fresh < GuessDelayMs(FreeGuesses + 1),
+        "a miss after a successful open must be free again")
+    await ReadWallet(walletPath, "hunter2")
+})
+
+// The burst case: guesses fired together, before any miss has been recorded.
+// A gate keyed on the recorded count would admit them all at once; queueing
+// from the first offered password makes the tail of the burst wait out the
+// schedule exactly as sequential guesses would.
+test("a parallel burst of guesses lines up instead of slipping past the meter", async () => {
+    const walletPath = await tempWallet("burst_guessed")
+    await CreateWalletFile(walletPath, NewWallet("seed words", [], []), "hunter2")
+    const start = Date.now()
+    const burst = await Promise.allSettled(Array.from(
+        {length: FreeGuesses + 2}, () => ReadWallet(walletPath, "wrong")))
+    for (const attempt of burst) {
+        assert.equal(attempt.status, "rejected")
+        assert.equal(attempt.reason.message, WrongPassword)
+    }
+    assert.ok(Date.now() - start >= GuessDelayMs(FreeGuesses + 1),
+        "the last guess of the burst must pay for the misses queued ahead of it")
+    // The owner is still not locked out, and being right still clears the count.
+    const opened = await ReadWallet(walletPath, "hunter2")
+    assert.equal(opened.wallet.seed, "seed words")
+})
+
+// The scratch files a crashed write strands: hidden from the wallet list, and
+// for a passwordless wallet holding the seed in the clear. Which ones may go
+// is decided by who wrote them - a name carrying a live process's pid is a
+// write in progress somewhere, not a leftover.
+test("startup sweeps the scratch files whose writer is gone, and no others", async () => {
+    const dir = await tempDir()
+    const original = Dir.DefaultPath
+    Dir.DefaultPath = dir
+    try {
+        // A pid that really ran and really exited, so liveness is answered by
+        // the OS rather than assumed.
+        const deadPid = require("node:child_process").spawnSync("true").pid
+        // Pid 1 is init: alive for the whole test, and not ours to signal -
+        // the EPERM answer must read as alive.
+        const files = {
+            ["w." + deadPid + ".0.tmp"]: false,
+            ["w." + process.pid + ".3.tmp"]: false,
+            "w.1.2.tmp": true,
+            "wallet_normal": true,
+            "wallet.v1.bak": true,
+        }
+        for (const name of Object.keys(files)) {
+            await fs.writeFile(path.join(dir, name), "x")
+        }
+        await SweepStrandedTempFiles()
+        const kept = new Set(await fs.readdir(dir))
+        for (const [name, stays] of Object.entries(files)) {
+            assert.equal(kept.has(name), stays, name)
+        }
+    } finally {
+        Dir.DefaultPath = original
+    }
 })

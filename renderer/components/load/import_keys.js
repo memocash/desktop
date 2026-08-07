@@ -1,5 +1,5 @@
 import {useRef, useState} from "react"
-import {address, ECPair} from '@bitcoin-dot-com/bitcoincashjs2-lib'
+import {address, IsValidWif} from "../util/bitcoincash"
 import styles from "../../styles/addWallet.module.css"
 
 const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
@@ -11,25 +11,21 @@ const ImportKeys = ({onSetKeysAndAddresses, onBack}) => {
         let keyList = [], addressList = []
         for (let i = 0; i < list.length; i++) {
             const item = list[i]
-            try {
-                const address = ECPair.fromWIF(item).getAddress()
-                if (!address || !address.length) {
-                    setError("ERROR: Invalid addresses or WIF(s) or none entered")
-                    return
-                }
-            } catch (err1) {
-                try {
-                    address.fromBase58Check(item)
-                } catch (err2) {
-                    console.log(err1)
-                    console.log(err2)
-                    setError("ERROR: Invalid addresses or WIF(s) or none entered")
-                    return
-                }
-                addressList.push(item)
+            // The structure check is all this screen needs: the address a key
+            // controls is derived in main, which re-validates every key it is
+            // handed either way.
+            if (IsValidWif(item)) {
+                keyList.push(item)
                 continue
             }
-            keyList.push(item)
+            try {
+                address.fromBase58Check(item)
+            } catch (err) {
+                console.log(err)
+                setError("ERROR: Invalid addresses or WIF(s) or none entered")
+                return
+            }
+            addressList.push(item)
         }
         if (keyList.length > 0 && addressList.length > 0) {
             setError("ERROR: Cannot only have addresses or WIFs, not both")

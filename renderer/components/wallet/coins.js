@@ -8,7 +8,7 @@ import {useReferredState} from "../util/state";
 import {useResizableColumns} from "./snippets/use_columns";
 import {Loading} from "../util/loading";
 import {EmptyState} from "../util/empty";
-import {BsCoin, BsThreeDots} from "react-icons/bs";
+import {BsCoin, BsThreeDots} from "../util/icons";
 import {useScopeActivity} from "../util/activity";
 import {Tabs} from "../../../main/common/util";
 

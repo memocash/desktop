@@ -50,10 +50,6 @@ const SaveNetworkConfig = async (networkConfig) => {
     await window.electron.saveNetworkConfig(networkConfig)
 }
 
-const GetWindowNetwork = async () => {
-    return await window.electron.getWindowNetwork()
-}
-
 const SetWindowNetwork = async (network) => {
     await window.electron.setWindowNetwork(network)
 }
@@ -62,7 +58,6 @@ module.exports = {
     GetDefaultNetwork,
     GetNetworkConfig,
     GetNetworkOptions,
-    GetWindowNetwork,
     SaveNetworkConfig,
     SetWindowNetwork,
 }

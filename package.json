@@ -7,13 +7,11 @@
   "main": "main/index.js",
   "repository": "github.com/memocash/desktop",
   "scripts": {
-    "build:preload": "node scripts/build-preload.js",
-    "prestart": "node scripts/build-preload.js && node scripts/clean-stale-next.js",
+    "prestart": "node scripts/build-preload.js",
     "start": "electron .",
-    "test": "node --test \"main/**/*.test.js\"",
-    "build": "node scripts/build-preload.js && next build renderer",
+    "test": "node --test \"main/**/*.test.js\" \"scripts/**/*.test.js\" \"renderer/**/*.test.js\"",
+    "build": "node scripts/build-preload.js && node scripts/build-renderer.js",
     "pack-app": "npm run build && electron-builder --dir",
-    "rebuild": "electron-rebuild",
     "dist": "npm run build && electron-builder",
     "dist:linux": "npm run build && electron-builder --linux",
     "dist:mac": "npm run build && electron-builder --mac",
@@ -35,12 +33,14 @@
     "files": [
       "main/**/*",
       "!main/**/*.test.js",
+      "!main/common/bitcoin/golden.json",
+      "!main/common/bitcoin/bip32_golden.json",
+      "!main/app/v1_golden.json",
+      "licenses/**/*",
+      "LICENSE.md",
       "build/icon.png",
       "renderer/out/**/*",
       "package.json"
-    ],
-    "asarUnpack": [
-      "**/*.node"
     ],
     "publish": null,
     "mac": {
@@ -73,30 +73,20 @@
     }
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.2.0",
-    "crypto-js": "^4.2.0",
+    "buffer": "^6.0.3",
     "electron": "43.3.0",
     "electron-builder": "^26.15.3",
-    "electron-next": "^3.1.5",
     "esbuild": "^0.28.1",
-    "next": "^15.5.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "dependencies": {
-    "@bitcoin-dot-com/bitcoincashjs2-lib": "^4.1.0",
-    "better-sqlite3": "^12.11.1",
-    "bip32": "^5.0.1",
-    "bip39": "^3.0.4",
-    "react-icons": "^4.4.0",
-    "react-linkify": "^1.0.0-alpha",
-    "tiny-secp256k1": "^2.2.4",
-    "ws": "^8.21.0"
-  },
-  "overrides": {
-    "sharp": "^0.35.3",
+    "@noble/hashes": "^1.8.0",
+    "bip39": "^3.1.0",
     "linkify-it": "^5.0.2",
-    "postcss": "^8.5.25"
+    "tiny-secp256k1": "^2.2.4",
+    "tlds": "^1.261.0",
+    "ws": "^8.21.0"
   },
   "trustedDependencies": [
     "electron"

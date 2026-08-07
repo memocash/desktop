@@ -1,25 +1,26 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const bitcoin = require("@bitcoin-dot-com/bitcoincashjs2-lib")
+const {ECPair} = require("../common/bitcoin/ecpair")
+const {Transaction} = require("../common/bitcoin/transaction")
+const baddress = require("../common/bitcoin/address")
+const bscript = require("../common/bitcoin/script")
+const opcodes = require("../common/bitcoin/opcodes.json")
 const {mnemonicToSeedSync} = require("bip39")
-const {BIP32Factory} = require("bip32")
-const ecc = require("tiny-secp256k1")
+const bip32 = require("../common/bitcoin/bip32")
 const {KeyFinder, MaxFeeRate, PreviewSpend, SignTransaction, WalletAddresses} = require("./transaction_signer")
 
-const bip32 = BIP32Factory(ecc)
-const key = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 7)})
+const key = ECPair.fromPrivateKey(Buffer.alloc(32, 7))
 const address = key.getAddress()
 const prevHash = "11".repeat(32)
 const slpPush = (buffer) => Buffer.concat([Buffer.from([buffer.length]), buffer])
 const slpAmount = (amount) => Buffer.from(amount.toString(16).padStart(16, "0"), "hex")
 
 const request = ({inputValue = 10000, outputValue = 9000} = {}) => {
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
-    txb.addOutput(bitcoin.address.toOutputScript(address), outputValue)
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(baddress.toOutputScript(address), outputValue)
     return {
-        raw: txb.__build(true).toBuffer().toString("hex"),
+        raw: txb.toBuffer().toString("hex"),
         inputs: [{prev_hash: prevHash, prev_index: 1}],
         wallet: {keys: [key.toWIF()], addresses: [address]},
         getOutput: async () => ({
@@ -27,14 +28,14 @@ const request = ({inputValue = 10000, outputValue = 9000} = {}) => {
             index: 1,
             address,
             value: inputValue,
-            script: bitcoin.address.toOutputScript(address).toString("hex"),
+            script: baddress.toOutputScript(address).toString("hex"),
         }),
     }
 }
 
 test("signs using authoritative prevout metadata", async () => {
     const signed = await SignTransaction(request())
-    const tx = bitcoin.Transaction.fromBuffer(Buffer.from(signed.raw, "hex"))
+    const tx = Transaction.fromBuffer(Buffer.from(signed.raw, "hex"))
     assert.ok(tx.ins[0].script.length > 0)
     assert.equal(signed.fee, 1000)
     assert.equal(signed.txid, tx.getId())
@@ -56,18 +57,17 @@ test("what leaves the wallet is the payment plus the fee", async () => {
 test("derives a seed wallet change key only inside the signer", async () => {
     const seed = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
     const child = bip32.fromSeed(mnemonicToSeedSync(seed)).derivePath("m/44'/0'/0'/1/0")
-    const changeAddress = bitcoin.ECPair.fromWIF(child.toWIF()).getAddress()
+    const changeAddress = ECPair.fromWIF(child.toWIF()).getAddress()
     const seeded = request()
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(changeAddress))
-    txb.addOutput(bitcoin.address.toOutputScript(changeAddress), 9000)
-    seeded.raw = txb.__build(true).toBuffer().toString("hex")
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(baddress.toOutputScript(changeAddress), 9000)
+    seeded.raw = txb.toBuffer().toString("hex")
     seeded.wallet = {seed, addresses: [], changeList: [changeAddress], slpList: []}
     seeded.getOutput = async () => ({
         address: changeAddress,
         value: 10000,
-        script: bitcoin.address.toOutputScript(changeAddress).toString("hex"),
+        script: baddress.toOutputScript(changeAddress).toString("hex"),
     })
     assert.ok((await SignTransaction(seeded)).raw)
 })
@@ -76,8 +76,8 @@ test("a seed wallet still controls an address after an imported copy of its key 
     const seed = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
     const root = bip32.fromSeed(mnemonicToSeedSync(seed))
     const derivedWif = root.derivePath("m/44'/0'/0'/0/0").toWIF()
-    const derivedAddress = bitcoin.ECPair.fromWIF(derivedWif).getAddress()
-    const importedOnly = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 17)})
+    const derivedAddress = ECPair.fromWIF(derivedWif).getAddress()
+    const importedOnly = ECPair.fromPrivateKey(Buffer.alloc(32, 17))
 
     // Exporting a receive key and importing it back is enough to have both.
     const wallet = {
@@ -106,9 +106,9 @@ test("the key for an address round-trips to the stored WIF", () => {
     const derivedWif = root.derivePath("m/44'/0'/0'/0/0").toWIF()
     const changeWif = root.derivePath("m/44'/0'/0'/1/0").toWIF()
     const slpWif = root.derivePath("m/44'/245'/0'/0/0").toWIF()
-    const imported = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 23)})
-    const watched = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 29)}).getAddress()
-    const address = (wif) => bitcoin.ECPair.fromWIF(wif).getAddress()
+    const imported = ECPair.fromPrivateKey(Buffer.alloc(32, 23))
+    const watched = ECPair.fromPrivateKey(Buffer.alloc(32, 29)).getAddress()
+    const address = (wif) => ECPair.fromWIF(wif).getAddress()
     const wallet = {
         seed,
         keys: [imported.toWIF()],
@@ -128,7 +128,7 @@ test("the key for an address round-trips to the stored WIF", () => {
     // An address the wallet has never heard of is neither: no key, and not in
     // any list, which is what tells an export to say so rather than answer
     // "watch only".
-    const stranger = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 31)}).getAddress()
+    const stranger = ECPair.fromPrivateKey(Buffer.alloc(32, 31)).getAddress()
     assert.equal(find(stranger), undefined)
     assert.equal(WalletAddresses(wallet).includes(stranger), false)
 })
@@ -149,11 +149,11 @@ test("refuses a prevout not established by the local database", async () => {
 })
 
 test("refuses duplicate inputs", async () => {
-    const tx = new bitcoin.Transaction()
+    const tx = new Transaction()
     for (let i = 0; i < 2; i++) {
         tx.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
     }
-    tx.addOutput(bitcoin.address.toOutputScript(address), 18000)
+    tx.addOutput(baddress.toOutputScript(address), 18000)
     const duplicate = request()
     duplicate.raw = tx.toBuffer().toString("hex")
     duplicate.inputs = [
@@ -164,7 +164,7 @@ test("refuses duplicate inputs", async () => {
 })
 
 test("refuses authoritative inputs outside the wallet", async () => {
-    const other = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 9)}).getAddress()
+    const other = ECPair.fromPrivateKey(Buffer.alloc(32, 9)).getAddress()
     const malicious = request()
     malicious.getOutput = async () => ({address: other, value: 10000})
     await assert.rejects(SignTransaction(malicious), {message: /does not belong/})
@@ -172,19 +172,18 @@ test("refuses authoritative inputs outside the wallet", async () => {
 
 test("refuses an address whose list position does not derive it", async () => {
     const seed = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
-    const watched = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 11)}).getAddress()
+    const watched = ECPair.fromPrivateKey(Buffer.alloc(32, 11)).getAddress()
     const watchOnly = request()
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(watched))
-    txb.addOutput(bitcoin.address.toOutputScript(watched), 9000)
-    watchOnly.raw = txb.__build(true).toBuffer().toString("hex")
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(baddress.toOutputScript(watched), 9000)
+    watchOnly.raw = txb.toBuffer().toString("hex")
     // Occupies a list index the seed does derive, but not to this address.
     watchOnly.wallet = {seed, addresses: [...Array(20).keys()].map(String).concat([watched])}
     watchOnly.getOutput = async () => ({
         address: watched,
         value: 10000,
-        script: bitcoin.address.toOutputScript(watched).toString("hex"),
+        script: baddress.toOutputScript(watched).toString("hex"),
     })
     await assert.rejects(SignTransaction(watchOnly), {message: /no private key/})
 })
@@ -194,7 +193,7 @@ test("refuses a database script that disagrees with its address", async () => {
     malicious.getOutput = async () => ({
         address,
         value: 10000,
-        script: bitcoin.script.compile([bitcoin.opcodes.OP_TRUE]).toString("hex"),
+        script: bscript.compile([opcodes.OP_TRUE]).toString("hex"),
     })
     await assert.rejects(SignTransaction(malicious), {message: /script does not match/})
 })
@@ -204,7 +203,7 @@ test("refuses burning a token input in a non-SLP transaction", async () => {
     burn.getOutput = async () => ({
         address,
         value: 10000,
-        script: bitcoin.address.toOutputScript(address).toString("hex"),
+        script: baddress.toOutputScript(address).toString("hex"),
         slp_token_hash: "aa".repeat(32),
         slp_amount: "100",
     })
@@ -214,7 +213,7 @@ test("refuses burning a token input in a non-SLP transaction", async () => {
 test("signs an SLP SEND only when it preserves the authoritative token amount", async () => {
     const tokenHash = "aa".repeat(32)
     const sendScript = Buffer.concat([
-        Buffer.from([bitcoin.opcodes.OP_RETURN]),
+        Buffer.from([opcodes.OP_RETURN]),
         slpPush(Buffer.from("534c5000", "hex")),
         slpPush(Buffer.from([1])),
         slpPush(Buffer.from("SEND")),
@@ -222,20 +221,20 @@ test("signs an SLP SEND only when it preserves the authoritative token amount", 
         slpPush(slpAmount(60n)),
         slpPush(slpAmount(40n)),
     ])
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
     txb.addOutput(sendScript, 0)
-    txb.addOutput(bitcoin.address.toOutputScript(address), 546)
-    txb.addOutput(bitcoin.address.toOutputScript(address), 546)
+    txb.addOutput(baddress.toOutputScript(address), 546)
+    txb.addOutput(baddress.toOutputScript(address), 546)
     const send = request()
-    send.raw = txb.__build(true).toBuffer().toString("hex")
+    send.raw = txb.toBuffer().toString("hex")
     send.getOutput = async () => ({
         address,
         value: 2000,
-        script: bitcoin.address.toOutputScript(address).toString("hex"),
+        script: baddress.toOutputScript(address).toString("hex"),
         slp_token_hash: tokenHash,
         slp_amount: "100",
+        slp_token_type: 1,
     })
     assert.ok((await SignTransaction(send)).raw)
 
@@ -244,15 +243,130 @@ test("signs an SLP SEND only when it preserves the authoritative token amount", 
     await assert.rejects(SignTransaction(burn), {message: /does not preserve/})
 })
 
+test("a full uint64 token amount arrives as a BigInt and signs exactly", async () => {
+    // What GetOutput now hands the signer for an oversized amount: the exact
+    // BigInt, not a float's approximation.
+    const tokenHash = "aa".repeat(32)
+    const max = 18446744073709551615n
+    const sendScript = Buffer.concat([
+        Buffer.from([opcodes.OP_RETURN]),
+        slpPush(Buffer.from("534c5000", "hex")),
+        slpPush(Buffer.from([1])),
+        slpPush(Buffer.from("SEND")),
+        slpPush(Buffer.from(tokenHash, "hex")),
+        slpPush(slpAmount(max)),
+    ])
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(sendScript, 0)
+    txb.addOutput(baddress.toOutputScript(address), 546)
+    const send = request()
+    send.raw = txb.toBuffer().toString("hex")
+    send.getOutput = async () => ({
+        address,
+        value: 2000,
+        script: baddress.toOutputScript(address).toString("hex"),
+        slp_token_hash: tokenHash,
+        slp_amount: max,
+        slp_token_type: 1,
+    })
+    assert.ok((await SignTransaction(send)).raw)
+})
+
+test("refuses a token amount the database can only hold approximately", async () => {
+    // A uint64-scale amount reaches the database as the nearest float, not the
+    // on-chain amount. A SEND balanced against that float claims tokens the
+    // inputs do not exactly carry - claiming more is SLP-invalid on chain and
+    // burns every token input - so it is refused outright, even though the
+    // OP_RETURN agrees with the stored figure, as it does here.
+    const tokenHash = "aa".repeat(32)
+    const stored = 9223372036854775808 // 2^63: exactly representable, not safe
+    const sendScript = Buffer.concat([
+        Buffer.from([opcodes.OP_RETURN]),
+        slpPush(Buffer.from("534c5000", "hex")),
+        slpPush(Buffer.from([1])),
+        slpPush(Buffer.from("SEND")),
+        slpPush(Buffer.from(tokenHash, "hex")),
+        slpPush(slpAmount(BigInt(stored))),
+    ])
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(sendScript, 0)
+    txb.addOutput(baddress.toOutputScript(address), 546)
+    const send = request()
+    send.raw = txb.toBuffer().toString("hex")
+    send.getOutput = async () => ({
+        address,
+        value: 2000,
+        script: baddress.toOutputScript(address).toString("hex"),
+        slp_token_hash: tokenHash,
+        slp_amount: stored,
+        slp_token_type: 1,
+    })
+    await assert.rejects(SignTransaction(send), {message: /too large to represent/})
+})
+
+// A self-contained SEND for the type agreement checks: the declared type rides
+// in the script's 1-2 byte type field, the genesis type in the fixture, and
+// everything else - hash, amounts, destination - is in order.
+const typedSend = (declared, genesisType) => {
+    const tokenHash = "aa".repeat(32)
+    const sendScript = Buffer.concat([
+        Buffer.from([opcodes.OP_RETURN]),
+        slpPush(Buffer.from("534c5000", "hex")),
+        slpPush(Buffer.from(declared)),
+        slpPush(Buffer.from("SEND")),
+        slpPush(Buffer.from(tokenHash, "hex")),
+        slpPush(slpAmount(100n)),
+    ])
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(sendScript, 0)
+    txb.addOutput(baddress.toOutputScript(address), 546)
+    const send = request()
+    send.raw = txb.toBuffer().toString("hex")
+    send.getOutput = async () => ({
+        address,
+        value: 2000,
+        script: baddress.toOutputScript(address).toString("hex"),
+        slp_token_hash: tokenHash,
+        slp_amount: "100",
+        slp_token_type: genesisType,
+    })
+    return send
+}
+
+test("a declared type that disagrees with the genesis is refused, not signed into a burn", async () => {
+    // NFT1-child inputs (0x41) framed as a type-1 SEND - or the reverse - is
+    // a transfer consensus validators reject, which burns the inputs.
+    await assert.rejects(SignTransaction(typedSend([1], 0x41)),
+        {message: /token type does not match/})
+    await assert.rejects(SignTransaction(typedSend([0x41], 1)),
+        {message: /token type does not match/})
+})
+
+test("a genesis type the database does not record refuses the spend outright", async () => {
+    await assert.rejects(SignTransaction(typedSend([1], undefined)),
+        {message: /type is not known/})
+})
+
+test("non-type-1 tokens sign when the declared type agrees, in every encoding", async () => {
+    // 0x41 rides as a plain one-byte push; a lone 0x81 byte is re-minimalized
+    // to OP_1NEGATE by decompile and must still read as the NFT1 group type;
+    // the 2-byte form of the field names the same type.
+    assert.ok((await SignTransaction(typedSend([0x41], 0x41))).raw)
+    assert.ok((await SignTransaction(typedSend([0x81], 0x81))).raw)
+    assert.ok((await SignTransaction(typedSend([0, 0x41], 0x41))).raw)
+})
+
 // A transaction paying someone else, otherwise identical to the one above.
-const outside = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 13)}).getAddress()
+const outside = ECPair.fromPrivateKey(Buffer.alloc(32, 13)).getAddress()
 
 const payment = ({outputValue = 9000} = {}) => {
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
-    txb.addOutput(bitcoin.address.toOutputScript(outside), outputValue)
-    return {...request(), raw: txb.__build(true).toBuffer().toString("hex")}
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(baddress.toOutputScript(outside), outputValue)
+    return {...request(), raw: txb.toBuffer().toString("hex")}
 }
 
 test("a payment leaving the wallet is refused when there is no way to confirm it", async () => {
@@ -305,32 +419,29 @@ test("a declined confirmation signs nothing", async () => {
 })
 
 test("change and data outputs are not a spend and need no confirmation", async () => {
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
-    txb.addOutput(bitcoin.script.compile(
-        [bitcoin.opcodes.OP_RETURN, Buffer.from("6d02", "hex"), Buffer.from("hello")]), 0)
-    txb.addOutput(bitcoin.address.toOutputScript(address), 9000)
-    const post = {...request(), raw: txb.__build(true).toBuffer().toString("hex")}
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(bscript.compile(
+        [opcodes.OP_RETURN, Buffer.from("6d02", "hex"), Buffer.from("hello")]), 0)
+    txb.addOutput(baddress.toOutputScript(address), 9000)
+    const post = {...request(), raw: txb.toBuffer().toString("hex")}
     assert.ok((await SignTransaction(post)).raw)
 })
 
 test("value attached to a data output is treated as leaving the wallet", async () => {
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
-    txb.addOutput(bitcoin.script.compile(
-        [bitcoin.opcodes.OP_RETURN, Buffer.from("burn")]), 9000)
-    const burn = {...request(), raw: txb.__build(true).toBuffer().toString("hex")}
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(bscript.compile(
+        [opcodes.OP_RETURN, Buffer.from("burn")]), 9000)
+    const burn = {...request(), raw: txb.toBuffer().toString("hex")}
     await assert.rejects(SignTransaction(burn), {message: /needs confirmation/})
 })
 
 test("an output whose script names no address counts as leaving the wallet", async () => {
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
-    txb.addOutput(bitcoin.script.compile([bitcoin.opcodes.OP_TRUE]), 9000)
-    const odd = {...request(), raw: txb.__build(true).toBuffer().toString("hex")}
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(bscript.compile([opcodes.OP_TRUE]), 9000)
+    const odd = {...request(), raw: txb.toBuffer().toString("hex")}
     let asked
     assert.ok((await SignTransaction({...odd, confirmSpend: async (request) => {
         asked = request
@@ -343,7 +454,7 @@ test("an output whose script names no address counts as leaving the wallet", asy
 test("confirmation reports the token amount an outside output carries", async () => {
     const tokenHash = "aa".repeat(32)
     const sendScript = Buffer.concat([
-        Buffer.from([bitcoin.opcodes.OP_RETURN]),
+        Buffer.from([opcodes.OP_RETURN]),
         slpPush(Buffer.from("534c5000", "hex")),
         slpPush(Buffer.from([1])),
         slpPush(Buffer.from("SEND")),
@@ -351,20 +462,20 @@ test("confirmation reports the token amount an outside output carries", async ()
         slpPush(slpAmount(60n)),
         slpPush(slpAmount(40n)),
     ])
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
     txb.addOutput(sendScript, 0)
-    txb.addOutput(bitcoin.address.toOutputScript(outside), 546)
-    txb.addOutput(bitcoin.address.toOutputScript(address), 546)
+    txb.addOutput(baddress.toOutputScript(outside), 546)
+    txb.addOutput(baddress.toOutputScript(address), 546)
     const send = request()
-    send.raw = txb.__build(true).toBuffer().toString("hex")
+    send.raw = txb.toBuffer().toString("hex")
     send.getOutput = async () => ({
         address,
         value: 2000,
-        script: bitcoin.address.toOutputScript(address).toString("hex"),
+        script: baddress.toOutputScript(address).toString("hex"),
         slp_token_hash: tokenHash,
         slp_amount: "100",
+        slp_token_type: 1,
     })
     let asked
     const signed = await SignTransaction({...send, confirmSpend: async (request) => {
@@ -384,7 +495,7 @@ test("confirmation reports the token amount an outside output carries", async ()
 const mint = ({mintTo, batonTo, batonVout = Buffer.from([2])}) => {
     const tokenHash = "bb".repeat(32)
     const mintScript = Buffer.concat([
-        Buffer.from([bitcoin.opcodes.OP_RETURN]),
+        Buffer.from([opcodes.OP_RETURN]),
         slpPush(Buffer.from("534c5000", "hex")),
         slpPush(Buffer.from([1])),
         slpPush(Buffer.from("MINT")),
@@ -392,20 +503,20 @@ const mint = ({mintTo, batonTo, batonVout = Buffer.from([2])}) => {
         slpPush(batonVout),
         slpPush(slpAmount(1000n)),
     ])
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
     txb.addOutput(mintScript, 0)
-    txb.addOutput(bitcoin.address.toOutputScript(mintTo), 546)
-    txb.addOutput(bitcoin.address.toOutputScript(batonTo), 546)
+    txb.addOutput(baddress.toOutputScript(mintTo), 546)
+    txb.addOutput(baddress.toOutputScript(batonTo), 546)
     return {
         ...request(),
-        raw: txb.__build(true).toBuffer().toString("hex"),
+        raw: txb.toBuffer().toString("hex"),
         getOutput: async () => ({
             address,
             value: 2000,
-            script: bitcoin.address.toOutputScript(address).toString("hex"),
+            script: baddress.toOutputScript(address).toString("hex"),
             slp_baton_token_hash: tokenHash,
+            slp_token_type: 1,
         }),
     }
 }
@@ -437,6 +548,13 @@ test("a mint keeping its tokens and baton needs no confirmation", async () => {
     assert.ok((await SignTransaction(mint({mintTo: address, batonTo: address}))).raw)
 })
 
+test("a mint whose declared type disagrees with the baton's genesis is refused", async () => {
+    const disagreeing = mint({mintTo: address, batonTo: address})
+    const output = await disagreeing.getOutput()
+    disagreeing.getOutput = async () => ({...output, slp_token_type: 0x41})
+    await assert.rejects(SignTransaction(disagreeing), {message: /token type does not match/})
+})
+
 test("refuses a mint whose baton names an output the transaction lacks", async () => {
     await assert.rejects(
         SignTransaction(mint({mintTo: address, batonTo: address, batonVout: Buffer.from([7])})),
@@ -463,18 +581,17 @@ test("the preview reads the address list where signing reads the keys", async ()
     // own: the preview has nothing but the list to go on and calls the output
     // change, while signing produces no key for it and calls it a payment. This
     // is the disagreement main/app/spend_match.js exists to catch.
-    const foreign = bitcoin.ECPair.makeRandom({rng: () => Buffer.alloc(32, 3)}).getAddress()
-    const txb = new bitcoin.TransactionBuilder()
-    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1,
-        bitcoin.Transaction.DEFAULT_SEQUENCE, bitcoin.address.toOutputScript(address))
-    txb.addOutput(bitcoin.address.toOutputScript(foreign), 9000)
+    const foreign = ECPair.fromPrivateKey(Buffer.alloc(32, 3)).getAddress()
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(baddress.toOutputScript(foreign), 9000)
     const listed = {
-        raw: txb.__build(true).toBuffer().toString("hex"),
+        raw: txb.toBuffer().toString("hex"),
         inputs: [{prev_hash: prevHash, prev_index: 1}],
         wallet: {keys: [key.toWIF()], addresses: [address, foreign]},
         getOutput: async () => ({
             hash: prevHash, index: 1, address, value: 10000,
-            script: bitcoin.address.toOutputScript(address).toString("hex"),
+            script: baddress.toOutputScript(address).toString("hex"),
         }),
     }
     const preview = await PreviewSpend(listed)

@@ -7,7 +7,7 @@ import {Loading} from "../../util/loading";
 import {EmptyState} from "../../util/empty";
 import {useScopeActivity} from "../../util/activity";
 import {Tabs} from "../../../../main/common/util";
-import {BsExclamationTriangle, BsFiles} from "react-icons/bs";
+import {BsExclamationTriangle, BsFiles} from "../../util/icons";
 
 const addressKeyOf = (addresses) => [...(addresses || [])].sort().join("\0")
 

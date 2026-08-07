@@ -1,6 +1,7 @@
 import styles from "../../../styles/addWallet.module.css"
 import {Panes} from "../common";
 import {GetNetworkConfig, GetNetworkOptions, SaveNetworkConfig} from "./common";
+import {NextSelection, ServerError, SubmitNetworkForm} from "./selector_core";
 import {useEffect, useRef, useState} from "react";
 
 const NetworkConfiguration = ({setPane}) => {
@@ -12,7 +13,7 @@ const NetworkConfiguration = ({setPane}) => {
     const databaseFileRef = useRef()
     const serverRef = useRef()
     const formRef = useRef()
-    const [invalidServerError, setInvalidServerError] = useState("")
+    const [formError, setFormError] = useState("")
     useEffect(() => {(async () => {
         const networkOptions = await GetNetworkOptions()
         setNetworkOptions(networkOptions)
@@ -34,56 +35,52 @@ const NetworkConfiguration = ({setPane}) => {
             "You have unsaved changes.\n" +
             "Are you sure you want to select another network?\n" +
             "Changes will be lost."
-        if (hasChanged && !confirm(confirmMessage)) {
-            selectValueRef.current.value = network.Id
+        const next = NextSelection({
+            options: networkOptions,
+            currentId: network.Id,
+            nextId: selectValueRef.current.value,
+            hasChanged,
+            confirmDiscard: () => confirm(confirmMessage),
+        })
+        if (next.revertTo !== undefined) {
+            selectValueRef.current.value = next.revertTo
             return false
         }
-        setNetwork(networkOptions.find(option => option.Id === selectValueRef.current.value))
+        setNetwork(next.network)
     }
     const onFormSubmit = async (e) => {
         e.preventDefault()
-        const serverError = validServerError(serverRef.current.value)
+        const serverError = ServerError(serverRef.current.value)
         if (serverError && serverError.length) {
             return
         }
-        const elements = e.target.elements
-        let networkConfig = await GetNetworkConfig()
-        let updatedNetwork
-        networkConfig.Networks.map((item) => {
-            if (network.Id === item.Id) {
-                item.Name = networkNameRef.current.value
-                item.Ruleset = elements.ruleset.value
-                item.DatabaseFile = databaseFileRef.current.value
-                item.Server = serverRef.current.value.replace(/[\/?]$/, "")
-                updatedNetwork = item
-            }
-        })
-        await SaveNetworkConfig(networkConfig)
-        setNetworkOptions(networkConfig.Networks)
-        setNetwork(updatedNetwork)
-    }
-    const validServerError = (server) => {
-        if (!/^(http|https):\/\//.test(server)) {
-            return "Server must have http/s"
-        }
-        let url;
+        // Main validates again before writing, so a save it refuses has to say
+        // so here - swallowing the rejection left the form looking saved while
+        // the file still held the old server. A refused submit returns nothing,
+        // so the state updates below cannot run on it.
         try {
-            url = new URL(server)
-        } catch (_) {
-            return "Unable to parse server"
+            const {networkConfig, updatedNetwork} = await SubmitNetworkForm({
+                getConfig: GetNetworkConfig,
+                save: SaveNetworkConfig,
+                networkId: network.Id,
+                values: {
+                    Name: networkNameRef.current.value,
+                    Ruleset: e.target.elements.ruleset.value,
+                    DatabaseFile: databaseFileRef.current.value,
+                    Server: serverRef.current.value,
+                },
+            })
+            setNetworkOptions(networkConfig.Networks)
+            setNetwork(updatedNetwork)
+        } catch (error) {
+            setFormError(error.message)
         }
-        if (url.pathname.length > 0 && url.pathname !== "/") {
-            return "Server path not allowed"
-        } else if (url.search.length > 0) {
-            return "Server search not allowed"
-        }
-        return ""
     }
     const onFormChange = () => {
         checkFormDifference()
     }
     const checkFormDifference = () => {
-        setInvalidServerError(validServerError(serverRef.current.value))
+        setFormError(ServerError(serverRef.current.value))
         if (network.Server !== serverRef.current.value ||
             formRef.current.elements.ruleset.value !== network.Ruleset ||
             networkNameRef.current.value !== network.Name ||
@@ -109,7 +106,7 @@ const NetworkConfiguration = ({setPane}) => {
                 <div className={styles.config_title}>Edit network configuration</div>
                 <div className={styles.config_container}>
                     <div className={styles.config_left}>
-                        <select size={5} ref={selectValueRef} onClick={onSelectChange}>
+                        <select size={5} ref={selectValueRef} onChange={onSelectChange}>
                             {networkOptions.map((option, i) => (
                                 <option key={i} value={option.Id}>
                                     {option.Name}
@@ -148,8 +145,10 @@ const NetworkConfiguration = ({setPane}) => {
                             <label></label>
                             <div>
                                 <input type={"submit"} value={"Save"} disabled={!hasChanged}/>
-                                <button onClick={resetForm} disabled={!hasChanged}>Reset</button>
-                                <div className={styles.error}>{invalidServerError}</div>
+                                {/* Without a type, a button in a form submits it:
+                                    Reset used to save the form right after resetting it. */}
+                                <button type={"button"} onClick={resetForm} disabled={!hasChanged}>Reset</button>
+                                <div className={styles.error}>{formError}</div>
                             </div>
                         </div>
                     </form>

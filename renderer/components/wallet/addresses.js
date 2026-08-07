@@ -6,7 +6,7 @@ import {TitleCol} from "./snippets/title_col";
 import {useReferredState} from "../util/state";
 import ShortHash from "../util/txs";
 import {useResizableColumns} from "./snippets/use_columns";
-import {BsThreeDots} from "react-icons/bs";
+import {BsThreeDots} from "../util/icons";
 import {Loading} from "../util/loading";
 
 // Most of a wallet's derived addresses are never used, so each section lists

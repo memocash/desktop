@@ -1,6 +1,7 @@
 const {Select} = require("../sqlite");
+const {SlpAmount} = require("./slp");
 
-const GetCoins = (conf, addresses) => {
+const GetCoins = async (conf, addresses) => {
     const query = "" +
         "SELECT " +
         "   outputs.*, " +
@@ -20,7 +21,13 @@ const GetCoins = (conf, addresses) => {
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL " +
         "GROUP BY outputs.hash, outputs.`index` "
-    return Select(conf, "outputs-coins", query, addresses)
+    // Stored two's-complement back to the on-chain uint64, as everywhere.
+    return (await Select(conf, "outputs-coins", query, addresses)).map((row) => {
+        if (row.slp_amount != null) {
+            row.slp_amount = SlpAmount(row.slp_amount)
+        }
+        return row
+    })
 }
 
 module.exports = {

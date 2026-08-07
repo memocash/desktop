@@ -1,6 +1,7 @@
 import Modal, {ModalFooter} from "../modal";
 import styles from "../../../styles/modal.module.css";
 import {useEffect, useState} from "react";
+import {SafeExternalUrl} from "../../../../main/common/util";
 
 // GitHub returns release notes as markdown. They are shown as plain text, so
 // strip the markers that would otherwise read as noise rather than pulling in a
@@ -33,7 +34,13 @@ const UpdateModal = ({onClose}) => {
     useEffect(() => {(async () => await check(false))()}, [])
 
     const asset = result && result.asset
-    const download = () => window.open(asset ? asset.url : (result.releaseUrl || result.releasesPageUrl))
+    // These urls arrive over ipc from main's update check. Main's window-open
+    // handler validates whatever is opened anyway; this is the renderer-side
+    // check every other link in the app gets (see links.js), so this modal
+    // isn't the one place a url is rendered on trust.
+    const releaseLink = result && SafeExternalUrl(result.releaseUrl || result.releasesPageUrl)
+    const downloadUrl = (asset && SafeExternalUrl(asset.url)) || releaseLink
+    const download = () => downloadUrl && window.open(downloadUrl)
 
     const status = () => {
         if (checking || !result) {
@@ -71,16 +78,16 @@ const UpdateModal = ({onClose}) => {
                 </dl>}
                 {!result || !result.updateAvailable || !result.releaseNotes ? null :
                     <div className={styles.notes}>{PlainNotes(result.releaseNotes)}</div>}
-                {!result || checking || (!result.error && !result.latestVersion) ? null :
+                {!releaseLink || checking || (!result.error && !result.latestVersion) ? null :
                     <p className={styles.text}>
-                        <a href={result.releaseUrl || result.releasesPageUrl} target={"_blank"} rel={"noreferrer"}>
+                        <a href={releaseLink} target={"_blank"} rel={"noreferrer"}>
                             {result.updateAvailable || result.error ? "All releases on GitHub" : "View release notes"}
                         </a>
                     </p>}
                 <ModalFooter>
                     <button onClick={onClose}>Close</button>
                     <button onClick={() => check(true)} disabled={checking}>Check Again</button>
-                    {!result || !result.updateAvailable ? null :
+                    {!result || !result.updateAvailable || !downloadUrl ? null :
                         <button className={"button_primary"} onClick={download}>
                             {asset ? "Download" : "Get Update"}
                         </button>}

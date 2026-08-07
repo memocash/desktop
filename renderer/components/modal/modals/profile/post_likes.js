@@ -5,10 +5,11 @@ import {useEffect, useState} from "react";
 import styles from "../../../../styles/modal.module.css";
 import Post from "../../../wallet/memo/post";
 import {TitleCol} from "../../../wallet/snippets/title_col";
-import {useReferredState} from "../../../util/state";
+import {useReferredState, useSortToggle} from "../../../util/state";
 import {TimeSince} from "../../../util/time";
-import {BsBoxArrowInUpRight} from "react-icons/bs";
+import {BsBoxArrowInUpRight} from "../../../util/icons";
 import {SyncLinkedProfiles} from "../../../wallet/update/index.js";
+import {ProfilePicSrc} from "../../../util/profile_pic";
 
 const Column = {
     Name: "name",
@@ -17,9 +18,8 @@ const Column = {
 }
 
 const PostLikes = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash}}) => {
-    const [sortCol, sortColRef, setSortCol] = useReferredState(Column.Timestamp)
-    const [sortDesc, sortDescRef, setSortDesc] = useReferredState(false)
     const [likes, likesRef, setLikes] = useReferredState([])
+    const {sortCol, sortDesc, sortBy: sortLikes} = useSortToggle(likesRef, setLikes, Column.Timestamp)
     const [post, setPost] = useState({})
     useEffect(() => {(async () => {
         let likes = await window.electron.getLikes(txHash)
@@ -33,22 +33,6 @@ const PostLikes = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
         const post = await window.electron.getPost({txHash, userAddresses: addresses})
         setPost(post)
     })()}, [txHash])
-    const sortLikes = (field) => {
-        let desc = sortDescRef.current
-        if (sortColRef.current === field) {
-            desc = !desc
-        } else {
-            desc = true
-        }
-        if (desc) {
-            likesRef.current.sort((a, b) => (a[field] > b[field]) ? 1 : -1)
-        } else {
-            likesRef.current.sort((a, b) => (a[field] < b[field]) ? 1 : -1)
-        }
-        setLikes([...likesRef.current])
-        setSortDesc(desc)
-        setSortCol(field)
-    }
     const setProfile = (address) => setModal(Modals.ProfileView, {address})
     const openTx = async (txHash) => await window.electron.openTransaction({txHash})
     return (
@@ -65,9 +49,7 @@ const PostLikes = ({basic: {setModal, onClose, setChatRoom}, modalProps: {txHash
                     return (
                         <div key={i} className={profile.row}>
                             <div className={profile.imgWrapper} onClick={() => setProfile(like.address)}>
-                                <img alt={"Pic"} className={profile.img} src={(like.pic_data && like.pic_data.length) ?
-                                    `data:image/png;base64,${Buffer.from(like.pic_data).toString("base64")}` :
-                                    "/default-profile.jpg"}/>
+                                <img alt={"Pic"} className={profile.img} src={ProfilePicSrc(like.pic_data)}/>
                                 {like.name}
                             </div>
                             <div>{like.tip ? like.tip.toLocaleString() : 0}</div>

@@ -1,4 +1,4 @@
-import bitcoincash, {opcodes, script} from "@bitcoin-dot-com/bitcoincashjs2-lib";
+import bitcoincash, {opcodes, script} from "../../util/bitcoincash";
 import bitcoin from "../../util/bitcoin";
 import {MemoScopes} from "./memo";
 import {Plural, TrackActivity} from "../../util/activity";

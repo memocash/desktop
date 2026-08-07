@@ -79,6 +79,47 @@ const TightenWalletPermissions = async () => {
         fs.chmod(path.join(Dir.DefaultPath, entry.name), 0o600).catch(() => {})))
 }
 
+// A crash between writing a scratch file and renaming it over the wallet
+// strands the copy: a whole wallet - the plaintext seed, for a passwordless
+// one - under a name the wallet list hides and nobody knows to look for. The
+// name embeds the writer's pid, so a file whose writer is gone is a stranded
+// copy and nothing else. Run at startup for the wallet directory; a wallet
+// kept elsewhere never has its directory visited without the wallet being
+// opened, and a fresh write there replaces the file anyway.
+const StrandedTemp = /\.(\d+)\.\d+\.tmp$/
+
+const writerGone = (pid) => {
+    if (pid === process.pid) {
+        // This run has written nothing yet - a file carrying our pid is a
+        // previous owner's, left by a recycled pid.
+        return true
+    }
+    try {
+        process.kill(pid, 0)
+        return false
+    } catch (e) {
+        // EPERM is an answer from a live process that is not ours to signal;
+        // anything else means nobody is home.
+        return e.code !== "EPERM"
+    }
+}
+
+const SweepStrandedTempFiles = async () => {
+    let names
+    try {
+        names = await fs.readdir(Dir.DefaultPath)
+    } catch (e) {
+        return
+    }
+    await Promise.all(names.map((name) => {
+        const match = StrandedTemp.exec(name)
+        if (!match || !writerGone(Number(match[1]))) {
+            return
+        }
+        return fs.rm(path.join(Dir.DefaultPath, name), {force: true}).catch(() => {})
+    }))
+}
+
 // What the load screen needs to know about a name before it can offer anything:
 // whether there is a wallet there, and whether opening it will need a password.
 // Answered together because the screen has no use for one without the other, and
@@ -101,13 +142,65 @@ const WalletFileState = async (winId, walletName) => {
     return {exists: true, encrypted: walletFile.IsEncrypted(contents)}
 }
 
+// Wrong guesses at a file's password, counted so guessing gets slower. scrypt
+// prices a single guess, but nothing else priced the stream of them an IPC
+// caller can produce; this is that limiter, and it lives here because this is
+// the one place every password in the app is proven - unlock, exports,
+// settings changes, and the spend prompt all arrive at ReadWallet.
+//
+// Every attempt that offers a password goes one at a time through a queue,
+// each waiting out the current delay first - so a burst of parallel guesses
+// buys nothing, it just lines up. From the very first attempt, not from the
+// first recorded miss: a gate that opens on the recorded count would admit
+// every guess fired before the first one finishes recording, which is exactly
+// the burst an IPC caller can produce. A few misses are free, since a person
+// mistyping is the common case; past those the wait doubles per miss, and the
+// right password clears the slate. Only a read offering no password on a file
+// with no misses on record skips the queue - there is no guess in that to
+// meter, and it is the shape of every routine read of a passwordless wallet.
+// Slower rather than refused: a lockout would need its own error for every
+// screen to explain, and would let anything that can reach these channels
+// lock the owner out of their own wallet at will.
+const passwordMisses = new Map()
+
+const FreeGuesses = 3
+const MaxGuessDelayMs = 30000
+
+const GuessDelayMs = (misses) => misses <= FreeGuesses ? 0 :
+    Math.min(1000 * 2 ** (misses - FreeGuesses - 1), MaxGuessDelayMs)
+
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const readWalletCounted = async (walletPath, password) => {
+    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
+    try {
+        const read = await walletFile.DecodeContents(contents, password)
+        passwordMisses.delete(walletPath)
+        return read
+    } catch (e) {
+        if (e.message === WrongPassword) {
+            passwordMisses.set(walletPath, (passwordMisses.get(walletPath) || 0) + 1)
+        }
+        throw e
+    }
+}
+
 // Returns the decrypted wallet, or throws WrongPassword. Reports whether the
 // file was encrypted so the caller knows if there is a password worth keeping
 // for later writes, and which version it was written in so the caller can
 // migrate it; the password itself never travels back toward the renderer.
 const ReadWallet = async (walletPath, password) => {
-    const contents = await fs.readFile(walletPath, {encoding: "utf8"})
-    return walletFile.DecodeContents(contents, password)
+    if (password === undefined && !passwordMisses.has(walletPath)) {
+        return readWalletCounted(walletPath, password)
+    }
+    // Its own queue, not the file's write lock: a wallet being guessed at can
+    // still be read and written by the windows that already hold it open. The
+    // delay is read at the attempt's own turn, so each guess in a lined-up
+    // burst pays for the misses of the ones ahead of it.
+    return Serialize("guess:" + walletPath, async () => {
+        await pause(GuessDelayMs(passwordMisses.get(walletPath) || 0))
+        return readWalletCounted(walletPath, password)
+    })
 }
 
 let writeCount = 0
@@ -270,13 +363,18 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
 
 // PasswordThreshold is how many satoshis may leave the wallet, in total, before
 // the password is asked for again. Zero means every send is asked for, which is
-// what a wallet gets until someone deliberately raises it.
+// what a wallet gets until someone deliberately raises it. For a wallet with no
+// password the same threshold meters an approval window instead: ConfirmSends
+// decides whether such a wallet confirms its sends at all - on by default, and
+// turning it off is the owner's deliberate choice, made in main's own window.
 const DefaultSettings = {
     DirectTx: false,
     PasswordThreshold: 0,
+    ConfirmSends: true,
 }
 
 const ThresholdSetting = "PasswordThreshold"
+const ConfirmSetting = "ConfirmSends"
 
 // What may cross to the renderer, and equally what may be written outside the
 // envelope: the same fields walletFile keeps inside it are dropped here, so the
@@ -329,6 +427,12 @@ const ApplyWalletUpdate = (wallet, op, values) => {
             (!Number.isSafeInteger(threshold) || threshold < 0)) {
             throw new Error("password threshold must be a whole number of satoshis")
         }
+        // The same certainty for the confirmation switch: anything but a plain
+        // boolean would make "is confirmation on" a judgment call.
+        const confirm = values && values[ConfirmSetting]
+        if (confirm !== undefined && typeof confirm !== "boolean") {
+            throw new Error("send confirmation must be on or off")
+        }
         wallet.settings = {...DefaultSettings, ...wallet.settings, ...values}
         return
     }
@@ -351,6 +455,8 @@ module.exports = {
     CreateWalletFile,
     DefaultSettings,
     ForgetPaths,
+    FreeGuesses,
+    GuessDelayMs,
     IsWalletArtifact,
     ListWalletFiles,
     MigrateWallet,
@@ -359,11 +465,12 @@ module.exports = {
     ReadAndMigrateWallet,
     ReadWallet,
     ResolveWalletPath,
+    SweepStrandedTempFiles,
     ThresholdSetting,
+    ConfirmSetting,
     TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,
-    Version: walletFile.Version,
     WalletFileState,
     WithWalletLock,
     WriteWallet,
