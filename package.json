@@ -86,7 +86,7 @@
     "linkify-it": "^5.0.2",
     "tiny-secp256k1": "^2.2.4",
     "tlds": "^1.261.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.1"
   },
   "trustedDependencies": [
     "electron"
