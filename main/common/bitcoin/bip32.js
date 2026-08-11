@@ -6,8 +6,8 @@
 // neutering, and the two serializations. The spec has been final since 2012;
 // parity with the package is held by bip32_golden.json, captured from it
 // before removal and cross-checked against the BIP32 test vectors.
-const {hmac} = require("@noble/hashes/hmac")
-const {sha512} = require("@noble/hashes/sha512")
+const {hmac} = require("@noble/hashes/hmac.js")
+const {sha512} = require("@noble/hashes/sha2.js")
 const ecc = require("tiny-secp256k1")
 const bs58check = require("./base58check")
 const {hash160} = require("./hash")
