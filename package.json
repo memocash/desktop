@@ -83,7 +83,7 @@
   "dependencies": {
     "@noble/hashes": "^2.2.0",
     "bip39": "^3.1.0",
-    "linkify-it": "^5.0.2",
+    "linkify-it": "^6.1.0",
     "tiny-secp256k1": "^2.2.4",
     "tlds": "^1.261.0",
     "ws": "^8.21.2"
