@@ -1,5 +1,6 @@
 import {BeginActivity, Plural} from "../../util/activity";
 import {Tabs} from "../../../../main/common/util";
+import {AnsweredTx} from "./slp_core";
 
 const BatchSize = 50
 
@@ -94,9 +95,11 @@ const checkSlp = async ({unchecked, setLastUpdate, activity}) => {
         }
         let txs = []
         for (let i = 0; i < batch.length; i++) {
-            // Mark txs the server didn't return as checked too, so they aren't
-            // re-queried every update.
-            txs.push(data.data["tx" + i] || {hash: batch[i].hash, outputs: []})
+            // Only a tx the server evidences knowing (it has outputs) carries
+            // a verdict; a missing tx or a bare echo stub is saved in the
+            // unanswered shape, staying unspendable and re-asked. See
+            // AnsweredTx for the stub the batch resolver returns.
+            txs.push(AnsweredTx(data.data["tx" + i], batch[i].hash))
         }
         await window.electron.saveSlp(txs)
     }

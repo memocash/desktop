@@ -82,14 +82,20 @@ const Coins = ({lastUpdate}) => {
         return coin.hash + ":" + coin.index
     }
     const getCoinToken = (coin) => {
+        if (!coin.slp_baton_token_hash && !coin.slp_token_hash) {
+            return ""
+        }
+        // A token or baton annotation is only real when the index calls its
+        // transaction VALID. INVALID means the SLP claim did not hold and the
+        // row carries nothing on chain; anything undecided has not been
+        // confirmed. Either way the label must not read as spendable tokens.
+        const suffix = coin.slp_validity === "VALID" ? "" :
+            coin.slp_validity === "INVALID" ? " (invalid)" : " (unconfirmed)"
         if (coin.slp_baton_token_hash) {
-            return "Baton: " + (coin.slp_ticker || ShortHash(coin.slp_baton_token_hash))
+            return "Baton: " + (coin.slp_ticker || ShortHash(coin.slp_baton_token_hash)) + suffix
         }
-        if (coin.slp_token_hash) {
-            return FormatTokenAmount(coin.slp_amount, coin.slp_decimals) + " " +
-                (coin.slp_ticker || ShortHash(coin.slp_token_hash))
-        }
-        return ""
+        return FormatTokenAmount(coin.slp_amount, coin.slp_decimals) + " " +
+            (coin.slp_ticker || ShortHash(coin.slp_token_hash)) + suffix
     }
     const openCoinMenu = (e, coin) => {
         e.preventDefault()
