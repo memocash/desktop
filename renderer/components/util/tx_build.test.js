@@ -1,6 +1,7 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const {BuildTx, CompleteTx, EstimateSend, Fee, MaxSendValue, Spendable} = require("./tx_build")
+const {BuildTx, CoinStatus, CompleteTx, EstimateSend, Fee, MaxSendValue, ResolveCoinIn, Spendable} =
+    require("./tx_build")
 
 // Fixtures speak the builder's own units. One 10-byte OP_RETURN-style output
 // with no value needs Base + 10 + OutputValueSize = 29 satoshis of fee, plus
@@ -10,7 +11,10 @@ const opReturn = {script: Buffer.alloc(10, 0x6a), value: 0}
 const singleInputRequired = Fee.Base + 10 + Fee.OutputValueSize + Fee.InputP2PKH
 const changeScript = "76a914" + "ab".repeat(20) + "88ac"
 
-const plain = (hash, value, address = "addr1") => ({hash, index: 0, value, address})
+// Fixtures carry the settled verdict a synced coin normally has; the
+// validity tests below override it to exercise the fail-closed refusals.
+const plain = (hash, value, address = "addr1") =>
+    ({hash, index: 0, value, address, slp_validity: "NOT_SLP"})
 const coinOf = (utxo) => [utxo.hash, utxo.index, utxo.value, utxo.address].join(":")
 const build = (utxos, overrides = {}) =>
     BuildTx({utxos, outputs: [opReturn], changeScript, ...overrides})
@@ -24,6 +28,42 @@ test("a named token, baton, or dust coin refuses the send instead of spending ot
         // The named coin first: the coin branch only runs on the first utxo.
         assert.equal(build([named, spendable], {coin: coinOf(named)}), null)
     }
+})
+
+test("an output whose SLP verdict is undecided never funds a send", () => {
+    // Fail closed on the index's tx-level SLP verdict: PENDING and a coin
+    // with no verdict at all - an unchecked tx, or a row from before
+    // validity existed - could still turn out to carry tokens.
+    for (const slp_validity of [undefined, null, "PENDING"]) {
+        const unverified = {...plain("unv", 100000), slp_validity}
+        // Skipped in ordinary selection, however much it holds.
+        assert.equal(build([unverified]), null)
+        // Refused as a named coin instead of spending it.
+        assert.equal(build([unverified, plain("other", 100000)], {coin: coinOf(unverified)}), null)
+        // Not counted toward the maximum a send can claim.
+        assert.equal(MaxSendValue([unverified]) > 0, false)
+        // Not taken as a fee coin when completing an SLP transaction.
+        assert.equal(CompleteTx({utxos: [unverified], outputs: [opReturn],
+            changeScript}), null)
+        // The estimate refuses exactly where the builders do.
+        assert.equal(EstimateSend([unverified], [opReturn]).enough, false)
+    }
+    // Every decided verdict spends a plain coin - INVALID included: an
+    // invalid SLP transaction's plain outputs are ordinary coins, and its
+    // token rows are still excluded by the token checks above.
+    for (const slp_validity of ["NOT_SLP", "VALID", "INVALID"]) {
+        const settled = {...plain("ok", 100000), slp_validity}
+        assert.notEqual(build([settled]), null)
+    }
+})
+
+test("a named coin whose verdict is undecided resolves as unverified, not ok", () => {
+    const unverified = {...plain("unv", 100000), slp_validity: "PENDING"}
+    const {status} = ResolveCoinIn([unverified], coinOf(unverified))
+    assert.equal(status, CoinStatus.Unverified)
+    // A decided INVALID plain coin is an ordinary coin.
+    const invalid = {...plain("inv", 100000), slp_validity: "INVALID"}
+    assert.equal(ResolveCoinIn([invalid], coinOf(invalid)).status, CoinStatus.Ok)
 })
 
 test("a named coin that cannot fund the outputs alone is refused, not padded", () => {

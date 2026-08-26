@@ -86,6 +86,76 @@ test("a backfill marks every transaction it was given as checked", async () => {
     assert.deepStrictEqual(rows("slp_checks", "hash").map(row => row.hash), ["txOne", "txTwo"])
 })
 
+test("a backfill stores the index's tx-level verdict, and no verdict as NULL", async () => {
+    await SaveSlp(conf, [
+        {hash: "txValid", slp: {validity: "VALID"}, outputs: [slpOutput(0, 100)]},
+        {hash: "txInvalid", slp: {validity: "INVALID"}, outputs: []},
+        {hash: "txPlain", slp: null, outputs: [plainOutput(0)]},
+        // The server didn't return this tx: no slp key at all. Absent
+        // information stays NULL - never defaulted to NOT_SLP - so the tx is
+        // re-asked and its outputs stay unspendable meanwhile.
+        {hash: "txUnanswered", outputs: []},
+    ])
+    assert.deepStrictEqual(rows("slp_checks", "hash"), [
+        {hash: "txInvalid", validity: "INVALID"},
+        {hash: "txPlain", validity: "NOT_SLP"},
+        {hash: "txUnanswered", validity: null},
+        {hash: "txValid", validity: "VALID"},
+    ])
+})
+
+test("unsettled verdicts re-enter the backfill until the index decides them", async () => {
+    // Four UTXO transactions, one per verdict state, plus one never checked.
+    for (const [hash, validity] of [["txValid", "VALID"], ["txInvalid", "INVALID"],
+        ["txPending", "PENDING"], ["txNull", null]]) {
+        await SaveTransactions(conf, [{
+            hash, seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+            outputs: [plainOutput(0)],
+        }])
+        db.prepare("INSERT OR REPLACE INTO slp_checks (hash, validity) VALUES (?, ?)")
+            .run(hash, validity)
+    }
+    await SaveTransactions(conf, [{
+        hash: "txUnchecked", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+        outputs: [plainOutput(0)],
+    }])
+    // Settled verdicts - VALID, INVALID, NOT_SLP - are answered; PENDING, a
+    // NULL from before validity existed, and the never-checked tx re-ask.
+    const unchecked = await GetUncheckedSlpTxs(conf, ["addrOne"])
+    assert.deepStrictEqual(unchecked.map(row => row.hash).sort(),
+        ["txNull", "txPending", "txUnchecked"])
+    // A re-asked PENDING takes the settled verdict when it arrives.
+    await SaveSlp(conf, [{hash: "txPending", slp: {validity: "VALID"}, outputs: []}])
+    assert.strictEqual(db.prepare("SELECT validity FROM slp_checks WHERE hash = ?")
+        .get("txPending").validity, "VALID")
+})
+
+test("token balances and utxo reads carry only what the index calls VALID", async () => {
+    // Same token across three transactions: one VALID, one INVALID, one the
+    // index hasn't decided. Only the VALID amount is a balance the wallet
+    // may offer to spend.
+    for (const [hash, slp] of [["txValid", {validity: "VALID"}],
+        ["txInvalid", {validity: "INVALID"}], ["txPending", {validity: "PENDING"}]]) {
+        await SaveTransactions(conf, [{
+            hash, seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [], slp,
+            outputs: [slpOutput(0, 100)],
+        }])
+    }
+    const balances = await GetTokenBalances(conf, ["addrOne"])
+    assert.strictEqual(balances.length, 1)
+    assert.strictEqual(balances[0].amount, 100n)
+    assert.strictEqual(balances[0].utxo_count, 1)
+    const byAddress = await GetAddressTokenBalances(conf, ["addrOne"])
+    assert.strictEqual(byAddress.length, 1)
+    assert.strictEqual(byAddress[0].amount, 100n)
+    // Every utxo row says which verdict it carries, so selection can refuse
+    // the unsettled ones without another lookup.
+    const utxos = await GetUtxos(conf, ["addrOne"])
+    assert.deepStrictEqual(new Map(utxos.map(utxo => [utxo.hash, utxo.slp_validity])),
+        new Map([["txValid", "VALID"], ["txInvalid", "INVALID"], ["txPending", "PENDING"]]))
+    assert.strictEqual((await GetOutput(conf, "txInvalid", 0)).slp_validity, "INVALID")
+})
+
 // slp_outputs and slp_batons ignore a repeated output, so the first amount
 // offered for an output is the one kept.
 test("an output offered twice keeps the amount it was first given", async () => {
@@ -119,6 +189,7 @@ test("a token output and its baton on the same transaction are stored side by si
 test("a synced transaction stores the SLP rows of its outputs", async () => {
     await SaveTransactions(conf, [{
         hash: "txOne", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+        slp: {validity: "VALID"},
         outputs: [slpOutput(0, 7000), batonOutput(1, "tokenTwo", "Token Two"), plainOutput(2)],
     }])
     assert.deepStrictEqual(rows("slp_outputs", "`index`"),
@@ -126,9 +197,10 @@ test("a synced transaction stores the SLP rows of its outputs", async () => {
     assert.deepStrictEqual(rows("slp_batons", "`index`"),
         [{hash: "txOne", index: 1, token_hash: "tokenTwo"}])
     assert.deepStrictEqual(rows("slp_geneses", "hash").map(row => row.hash), ["tokenOne", "tokenTwo"])
-    // Every output was stored, SLP or not, and the tx needs no backfill check.
+    // Every output was stored, SLP or not, and the tx arrives checked with
+    // the index's tx-level verdict.
     assert.strictEqual(rows("outputs", "`index`").length, 3)
-    assert.deepStrictEqual(rows("slp_checks", "hash"), [{hash: "txOne"}])
+    assert.deepStrictEqual(rows("slp_checks", "hash"), [{hash: "txOne", validity: "VALID"}])
 })
 
 test("a synced transaction with no SLP outputs stores no SLP rows", async () => {
@@ -180,6 +252,7 @@ test("token balances sum exactly past every float and int64 boundary", async () 
     // counting.
     await SaveTransactions(conf, [{
         hash: "txOne", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", inputs: [],
+        slp: {validity: "VALID"},
         outputs: [slpOutput(0, Uint64Max), slpOutput(1, Uint64Max), slpOutput(2, 7)],
     }])
     const balances = await GetTokenBalances(conf, ["addrOne"])

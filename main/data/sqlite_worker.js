@@ -129,7 +129,22 @@ const SetDb = async (db) => {
             _db.prepare(statement).run()
         }
     })
+    addSlpValidityColumn()
     healApproximateAmounts()
+}
+
+// Databases from before tx-level SLP validity have an slp_checks table without
+// the validity column. CREATE TABLE IF NOT EXISTS leaves an existing table
+// alone, so the column is added here. Existing rows keep a NULL validity,
+// which spendability reads as unverified (fail closed) and the backfill
+// re-queries, so every checked transaction gets its verdict on the next
+// update without any row being forgotten.
+const addSlpValidityColumn = () => {
+    const columns = _db.prepare("PRAGMA table_info(slp_checks)").all()
+    if (columns.some((column) => column.name === "validity")) {
+        return
+    }
+    _db.exec("ALTER TABLE slp_checks ADD COLUMN validity CHAR")
 }
 
 // Token amounts written before the exact-read work may hold a float's

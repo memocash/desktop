@@ -6,6 +6,7 @@ import {Status} from "../../util/connect"
 import GetWallet from "../../util/wallet";
 import {useActivity} from "../../util/activity";
 import {Spinner} from "../../util/loading";
+import {CountUtxos} from "./status_core";
 
 const StatusLabels = {
     [Status.Connected]: "Connected",
@@ -69,15 +70,7 @@ const StatusBar = ({connected, lastUpdate, setModal}) => {
         // they represent, so they are counted separately from the sats the
         // wallet can actually spend.
         const coins = await window.electron.getCoins(spendableAddresses.concat(wallet.slpList || []))
-        let spendableUtxos = 0
-        let tokenUtxos = 0
-        for (let i = 0; i < coins.length; i++) {
-            if (coins[i].slp_token_hash || coins[i].slp_baton_token_hash) {
-                tokenUtxos++
-            } else if (spendableAddresses.includes(coins[i].address)) {
-                spendableUtxos++
-            }
-        }
+        const {spendableUtxos, tokenUtxos} = CountUtxos(coins, spendableAddresses)
         setInfo({balance, spendableUtxos, tokenUtxos})
     })()}, [lastUpdate])
     let statusStyle

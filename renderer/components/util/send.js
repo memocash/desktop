@@ -40,6 +40,8 @@ const CoinProblem = (outputs, coin) => {
             return "This coin holds a token and cannot be spent here"
         case CoinStatus.Dust:
             return "This coin is dust and cannot be spent"
+        case CoinStatus.Unverified:
+            return "This coin's token check hasn't confirmed it is safe to spend"
         default:
             return "Not a spendable coin in this wallet. Copy one from the Coins tab."
     }

@@ -77,6 +77,45 @@ test("integers round-trip as numbers where exact and BigInts where a number roun
     }
 })
 
+test("a database from before tx-level validity gains the column, rows staying unverified", async () => {
+    const fs = require("fs")
+    const os = require("os")
+    const path = require("path")
+    const {DatabaseSync} = require("node:sqlite")
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "slp-validity-"))
+    const dbFile = path.join(dir, "wallet.db")
+    try {
+        // The old shape: slp_checks with no validity column, one checked tx.
+        const seed = new DatabaseSync(dbFile)
+        seed.exec("CREATE TABLE slp_checks (hash CHAR, UNIQUE(hash))")
+        seed.prepare("INSERT INTO slp_checks (hash) VALUES (?)").run("txOld")
+        seed.close()
+
+        const {worker, send} = StartWorker()
+        try {
+            worker.postMessage({action: "SET_DB", dbFile})
+            // The existing row survives with no verdict - unverified, so its
+            // outputs stay unspendable until the backfill re-asks the index -
+            // and the column accepts the verdicts the backfill writes.
+            const migrated = await send({action: "SELECT",
+                query: "SELECT hash, validity FROM slp_checks ORDER BY hash"})
+            assert.deepStrictEqual(migrated.result, [{hash: "txOld", validity: null}])
+            const written = await send({action: "BATCH", statements: [{
+                query: "INSERT OR REPLACE INTO slp_checks (hash, validity) VALUES (?, ?)",
+                variables: ["txOld", "VALID"],
+            }]})
+            assert.equal(written.error, undefined)
+            const settled = await send({action: "SELECT",
+                query: "SELECT validity FROM slp_checks WHERE hash = 'txOld'"})
+            assert.deepStrictEqual(settled.result, [{validity: "VALID"}])
+        } finally {
+            await worker.terminate()
+        }
+    } finally {
+        fs.rmSync(dir, {recursive: true, force: true})
+    }
+})
+
 test("the one-time sweep forgets approximate amounts and spares exact ones, once", async () => {
     const fs = require("fs")
     const os = require("os")

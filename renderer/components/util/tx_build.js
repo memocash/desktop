@@ -20,12 +20,26 @@ const Fee = {
     },
 }
 
-// Whether a utxo may fund an ordinary spend. Token outputs and mint batons
-// would burn what they carry, and an exactly-dust output could be a token
-// output the SLP check has not reached yet. Every selection site uses this one
-// predicate - BuildTx below, EstimateSend and GetMaxValue in util/send.js, the
-// fee loop in wallet/snippets/create_slp_tx.js - so they cannot drift.
+// Whether the index has decided what a utxo's transaction is, SLP-wise.
+// slp_validity rides on every utxo row from slp_checks: NOT_SLP for a checked
+// transaction with no SLP action, otherwise the index's verdict for the SLP
+// transaction. VALID, INVALID, and NOT_SLP are all decided - an INVALID
+// transaction's plain outputs are ordinary coins, its token rows carrying
+// nothing on chain. PENDING or no verdict at all means the output could
+// still turn out to carry tokens a spend would burn, so nothing selects it
+// (fail closed: absent information is not spendability).
+const SlpDecided = (utxo) =>
+    utxo.slp_validity === "NOT_SLP" || utxo.slp_validity === "VALID" ||
+    utxo.slp_validity === "INVALID"
+
+// Whether a utxo may fund an ordinary spend. An SLP-undecided transaction's
+// outputs are off limits above; token outputs and mint batons would burn what
+// they carry, and an exactly-dust output could be a token output the SLP
+// check has not reached yet. Every selection site uses this one predicate -
+// BuildTx below, EstimateSend and GetMaxValue in util/send.js, the fee loop
+// in wallet/snippets/create_slp_tx.js - so they cannot drift.
 const Spendable = (utxo) =>
+    SlpDecided(utxo) &&
     !utxo.slp_token_hash && !utxo.slp_baton_token_hash && utxo.value !== Fee.DustLimit
 
 // Input selection and output assembly shared by the preview and direct paths -
@@ -130,6 +144,7 @@ const CoinStatus = {
     Unknown: "unknown",     // not a coin this wallet holds (partial text, typo, spent)
     Token: "token",         // holds an SLP amount or a mint baton
     Dust: "dust",
+    Unverified: "unverified", // its tx's SLP validity is still undecided
 }
 
 // Looks a named coin up in a utxo set, given the "hash:index:value:address"
@@ -151,6 +166,9 @@ const ResolveCoinIn = (utxos, coin) => {
     }
     if (utxo.value === Fee.DustLimit) {
         return {status: CoinStatus.Dust, utxo}
+    }
+    if (!SlpDecided(utxo)) {
+        return {status: CoinStatus.Unverified, utxo}
     }
     return {status: CoinStatus.Ok, utxo}
 }
@@ -207,8 +225,10 @@ const EstimateSend = (utxos, outputs, coin = "") => {
     const {status, utxo} = ResolveCoinIn(utxos, coin)
     // A coin that does not resolve is costed as an ordinary send so the summary
     // stays quiet while the field is being typed into. It is the form's job to
-    // refuse to submit it - see the coin checks in Send's validate().
-    if (utxo && status !== CoinStatus.Token && status !== CoinStatus.Dust) {
+    // refuse to submit it - see the coin checks in Send's validate(). A coin
+    // the builders refuse outright (token, dust, SLP-unverified) is costed the
+    // same quiet way rather than priced as the single input it will never be.
+    if (utxo && status === CoinStatus.Ok) {
         // Naming a coin restricts the transaction to that one output, so the
         // input count is fixed at one however much the rest of the wallet holds.
         inputCount = 1
@@ -287,5 +307,6 @@ module.exports = {
     Fee,
     MaxSendValue,
     ResolveCoinIn,
+    SlpDecided,
     Spendable,
 }

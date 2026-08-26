@@ -301,6 +301,25 @@ const analyzeSpend = async ({raw, inputs, wallet, getOutput, findKey}) => {
         if (!output) {
             throw new Error("input output is not in the local database")
         }
+        // The index's tx-level SLP verdict, carried on the row by GetOutput.
+        // PENDING or no verdict at all means the output may carry tokens this
+        // transaction would burn, so it is refused rather than spent (fail
+        // closed). INVALID is a decided verdict: the transaction's plain
+        // outputs are ordinary coins and spend normally.
+        if (output.slp_validity !== "VALID" && output.slp_validity !== "NOT_SLP" &&
+            output.slp_validity !== "INVALID") {
+            throw new Error("input SLP validity is not established")
+        }
+        // A token or baton row on a transaction the index does not call VALID
+        // carries nothing on chain. Spending it as a token input would build
+        // an SLP transaction against phantom amounts - on-chain invalid,
+        // burning every genuine token input beside it - and validateSlp below
+        // reads the row as real, so the input is refused here instead.
+        // Deliberately burning such outputs is #37.
+        if ((output.slp_token_hash || output.slp_baton_token_hash) &&
+            output.slp_validity !== "VALID") {
+            throw new Error("token input is not SLP-valid")
+        }
         validateInteger(output.value, "input value")
         if (!owned.has(output.address)) {
             throw new Error("input does not belong to this wallet")

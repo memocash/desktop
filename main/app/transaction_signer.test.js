@@ -29,6 +29,7 @@ const request = ({inputValue = 10000, outputValue = 9000} = {}) => {
             address,
             value: inputValue,
             script: baddress.toOutputScript(address).toString("hex"),
+            slp_validity: "NOT_SLP",
         }),
     }
 }
@@ -68,6 +69,7 @@ test("derives a seed wallet change key only inside the signer", async () => {
         address: changeAddress,
         value: 10000,
         script: baddress.toOutputScript(changeAddress).toString("hex"),
+        slp_validity: "NOT_SLP",
     })
     assert.ok((await SignTransaction(seeded)).raw)
 })
@@ -166,7 +168,7 @@ test("refuses duplicate inputs", async () => {
 test("refuses authoritative inputs outside the wallet", async () => {
     const other = ECPair.fromPrivateKey(Buffer.alloc(32, 9)).getAddress()
     const malicious = request()
-    malicious.getOutput = async () => ({address: other, value: 10000})
+    malicious.getOutput = async () => ({address: other, value: 10000, slp_validity: "NOT_SLP"})
     await assert.rejects(SignTransaction(malicious), {message: /does not belong/})
 })
 
@@ -184,6 +186,7 @@ test("refuses an address whose list position does not derive it", async () => {
         address: watched,
         value: 10000,
         script: baddress.toOutputScript(watched).toString("hex"),
+        slp_validity: "NOT_SLP",
     })
     await assert.rejects(SignTransaction(watchOnly), {message: /no private key/})
 })
@@ -194,8 +197,41 @@ test("refuses a database script that disagrees with its address", async () => {
         address,
         value: 10000,
         script: bscript.compile([opcodes.OP_TRUE]).toString("hex"),
+        slp_validity: "NOT_SLP",
     })
     await assert.rejects(SignTransaction(malicious), {message: /script does not match/})
+})
+
+test("an input whose SLP validity is undecided is refused, plain or token", async () => {
+    // Fail closed on the index's tx-level verdict: PENDING and a missing
+    // verdict - an unchecked transaction, or a row from before validity
+    // existed - could still turn out to carry tokens.
+    for (const slp_validity of [undefined, null, "PENDING"]) {
+        const unverified = request()
+        const base = await unverified.getOutput()
+        unverified.getOutput = async () => ({...base, slp_validity})
+        await assert.rejects(SignTransaction(unverified), {message: /SLP validity is not established/})
+    }
+})
+
+test("an INVALID transaction's plain output spends; its token rows do not", async () => {
+    // INVALID is decided: the transaction's plain outputs are ordinary coins.
+    const invalid = request()
+    const base = await invalid.getOutput()
+    invalid.getOutput = async () => ({...base, slp_validity: "INVALID"})
+    assert.ok((await SignTransaction(invalid)).raw)
+    // But a token or baton row on anything the index does not call VALID
+    // carries nothing on chain, and signing against it would build an SLP
+    // transaction over phantom amounts - refused; deliberate burns are #37.
+    for (const slp_validity of ["INVALID", "PENDING", "NOT_SLP", null]) {
+        for (const rows of [{slp_token_hash: "aa".repeat(32), slp_amount: "100", slp_token_type: 1},
+            {slp_baton_token_hash: "aa".repeat(32), slp_token_type: 1}]) {
+            const token = request()
+            token.getOutput = async () => ({...base, ...rows, slp_validity})
+            await assert.rejects(SignTransaction(token),
+                {message: /not SLP-valid|not established/})
+        }
+    }
 })
 
 test("refuses burning a token input in a non-SLP transaction", async () => {
@@ -204,6 +240,7 @@ test("refuses burning a token input in a non-SLP transaction", async () => {
         address,
         value: 10000,
         script: baddress.toOutputScript(address).toString("hex"),
+        slp_validity: "VALID",
         slp_token_hash: "aa".repeat(32),
         slp_amount: "100",
     })
@@ -232,6 +269,7 @@ test("signs an SLP SEND only when it preserves the authoritative token amount", 
         address,
         value: 2000,
         script: baddress.toOutputScript(address).toString("hex"),
+        slp_validity: "VALID",
         slp_token_hash: tokenHash,
         slp_amount: "100",
         slp_token_type: 1,
@@ -266,6 +304,7 @@ test("a full uint64 token amount arrives as a BigInt and signs exactly", async (
         address,
         value: 2000,
         script: baddress.toOutputScript(address).toString("hex"),
+        slp_validity: "VALID",
         slp_token_hash: tokenHash,
         slp_amount: max,
         slp_token_type: 1,
@@ -299,6 +338,7 @@ test("refuses a token amount the database can only hold approximately", async ()
         address,
         value: 2000,
         script: baddress.toOutputScript(address).toString("hex"),
+        slp_validity: "VALID",
         slp_token_hash: tokenHash,
         slp_amount: stored,
         slp_token_type: 1,
@@ -329,6 +369,7 @@ const typedSend = (declared, genesisType) => {
         address,
         value: 2000,
         script: baddress.toOutputScript(address).toString("hex"),
+        slp_validity: "VALID",
         slp_token_hash: tokenHash,
         slp_amount: "100",
         slp_token_type: genesisType,
@@ -473,6 +514,7 @@ test("confirmation reports the token amount an outside output carries", async ()
         address,
         value: 2000,
         script: baddress.toOutputScript(address).toString("hex"),
+        slp_validity: "VALID",
         slp_token_hash: tokenHash,
         slp_amount: "100",
         slp_token_type: 1,
@@ -515,6 +557,7 @@ const mint = ({mintTo, batonTo, batonVout = Buffer.from([2])}) => {
             address,
             value: 2000,
             script: baddress.toOutputScript(address).toString("hex"),
+            slp_validity: "VALID",
             slp_baton_token_hash: tokenHash,
             slp_token_type: 1,
         }),
@@ -592,6 +635,7 @@ test("the preview reads the address list where signing reads the keys", async ()
         getOutput: async () => ({
             hash: prevHash, index: 1, address, value: 10000,
             script: baddress.toOutputScript(address).toString("hex"),
+            slp_validity: "NOT_SLP",
         }),
     }
     const preview = await PreviewSpend(listed)

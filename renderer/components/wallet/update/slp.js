@@ -7,7 +7,15 @@ const BatchSize = 50
 // until the pre-SLP transactions have been checked.
 const SlpScopes = [Tabs.Tokens, Tabs.Coins]
 
+// The tx-level slp field is the index's verdict on the whole transaction -
+// NOT_SLP arrives as a null slp, otherwise validity is VALID, INVALID, or
+// PENDING - and is what decides whether the tx's outputs may be spent at all
+// (see SlpVerified in util/tx_build). The per-output fields below answer
+// which outputs carry which tokens.
 const SlpOutputFields = `
+slp {
+    validity
+}
 outputs {
     index
     slp {

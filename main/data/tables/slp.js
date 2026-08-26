@@ -42,15 +42,25 @@ const AddSlpGenesis = (rows, genesis) => {
         genesis.hash, genesis.token_type, genesis.decimals, genesis.ticker, genesis.name, genesis.doc_url])
 }
 
-// Saves SLP data from backfill tx queries (trimmed txs with just hash and
-// outputs' SLP fields) and marks the txs checked. Doesn't touch the outputs
-// table, so it can't clobber rows saved by full transaction syncs. A saved
-// transaction also comes off the repair queue: whatever the sweep deleted for
-// it has just been rewritten exactly (or the server knows nothing of it, which
-// is as answered as it gets).
+// The index's tx-level SLP verdict for a queried transaction, as slp_checks
+// stores it. A transaction the server answered carries its slp field: null
+// means the index sees no SLP action (NOT_SLP), otherwise the verdict is the
+// index's validity. A tx object with no slp key at all - the server didn't
+// return the tx, or the query never asked - stores NULL, which spendability
+// treats as unverified and the backfill keeps re-querying. Never defaulted to
+// NOT_SLP: a query that forgot the field must fail closed, not open.
+const TxValidity = (tx) => tx.slp ? tx.slp.validity : ("slp" in tx ? "NOT_SLP" : null)
+
+// Saves SLP data from backfill tx queries (trimmed txs with just hash,
+// tx-level validity, and outputs' SLP fields) and marks the txs checked with
+// the index's verdict. Doesn't touch the outputs table, so it can't clobber
+// rows saved by full transaction syncs. A saved transaction also comes off
+// the repair queue: whatever the sweep deleted for it has just been rewritten
+// exactly. REPLACE rather than IGNORE so a re-queried PENDING or unanswered
+// row takes the settled verdict when it arrives.
 const SaveSlp = async (conf, txs) => {
     const rows = SlpRows()
-    const checks = Rows("INSERT OR IGNORE INTO slp_checks (hash)", KeepFirst)
+    const checks = Rows("INSERT OR REPLACE INTO slp_checks (hash, validity)", KeepLast)
     const repaired = []
     for (let i = 0; i < txs.length; i++) {
         if (!txs[i]) {
@@ -59,7 +69,7 @@ const SaveSlp = async (conf, txs) => {
         for (let j = 0; j < (txs[i].outputs || []).length; j++) {
             AddSlpOutput(rows, txs[i].hash, txs[i].outputs[j])
         }
-        checks.add(txs[i].hash, [txs[i].hash])
+        checks.add(txs[i].hash, [txs[i].hash, TxValidity(txs[i])])
         repaired.push({
             query: "DELETE FROM slp_repairs WHERE hash = ?",
             variables: [txs[i].hash],
@@ -68,11 +78,18 @@ const SaveSlp = async (conf, txs) => {
     await InsertBatch(conf, "slp", [...Statements(rows), ...checks.statements(), ...repaired])
 }
 
-// Transactions that haven't been checked against the index server for SLP data
-// yet: UTXO transactions, for wallets whose history synced before SLP support,
-// plus everything the exactness sweep queued for repair - those may be fully
-// spent, which is exactly why the queue exists (see healApproximateAmounts in
-// the sqlite worker).
+// A check whose verdict hasn't settled: never checked, checked before
+// tx-level validity existed or without an answer (NULL), or still PENDING at
+// the index. These re-enter the backfill until the index settles them; the
+// outputs they fund stay unspendable in the meantime (fail closed).
+const unsettledCheck = "(slp_checks.hash IS NULL OR slp_checks.validity IS NULL " +
+    "OR slp_checks.validity = 'PENDING')"
+
+// Transactions whose SLP check hasn't settled against the index server yet:
+// UTXO transactions, for wallets whose history synced before SLP support or
+// before tx-level validity, plus everything the exactness sweep queued for
+// repair - those may be fully spent, which is exactly why the queue exists
+// (see healApproximateAmounts in the sqlite worker).
 const GetUncheckedSlpTxs = (conf, addresses) => {
     const query = "" +
         "SELECT DISTINCT outputs.hash " +
@@ -81,12 +98,12 @@ const GetUncheckedSlpTxs = (conf, addresses) => {
         "LEFT JOIN slp_checks ON (slp_checks.hash = outputs.hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL " +
-        "AND slp_checks.hash IS NULL " +
+        "AND " + unsettledCheck + " " +
         "UNION " +
         "SELECT slp_repairs.hash " +
         "FROM slp_repairs " +
         "LEFT JOIN slp_checks ON (slp_checks.hash = slp_repairs.hash) " +
-        "WHERE slp_checks.hash IS NULL "
+        "WHERE " + unsettledCheck + " "
     return Select(conf, "slp-unchecked-txs", query, addresses)
 }
 
@@ -127,11 +144,17 @@ const GetAddressTokenBalances = async (conf, addresses) => {
         "JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "LEFT JOIN slp_geneses ON (slp_geneses.hash = slp_outputs.token_hash) " +
+        "JOIN slp_checks ON (slp_checks.hash = outputs.hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "AND inputs.hash IS NULL "
+        "AND inputs.hash IS NULL " +
+        "AND slp_checks.validity = 'VALID' "
     const rows = await Select(conf, "slp-address-token-balances", query, addresses)
     return sumBalances(rows, (row) => row.address + ":" + row.token_hash)
 }
+
+// Every balance and baton read below joins slp_checks and requires a VALID
+// verdict: an amount the index calls INVALID or hasn't decided isn't a token
+// the wallet holds, and showing it would offer a spend the signer refuses.
 
 // Unspent mint batons held by the wallet, grouped by token. Used to enable
 // minting for tokens the wallet controls a baton for, including tokens with no
@@ -149,8 +172,10 @@ const GetTokenBatons = (conf, addresses) => {
         "JOIN slp_batons ON (slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index`) " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "LEFT JOIN slp_geneses ON (slp_geneses.hash = slp_batons.token_hash) " +
+        "JOIN slp_checks ON (slp_checks.hash = outputs.hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL " +
+        "AND slp_checks.validity = 'VALID' " +
         "GROUP BY slp_batons.token_hash "
     return Select(conf, "slp-token-batons", query, addresses)
 }
@@ -168,8 +193,10 @@ const GetTokenBalances = async (conf, addresses) => {
         "JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "LEFT JOIN slp_geneses ON (slp_geneses.hash = slp_outputs.token_hash) " +
+        "JOIN slp_checks ON (slp_checks.hash = outputs.hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
-        "AND inputs.hash IS NULL "
+        "AND inputs.hash IS NULL " +
+        "AND slp_checks.validity = 'VALID' "
     const rows = await Select(conf, "slp-token-balances", query, addresses)
     return sumBalances(rows, (row) => row.token_hash)
 }
@@ -184,4 +211,5 @@ module.exports = {
     SaveSlp,
     SlpAmount,
     SlpRows,
+    TxValidity,
 }

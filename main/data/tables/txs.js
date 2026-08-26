@@ -1,7 +1,7 @@
 const {Insert, InsertBatch, Select} = require("../sqlite")
 const {KeepFirst, KeepLast, Rows, Statements} = require("../common/rows")
 const {txJoinTimestamp} = require("../common/profile_links")
-const {AddSlpOutput, SlpAmount, SlpRows} = require("./slp")
+const {AddSlpOutput, SlpAmount, SlpRows, TxValidity} = require("./slp")
 
 // Writes a whole page of downloaded transactions as one batch of multi-row
 // inserts. A history page holds up to 1000 transactions per address across
@@ -19,7 +19,7 @@ const SaveTransactions = async (conf, transactions) => {
         raws: Rows("INSERT OR IGNORE INTO tx_raws (hash, raw)", KeepFirst),
         inputs: Rows("INSERT OR IGNORE INTO inputs (hash, `index`, prev_hash, prev_index)", KeepFirst),
         outputs: Rows("INSERT OR REPLACE INTO outputs (hash, `index`, address, value, script)", KeepLast),
-        checks: Rows("INSERT OR IGNORE INTO slp_checks (hash)", KeepFirst),
+        checks: Rows("INSERT OR REPLACE INTO slp_checks (hash, validity)", KeepLast),
         blocks: Rows("INSERT OR IGNORE INTO blocks (hash, timestamp, height)", KeepFirst),
         blockTxs: Rows("INSERT OR IGNORE INTO block_txs (block_hash, tx_hash)", KeepFirst),
     }
@@ -49,10 +49,13 @@ const SaveTransactions = async (conf, transactions) => {
                 Buffer.from(output.script, "hex")])
             AddSlpOutput(slp, hash, output)
         }
-        if (transactions[i].outputs && transactions[i].outputs.length) {
-            // Sync queries include SLP fields on outputs, so this tx doesn't
-            // need the SLP backfill check.
-            tables.checks.add(hash, [hash])
+        if ("slp" in transactions[i]) {
+            // The wallet sync queries carry the tx-level slp verdict alongside
+            // the per-output SLP fields, so this tx arrives checked. A save
+            // whose query didn't ask for the verdict adds no row: its outputs
+            // stay unverified - unspendable - until the backfill asks the
+            // index, rather than being marked safe on missing information.
+            tables.checks.add(hash, [hash, TxValidity(transactions[i])])
         }
         if (!transactions[i].blocks) {
             continue
@@ -239,11 +242,13 @@ const GetOutput = async (conf, txHash, outputIndex) =>
     decodeSlpAmount((await Select(conf, "transaction-output",
         "SELECT outputs.*, slp_outputs.token_hash AS slp_token_hash, " +
         "slp_outputs.amount AS slp_amount, slp_batons.token_hash AS slp_baton_token_hash, " +
-        "slp_geneses.token_type AS slp_token_type " +
+        "slp_geneses.token_type AS slp_token_type, " +
+        "slp_checks.validity AS slp_validity " +
         "FROM outputs " +
         "LEFT JOIN slp_outputs ON slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index` " +
         "LEFT JOIN slp_batons ON slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index` " +
         "LEFT JOIN slp_geneses ON slp_geneses.hash = COALESCE(slp_outputs.token_hash, slp_batons.token_hash) " +
+        "LEFT JOIN slp_checks ON slp_checks.hash = outputs.hash " +
         "WHERE outputs.hash = ? AND outputs.`index` = ? LIMIT 1",
         [txHash, outputIndex]))[0])
 
@@ -253,11 +258,13 @@ const GetUtxos = async (conf, addresses) => {
         "   outputs.*, " +
         "   slp_outputs.token_hash AS slp_token_hash, " +
         "   slp_outputs.amount AS slp_amount, " +
-        "   slp_batons.token_hash AS slp_baton_token_hash " +
+        "   slp_batons.token_hash AS slp_baton_token_hash, " +
+        "   slp_checks.validity AS slp_validity " +
         "FROM outputs " +
         "LEFT JOIN inputs ON (inputs.prev_hash = outputs.hash AND inputs.prev_index = outputs.`index`) " +
         "LEFT JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
         "LEFT JOIN slp_batons ON (slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index`) " +
+        "LEFT JOIN slp_checks ON (slp_checks.hash = outputs.hash) " +
         "WHERE outputs.address IN (" + Array(addresses.length).fill("?").join(", ") + ") " +
         "AND inputs.hash IS NULL"
     return (await Select(conf, "outputs-utxos", query, addresses)).map(decodeSlpAmount)

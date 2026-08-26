@@ -115,7 +115,11 @@ const CreateSlpTransaction = async ({wallet, token, payTo, amount, setModal, onD
     }
     const allAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
     const utxos = await window.electron.getUtxos(allAddresses)
-    const tokenUtxos = utxos.filter(utxo => utxo.slp_token_hash === token.token_hash)
+    // Only outputs whose transaction the index calls VALID carry tokens a
+    // SEND can preserve: an INVALID or undecided input holds nothing to send,
+    // and building against it would burn whatever the other inputs carry.
+    const tokenUtxos = utxos.filter(utxo =>
+        utxo.slp_token_hash === token.token_hash && utxo.slp_validity === "VALID")
     // Amounts are BigInts, and BigInt subtraction is no sort comparator;
     // compare rather than subtract.
     tokenUtxos.sort((a, b) => a.slp_amount < b.slp_amount ? 1 : a.slp_amount > b.slp_amount ? -1 : 0)
@@ -185,7 +189,10 @@ const CreateSlpMintTransaction = async ({wallet, token, amount, keepBaton, setMo
     }
     const allAddresses = wallet.addresses.concat(wallet.changeList || [], wallet.slpList || [])
     const utxos = await window.electron.getUtxos(allAddresses)
-    const batonUtxo = utxos.find(utxo => utxo.slp_baton_token_hash === token.token_hash)
+    // The baton must come from a transaction the index calls VALID: a baton
+    // row from an INVALID or undecided transaction confers no mint authority.
+    const batonUtxo = utxos.find(utxo =>
+        utxo.slp_baton_token_hash === token.token_hash && utxo.slp_validity === "VALID")
     if (!batonUtxo) {
         window.electron.showMessageDialog("No mint baton for " + (token.ticker || "this token") + " in wallet")
         return

@@ -38,6 +38,9 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
                 hash
                 seen
                 raw
+                slp {
+                    validity
+                }
                 inputs {
                     index
                     prev_hash

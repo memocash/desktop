@@ -157,6 +157,9 @@ const loadOutputs = async ({addresses}) => {
                 hash
                 seen
                 raw
+                slp {
+                    validity
+                }
                 inputs {
                     index
                     prev_hash
@@ -197,6 +200,9 @@ const loadOutputs = async ({addresses}) => {
                             hash
                             seen
                             raw
+                            slp {
+                                validity
+                            }
                             inputs {
                                 index
                                 prev_hash

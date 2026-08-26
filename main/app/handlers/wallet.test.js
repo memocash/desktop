@@ -187,6 +187,7 @@ const servePrevout = () => {
         address: walletAddress,
         value: 10000,
         script: baddress.toOutputScript(walletAddress).toString("hex"),
+        slp_validity: "NOT_SLP",
     }
 }
 

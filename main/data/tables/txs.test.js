@@ -88,7 +88,7 @@ test("each address keeps its own starting point", async () => {
 // statement per row, so these check the rows that reach the tables are the ones
 // the individual inserts used to write.
 const fullTx = (hash, {seen = "2026-01-23T20:30:07-08:00", amount = 546, block = "blockOne"} = {}) => ({
-    hash, seen, raw: "aabb",
+    hash, seen, raw: "aabb", slp: null,
     inputs: [{index: 0, prev_hash: "prev" + hash, prev_index: 3}],
     outputs: [{index: 0, amount, lock: {address: Address}, script: "cc"},
         {index: 1, amount: 0, lock: null, script: "dd"}],
@@ -106,7 +106,7 @@ test("a transaction fills a row in each of the tables that describe it", async (
         [{hash: "txOne", index: 0, prev_hash: "prevtxOne", prev_index: 3}])
     assert.strictEqual(rows("outputs", "`index`").length, 2)
     assert.deepStrictEqual(rows("block_txs", "tx_hash"), [{block_hash: "blockOne", tx_hash: "txOne"}])
-    assert.deepStrictEqual(rows("slp_checks", "hash"), [{hash: "txOne"}])
+    assert.deepStrictEqual(rows("slp_checks", "hash"), [{hash: "txOne", validity: "NOT_SLP"}])
 })
 
 test("an output with no lock is recorded against an unknown address", async () => {

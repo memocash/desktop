@@ -151,8 +151,17 @@ const Definitions = [
         doc_url CHAR,
         UNIQUE(hash)
     )`,
+    // validity is the index's tx-level SLP verdict for the checked
+    // transaction: VALID, INVALID, or PENDING for an SLP transaction,
+    // NOT_SLP for a transaction the index answered has no SLP action, and
+    // NULL when no verdict has been stored - a row written before validity
+    // existed, or a check the server did not answer. Plain outputs spend on
+    // any decided verdict (VALID, INVALID, NOT_SLP); token rows spend only
+    // on VALID; NULL and PENDING spend nothing (fail closed), and the
+    // backfill re-queries them until they settle.
     `slp_checks (
         hash CHAR,
+        validity CHAR,
         UNIQUE(hash)
     )`,
     `slp_repairs (
