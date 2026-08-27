@@ -76,7 +76,7 @@
     "buffer": "^6.0.3",
     "electron": "43.3.0",
     "electron-builder": "^26.15.3",
-    "esbuild": "^0.28.1",
+    "esbuild": "^0.28.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
