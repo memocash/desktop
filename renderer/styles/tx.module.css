@@ -1,16 +1,29 @@
-.header {
-    height: 155px;
+/* Flex column instead of fixed pixel heights: the header takes its natural
+   height (it grows a line for SLP transactions) and the two input/output
+   sections split whatever remains. 10px is the body's vertical padding. */
+.page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 10px);
 }
 
 .header p {
     margin: 0 0 5px;
 }
 
+.section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
 .input_output_box {
     background: var(--surface);
     border: 1px solid var(--border-strong);
     font-size: 12px;
-    height: calc((100vh - 245px) / 2);
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     white-space: nowrap;
 }
@@ -29,7 +42,9 @@
     margin: 0;
 }
 
-.input_output_box span {
+/* Direct children only: grid cells get the padding, while spans nested inside
+   a cell (the SLP validity marks) stay inline with their text. */
+.input_output_box p > span {
     padding: 3px 10px;
 }
 
@@ -54,8 +69,22 @@
     text-align: right;
 }
 
+/* SLP validity, colored like the Coins tab marks. */
+.slpValid {
+    color: var(--accent);
+}
+
+.slpInvalid {
+    color: var(--danger);
+}
+
+.slpPending {
+    color: var(--text-faint);
+}
+
 .footer {
     display: flex;
+    flex-shrink: 0;
     padding-top: 6px;
     height: 24px;
 }

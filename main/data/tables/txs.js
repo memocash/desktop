@@ -193,15 +193,31 @@ const GetTransaction = async (conf, txHash) => {
         let inputOutputsWhere = []
         let inputOutputsParams = []
         for (let i = 0; i < inputs.length; i++) {
-            inputOutputsWhere.push("hash = ? AND `index` = ?")
+            inputOutputsWhere.push("outputs.hash = ? AND outputs.`index` = ?")
             inputOutputsParams.push(inputs[i].prev_hash, inputs[i].prev_index)
         }
-        const inputOutputs = await Select(conf, "transaction-input-outputs", "SELECT * FROM outputs WHERE (" + inputOutputsWhere.join(") OR (") + ")",
+        // An input's tokens are whatever its previous output carried, so each
+        // parent output comes back with its SLP annotation and the parent
+        // tx's verdict - tokens on an input are only real if that claim held.
+        const inputOutputs = await Select(conf, "transaction-input-outputs",
+            "SELECT outputs.*, " +
+            "   slp_outputs.token_hash AS slp_token_hash, " +
+            "   slp_outputs.amount AS slp_amount, " +
+            "   slp_batons.token_hash AS slp_baton_token_hash, " +
+            "   slp_geneses.ticker AS slp_ticker, " +
+            "   slp_geneses.decimals AS slp_decimals, " +
+            "   slp_checks.validity AS slp_validity " +
+            "FROM outputs " +
+            "LEFT JOIN slp_outputs ON (slp_outputs.hash = outputs.hash AND slp_outputs.`index` = outputs.`index`) " +
+            "LEFT JOIN slp_batons ON (slp_batons.hash = outputs.hash AND slp_batons.`index` = outputs.`index`) " +
+            "LEFT JOIN slp_geneses ON (slp_geneses.hash = COALESCE(slp_outputs.token_hash, slp_batons.token_hash)) " +
+            "LEFT JOIN slp_checks ON (slp_checks.hash = outputs.hash) " +
+            "WHERE (" + inputOutputsWhere.join(") OR (") + ")",
             inputOutputsParams)
         for (let i = 0; i < inputs.length; i++) {
             for (let j = 0; j < inputOutputs.length; j++) {
                 if (inputOutputs[j].hash === inputs[i].prev_hash && inputOutputs[j].index === inputs[i].prev_index) {
-                    inputs[i].output = inputOutputs[j]
+                    inputs[i].output = decodeSlpAmount(inputOutputs[j])
                     break
                 }
             }
@@ -226,7 +242,11 @@ const GetTransaction = async (conf, txHash) => {
         block.confirmations = maxBlock[0].height - block.height
     } catch (e) {
     }
-    return {outputs, inputs, seen, block, raw}
+    // The index's tx-level verdict on this transaction's own SLP claim: null
+    // when it has never been checked (unverified, not NOT_SLP - fail closed).
+    const checks = await Select(conf, "slp_checks", "SELECT validity FROM slp_checks WHERE hash = ?", [txHash])
+    const slp_validity = checks && checks.length ? checks[0].validity : null
+    return {outputs, inputs, seen, block, raw, slp_validity}
 }
 
 // The stored amount is signed 64-bit two's-complement; the on-chain uint64

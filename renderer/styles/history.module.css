@@ -51,6 +51,20 @@
     text-align: right;
 }
 
+/* SLP validity marks in the Coins Token column: same idea as the History
+   confirmation column - a glance says whether the tokens are real. */
+.tokenValid {
+    color: var(--accent);
+}
+
+.tokenInvalid {
+    color: var(--danger);
+}
+
+.tokenPending {
+    color: var(--text-faint);
+}
+
 /* Column heading: the sort control fills the cell, the handle sits on the
    cell's right edge straddling the divider. */
 .wrapper .rowTitle > span.titleCol {

@@ -17,7 +17,7 @@ sqlite.InsertBatch = async (conf, name, statements) => {
     }
 }
 
-const {GetAddressSyncs, SaveAddressSync, SaveTransactions} = require("./txs")
+const {GetAddressSyncs, GetTransaction, SaveAddressSync, SaveTransactions} = require("./txs")
 
 const Address = "walletAddress"
 const conf = {}
@@ -144,6 +144,38 @@ test("a transaction the index hasn't dated gets no seen time", async () => {
 test("holes in the page are skipped", async () => {
     await SaveTransactions(conf, [fullTx("txOne"), undefined, fullTx("txTwo")])
     assert.strictEqual(rows("txs", "hash").length, 2)
+})
+
+// The transaction window shows what each input spends, tokens included: an
+// input's joined parent output carries that output's SLP annotation, the
+// genesis ticker/decimals to format it with, and the parent tx's verdict. The
+// tx's own verdict rides along at the top level - null when never checked, so
+// an unchecked claim reads unverified rather than clean.
+test("a transaction's inputs carry their parents' tokens and its own verdict rides along", async () => {
+    const genesis = {hash: "tokenOne", token_type: 1, decimals: 2, ticker: "TKN", name: "Token", doc_url: ""}
+    const parent = {
+        hash: "txParent", seen: "2026-01-23T20:30:07-08:00", raw: "aabb", slp: {validity: "VALID"},
+        inputs: [],
+        outputs: [{index: 1, amount: 546, lock: {address: Address}, script: "cc",
+            slp: {token_hash: "tokenOne", amount: 12345, genesis}}],
+    }
+    const child = {
+        hash: "txChild", seen: "2026-01-23T20:31:07-08:00", raw: "ccdd",
+        inputs: [{index: 0, prev_hash: "txParent", prev_index: 1}],
+        outputs: [{index: 0, amount: 0, lock: null, script: "6a"}],
+    }
+    await SaveTransactions(conf, [parent, child])
+    const tx = await GetTransaction(conf, "txChild")
+    const output = tx.inputs[0].output
+    assert.strictEqual(output.slp_token_hash, "tokenOne")
+    assert.strictEqual(output.slp_amount, 12345n)
+    assert.strictEqual(output.slp_ticker, "TKN")
+    assert.strictEqual(output.slp_decimals, 2)
+    assert.strictEqual(output.slp_validity, "VALID")
+    // The child was saved by a query that never asked for a verdict: its own
+    // validity is null (unverified), never defaulted.
+    assert.strictEqual(tx.slp_validity, null)
+    assert.strictEqual((await GetTransaction(conf, "txParent")).slp_validity, "VALID")
 })
 
 // SQLite binds at most 32766 variables to one statement. Outputs take five

@@ -81,7 +81,7 @@ const loadTransaction = async (txHash) => {
 // outputs carry tokens or the mint baton. Works for both unsigned previews
 // and synced transactions; ticker/decimals come from the local genesis table
 // when available, otherwise raw base-unit amounts and a short token hash are
-// shown.
+// shown. Returns the parsed SLP message, or null when the tx isn't SLP.
 const annotateSlp = async (tx) => {
     // Synced outputs carry their vout in .index; preview outputs are already
     // in vout order.
@@ -89,11 +89,11 @@ const annotateSlp = async (tx) => {
         output.index !== undefined ? output.index === vout : i === vout)
     const opReturn = outputAt(0)
     if (!opReturn || !opReturn.script) {
-        return
+        return null
     }
     const slp = ParseSlpScript(opReturn.script)
     if (!slp) {
-        return
+        return null
     }
     let genesis
     if (slp.txType === "GENESIS") {
@@ -125,6 +125,35 @@ const annotateSlp = async (tx) => {
             batonOutput.slpNote = "Mint baton: " + ticker
         }
     }
+    return slp
+}
+
+// The index's verdict on a transaction's SLP claim, shown in the header. A
+// missing or PENDING verdict is unverified - never treated as valid - and
+// NOT_SLP on a tx whose OP_RETURN parses as SLP means the index recognizes no
+// SLP action in it: the claim is invalid.
+const SlpStatus = ({validity}) => validity === "VALID" ?
+    <span className={styleTx.slpValid}>&#10004; Valid</span> :
+    validity === "INVALID" || validity === "NOT_SLP" ?
+        <span className={styleTx.slpInvalid}>&#10008; Invalid</span> :
+        <span className={styleTx.slpPending}>? Unverified</span>
+
+// An input's tokens are whatever its previous output carried. The amount only
+// counts if the parent tx's SLP claim held, so anything not VALID carries the
+// same marks the Coins tab uses.
+const InputSlpNote = ({output}) => {
+    if (!output || (!output.slp_token_hash && !output.slp_baton_token_hash)) {
+        return null
+    }
+    const ticker = output.slp_ticker && output.slp_ticker.length ? output.slp_ticker :
+        ShortHash(output.slp_token_hash || output.slp_baton_token_hash)
+    const label = output.slp_baton_token_hash ? "Mint baton: " + ticker :
+        FormatTokenAmount(output.slp_amount, output.slp_decimals) + " " + ticker
+    const mark = output.slp_validity === "VALID" ? null :
+        output.slp_validity === "INVALID" || output.slp_validity === "NOT_SLP" ?
+            <span className={styleTx.slpInvalid} title={"Invalid token"}> &#10008;</span> :
+            <span className={styleTx.slpPending} title={"Validity unconfirmed"}> ?</span>
+    return <span title={output.slp_token_hash || output.slp_baton_token_hash}> ({label}{mark})</span>
 }
 
 const Info = () => {
@@ -136,6 +165,9 @@ const Info = () => {
     const [inputAmount, setInputAmount] = useState()
     const [txInfo, txInfoRef, setTxInfo] = useReferredState({inputs: [], outputs: []})
     const [size, setSize] = useState(0)
+    // null while the tx isn't (or isn't known to be) SLP; {validity} once it
+    // is, where an undefined validity renders as unverified.
+    const [slpStatus, setSlpStatus] = useState(null)
     const [fee, feeRef, setFee] = useReferredState(0)
     const [feeRate, setFeeRate] = useState(0)
     const transactionIdEleRef = useRef()
@@ -345,7 +377,10 @@ const Info = () => {
             const buf = txb.toBuffer()
             tx.raw = buf
             setSize(buf.length)
-            await annotateSlp(tx)
+            // A preview hasn't been broadcast, so its SLP claim can't have a
+            // verdict yet - it shows as unverified.
+            const slp = await annotateSlp(tx)
+            setSlpStatus(slp ? {} : null)
             setTxInfo(tx)
             setFee(fee)
             transactionIdEleRef.current.value = txb.getId()
@@ -386,7 +421,12 @@ const Info = () => {
             }
             fee -= tx.outputs[i].value
         }
-        await annotateSlp(tx)
+        // The header line shows for anything that looks like SLP: an OP_RETURN
+        // that parses locally, or a real verdict from the index even when the
+        // local parser doesn't recognize the script.
+        const slp = await annotateSlp(tx)
+        const isSlp = slp || (tx.slp_validity && tx.slp_validity !== "NOT_SLP")
+        setSlpStatus(isSlp ? {validity: tx.slp_validity} : null)
         setTxInfo(tx)
         setInputAmount(amount)
         // tx.raw can be missing here: posts synced via the trimmed profile
@@ -480,7 +520,7 @@ const Info = () => {
         }
     }
     return (
-        <div>
+        <div className={styleTx.page}>
             <div className={styleTx.header}>
                 <p>
                     <label>Transaction ID:</label><br/>
@@ -497,8 +537,9 @@ const Info = () => {
                 }
                 <p>Size: {size.toLocaleString()} bytes ({signed ? "Signed" : "Unsigned"})</p>
                 <p>Fee: {fee} satoshis ({feeRate} sat/byte)</p>
+                {slpStatus && <p>SLP: <SlpStatus validity={slpStatus.validity}/></p>}
             </div>
-            <div>
+            <div className={styleTx.section}>
                 <div className={styleTx.input_output_head}>Inputs ({txInfo.inputs.length})</div>
                 <div className={styleTx.input_output_box}>
                     <div className={styleTx.input_output_grid}>
@@ -507,7 +548,7 @@ const Info = () => {
                                 <p key={i} className={input.highlight ? styleTx.input_output_highlight : null}>
                                         <span><a onClick={() => clickTx(input.prev_hash)} title={input.prev_hash}>
                                         {ShortHash(input.prev_hash)}</a>:{input.prev_index}</span>
-                                    <span>{input.output && input.output.address}</span>
+                                    <span>{input.output && input.output.address}<InputSlpNote output={input.output}/></span>
                                     <span className={styleTx.spanRight}>
                                             {input.output && input.output.value.toLocaleString()}</span>
                                 </p>
@@ -516,7 +557,7 @@ const Info = () => {
                     </div>
                 </div>
             </div>
-            <div>
+            <div className={styleTx.section}>
                 <div className={styleTx.input_output_head}>Outputs ({txInfo.outputs.length})</div>
                 <div className={styleTx.input_output_box}>
                     <div className={[styleTx.input_output_grid, styleTx.input_output_grid_output].join(" ")}>

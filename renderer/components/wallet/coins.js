@@ -88,14 +88,18 @@ const Coins = ({lastUpdate}) => {
         // A token or baton annotation is only real when the index calls its
         // transaction VALID. INVALID means the SLP claim did not hold and the
         // row carries nothing on chain; anything undecided has not been
-        // confirmed. Either way the label must not read as spendable tokens.
-        const suffix = coin.slp_validity === "VALID" ? "" :
-            coin.slp_validity === "INVALID" ? " (invalid)" : " (unconfirmed)"
-        if (coin.slp_baton_token_hash) {
-            return "Baton: " + (coin.slp_ticker || ShortHash(coin.slp_baton_token_hash)) + suffix
-        }
-        return FormatTokenAmount(coin.slp_amount, coin.slp_decimals) + " " +
-            (coin.slp_ticker || ShortHash(coin.slp_token_hash)) + suffix
+        // confirmed. The mark mirrors History's confirmation column so the
+        // label never reads as spendable tokens until the index says VALID.
+        const mark = coin.slp_validity === "VALID" ?
+            <span className={styles.tokenValid} title={"Valid token"}>&#10004;</span> :
+            coin.slp_validity === "INVALID" ?
+                <span className={styles.tokenInvalid} title={"Invalid token"}>&#10008;</span> :
+                <span className={styles.tokenPending} title={"Validity unconfirmed"}>?</span>
+        const label = coin.slp_baton_token_hash ?
+            "Baton: " + (coin.slp_ticker || ShortHash(coin.slp_baton_token_hash)) :
+            FormatTokenAmount(coin.slp_amount, coin.slp_decimals) + " " +
+                (coin.slp_ticker || ShortHash(coin.slp_token_hash))
+        return <>{mark} {label}</>
     }
     const openCoinMenu = (e, coin) => {
         e.preventDefault()
