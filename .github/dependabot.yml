@@ -1,20 +1,16 @@
 # The workflow actions are pinned to commit SHAs so a republished tag cannot
 # change what runs in the workflow that holds the signing secrets. Dependabot
 # is what keeps those pins moving: it proposes the new SHA with a diff to
-# review, instead of the pin silently going stale.
+# review, instead of the pin silently going stale. It also covers the actions
+# advisory gap - action fixes often ship without a published advisory, so
+# security-only updates would miss them.
 #
-# The npm cooldown holds new releases back for a week before proposing them,
-# so a poisoned release published hours before an update lands here doesn't
-# get pulled in - most registry compromises are caught within days.
+# npm is deliberately absent: version updates there are churn with little
+# security value for this repo, and each update is itself supply-chain
+# exposure. Advisory-driven security PRs still arrive without any config.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: weekly
-    cooldown:
-      default-days: 7
