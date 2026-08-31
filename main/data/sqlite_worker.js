@@ -110,7 +110,10 @@ let _db
 const SetDb = async (db) => {
     // Prepared statements belong to the connection they were compiled against.
     cachedStatements = new Map()
-    _db = new DatabaseSync(db.replace("~", homedir))
+    // Only a leading "~" means the home directory. A "~" anywhere else is
+    // part of the path - Windows 8.3 short names (C:\Users\RUNNER~1\...)
+    // carry one mid-path, and expanding it there corrupts the path.
+    _db = new DatabaseSync(db.startsWith("~") ? homedir + db.slice(1) : db)
     // Every Insert() lands here as its own statement, so without WAL each one is
     // a separate autocommit against the default rollback journal: create the
     // -journal file, fsync it, fsync the db, delete it. On Windows that measures

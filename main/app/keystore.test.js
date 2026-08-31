@@ -545,14 +545,17 @@ test("startup sweeps the scratch files whose writer is gone, and no others", asy
     Dir.DefaultPath = dir
     try {
         // A pid that really ran and really exited, so liveness is answered by
-        // the OS rather than assumed.
-        const deadPid = require("node:child_process").spawnSync("true").pid
-        // Pid 1 is init: alive for the whole test, and not ours to signal -
-        // the EPERM answer must read as alive.
+        // the OS rather than assumed. Spawning our own node binary works on
+        // every platform; "true" does not exist on Windows.
+        const deadPid = require("node:child_process").spawnSync(process.execPath, ["-e", "0"]).pid
+        // A process alive for the whole test and not ours to signal - the
+        // EPERM answer must read as alive. Pid 1 is init on posix; Windows
+        // has no init, so the System process (pid 4) stands in.
+        const untouchablePid = process.platform === "win32" ? 4 : 1
         const files = {
             ["w." + deadPid + ".0.tmp"]: false,
             ["w." + process.pid + ".3.tmp"]: false,
-            "w.1.2.tmp": true,
+            ["w." + untouchablePid + ".2.tmp"]: true,
             "wallet_normal": true,
             "wallet.v1.bak": true,
         }
