@@ -17,8 +17,9 @@ const addressOf = (node) => ECPair.fromPublicKeyBuffer(Buffer.from(node.publicKe
 const deriveBranch = (account, branch, count = AddressCount, includeKeys = false) => {
     const addresses = []
     const keys = []
+    const branchNode = account.derive(branch)
     for (let i = 0; i < count; i++) {
-        const child = account.derive(branch).derive(i)
+        const child = branchNode.derive(i)
         addresses.push(addressOf(child))
         if (includeKeys) keys.push(child.toWIF())
     }
