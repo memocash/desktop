@@ -195,3 +195,37 @@ test("the one-time sweep forgets approximate amounts and spares exact ones, once
         fs.rmSync(dir, {recursive: true, force: true})
     }
 })
+
+test("a tilde past the first character stays part of the path", async () => {
+    const fs = require("fs")
+    const os = require("os")
+    const path = require("path")
+    // Only a leading "~" means the home directory. Windows hands out 8.3
+    // short paths like C:\Users\RUNNER~1\...\Temp, and an unanchored
+    // expansion turned that mid-path "~" into the home directory and the
+    // open into "unable to open database file". Windows CI trips over this
+    // incidentally; the directory here makes every platform walk the same
+    // path.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "short~1-"))
+    const dbFile = path.join(dir, "wallet.db")
+    try {
+        const {worker, send} = StartWorker()
+        try {
+            worker.postMessage({action: "SET_DB", dbFile})
+            const written = await send({action: "BATCH", statements: [
+                {query: "CREATE TABLE t (id PRIMARY KEY)"},
+                {query: "INSERT INTO t VALUES (1)"},
+            ]})
+            assert.equal(written.error, undefined)
+            const rows = await send({action: "SELECT", query: "SELECT id FROM t"})
+            assert.deepStrictEqual(rows.result, [{id: 1}])
+            // At the literal path it was given, not wherever an expansion
+            // would have scattered it.
+            assert.ok(fs.existsSync(dbFile), "database file exists at the requested path")
+        } finally {
+            await worker.terminate()
+        }
+    } finally {
+        fs.rmSync(dir, {recursive: true, force: true})
+    }
+})
