@@ -51,7 +51,11 @@ const clusterField = ({cluster, origin, join, field, txHash}) => "(" +
     join + " " +
     "WHERE " + cluster + ".origin = " + origin + " " +
     "AND " + historicallyValid(cluster + ".address", txHash) + " " +
-    "ORDER BY (" + cluster + ".address = " + origin + ") DESC, " +
+    // Ordering by the cluster's own origin column, not the outer query's
+    // address: the WHERE above already pins them equal, and SQLite before
+    // 3.53 rejects an outer-column reference in a subquery's ORDER BY when
+    // the subquery reads a recursive CTE ("no such column").
+    "ORDER BY (" + cluster + ".address = " + cluster + ".origin) DESC, " +
     "   " + cluster + ".address ASC " +
     "LIMIT 1" +
     ")"
