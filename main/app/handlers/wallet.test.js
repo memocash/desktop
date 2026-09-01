@@ -565,6 +565,53 @@ test("an approved removal binds to the wallet the dialog asked about", async () 
     }
 })
 
+// The export twin of the removal race: while the reveal dialog waits, the
+// renderer opens a different passwordless wallet on the same window. What an
+// approval reveals is read from the wallet the person was asked about, so the
+// swapped-in wallet's secrets never cross.
+test("an approved export reveals the wallet the dialog asked about", async () => {
+    const dir = tempDir()
+    const askedPath = path.join(dir, "export_asked")
+    const swappedPath = path.join(dir, "export_swapped")
+    const swappedKey = ECPair.fromPrivateKey(Buffer.alloc(32, 11))
+    const swappedAddress = swappedKey.getAddress()
+    const swapMidDialog = () => {
+        dialogResponse = async () => {
+            assert.equal((await handlers[Handlers.UnlockWallet](
+                e(24), swappedPath, undefined)).ok, true)
+            return 1
+        }
+    }
+    try {
+        await passwordlessWallet(askedPath)
+        await keystore.CreateWalletFile(swappedPath,
+            keystore.NewWallet(undefined, [swappedKey.toWIF()], [swappedAddress]))
+        await openPasswordless(24, askedPath)
+        keystore.AllowPath(24, swappedPath)
+
+        // The renderer asks for the swapped-in wallet's address and swaps
+        // while the dialog is up. The read stays on the asked-about wallet,
+        // which does not hold that address, so nothing crosses.
+        swapMidDialog()
+        const missed = await handlers[Handlers.ExportPrivateKey](
+            e(24), swappedAddress, undefined)
+        assert.equal(missed.error, "address not found in wallet")
+        assert.equal(missed.value, undefined)
+
+        // Back on the asked-about wallet, swapped again mid-dialog: the
+        // approval reveals that wallet's own key, not the swapped one's.
+        assert.equal((await handlers[Handlers.UnlockWallet](
+            e(24), askedPath, undefined)).ok, true)
+        swapMidDialog()
+        const revealed = await handlers[Handlers.ExportPrivateKey](
+            e(24), walletAddress, undefined)
+        assert.equal(revealed.ok, true)
+        assert.equal(revealed.value, walletKey.toWIF())
+    } finally {
+        cleanup(24, dir)
+    }
+})
+
 // The creation flow, driven over its channels: the seed is born in main, the
 // confirmation is judged in main, and the create call carries a flag where the
 // words used to travel.

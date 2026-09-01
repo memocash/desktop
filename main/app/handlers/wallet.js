@@ -357,10 +357,16 @@ const updateWallet = async (winId, op, values, password) => {
     return {sessionKey}
 }
 
-const readForOperation = async (winId, password) => {
-    const {filename, encrypted} = GetWallet(winId)
-    return keystore.ReadWallet(filename, encrypted ? password : undefined)
-}
+// Reads the wallet a captured state names. Callers whose gate and read must
+// agree - the exports, which decide whether to show a dialog and then read a
+// secret - capture the window's state once and hand it to both, so a renderer
+// that switches the window to another wallet between the two moments changes
+// neither what was judged nor what is read.
+const readCaptured = (state, password) =>
+    keystore.ReadWallet(state.filename, state.encrypted ? password : undefined)
+
+const readForOperation = async (winId, password) =>
+    readCaptured(GetWallet(winId), password)
 
 // Asks the person at the machine whether a passwordless wallet may loosen its
 // spend confirmation. Judged against the file, not any window's cache, and
@@ -460,12 +466,15 @@ const confirmKeyRemoval = async (winId) => {
 // wallet's exports are gated by the password itself; with no password to know,
 // the gate is the same native dialog the settings path uses - drawn by main,
 // modal to the asking window, impossible for the page to cover or answer.
-// Declining throws, so no secret is read, let alone returned.
-const confirmPasswordlessExport = async (winId, message, detail) => {
-    const stored = GetWallet(winId)
+// Declining throws, so no secret is read, let alone returned. Judged against
+// the state the caller captured and will read from, never re-read: the dialog
+// waits on a person while the renderer keeps running, and an approval - or an
+// encrypted wallet's dialogless pass-through - must not carry over to a wallet
+// swapped onto the window mid-flight.
+const confirmPasswordlessExport = async (winId, state, message, detail) => {
     // No wallet is the caller's problem, reported by the read that follows;
     // an encrypted wallet's gate is knowing the password.
-    if (!stored || stored.encrypted) {
+    if (!state || state.encrypted) {
         return
     }
     const {response} = await dialog.showMessageBox(GetWindow(winId), {
@@ -518,8 +527,8 @@ const walletKey = (wallet, address) => {
     throw new Error("address not found in wallet")
 }
 
-const exportPrivateKey = async (winId, address, password) =>
-    walletKey((await readForOperation(winId, password)).wallet, address)
+const exportPrivateKey = async (state, address, password) =>
+    walletKey((await readCaptured(state, password)).wallet, address)
 
 // Works entirely from the state its caller captured, never from the window's
 // current state: a removal that was confirmed over one wallet must land on
@@ -857,22 +866,27 @@ const WalletHandlers = () => {
         operationResult(async () => {
             await readForOperation(e.sender.id, password)
         }))
+    // Each export captures the window's state once: the gate judges that
+    // capture and the secret is read from it, the same binding the key
+    // removal below holds to.
     ipcMain.handle(Handlers.ExportSeed, async (e, password) =>
         operationResult(async () => {
-            await confirmPasswordlessExport(e.sender.id,
+            const state = GetWallet(e.sender.id)
+            await confirmPasswordlessExport(e.sender.id, state,
                 "Reveal this wallet's seed phrase?",
                 "This wallet has no password. The seed phrase is the whole " +
                 "wallet: anyone who reads it can take everything it holds, " +
                 "now or on any later day.")
-            return (await readForOperation(e.sender.id, password)).wallet.seed
+            return (await readCaptured(state, password)).wallet.seed
         }))
     ipcMain.handle(Handlers.ExportPrivateKey, async (e, address, password) =>
         operationResult(async () => {
-            await confirmPasswordlessExport(e.sender.id,
+            const state = GetWallet(e.sender.id)
+            await confirmPasswordlessExport(e.sender.id, state,
                 "Reveal the private key for this address?",
                 "This wallet has no password. Anyone who reads the key can " +
                 "spend everything the address holds.")
-            return exportPrivateKey(e.sender.id, address, password)
+            return exportPrivateKey(state, address, password)
         }))
     ipcMain.handle(Handlers.RemovePrivateKey, async (e, address, password) =>
         operationResult(async () => {
