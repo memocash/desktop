@@ -7,6 +7,7 @@ const {DataHandlers} = require("./data");
 const {ThemeHandlers} = require("./theme");
 const {UpdateHandlers} = require("./update");
 const {SpendPromptHandlers} = require("../spend_prompt");
+const {SyncHandlers} = require("./sync");
 
 module.exports = {
     AllHandlers: () => {
@@ -14,6 +15,7 @@ module.exports = {
         GraphQLHandlers()
         ProfileHandlers()
         SpendPromptHandlers()
+        SyncHandlers()
         ThemeHandlers()
         UpdateHandlers()
         WalletHandlers()

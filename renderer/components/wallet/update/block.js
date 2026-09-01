@@ -1,18 +1,9 @@
 import {Status} from "../../util/connect"
 
+// Main holds the block subscription and stores each block before this hears
+// of it; what's left here is the re-render and the reconnect loop.
 const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
-    const query = `
-        subscription {
-            blocks {
-                hash
-                timestamp
-                height
-            }
-        }
-        `
-    const handler = async (block) => {
-        await window.electron.saveBlock(block.blocks)
-        await window.electron.generateHistory(addresses)
+    const handler = () => {
         if (typeof setLastUpdate === "function") {
             setLastUpdate((new Date()).toISOString())
         }
@@ -30,30 +21,14 @@ const ListenBlocks = ({addresses, setLastUpdate, setConnected}) => {
             close = ListenBlocks({addresses, setLastUpdate, setConnected})
         }, 2000)
     }
-    let close = window.electron.listenGraphQL({query, handler, onopen, onclose})
+    let close = window.electron.listenSync({kind: "blocks", variables: {}, addresses, handler, onopen, onclose})
     return () => {
         exited = true
         close()
     }
 }
 
-const RecentBlock = async () => {
-    const query = `
-        query {
-            block_newest {
-                hash
-                timestamp
-                height
-            }
-        }
-        `
-    try {
-        let data = await window.electron.graphQL(query, {})
-        await window.electron.saveBlock(data.data.block_newest)
-    } catch (e) {
-        console.log(e)
-    }
-}
+const RecentBlock = async () => await window.electron.syncBlock()
 
 export {
     ListenBlocks,

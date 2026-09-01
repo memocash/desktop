@@ -31,62 +31,12 @@ const getActedOnPosts = (outputs) => {
     return [...new Set(txHashes)]
 }
 
+// Main holds the wallet's transaction subscription and has stored each
+// transaction, tokens and verdict included, and rebuilt the history rows by
+// the time this handler runs. The transaction arrives here so the memo views
+// can tell whether it acted on a post they show.
 const ListenNewTxs = ({wallet, setLastUpdate}) => {
-    const query = `
-        subscription($addresses: [Address!]) {
-            addresses(addresses: $addresses) {
-                hash
-                seen
-                raw
-                slp {
-                    validity
-                }
-                inputs {
-                    index
-                    prev_hash
-                    prev_index
-                }
-                outputs {
-                    index
-                    amount
-                    script
-                    lock {
-                        address
-                    }
-                    slp {
-                        amount
-                        token_hash
-                        genesis {
-                            hash
-                            token_type
-                            decimals
-                            ticker
-                            name
-                            doc_url
-                        }
-                    }
-                    slp_baton {
-                        token_hash
-                        genesis {
-                            hash
-                            token_type
-                            decimals
-                            ticker
-                            name
-                            doc_url
-                        }
-                    }
-                }
-                blocks {
-                    block {
-                        hash
-                        timestamp
-                        height
-                    }
-                }
-            }
-        }
-        `
+    const addresses = wallet.addresses.concat(wallet.slpList || [])
     const notifyUpdate = () => {
         if (typeof setLastUpdate === "function") {
             setLastUpdate((new Date()).toISOString())
@@ -94,8 +44,6 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
     }
     const handler = async (tx) => {
         LogActivity("New wallet transaction received", {scopes: HistoryScopes})
-        await window.electron.saveTransactions([tx.addresses])
-        await window.electron.generateHistory(wallet.addresses.concat(wallet.slpList || []))
         // History first, then the post: the transaction is already saved and the
         // panes waiting on it shouldn't sit behind a post fetch that only the
         // memo views care about. Both end in a notify, so the second pass is what
@@ -123,8 +71,7 @@ const ListenNewTxs = ({wallet, setLastUpdate}) => {
             close = ListenNewTxs({wallet, setLastUpdate})
         }, 2000)
     }
-    let close = window.electron.listenGraphQL({
-        query, variables: {addresses: wallet.addresses.concat(wallet.slpList || [])}, handler, onclose})
+    let close = window.electron.listenSync({kind: "txs", variables: {addresses}, handler, onclose})
     return () => {
         exited = true
         close()

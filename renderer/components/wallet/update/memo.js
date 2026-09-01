@@ -1,104 +1,20 @@
-import {ProfileFields, TxQuery} from "../../util/graphql";
 import {Plural, TrackActivity} from "../../util/activity";
 import {Tabs} from "../../../../main/common/util";
 
-// Index defaults profile collections to 100 rows and caps requests at 5000.
-// Posts only need the 50 rows the local list can display; follow graphs retain
-// the server's standard page size while making the sync bound explicit.
-const ProfilePostLimit = 50
-const ProfileFollowLimit = 100
-
-// Critical info first: name/profile/pic alone is tiny (~500 bytes) and lets the
-// header render immediately, instead of waiting on the much heavier query below.
-const HeaderQuery = `
-    query ($addresses: [Address!]) {
-        profiles(addresses: $addresses) {
-            lock {
-                address
-            }
-            ${ProfileFields}
-        }
-    }
-    `
-
-// Posts intentionally omit likes/parent/replies and the heavy fields of tx
-// (raw/inputs/outputs/blocks) here: the local post list is only ever displayed
-// 50 at a time (see GetPosts' LIMIT 50), and UpdatePosts already fetches that
-// full detail for the visible set right after this resolves. Embedding it here
-// too was the main source of multi-megabyte profile fetches for prolific
-// posters. `tx.seen` alone IS kept (tiny) because GetPosts orders locally by
-// timestamp, which comes from tx_seens/blocks rows populated by SaveTransactions
-// — without it, freshly-synced posts have no local timestamp, sort as NULL
-// (smaller than everything), and lose out to any stale-but-timestamped rows
-// already cached from a previous full sync, surfacing old posts instead of new.
-// Following/followers keep their nested profile since FollowList shows
-// names/pics with no separate per-row fetch mechanism.
-const DetailsQuery = `
-    query ($addresses: [Address!]) {
-        profiles(addresses: $addresses) {
-            lock {
-                address
-            }
-            ${ProfileFields}
-            posts(newest: true, limit: ${ProfilePostLimit}) {
-                tx_hash
-                text
-                tx {
-                    hash
-                    seen
-                }
-            }
-            following(limit: ${ProfileFollowLimit}) {
-                tx_hash
-                unfollow
-                ${TxQuery}
-                follow_lock {
-                    address
-                    profile {
-                        ${ProfileFields}
-                    }
-                }
-            }
-            followers(limit: ${ProfileFollowLimit}) {
-                tx_hash
-                unfollow
-                ${TxQuery}
-                lock {
-                    address
-                    profile {
-                        ${ProfileFields}
-                    }
-                }
-            }
-        }
-    }
-    `
-
 const notifyUpdate = (setLastUpdate) => setLastUpdate((new Date()).toISOString())
 
-// Header and details are independent requests - firing them concurrently
-// instead of awaiting one before starting the other saves a full network
-// round-trip, and the header (being tiny) still lands and notifies first in
-// the common case, so the "critical info first" progressive render is kept.
-// Each phase is caught and logged rather than left to reject: before this
-// query was split, a failed fetch meant nothing updated and callers (which
-// have no error handling of their own) silently stopped; now a failure in
-// either phase no longer aborts the other phase or the caller's subsequent
-// steps (e.g. UpdatePosts backfill), it just leaves that phase's data stale
-// until the next sync - the same degraded-but-safe outcome as before,
-// instead of a new partial-update inconsistency.
-// Only the header phase saves images: both queries request the same
-// ProfileFields (name/profile/pic), so saving from both would race two
-// concurrent check-then-fetch-then-save calls in SaveImagesFromProfiles
-// against the same not-yet-cached pic URL and download it twice.
-const syncProfiles = async ({query, addresses, setLastUpdate, saveImages}) => {
-    const data = await window.electron.graphQL(query, {addresses})
-    await window.electron.saveMemoProfiles(data.data.profiles)
-    if (saveImages) {
-        await window.electron.saveMemoProfileImages(data.data.profiles)
-    }
+// The header (name, profile text, pic) and the details (posts, follows) of a
+// set of profiles are two requests main runs and stores (main/sync/memo.js).
+// They are independent, so the two fire concurrently instead of one awaiting
+// the other, and the header - being tiny - still lands and notifies first in
+// the common case, keeping the "critical info first" progressive render.
+// Each phase is caught and logged rather than left to reject, so a failure
+// in either no longer aborts the other or the caller's subsequent steps; it
+// just leaves that phase's data stale until the next sync.
+const syncProfiles = async ({addresses, details, setLastUpdate}) => {
+    const count = await window.electron.syncProfiles({addresses, details})
     notifyUpdate(setLastUpdate)
-    return data.data.profiles || []
+    return count
 }
 
 // scopes says which part of the app is waiting on this sync: the Memo tab for
@@ -111,16 +27,16 @@ const MemoScopes = [Tabs.Memo, Tabs.Notifications]
 const UpdateMemoProfile = async ({addresses, setLastUpdate, scopes = MemoScopes}) =>
     await TrackActivity({
         start: `Updating ${Plural(addresses.length, "profile")}`,
-        done: profiles => `Updated ${Plural(profiles.length, "profile")}`,
+        done: count => `Updated ${Plural(count, "profile")}`,
         scopes,
-    }, () => syncProfiles({query: HeaderQuery, addresses, setLastUpdate, saveImages: true}))
+    }, () => syncProfiles({addresses, details: false, setLastUpdate}))
 
 const UpdateMemoDetails = async ({addresses, setLastUpdate, scopes = MemoScopes}) =>
     await TrackActivity({
         start: `Loading posts and follows for ${Plural(addresses.length, "profile")}`,
-        done: profiles => `Loaded posts and follows for ${Plural(profiles.length, "profile")}`,
+        done: count => `Loaded posts and follows for ${Plural(count, "profile")}`,
         scopes,
-    }, () => syncProfiles({query: DetailsQuery, addresses, setLastUpdate, saveImages: false}))
+    }, () => syncProfiles({addresses, details: true, setLastUpdate}))
 
 const UpdateMemoHistory = async ({addresses, setLastUpdate, scopes = MemoScopes}) => {
     await Promise.all([
