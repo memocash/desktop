@@ -29,8 +29,13 @@ stub("electron", {
     app: {isPackaged: true},
     dialog: {
         showMessageBox: async (win, options) => {
-            dialogCalls.push(options)
-            return {response: dialogResponse}
+            // Both halves are kept: which window the dialog was modal to is as
+            // much a part of the gate as what it asked. A test may answer with
+            // a function, to act while the dialog is up the way a renderer
+            // can: the dialog only blocks the person, not the page's calls.
+            dialogCalls.push({win, options})
+            return {response: typeof dialogResponse === "function"
+                ? await dialogResponse() : dialogResponse}
         },
     },
     ipcMain: {
@@ -355,6 +360,208 @@ test("raising a passwordless budget is asked in main's dialog, lowering is not",
         assert.equal(GetWallet(13).session, undefined)
     } finally {
         cleanup(13, dir)
+    }
+})
+
+// The injection this gate closes: a key the renderer imports on its own
+// becomes an address the wallet owns, and payments routed there read as
+// change - out of the outgoing total, off the leaving-payments list, past the
+// send confirmation. On a passwordless wallet nothing stood between the
+// handler and the write.
+test("a passwordless key import is asked in main's dialog, an encrypted one is not", async () => {
+    const dir = tempDir()
+    const openPath = path.join(dir, "import_open")
+    const encryptedPath = path.join(dir, "import_encrypted")
+    const importedKey = ECPair.fromPrivateKey(Buffer.alloc(32, 5))
+    const importedWIF = importedKey.toWIF()
+    const importedAddress = importedKey.getAddress()
+    const addKeys = (id, password) =>
+        handlers[Handlers.UpdateWallet](e(id), "addKeys", [importedWIF], password)
+    try {
+        await passwordlessWallet(openPath)
+        await openPasswordless(19, openPath)
+        const onDisk = async (walletPath, password) => {
+            const {wallet} = await keystore.ReadWallet(walletPath, password)
+            return {keys: wallet.keys, addresses: wallet.addresses}
+        }
+
+        // The dialog declines: the refusal throws, and neither the key nor its
+        // address reaches the file.
+        dialogResponse = 0
+        const refused = await addKeys(19, undefined)
+        assert.notEqual(refused.error, undefined)
+        assert.equal(dialogCalls.length, 1)
+        assert.deepEqual(await onDisk(openPath),
+            {keys: [walletKey.toWIF()], addresses: [walletAddress]})
+
+        // What was asked, and of whom: main's dialog over the requesting
+        // window, with Cancel both the default and Escape's answer - which is
+        // what the response of 0 above declined with. Pinned here so a
+        // reordering of the buttons, or a default that imports, fails this
+        // test rather than shipping a fail-open prompt.
+        const {win, options} = dialogCalls[0]
+        assert.equal(win.id, 19)
+        assert.deepEqual(options.buttons, ["Cancel", "Import"])
+        assert.equal(options.defaultId, 0)
+        assert.equal(options.cancelId, 0)
+
+        // The dialog allows: the key lands, bringing the address it unlocks -
+        // derived in main, not taken from the caller. Approval is the Import
+        // button's own index, not a literal, so this follows the dialog's
+        // real configuration instead of assuming it.
+        dialogResponse = options.buttons.indexOf("Import")
+        assert.notEqual(dialogResponse, options.cancelId)
+        assert.equal((await addKeys(19, undefined)).ok, true)
+        assert.equal(dialogCalls.length, 2)
+        assert.deepEqual(await onDisk(openPath), {
+            keys: [walletKey.toWIF(), importedWIF],
+            addresses: [walletAddress, importedAddress],
+        })
+
+        // An encrypted wallet's gate is the password: the dialog never opens,
+        // and the import writes as it always has.
+        await keystore.CreateWalletFile(encryptedPath,
+            keystore.NewWallet(undefined, [walletKey.toWIF()], [walletAddress]), "pw")
+        SetWindow(20, {id: 20})
+        keystore.AllowPath(20, encryptedPath)
+        assert.equal((await unlock(20, encryptedPath)).ok, true)
+        dialogResponse = 0
+        assert.equal((await addKeys(20, "pw")).ok, true)
+        assert.equal(dialogCalls.length, 2)
+        assert.deepEqual(await onDisk(encryptedPath, "pw"), {
+            keys: [walletKey.toWIF(), importedWIF],
+            addresses: [walletAddress, importedAddress],
+        })
+    } finally {
+        ForgetWindow(19)
+        keystore.ForgetPaths(19)
+        cleanup(20, dir)
+    }
+})
+
+// Removal's gate mirrors the import's: not an injection - the owned set only
+// shrinks - but destructive, since a passwordless wallet's key leaves the file
+// on nothing more than a bridge call, and with no backup the coins at its
+// address go with it.
+test("removing a passwordless wallet's key is asked in main's dialog, an encrypted one is not", async () => {
+    const dir = tempDir()
+    const openPath = path.join(dir, "remove_open")
+    const encryptedPath = path.join(dir, "remove_encrypted")
+    const spareKey = ECPair.fromPrivateKey(Buffer.alloc(32, 6))
+    const spareAddress = spareKey.getAddress()
+    const twoKeyWallet = () => keystore.NewWallet(undefined,
+        [walletKey.toWIF(), spareKey.toWIF()], [walletAddress, spareAddress])
+    const remove = (id, password) =>
+        handlers[Handlers.RemovePrivateKey](e(id), spareAddress, password)
+    const onDisk = async (walletPath, password) => {
+        const {wallet} = await keystore.ReadWallet(walletPath, password)
+        return {keys: wallet.keys, addresses: wallet.addresses}
+    }
+    try {
+        await keystore.CreateWalletFile(openPath, twoKeyWallet())
+        await openPasswordless(21, openPath)
+
+        // The dialog declines: the refusal throws, and the key stays with the
+        // address it vouches for.
+        dialogResponse = 0
+        const refused = await remove(21, undefined)
+        assert.notEqual(refused.error, undefined)
+        assert.equal(dialogCalls.length, 1)
+        assert.deepEqual(await onDisk(openPath), {
+            keys: [walletKey.toWIF(), spareKey.toWIF()],
+            addresses: [walletAddress, spareAddress],
+        })
+
+        // The same semantics the import pins: main's dialog over the
+        // requesting window, Cancel as both the default and Escape's answer.
+        const {win, options} = dialogCalls[0]
+        assert.equal(win.id, 21)
+        assert.deepEqual(options.buttons, ["Cancel", "Remove"])
+        assert.equal(options.defaultId, 0)
+        assert.equal(options.cancelId, 0)
+
+        // The dialog allows: the key is gone, and the address it alone
+        // vouched for is forgotten with it.
+        dialogResponse = options.buttons.indexOf("Remove")
+        assert.notEqual(dialogResponse, options.cancelId)
+        assert.equal((await remove(21, undefined)).ok, true)
+        assert.equal(dialogCalls.length, 2)
+        assert.deepEqual(await onDisk(openPath),
+            {keys: [walletKey.toWIF()], addresses: [walletAddress]})
+
+        // The removeKeys update op is the same act through the other door, so
+        // it stands behind the same dialog.
+        dialogResponse = 0
+        const refusedOp = await handlers[Handlers.UpdateWallet](
+            e(21), "removeKeys", [walletKey.toWIF()], undefined)
+        assert.notEqual(refusedOp.error, undefined)
+        assert.equal(dialogCalls.length, 3)
+        assert.deepEqual(await onDisk(openPath),
+            {keys: [walletKey.toWIF()], addresses: [walletAddress]})
+
+        // An encrypted wallet's gate is the password: the dialog never opens,
+        // and removal answers as it always has.
+        await keystore.CreateWalletFile(encryptedPath, twoKeyWallet(), "pw")
+        SetWindow(22, {id: 22})
+        keystore.AllowPath(22, encryptedPath)
+        assert.equal((await unlock(22, encryptedPath)).ok, true)
+        dialogResponse = 0
+        assert.equal((await remove(22, "pw")).ok, true)
+        assert.equal(dialogCalls.length, 3)
+        assert.deepEqual(await onDisk(encryptedPath, "pw"),
+            {keys: [walletKey.toWIF()], addresses: [walletAddress]})
+    } finally {
+        ForgetWindow(21)
+        keystore.ForgetPaths(21)
+        cleanup(22, dir)
+    }
+})
+
+// The race the gate must not lose: the dialog waits on a person, and nothing
+// suspends the renderer while it waits - it can open a different wallet on
+// the same window before the answer lands. The approval binds to the wallet
+// the person was asked about, not to whatever the window holds afterward.
+test("an approved removal binds to the wallet the dialog asked about", async () => {
+    const dir = tempDir()
+    const askedPath = path.join(dir, "race_asked")
+    const swappedPath = path.join(dir, "race_swapped")
+    const spareKey = ECPair.fromPrivateKey(Buffer.alloc(32, 8))
+    const spareAddress = spareKey.getAddress()
+    const twoKeyWallet = () => keystore.NewWallet(undefined,
+        [walletKey.toWIF(), spareKey.toWIF()], [walletAddress, spareAddress])
+    const onDisk = async (walletPath) => {
+        const {wallet} = await keystore.ReadWallet(walletPath)
+        return {keys: wallet.keys, addresses: wallet.addresses}
+    }
+    try {
+        // Both wallets hold the spare key, so a removal that followed the
+        // window's state would find the same address in the swapped-in file.
+        await keystore.CreateWalletFile(askedPath, twoKeyWallet())
+        await keystore.CreateWalletFile(swappedPath, twoKeyWallet())
+        await openPasswordless(23, askedPath)
+        keystore.AllowPath(23, swappedPath)
+
+        // While the dialog is up the renderer opens the other wallet on the
+        // same window; then the person approves what they were asked.
+        dialogResponse = async () => {
+            assert.equal((await handlers[Handlers.UnlockWallet](
+                e(23), swappedPath, undefined)).ok, true)
+            return 1
+        }
+        assert.equal((await handlers[Handlers.RemovePrivateKey](
+            e(23), spareAddress, undefined)).ok, true)
+        assert.equal(dialogCalls.length, 1)
+
+        // The wallet the person saw lost the key; the one opened mid-dialog
+        // was never touched.
+        assert.deepEqual(await onDisk(askedPath),
+            {keys: [walletKey.toWIF()], addresses: [walletAddress]})
+        assert.deepEqual(await onDisk(swappedPath), {
+            keys: [walletKey.toWIF(), spareKey.toWIF()],
+            addresses: [walletAddress, spareAddress],
+        })
+    } finally {
+        cleanup(23, dir)
     }
 })
 

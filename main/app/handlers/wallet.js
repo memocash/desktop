@@ -289,6 +289,25 @@ const updateWallet = async (winId, op, values, password) => {
     if (changingSettings && !encrypted) {
         await confirmLoosenedSpending(winId, filename, values)
     }
+    // An imported key widens what the wallet calls its own: its address joins
+    // the owned lists, so payments routed there read as change - kept out of
+    // the outgoing total and the leaving-payments list a send confirmation
+    // shows. On an encrypted wallet the import already needs the password,
+    // because the keys live in the secret envelope. With no password to prove,
+    // the import is put in front of the person at the machine - otherwise
+    // anything that can reach this handler could slip in a key it generated
+    // and collect "change" at an address it controls.
+    if (op === "addKeys" && !encrypted) {
+        await confirmKeyImport(winId)
+    }
+    // Removal is the same list through the other door, gated the same way. It
+    // injects nothing - the owned set only shrinks - but it is destructive:
+    // the key leaves the file, and without a backup the coins at its address
+    // are unspendable. An encrypted wallet's gate stays the password the
+    // envelope read demands.
+    if (op === "removeKeys" && !encrypted) {
+        await confirmKeyRemoval(winId)
+    }
     await keystore.WithWalletLock(filename, async () => {
         if (keystore.UpdateTouchesSecret(op)) {
             const {wallet: stored} = await keystore.ReadWallet(
@@ -388,6 +407,55 @@ const confirmLoosenedSpending = async (winId, filename, values) => {
     }
 }
 
+// Asks the person at the machine whether a passwordless wallet may import a
+// private key, in the same native dialog the settings path uses - drawn by
+// main, modal to the asking window, impossible for the page to cover or
+// answer. Importing is a rare, deliberate act, so the friction lands on
+// nobody's routine. Declining throws, so nothing is written.
+const confirmKeyImport = async (winId) => {
+    const {response} = await dialog.showMessageBox(GetWindow(winId), {
+        type: "warning",
+        buttons: ["Cancel", "Import"],
+        defaultId: 0,
+        cancelId: 0,
+        title: "Key import",
+        message: "Import a private key into this wallet?",
+        detail: "This wallet has no password. An imported key adds its address " +
+            "to what this wallet treats as its own, so coins sent there count " +
+            "as staying in the wallet. If you didn't just choose to import a " +
+            "key, cancel.",
+    })
+    if (response !== 1) {
+        throw new Error("not allowed in the confirmation dialog")
+    }
+}
+
+// The removal mirror of confirmKeyImport: on a passwordless wallet, forgetting
+// a key is asked of the person at the machine, in the same dialog main draws
+// for the import. Losing a key is not the theft the import gate closes, but a
+// wallet whose owner kept no backup loses the coins at that address with it.
+// Callers judge whether the gate applies against state captured before asking,
+// and bind the write to that same capture: the dialog waits on a person, and
+// nothing suspends the renderer while it waits - it could open a different
+// wallet on the same window, and an approval must not carry over to it.
+const confirmKeyRemoval = async (winId) => {
+    const {response} = await dialog.showMessageBox(GetWindow(winId), {
+        type: "warning",
+        buttons: ["Cancel", "Remove"],
+        defaultId: 0,
+        cancelId: 0,
+        title: "Key removal",
+        message: "Remove a private key from this wallet?",
+        detail: "This wallet has no password. The key and the address it " +
+            "unlocks are forgotten, and without a backup of the key the " +
+            "coins at that address cannot be spent. If you didn't just " +
+            "choose to remove a key, cancel.",
+    })
+    if (response !== 1) {
+        throw new Error("not allowed in the confirmation dialog")
+    }
+}
+
 // Puts a person in front of a passwordless wallet's secrets. An encrypted
 // wallet's exports are gated by the password itself; with no password to know,
 // the gate is the same native dialog the settings path uses - drawn by main,
@@ -453,9 +521,12 @@ const walletKey = (wallet, address) => {
 const exportPrivateKey = async (winId, address, password) =>
     walletKey((await readForOperation(winId, password)).wallet, address)
 
-const removePrivateKey = async (winId, address, password) => {
-    const state = GetWallet(winId)
-    const {wallet: stored} = await readForOperation(winId, password)
+// Works entirely from the state its caller captured, never from the window's
+// current state: a removal that was confirmed over one wallet must land on
+// that wallet's file, whatever the window has been switched to since.
+const removePrivateKey = async (state, address, password) => {
+    const {wallet: stored} = await keystore.ReadWallet(
+        state.filename, state.encrypted ? password : undefined)
     const key = walletKey(stored, address)
     if (!key || !(stored.keys || []).includes(key)) {
         throw new Error("address is not backed by an imported key")
@@ -804,9 +875,20 @@ const WalletHandlers = () => {
             return exportPrivateKey(e.sender.id, address, password)
         }))
     ipcMain.handle(Handlers.RemovePrivateKey, async (e, address, password) =>
-        operationResult(() => keystore.WithWalletLock(
-            GetWallet(e.sender.id).filename,
-            () => removePrivateKey(e.sender.id, address, password))))
+        operationResult(async () => {
+            // The window's state, captured once: the gate judges it, and the
+            // removal is bound to it - never re-read after the dialog, where
+            // a renderer could have switched the window to another wallet.
+            // Asked before the file's lock is taken: the dialog waits on a
+            // person, and holding the lock across that wait would block every
+            // update queued behind it.
+            const state = GetWallet(e.sender.id)
+            if (state && !state.encrypted) {
+                await confirmKeyRemoval(e.sender.id)
+            }
+            return keystore.WithWalletLock(state.filename,
+                () => removePrivateKey(state, address, password))
+        }))
     ipcMain.handle(Handlers.CheckWalletFile, async (e, walletName) =>
         operationResult(() => keystore.WalletFileState(e.sender.id, walletName)))
     ipcMain.handle(Handlers.GetExistingWalletFiles, async () => keystore.ListWalletFiles())
