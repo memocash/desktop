@@ -59,10 +59,27 @@ const Handlers = {
     WalletLoaded: "wallet-loaded",
     GetWalletInfo: "get-wallet-info",
     GraphQL: "graphql",
-    GraphQLSubscribe: "graphql-subscribe",
-    GraphQLSubscribeClose: "graphql-subscribe-close",
+    // The syncs main runs against the index on the renderer's behalf. The
+    // renderer names what to sync and hears progress on a per-request
+    // listener; every write to the database happens on this side.
+    SyncHistory: "sync-history",
+    SyncSlp: "sync-slp",
+    SyncBlock: "sync-block",
+    SyncAliases: "sync-aliases",
+    SyncProfiles: "sync-profiles",
+    SyncProfileLinks: "sync-profile-links",
+    SyncLinkedProfiles: "sync-linked-profiles",
+    SyncPosts: "sync-posts",
+    SyncNewPosts: "sync-new-posts",
+    SyncChat: "sync-chat",
+    SyncChatFollows: "sync-chat-follows",
+    FetchTransaction: "fetch-transaction",
+    SyncListen: "sync-listen",
+    SyncListenClose: "sync-listen-close",
     GetWindowNetwork: "get-window-network",
-    SetWindowNetwork: "set-window-network",
+    // A window's network is chosen by id from the configuration main holds;
+    // the page never hands main a server of its own.
+    SelectNetwork: "select-network",
     GetTheme: "get-theme",
     SetTheme: "set-theme",
     CheckForUpdates: "check-for-updates",
@@ -70,28 +87,15 @@ const Handlers = {
     SetUpdatePrefs: "set-update-prefs",
     OpenPreviewSend: "open-preview-send",
     OpenTransaction: "open-transaction",
-    SaveTransactions: "save-transactions",
-    SaveBlock: "save-block",
-    SaveChatRoom: "save-chat-room",
-    SaveChatRoomFollows: "save-chat-room-follows",
-    SaveMemoPosts: "save-memo-posts",
-    SaveMemoProfileImages: "save-memo-profile-images",
-    SaveMemoProfiles: "save-memo-profiles",
-    SaveAddressAliases: "save-address-aliases",
     GetPic: "get-pic",
-    GenerateHistory: "generate-history",
     GetTransactions: "get-transactions",
     GetUtxos: "get-utxos",
     GetTransaction: "get-transaction",
     GetCoins: "get-coins",
-    GetAddressSyncs: "get-address-syncs",
-    SaveAddressSync: "save-address-sync",
     GetAddressTokenBalances: "get-address-token-balances",
     GetTokenBalances: "get-token-balances",
     GetTokenBatons: "get-token-batons",
-    GetUncheckedSlpTxs: "get-unchecked-slp-txs",
     GetSlpGenesis: "get-slp-genesis",
-    SaveSlp: "save-slp",
 }
 
 const Listeners = {
@@ -100,9 +104,10 @@ const Listeners = {
     SpendPromptStep: "spend-prompt-step",
     SelectTab: "select-tab",
     ToggleTab: "toggle-tab",
-    GraphQLClosePrefix: "graphql-close-",
-    GraphQLDataPrefix: "graphql-data-",
-    GraphQLOpenPrefix: "graphql-open-",
+    SyncClosePrefix: "sync-close-",
+    SyncDataPrefix: "sync-data-",
+    SyncOpenPrefix: "sync-open-",
+    SyncProgressPrefix: "sync-progress-",
 }
 
 module.exports = {

@@ -1,6 +1,8 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const {IsLoopbackHost, ValidateNetworkConfig, ValidateNetworkOption} = require("./network_config")
+const {
+    DefaultNetworks, IsLoopbackHost, UntrustedServers, ValidateNetworkConfig, ValidateNetworkOption,
+} = require("./network_config")
 
 const option = {
     Name: "BCH", Ruleset: "bch", DatabaseFile: "~/.memo/memo.db",
@@ -53,4 +55,19 @@ test("the loopback rule answers the same on its own: the network editor asks it 
     for (const host of ["example.com", "192.168.1.5", "127.0.0.1.example.com", "::1"]) {
         assert.equal(IsLoopbackHost(host), false, host)
     }
+})
+
+// What a save has to ask about: servers that are neither shipped, nor on this
+// machine, nor approved before. Each is named once, in list order, and an
+// approval is by server - it holds whichever entry the server moves to.
+test("the untrusted servers of a list are the ones nobody vouched for, named once each", () => {
+    const at = (Server, Id = Server) => ({...DefaultNetworks[0], Id, Server})
+    assert.deepEqual(UntrustedServers(DefaultNetworks, []), [])
+    assert.deepEqual(UntrustedServers([at("http://localhost:1234"), at("http://[::1]:5")], undefined), [])
+    assert.deepEqual(UntrustedServers([at("https://two.example"), at("https://one.example"),
+        at("https://two.example", "again")], []), ["https://two.example", "https://one.example"])
+    assert.deepEqual(UntrustedServers([at("https://one.example", "moved"), at("https://two.example")],
+        ["https://one.example"]), ["https://two.example"])
+    // The presets validate, so every shipped server is on the trusted list.
+    assert.deepEqual(ValidateNetworkConfig({Networks: DefaultNetworks}), {Networks: DefaultNetworks})
 })

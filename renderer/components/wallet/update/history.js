@@ -2,271 +2,49 @@ import {Status} from "../../util/connect"
 import {BeginActivity, Plural} from "../../util/activity"
 import {Tabs} from "../../../../main/common/util"
 
-// The most transactions the index returns for an address in one query.
-const PageSize = 1000
-
 // Transactions feed every balance the wallet shows, so a history sync marks all
 // of those tabs as busy - each of them is showing a number that's about to
 // change, or nothing at all until this lands. Notifications included: payments
 // and token transfers are notifications, derived from these same rows.
 const HistoryScopes = [Tabs.History, Tabs.Coins, Tabs.Addresses, Tabs.Tokens, Tabs.Send, Tabs.Notifications]
 
-// The index pages an address by the time it first saw each transaction, so the
-// sync resumes from the last transaction it reached (stored per address by
-// saveAddressSync) rather than from a time worked out from what's already
-// saved. Resuming from anything later than that transaction - a block
-// timestamp, or a transaction some other sync saved out of order - silently
-// skips every transaction the index saw in between, and a skipped transaction
-// that spends a wallet output leaves that output listed as an unspent coin.
+// The download itself runs in main (main/sync/history.js): this asks for it,
+// turns its progress into activity lines and re-renders, and reports how it
+// ended. An index failure part-way is a disconnect, not a thrown error, the
+// way it always was - whatever main saved before it is already in the
+// database.
 const UpdateHistory = async ({wallet, setConnected, setLastUpdate}) => {
-    let addressList = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
+    const addresses = wallet.addresses.concat(wallet.changeList, wallet.slpList || [])
     const activity = BeginActivity(
-        `Downloading transactions for ${Plural(addressList.length, "address", "addresses")}`,
+        `Downloading transactions for ${Plural(addresses.length, "address", "addresses")}`,
         {scopes: HistoryScopes})
+    const notify = () => {
+        if (typeof setLastUpdate === "function") {
+            setLastUpdate((new Date()).toISOString())
+        }
+    }
+    let result
     try {
-        const saved = await syncHistory({addressList, setConnected, setLastUpdate, activity})
-        // A failed page has already ended the activity with its own message,
-        // and ending twice is a no-op, so this only closes the good path.
-        activity.end(`Downloaded ${Plural(saved, "transaction")}`)
+        result = await window.electron.syncHistory({addresses, onProgress: (progress) => {
+            if (progress.saved !== undefined) {
+                activity.log(`Saved ${Plural(progress.saved, "transaction")}`)
+            }
+            if (progress.updated) {
+                notify()
+            }
+        }})
     } catch (e) {
         activity.fail(e)
         throw e
     }
-}
-
-const syncHistory = async ({addressList, setConnected, setLastUpdate, activity}) => {
-    let saved = 0
-    const syncs = await window.electron.getAddressSyncs(addressList)
-    let addresses = new Array(addressList.length)
-    for (let i = 0; i < addressList.length; i++) {
-        addresses[i] = {
-            address: addressList[i],
-            hash: "", seen: null
-        }
-        for (let j = 0; j < syncs.length; j++) {
-            if (syncs[j].address !== addressList[i]) {
-                continue
-            }
-            addresses[i].hash = syncs[j].tx_hash
-            addresses[i].seen = syncs[j].seen
-        }
-    }
-    for (let i = 0; i < 100 && addresses.length; i++) {
-        let data
-        try {
-            data = await loadOutputs({addresses})
-        } catch (e) {
-            setConnected(Status.Disconnected)
-            console.log("Error connecting to index server")
-            console.log(e)
-            activity.fail(e)
-            return saved
-        }
-        let txs = []
-        let pages = []
-        for (let name in data) {
-            if (data[name].txs == null) {
-                console.log("ERROR: null outputs for address: " + data[name].address)
-                console.log(data[name])
-                continue
-            }
-            for (let j = 0; j < data[name].txs.length; j++) {
-                txs.push(data[name].txs[j])
-                for (let h = 0; h < data[name].txs[j].outputs.length; h++) {
-                    if (!data[name].txs[j].outputs[h].spends) {
-                        continue
-                    }
-                    for (let k = 0; k < data[name].txs[j].outputs[h].spends.length; k++) {
-                        txs.push(data[name].txs[j].outputs[h].spends[k].tx)
-                    }
-                }
-            }
-            pages.push({address: data[name].address, txs: data[name].txs})
-        }
-        await window.electron.saveTransactions(txs)
-        if (txs.length) {
-            // The running total, not this round's count: a big wallet pages
-            // through the same size batch over and over, and a column of
-            // identical "Saved 2,000 transactions" lines says nothing about
-            // whether the download is getting anywhere.
-            saved += txs.length
-            activity.log(`Saved ${Plural(saved, "transaction")}`)
-        }
-        for (let p = 0; p < pages.length; p++) {
-            // Only save the sync position once the page's transactions are in
-            // the database, so an interrupted run resumes before them instead
-            // of past them.
-            const sync = await window.electron.saveAddressSync(pages[p].address,
-                pages[p].txs.map(tx => ({hash: tx.hash, seen: tx.seen})))
-            for (let j = 0; j < addresses.length; j++) {
-                if (addresses[j].address !== pages[p].address) {
-                    continue
-                }
-                // A short page is the end of the address's history. A full page
-                // that doesn't move the sync forward would ask for the same
-                // 1000 transactions until the loop runs out.
-                if (pages[p].txs.length < PageSize || !sync ||
-                    (sync.seen === addresses[j].seen && sync.tx_hash === addresses[j].hash)) {
-                    addresses.splice(j, 1)
-                    break
-                }
-                addresses[j].hash = sync.tx_hash
-                addresses[j].seen = sync.seen
-                console.log("looping address: " + addresses[j].address + ", seen: " + addresses[j].seen +
-                    ", hash: " + addresses[j].hash)
-                break
-            }
-        }
-        // Publish each round rather than only at the end. The History tab reads
-        // the history table, which nothing but GenerateHistory writes, so a
-        // wallet with several pages of transactions used to sit on last
-        // session's rows (or on nothing at all, the first time) until the whole
-        // download finished. Regenerating per round costs one pass over the
-        // saved outputs, and only when that round actually brought something
-        // back.
-        if (txs.length) {
-            await window.electron.generateHistory(addressList)
-            if (typeof setLastUpdate === "function") {
-                setLastUpdate((new Date()).toISOString())
-            }
-        }
-    }
-    // Again at the end, for the run that saved nothing: confirmations move with
-    // every block, so the rows still need rebuilding against the current tip.
-    await window.electron.generateHistory(addressList)
-    if (typeof setLastUpdate === "function") {
-        setLastUpdate((new Date()).toISOString())
+    notify()
+    if (!result.connected) {
+        setConnected(Status.Disconnected)
+        activity.fail(new Error(result.error))
+        return
     }
     setConnected(Status.Connected)
-    return saved
-}
-
-const loadOutputs = async ({addresses}) => {
-    let variables = {}
-    let paramsStrings = []
-    let subQueries = []
-    for (let i = 0; i < addresses.length; i++) {
-        paramsStrings.push(`$address${i}: Address!, $start${i}: Date, $tx${i}: Hash`)
-        variables["address" + i] = addresses[i].address
-        variables["start" + i] = addresses[i].seen
-        variables["tx" + i] = addresses[i].hash
-        subQueries.push(`
-        address${i}: address(address: $address${i}) {
-            address
-            txs(start: $start${i}, tx: $tx${i}) {
-                hash
-                seen
-                raw
-                slp {
-                    validity
-                }
-                inputs {
-                    index
-                    prev_hash
-                    prev_index
-                }
-                outputs {
-                    index
-                    amount
-                    lock {
-                        address
-                    }
-                    script
-                    slp {
-                        amount
-                        token_hash
-                        genesis {
-                            hash
-                            token_type
-                            decimals
-                            ticker
-                            name
-                            doc_url
-                        }
-                    }
-                    slp_baton {
-                        token_hash
-                        genesis {
-                            hash
-                            token_type
-                            decimals
-                            ticker
-                            name
-                            doc_url
-                        }
-                    }
-                    spends {
-                        tx {
-                            hash
-                            seen
-                            raw
-                            slp {
-                                validity
-                            }
-                            inputs {
-                                index
-                                prev_hash
-                                prev_index
-                            }
-                            outputs {
-                                index
-                                amount
-                                script
-                                lock {
-                                    address
-                                }
-                                slp {
-                                    amount
-                                    token_hash
-                                    genesis {
-                                        hash
-                                        token_type
-                                        decimals
-                                        ticker
-                                        name
-                                        doc_url
-                                    }
-                                }
-                                slp_baton {
-                                    token_hash
-                                    genesis {
-                                        hash
-                                        token_type
-                                        decimals
-                                        ticker
-                                        name
-                                        doc_url
-                                    }
-                                }
-                            }
-                            blocks {
-                                block {
-                                    hash
-                                    timestamp
-                                    height
-                                }
-                            }
-                        }
-                    }
-                }
-                blocks {
-                    block {
-                        hash
-                        timestamp
-                        height
-                    }
-                }
-            }
-        }
-        `)
-    }
-    const query = `
-    query (${paramsStrings.join(", ")}) {
-        ${subQueries.join("\n")}
-    }
-    `
-    let data = await window.electron.graphQL(query, variables)
-    return data.data
+    activity.end(`Downloaded ${Plural(result.saved, "transaction")}`)
 }
 
 export {HistoryScopes}

@@ -5,17 +5,6 @@
 // by clicking through the app.
 const {IsLoopbackHost} = require("../../../../main/common/util/network_config")
 
-// The configured network a wallet is about to open on, found by the id the
-// load screen's dropdown holds. Refusing an unmatched id is the point: the
-// caller's fallthrough used to open the wallet with no network set at all.
-const SelectedNetwork = (networkConfig, selectedId) => {
-    const index = networkConfig.Networks.findIndex((option) => option.Id === selectedId)
-    if (index === -1) {
-        throw new Error("no configured network matches the selection")
-    }
-    return {index, option: networkConfig.Networks[index]}
-}
-
 // What a change of the editor's list selection does: switch to the named
 // network, unless unsaved changes make it ask first - and a declined ask
 // keeps the current network, telling the caller to put the highlight back.
@@ -73,4 +62,4 @@ const ServerError = (server) => {
     return ""
 }
 
-module.exports = {NextSelection, SelectedNetwork, ServerError, SubmitNetworkForm}
+module.exports = {NextSelection, ServerError, SubmitNetworkForm}

@@ -29,10 +29,4 @@ module.exports = {
     getRecentSetName: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetName, addresses),
     getRecentSetPic: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetPic, addresses),
     getRecentSetProfile: (addresses) => ipcRenderer.invoke(Handlers.GetRecentSetProfile, addresses),
-    saveChatRoom: async (room) => await ipcRenderer.invoke(Handlers.SaveChatRoom, room),
-    saveChatRoomFollows: async (roomFollows) => await ipcRenderer.invoke(Handlers.SaveChatRoomFollows, roomFollows),
-    saveMemoPosts: async (posts) => await ipcRenderer.invoke(Handlers.SaveMemoPosts, posts),
-    saveMemoProfiles: async (profiles) => await ipcRenderer.invoke(Handlers.SaveMemoProfiles, profiles),
-    saveAddressAliases: async (aliases) => await ipcRenderer.invoke(Handlers.SaveAddressAliases, aliases),
-    saveMemoProfileImages: async (profiles) => await ipcRenderer.invoke(Handlers.SaveMemoProfileImages, profiles),
 }

@@ -70,4 +70,57 @@ const ValidateNetworkConfig = (config) => {
     return config.Last === undefined ? {Networks: networks} : {Networks: networks, Last: config.Last}
 }
 
-module.exports = {IsLoopbackHost, ValidateNetworkConfig, ValidateNetworkOption}
+// The networks the app ships with, and what a fresh install runs on until
+// network.json says otherwise. They live here, on main's side, because they
+// are also the servers a change may name without anyone being asked.
+const DefaultNetworks = [
+    {
+        Name: "BCH",
+        Ruleset: "bch",
+        DatabaseFile: "~/.memo/memo.db",
+        Server: "https://graph.cash",
+        Id: "bch",
+    },
+    {
+        Name: "BSV",
+        Ruleset: "bsv",
+        DatabaseFile: "~/.memo/memo-sv.db",
+        Server: "http://127.0.0.1:26772",
+        Id: "bsv",
+    },
+    {
+        Name: "Dev",
+        Ruleset: "bch",
+        DatabaseFile: "~/.memo/memo-dev.db",
+        Server: "http://127.0.0.1:26770",
+        Id: "dev",
+    },
+]
+
+// The servers in a proposed list that nobody has vouched for yet: not shipped
+// as a preset, not on this machine, and not on the list of servers a person
+// allowed in main's dialog. Everything the wallet trusts about a token, and
+// every transaction it stores, comes from whichever server it is pointed at,
+// so these are the ones that go in front of a person. A server merely present
+// in the stored file is not trusted by that: files written before main owned
+// them were written by the page, with nobody asked. Each is named once, in
+// the order the list gives them.
+const UntrustedServers = (networks, approved) => {
+    const trusted = new Set([...DefaultNetworks.map(({Server}) => Server), ...(approved || [])])
+    const untrusted = []
+    for (const {Server} of networks) {
+        if (!trusted.has(Server) && !IsLoopbackHost(new URL(Server).hostname) &&
+            !untrusted.includes(Server)) {
+            untrusted.push(Server)
+        }
+    }
+    return untrusted
+}
+
+module.exports = {
+    DefaultNetworks,
+    IsLoopbackHost,
+    UntrustedServers,
+    ValidateNetworkConfig,
+    ValidateNetworkOption,
+}

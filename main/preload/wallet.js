@@ -29,6 +29,18 @@ const keepSessionKey = ({sessionKey: key, ...rest}) => {
 const updateWallet = (op) => async (values, password) =>
     keepSessionKey(await ipcRenderer.invoke(Handlers.UpdateWallet, op, values, password))
 
+// A rejection from a handler arrives prefixed with the channel it came over
+// ("Error invoking remote method 'x': Error: ..."). Callers that show the
+// reason to the person get the reason alone.
+const unwrapped = async (invoked) => {
+    try {
+        return await invoked
+    } catch (error) {
+        throw new Error(String(error.message)
+            .replace(/^Error invoking remote method '[^']*': (?:[A-Za-z]*Error: )?/, ""))
+    }
+}
+
 // Main asks this window to make a spend on behalf of a preview window it opened,
 // which has no key of its own. It is the same call this window makes for itself,
 // on the same key and against the same budget - only the result travels back, so
@@ -80,7 +92,11 @@ module.exports = {
             await ipcRenderer.invoke(Handlers.UnlockWallet, walletName, password))
     },
     walletLoaded: () => ipcRenderer.send(Handlers.WalletLoaded),
-    saveNetworkConfig: async (networkConfig) => ipcRenderer.invoke(Handlers.SaveNetworkConfig, networkConfig),
+    // The page shows what these refuse for - next to the field, or in a
+    // dialog of its own - so the message crosses without the channel name
+    // Electron prefixes to a handler's rejection.
+    saveNetworkConfig: async (networkConfig) =>
+        unwrapped(ipcRenderer.invoke(Handlers.SaveNetworkConfig, networkConfig)),
     // No password crosses from the page: main signs on the session if the budget
     // covers it, and otherwise asks in a window of its own. What this offers is a
     // key it cannot read, and what it learns is whether that was enough.
@@ -106,5 +122,5 @@ module.exports = {
     },
     getNetworkConfig: async () => ipcRenderer.invoke(Handlers.GetNetworkConfig),
     getWindowNetwork: async () => await ipcRenderer.invoke(Handlers.GetWindowNetwork),
-    setWindowNetwork: async (network) => await ipcRenderer.invoke(Handlers.SetWindowNetwork, network),
+    selectNetwork: async (id) => unwrapped(ipcRenderer.invoke(Handlers.SelectNetwork, id)),
 }

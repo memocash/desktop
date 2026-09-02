@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electron', {
     ...require("./data"),
     ...require("./graphql"),
     ...require("./profile"),
+    ...require("./sync"),
     ...require("./theme"),
     ...require("./update"),
     ...require("./wallet"),
