@@ -72,6 +72,26 @@ const ForgetWindowOnClose = (win) => {
     })
 }
 
+// The subscriptions a page opened are the page's, not the window's. A reload
+// or a navigation replaces the document that asked for them while the window
+// and its WebContents live on, and the new document opens subscriptions of
+// its own; nothing closes the old ones from the renderer side, because the
+// page that would have is gone. So main closes every socket the window holds
+// when its page goes: once a new document has committed (did-navigate), once
+// an error page has committed in its place (did-fail-load - a failed load is
+// not followed by did-navigate), or once the renderer process has died under
+// it (render-process-gone). Everything held at any of those moments is the
+// old page's - a new document cannot have asked for anything before its
+// commit - and the closes that follow are dropped by the sync handler's frame
+// check rather than delivered to a page that never asked.
+const CloseSocketsWithPage = (win) => {
+    const winId = win.webContents.id
+    win.webContents.on("did-navigate", () => CloseWindowSockets(winId))
+    win.webContents.on("did-fail-load", (e, code, description, url, isMainFrame) =>
+        isMainFrame && CloseWindowSockets(winId))
+    win.webContents.on("render-process-gone", () => CloseWindowSockets(winId))
+}
+
 // The single point where a url from a renderer reaches the operating system.
 // Anything that isn't plain http(s) is dropped rather than passed on - see
 // SafeExternalUrl for what that keeps out and why.
@@ -149,6 +169,7 @@ const CreateWindow = async () => {
     SetMenu(win.webContents.id, menu.SimpleMenu(win))
     SetWindow(win.webContents.id, win)
     ForgetWindowOnClose(win)
+    CloseSocketsWithPage(win)
     await win.loadURL(AppUrl + "/")
     windowNumber++
 }
@@ -168,6 +189,7 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     SetMenu(win.webContents.id, menu.SimpleMenu(win))
     SetWindow(win.webContents.id, win)
     ForgetWindowOnClose(win)
+    CloseSocketsWithPage(win)
     // The wallet as the parent holds it, minus its session. A transaction window
     // has no key of its own - the key belongs to the document that unlocked the
     // wallet - so a sealed password here could never be opened, and would go on
@@ -203,6 +225,7 @@ module.exports = {
     eConf,
     ApplyContentsSecurity,
     BackgroundColor,
+    CloseSocketsWithPage,
     OpenExternalUrl,
     GetRuntimeNetworkOption,
     CreateWindow,

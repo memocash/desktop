@@ -12,11 +12,32 @@ const {
 // a renderer that wants to see the result reads it back through the usual
 // Get handlers, the same as anything else in the database.
 
+// Answers go to the frame that asked, for as long as it shows the document
+// that asked. A reload or a navigation replaces the document while the
+// WebContents lives on, and Electron keeps the same WebFrameMain object too,
+// pointed at the new document - so neither the sender's isDestroyed() nor
+// the frame's tells the old page from the new one. The frame token does: it
+// changes with every document. A frame Electron has marked disposed cannot
+// be sent to at all, and Electron logs an error for each attempt, so that is
+// checked first (its token cannot be read at all in that state).
+const answerer = (e) => {
+    const frame = e.senderFrame
+    const token = frame.frameToken
+    return (channel, data) => {
+        if (frame.isDestroyed() || frame.frameToken !== token) {
+            return
+        }
+        frame.send(channel, data)
+    }
+}
+
 // Progress goes back on a channel named by the request, so two syncs of the
 // same kind running at once - a profile modal and the feed, say - don't hear
 // each other's rounds.
-const reporter = (e, id) => (progress) =>
-    !e.sender.isDestroyed() && e.sender.send(Listeners.SyncProgressPrefix + id, progress)
+const reporter = (e, id) => {
+    const answer = answerer(e)
+    return (progress) => answer(Listeners.SyncProgressPrefix + id, progress)
+}
 
 const SyncHandlers = () => {
     ipcMain.handle(Handlers.SyncHistory, (e, {id, addresses}) =>
@@ -39,7 +60,10 @@ const SyncHandlers = () => {
     // them, on the same data/open/close channels the renderer's reconnect
     // loop has always listened on. The window half of the socket's name
     // comes from the sender, so one window's subscriptions are never
-    // reachable by another window's ids.
+    // reachable by another window's ids. The subscription is the page's,
+    // though, not the window's: main closes it when the page goes (see
+    // CloseSocketsWithPage), and answers it only while the page is still
+    // the one that asked.
     ipcMain.on(Handlers.SyncListen, (e, {id, kind, variables, addresses}) => {
         const subscription = Subscriptions[kind]
         if (!subscription) {
@@ -47,7 +71,7 @@ const SyncHandlers = () => {
             return
         }
         const conf = eConf(e)
-        const send = (channel, data) => !e.sender.isDestroyed() && e.sender.send(channel, data)
+        const send = answerer(e)
         Subscribe({
             network: conf, windowId: e.sender.id, id, query: subscription.query, variables,
             callback: (data) => subscription.save({

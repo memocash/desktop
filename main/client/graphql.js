@@ -38,9 +38,11 @@ const CloseSocket = ({windowId, id}) => {
     delete sockets[key]
 }
 
-// Everything a window subscribed to goes when the window does - otherwise the
-// sockets outlive their audience, holding connections and pushing frames at a
-// callback whose sender is destroyed.
+// Everything a window subscribed to goes when the window does, or when the
+// page that subscribed does (a reload, a navigation, a failed load, a dead
+// renderer - see window.js) -
+// otherwise the sockets outlive their audience, holding connections and
+// pushing frames at a callback whose page is gone.
 const CloseWindowSockets = (windowId) => {
     for (const key of Object.keys(sockets)) {
         if (key.startsWith(windowId + ":")) {
