@@ -93,9 +93,13 @@ const confirmServers = async (winId, servers, ifNot) => {
 
 // The approvals are read once, before the dialog, and what is written is the
 // request as validated plus exactly the servers the dialog named against that
-// reading: the dialog waits on a person while the page keeps running. A
-// request carrying an approval list of its own fails validation - no such
-// key is part of the shape the page may send.
+// reading: the dialog waits on a person while the page keeps running. A save
+// is the editor's whole list, so it replaces whatever another window wrote
+// while the dialog was open - and reading the record again afterwards would
+// change nothing, since any server the request holds that was approved
+// meanwhile is one this dialog named too, and the record is pruned to the
+// request either way. A request carrying an approval list of its own fails
+// validation - no such key is part of the shape the page may send.
 const saveNetworkConfig = async (winId, networkConfig) => {
     const validated = ValidateNetworkConfig(networkConfig)
     const {approved} = await readStored()
@@ -113,16 +117,33 @@ const saveNetworkConfig = async (winId, networkConfig) => {
 // asked about here before the window is set onto it. The choice is
 // remembered as the default for the next load, the way the load screen
 // always did.
+//
+// A selection changes only Last, but it writes the whole file, so what it
+// writes has to be the file as it stands when the write happens - not as it
+// stood before the dialog. The dialog waits on a person, and another load
+// window (the menu opens as many as asked for) can save an edit meanwhile;
+// writing back the earlier reading would quietly revert that edit and drop
+// the approval it recorded. So after a dialog the files are read again and
+// the selection is made against that reading. The dialog vouched for one
+// server by name: an entry that is gone, or now points elsewhere, is not
+// what the person answered for, and the selection is refused.
 const selectNetwork = async (winId, id) => {
-    const {config, approved} = await readStored()
-    const index = config.Networks.findIndex((option) => option.Id === id)
+    let {config, approved} = await readStored()
+    const find = (config) => config.Networks.findIndex((option) => option.Id === id)
+    let index = find(config)
     if (typeof id !== "string" || index === -1) {
         throw new Error("no configured network matches the selection")
     }
-    const option = config.Networks[index]
+    let option = config.Networks[index]
     const untrusted = UntrustedServers([option], approved)
     if (untrusted.length) {
-        await confirmServers(winId, untrusted, "choose this network")
+        await confirmServers(winId, untrusted, "choose this network");
+        ({config, approved} = await readStored())
+        index = find(config)
+        if (index === -1 || config.Networks[index].Server !== option.Server) {
+            throw new Error("the network changed while the dialog was open")
+        }
+        option = config.Networks[index]
     }
     SetNetworkOption(winId, option)
     await writeStored({...config, Last: index}, [...approved, ...untrusted])

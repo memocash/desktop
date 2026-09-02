@@ -16,12 +16,21 @@ const stub = (request, exports) => {
 }
 const dialogCalls = []
 let dialogResponse = 0
+// What happens while the dialog is open, before it is answered: the page in
+// another window keeps running, and can save. Runs once, then clears itself,
+// so a save it makes that opens a dialog of its own is answered plainly.
+let duringDialog = null
 
 stub("electron", {
     app: {isPackaged: true},
     dialog: {
         showMessageBox: async (win, options) => {
             dialogCalls.push({win, options})
+            if (duringDialog) {
+                const meanwhile = duringDialog
+                duringDialog = null
+                await meanwhile()
+            }
             return {response: dialogResponse}
         },
     },
@@ -51,6 +60,7 @@ test.beforeEach(() => {
     Dir.NetworkApprovedFile = path.join(tempDir, "network-approved-" + (files++) + ".json")
     dialogCalls.length = 0
     dialogResponse = 0
+    duringDialog = null
 })
 const stored = () => JSON.parse(fs.readFileSync(Dir.NetworkConfigFile, "utf8"))
 const approvals = () => fs.existsSync(Dir.NetworkApprovedFile)
@@ -367,4 +377,62 @@ test("a record left stale by a failed write does not vouch for a re-added server
     dialogResponse = 1
     await save(1, custom)
     assert.deepEqual(approvals(), ["https://index.example"])
+})
+
+// A selection changes Last, but writes the whole file. While its dialog
+// waits on a person, another load window can save an edit - here pointing
+// the Dev entry at a local port, and approving a new BSV server in a dialog
+// of its own. Writing back what was read before the dialog would revert the
+// edit and drop that approval; the selection must land on the file as it
+// stands, and the dialog's own approval beside the other window's.
+test("a selection answered after another window saved lands on that save, not on what it read", async () => {
+    const legacy = withServer(presets(), "bch", "https://index.example")
+    fs.writeFileSync(Dir.NetworkConfigFile, JSON.stringify(legacy))
+    SetWindow(50, {id: 50})
+    dialogResponse = 1
+    const edit = withServer(withServer(legacy, "dev", "http://localhost:1"), "bsv", "https://one.example")
+    duringDialog = async () => {
+        await save(1, edit)
+        assert.deepEqual(approvals(), ["https://index.example", "https://one.example"])
+    }
+    const selected = await select(50, "bch")
+    assert.equal(selected.Server, "https://index.example")
+    assert.equal(GetNetworkOption(50).Server, "https://index.example")
+    // The outer dialog named the server being selected; the inner one, run
+    // by the other window's save, named both of that save's new servers.
+    assert.equal(dialogCalls.length, 2)
+    assert.match(dialogCalls[0].options.detail, /choose this network/)
+    assert.match(dialogCalls[1].options.detail, /edit the network configuration/)
+    assert.deepEqual(stored(), {...edit, Last: 0})
+    assert.deepEqual(approvals(), ["https://index.example", "https://one.example"])
+})
+
+// The dialog vouched for one server by name. If, while it was open, the
+// entry it was asked about came to point elsewhere - the other window's
+// editor moved it - the answer is not for the server now on the list. The
+// selection is refused, the window stays off the network, and the other
+// window's file stands untouched, its own approval included.
+test("a selection whose entry changed under the dialog is refused, and the newer file stands", async () => {
+    const legacy = withServer(presets(), "bch", "https://index.example")
+    fs.writeFileSync(Dir.NetworkConfigFile, JSON.stringify(legacy))
+    SetWindow(51, {id: 51})
+    dialogResponse = 1
+    const moved = withServer(presets(), "bch", "https://other.example")
+    duringDialog = () => save(1, moved)
+    await assert.rejects(select(51, "bch"), /changed while the dialog was open/)
+    assert.equal(GetNetworkOption(51), undefined)
+    assert.deepEqual(stored(), moved)
+    assert.deepEqual(approvals(), ["https://other.example"])
+    // Removed outright, the same: nothing to select and nothing written.
+    fs.writeFileSync(Dir.NetworkConfigFile, JSON.stringify(legacy))
+    const without = presets()
+    without.Networks.splice(0, 1)
+    duringDialog = () => save(1, without)
+    await assert.rejects(select(51, "bch"), /changed while the dialog was open/)
+    assert.equal(GetNetworkOption(51), undefined)
+    assert.deepEqual(stored(), without)
+    assert.deepEqual(approvals(), [])
+    // With the dialog behind it, the selection that is asked again goes through.
+    await select(51, "bsv")
+    assert.equal(GetNetworkOption(51).Id, "bsv")
 })
