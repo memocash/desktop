@@ -15,7 +15,6 @@ const session = require("../session");
 const pendingSeed = require("../pending_seed");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
-const {ValidateNetworkConfig} = require("../../common/util/network_config");
 const {KeyFinder, PreviewSpend, SignTransaction, WalletAddresses} = require("../transaction_signer");
 const {CreateWindow, eConf} = require("../window");
 const {
@@ -847,15 +846,6 @@ const promptedSign = async (winId, sign, preview) => {
     }
 }
 
-const readNetworkConfig = async () => {
-    try {
-        return ValidateNetworkConfig(JSON.parse(
-            await fs.readFile(Dir.NetworkConfigFile, {encoding: "utf8"})))
-    } catch (e) {
-        return undefined
-    }
-}
-
 const WalletHandlers = () => {
     // Only the public wallet crosses to the renderer. The window state around it
     // holds the path and the key that authenticates public metadata, neither of
@@ -927,11 +917,6 @@ const WalletHandlers = () => {
     ipcMain.handle(Handlers.GetWalletFileInfo, async (e) => {
         const {filename, encrypted} = GetWallet(e.sender.id)
         return {filename, name: path.parse(filename).name, encrypted}
-    })
-    ipcMain.handle(Handlers.GetNetworkConfig, async () => readNetworkConfig())
-    ipcMain.handle(Handlers.SaveNetworkConfig, async (e, networkConfig) => {
-        const validated = ValidateNetworkConfig(networkConfig)
-        await fs.writeFile(Dir.NetworkConfigFile, JSON.stringify(validated, null, 2) + "\n")
     })
     ipcMain.handle(Handlers.SignTransaction, signTransaction)
     ipcMain.handle(Handlers.SignOnParentSession, signOnParentSession)

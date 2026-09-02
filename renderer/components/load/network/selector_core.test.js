@@ -1,6 +1,6 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const {NextSelection, SelectedNetwork, ServerError, SubmitNetworkForm} = require("./selector_core")
+const {NextSelection, ServerError, SubmitNetworkForm} = require("./selector_core")
 
 const config = () => ({
     Networks: [
@@ -10,18 +10,6 @@ const config = () => ({
             Server: "http://127.0.0.1:26772", Id: "bsv"},
     ],
     Last: 0,
-})
-
-// The load screen refuses to open a wallet on a selection that names no
-// configured network - the fallthrough this replaced opened the window with
-// no network at all, and the wallet page's data calls failed one by one
-// against a network nobody chose.
-test("an unmatched network selection is refused, a matched one is found with its index", () => {
-    assert.throws(() => SelectedNetwork(config(), undefined), /no configured network/)
-    assert.throws(() => SelectedNetwork(config(), "gone"), /no configured network/)
-    const {index, option} = SelectedNetwork(config(), "bsv")
-    assert.equal(index, 1)
-    assert.equal(option.Server, "http://127.0.0.1:26772")
 })
 
 // The editor's list switches the form on selection change; a dirty form asks

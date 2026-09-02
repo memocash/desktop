@@ -1,33 +1,9 @@
-const NetworkOptions = [
-    {
-        Name: "BCH",
-        Ruleset: "bch",
-        DatabaseFile: "~/.memo/memo.db",
-        Server: "https://graph.cash",
-        Id: "bch",
-    },
-    {
-        Name: "BSV",
-        Ruleset: "bsv",
-        DatabaseFile: "~/.memo/memo-sv.db",
-        Server: "http://127.0.0.1:26772",
-        Id: "bsv",
-    },
-    {
-        Name: "Dev",
-        Ruleset: "bch",
-        DatabaseFile: "~/.memo/memo-dev.db",
-        Server: "http://127.0.0.1:26770",
-        Id: "dev",
-    },
-]
-
+// Main answers every one of these with a configuration: the shipped presets
+// until network.json says otherwise. Which networks exist, which servers they
+// use, and which one a window runs on are main's to hold - the page names an
+// entry by id and edits the list through a save main gates.
 const GetNetworkConfig = async () => {
-    let networkConfig = await window.electron.getNetworkConfig()
-    if (!networkConfig || !networkConfig.Networks || !networkConfig.Networks.length) {
-        return {Networks: NetworkOptions}
-    }
-    return networkConfig
+    return await window.electron.getNetworkConfig()
 }
 
 const GetNetworkOptions = async () => {
@@ -36,10 +12,7 @@ const GetNetworkOptions = async () => {
 
 // TODO: Allow wallet name as input to return default network for wallet
 const GetDefaultNetwork = async () => {
-    let networkConfig = await window.electron.getNetworkConfig()
-    if (!networkConfig || !networkConfig.Networks || !networkConfig.Networks.length) {
-        return NetworkOptions[0]
-    }
+    const networkConfig = await GetNetworkConfig()
     if (!networkConfig.Last) {
         return networkConfig.Networks[0]
     }
@@ -50,8 +23,8 @@ const SaveNetworkConfig = async (networkConfig) => {
     await window.electron.saveNetworkConfig(networkConfig)
 }
 
-const SetWindowNetwork = async (network) => {
-    await window.electron.setWindowNetwork(network)
+const SelectNetwork = async (id) => {
+    await window.electron.selectNetwork(id)
 }
 
 module.exports = {
@@ -59,5 +32,5 @@ module.exports = {
     GetNetworkConfig,
     GetNetworkOptions,
     SaveNetworkConfig,
-    SetWindowNetwork,
+    SelectNetwork,
 }

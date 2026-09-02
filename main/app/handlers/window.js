@@ -2,16 +2,13 @@ const {Menu, MenuItem, Notification, app, clipboard, dialog} = require("electron
 const {ipcMain} = require("../ipc");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
 const {AllowPath} = require("../keystore");
-const {ValidateNetworkOption} = require("../../common/util/network_config");
-const {OpenExternalUrl, GetRuntimeNetworkOption} = require("../window");
+const {OpenExternalUrl} = require("../window");
 const {
     GetMenu,
     GetStorage,
     SetStorage,
     GetWindow,
     GetWallet,
-    SetNetworkOption,
-    GetNetworkOption,
 } = require("../window_state");
 
 const WindowHandlers = () => {
@@ -120,10 +117,6 @@ const WindowHandlers = () => {
         })
         notification.show()
     })
-    ipcMain.handle(Handlers.GetWindowNetwork, async (e) =>
-        GetRuntimeNetworkOption(GetNetworkOption(e.sender.id)))
-    ipcMain.handle(Handlers.SetWindowNetwork, async (e, networkOption) =>
-        SetNetworkOption(e.sender.id, ValidateNetworkOption(networkOption)))
 }
 
 module.exports = {

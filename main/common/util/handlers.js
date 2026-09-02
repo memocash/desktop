@@ -77,7 +77,9 @@ const Handlers = {
     SyncListen: "sync-listen",
     SyncListenClose: "sync-listen-close",
     GetWindowNetwork: "get-window-network",
-    SetWindowNetwork: "set-window-network",
+    // A window's network is chosen by id from the configuration main holds;
+    // the page never hands main a server of its own.
+    SelectNetwork: "select-network",
     GetTheme: "get-theme",
     SetTheme: "set-theme",
     CheckForUpdates: "check-for-updates",

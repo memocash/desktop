@@ -1,5 +1,6 @@
 const {GraphQLHandlers} = require("./graphql");
 const {ProfileHandlers} = require("./profile");
+const {NetworkHandlers} = require("./network");
 const {WalletHandlers} = require("./wallet");
 const {WindowHandlers} = require("./window");
 const {WindowTxHandlers} = require("./window_tx");
@@ -13,6 +14,7 @@ module.exports = {
     AllHandlers: () => {
         DataHandlers()
         GraphQLHandlers()
+        NetworkHandlers()
         ProfileHandlers()
         SpendPromptHandlers()
         SyncHandlers()
