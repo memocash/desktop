@@ -124,11 +124,11 @@ const NetworkConfiguration = ({setPane}) => {
                             <label>Ruleset:</label>
                             <div>
                                 <label>
-                                    <input type="radio" value="bch" name="ruleset" disabled={network.Id !== "dev"}
+                                    <input type="radio" value="bch" name="ruleset" disabled={network.Id !== "local"}
                                            onChange={onFormChange}/> BCH
                                 </label>
                                 <label>
-                                    <input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "dev"}
+                                    <input type="radio" value="bsv" name="ruleset" disabled={network.Id !== "local"}
                                            onChange={onFormChange}/> BSV
                                 </label>
                             </div>

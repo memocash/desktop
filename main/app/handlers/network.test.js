@@ -99,7 +99,7 @@ test("presets, loopback servers, and the remembered default are saved without as
     assert.equal(stored().Last, 2)
     const flipped = presets()
     flipped.Networks[2].Ruleset = "bsv"
-    await save(1, withServer(flipped, "dev", "http://localhost:9000"))
+    await save(1, withServer(flipped, "local", "http://localhost:9000"))
     assert.equal(dialogCalls.length, 0)
     assert.equal(stored().Networks[2].Server, "http://localhost:9000")
     assert.equal(stored().Networks[2].Ruleset, "bsv")
@@ -143,7 +143,7 @@ test("an approved server is not asked about again, only what is new is", async (
     assert.equal(stored().Last, 1)
     // Two more servers, one of them twice: the dialog names each once.
     const more = withServer(withServer(withServer(presets(), "bch", "https://index.example"),
-        "bsv", "https://one.example"), "dev", "https://one.example")
+        "bsv", "https://one.example"), "local", "https://one.example")
     more.Networks.push({...more.Networks[0], Id: "two", Name: "Two", Server: "https://two.example"})
     await save(1, more)
     assert.equal(dialogCalls.length, 2)
@@ -174,7 +174,7 @@ test("a window runs on the stored entry its id names, and that becomes the defau
     assert.deepEqual(GetNetworkOption(7), stored().Networks[0])
     assert.deepEqual(await windowNetwork(7), stored().Networks[0])
     assert.equal(stored().Last, 0)
-    await select(8, "dev")
+    await select(8, "local")
     assert.equal(GetNetworkOption(8).Server, "http://127.0.0.1:26770")
     assert.equal(stored().Last, 2)
     // The first window's choice is untouched by the second's.
@@ -221,9 +221,9 @@ test("a custom server from a file written before main owned it is asked about on
     assert.equal(GetNetworkOption(30), undefined)
     assert.equal(fs.readFileSync(Dir.NetworkConfigFile, "utf8"), written)
     // The presets in the same file stay frictionless.
-    await select(30, "dev")
+    await select(30, "local")
     assert.equal(dialogCalls.length, 1)
-    assert.equal(GetNetworkOption(30).Id, "dev")
+    assert.equal(GetNetworkOption(30).Id, "local")
 
     dialogResponse = 1
     const selected = await select(30, "bch")
@@ -243,7 +243,7 @@ test("a custom server from a file written before main owned it is asked about on
 test("a save that keeps an unapproved legacy server is asked about it", async () => {
     fs.writeFileSync(Dir.NetworkConfigFile,
         JSON.stringify(withServer(presets(), "bch", "https://index.example")))
-    const edit = withServer(withServer(presets(), "bch", "https://index.example"), "dev", "http://localhost:1")
+    const edit = withServer(withServer(presets(), "bch", "https://index.example"), "local", "http://localhost:1")
     await assert.rejects(save(1, edit), /not allowed/)
     assert.match(dialogCalls[0].options.detail, /https:\/\/index\.example/)
     assert.match(dialogCalls[0].options.detail, /edit the network configuration, cancel/)
@@ -381,7 +381,7 @@ test("a record left stale by a failed write does not vouch for a re-added server
 
 // A selection changes Last, but writes the whole file. While its dialog
 // waits on a person, another load window can save an edit - here pointing
-// the Dev entry at a local port, and approving a new BSV server in a dialog
+// the Local entry at a local port, and approving a new BSV server in a dialog
 // of its own. Writing back what was read before the dialog would revert the
 // edit and drop that approval; the selection must land on the file as it
 // stands, and the dialog's own approval beside the other window's.
@@ -390,7 +390,7 @@ test("a selection answered after another window saved lands on that save, not on
     fs.writeFileSync(Dir.NetworkConfigFile, JSON.stringify(legacy))
     SetWindow(50, {id: 50})
     dialogResponse = 1
-    const edit = withServer(withServer(legacy, "dev", "http://localhost:1"), "bsv", "https://one.example")
+    const edit = withServer(withServer(legacy, "local", "http://localhost:1"), "bsv", "https://one.example")
     duringDialog = async () => {
         await save(1, edit)
         assert.deepEqual(approvals(), ["https://index.example", "https://one.example"])

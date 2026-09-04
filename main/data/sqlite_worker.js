@@ -1,6 +1,8 @@
 const {parentPort, isMainThread} = require("worker_threads");
 const {DatabaseSync} = require("node:sqlite")
 const homedir = require('os').homedir()
+const fs = require("fs")
+const path = require("path")
 const {Definitions, Indexes, Cleanups} = require("./schema")
 const {SafeRow} = require("./big_ints")
 
@@ -113,7 +115,14 @@ const SetDb = async (db) => {
     // Only a leading "~" means the home directory. A "~" anywhere else is
     // part of the path - Windows 8.3 short names (C:\Users\RUNNER~1\...)
     // carry one mid-path, and expanding it there corrupts the path.
-    _db = new DatabaseSync(db.startsWith("~") ? homedir + db.slice(1) : db)
+    const file = db.startsWith("~") ? homedir + db.slice(1) : db
+    // The build's directory under ~/.memo may not exist yet - a first run from
+    // a checkout, a MEMO_DATA nobody has used - and SQLite does not create
+    // one. Private, like the wallets directory beside it.
+    if (file !== ":memory:") {
+        fs.mkdirSync(path.dirname(file), {recursive: true, mode: 0o700})
+    }
+    _db = new DatabaseSync(file)
     // Every Insert() lands here as its own statement, so without WAL each one is
     // a separate autocommit against the default rollback journal: create the
     // -journal file, fsync it, fsync the db, delete it. On Windows that measures

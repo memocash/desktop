@@ -1,22 +1,25 @@
 const {app, nativeImage, session} = require('electron')
 const path = require('path')
 const isDev = !app.isPackaged
-const {ApplyContentsSecurity, CreateWindow} = require("./app/window");
-const {AllHandlers} = require("./app/handlers");
-const {ApplyStoredTheme} = require("./app/handlers/theme");
-const {SweepStrandedTempFiles, TightenWalletPermissions} = require("./app/keystore");
-const {ScheduleUpdateChecks} = require("./app/handlers/update");
-const {RegisterRendererProtocol} = require("./static_server");
-
 // A throw that escapes every handler would otherwise kill the process that
 // holds the keys and every wallet window with it, mid-operation and with no
 // record of why. Nothing about the process state is trustworthy after one, so
-// log it and exit deliberately instead of limping on.
+// log it and exit deliberately instead of limping on. Installed before the
+// app's modules load: a throw while one loads - a MEMO_DATA that is not a
+// directory name - would otherwise sit behind Electron's error dialog with
+// the process still holding the single-instance lock.
 process.on("uncaughtException", (err) => {
     console.error("uncaught exception in main process")
     console.error(err)
     app.exit(1)
 })
+
+const {ApplyContentsSecurity, CreateWindow, DataDir} = require("./app/window");
+const {AllHandlers} = require("./app/handlers");
+const {ApplyStoredTheme} = require("./app/handlers/theme");
+const {SweepStrandedTempFiles, TightenWalletPermissions} = require("./app/keystore");
+const {ScheduleUpdateChecks} = require("./app/handlers/update");
+const {RegisterRendererProtocol} = require("./static_server");
 
 // In dev, a spawned `next dev` child serves the renderer on localhost:8000
 // (with hot reload). In a packaged build there is no Next process, so serve the
@@ -58,6 +61,9 @@ app.whenReady().then(async () => {
     await TightenWalletPermissions()
     await SweepStrandedTempFiles()
     ApplyStoredTheme()
+    // Which files this run reads and writes, in the console where a person
+    // looking for them is looking: dev builds keep theirs apart, see DataDir.
+    console.log("databases under ~/.memo" + (DataDir ? "/" + DataDir : ""))
     AllHandlers()
     await CreateWindow()
     ScheduleUpdateChecks()

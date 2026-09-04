@@ -89,13 +89,36 @@ const DefaultNetworks = [
         Id: "bsv",
     },
     {
-        Name: "Dev",
+        Name: "Local",
         Ruleset: "bch",
-        DatabaseFile: "~/.memo/memo-dev.db",
+        DatabaseFile: "~/.memo/memo-local.db",
         Server: "http://127.0.0.1:26770",
-        Id: "dev",
+        Id: "local",
     },
 ]
+
+// Where the databases sit under ~/.memo. The network chooses the file name;
+// the build chooses the directory: the root for a packaged build, "dev" for
+// one run from a checkout, so development never writes the installed app's
+// files. MEMO_DATA names a directory of its own for a run that should touch
+// neither - a smoke test, a resync trial. It is one name, never a path, so
+// every database stays under ~/.memo. A database is a cache of the index
+// server: an empty directory fills itself on the next sync.
+const DataDirectory = (packaged, requested) => {
+    if (requested === undefined || requested === "") {
+        return packaged ? "" : "dev"
+    }
+    if (!/^[^/\\]+$/.test(requested) || requested === "." || requested === "..") {
+        throw new TypeError("MEMO_DATA must be a single directory name")
+    }
+    return requested
+}
+
+// The option as the running build opens it: the stored file, moved into the
+// build's directory. Every network alike, and never written back to
+// network.json, so the stored path stays the one a packaged build opens.
+const InDataDirectory = (option, directory) => !directory ? option :
+    {...option, DatabaseFile: option.DatabaseFile.replace(/^~\/\.memo\//, "~/.memo/" + directory + "/")}
 
 // The servers in a proposed list that nobody has vouched for yet: not shipped
 // as a preset, not on this machine, and not on the list of servers a person
@@ -118,7 +141,9 @@ const UntrustedServers = (networks, approved) => {
 }
 
 module.exports = {
+    DataDirectory,
     DefaultNetworks,
+    InDataDirectory,
     IsLoopbackHost,
     UntrustedServers,
     ValidateNetworkConfig,

@@ -1,8 +1,8 @@
 const {app, BrowserWindow, nativeTheme, screen, shell} = require("electron");
 const path = require("path");
-const isDev = !app.isPackaged;
 const menu = require("../menu");
 const {IsSameOrigin, SafeExternalUrl} = require("../common/util");
+const {DataDirectory, InDataDirectory} = require("../common/util/network_config");
 const {AppUrl} = require("./ipc");
 const {ForgetPaths} = require("./keystore");
 const {Discard: DiscardPendingSeed} = require("./pending_seed");
@@ -204,18 +204,13 @@ const CreateTxWindow = async (winId, {txHash, inputs, outputs, beatHash}) => {
     await win.loadURL(AppUrl + "/tx?" + (new URLSearchParams(params)).toString())
 }
 
-const DevelopmentDatabaseFile = "~/.memo/memo-local.db"
-const ProductionDatabaseFile = "~/.memo/memo.db"
+// Which directory under ~/.memo this build's databases live in, decided once
+// here at the main-process boundary rather than persisted in network.json,
+// which could otherwise make a later packaged run use it too. The rule is
+// DataDirectory's; a bad MEMO_DATA stops the app here, at load, with its reason.
+const DataDir = DataDirectory(app.isPackaged, process.env.MEMO_DATA)
 
-// Keep local development isolated from the database used by packaged builds.
-// Resolve this at the main-process boundary instead of persisting the dev path
-// in network.json, which could otherwise make a later packaged run use it too.
-const GetRuntimeNetworkOption = (option) => {
-    if (!isDev || !option || option.DatabaseFile !== ProductionDatabaseFile) {
-        return option
-    }
-    return {...option, DatabaseFile: DevelopmentDatabaseFile}
-}
+const GetRuntimeNetworkOption = (option) => option ? InDataDirectory(option, DataDir) : option
 
 const eConf = (e) => GetRuntimeNetworkOption(GetNetworkOption(e.sender.id))
 
@@ -225,6 +220,7 @@ module.exports = {
     eConf,
     ApplyContentsSecurity,
     BackgroundColor,
+    DataDir,
     CloseSocketsWithPage,
     OpenExternalUrl,
     GetRuntimeNetworkOption,

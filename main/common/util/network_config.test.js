@@ -1,7 +1,8 @@
 const test = require("node:test")
 const assert = require("node:assert")
 const {
-    DefaultNetworks, IsLoopbackHost, UntrustedServers, ValidateNetworkConfig, ValidateNetworkOption,
+    DataDirectory, DefaultNetworks, InDataDirectory, IsLoopbackHost, UntrustedServers,
+    ValidateNetworkConfig, ValidateNetworkOption,
 } = require("./network_config")
 
 const option = {
@@ -70,4 +71,28 @@ test("the untrusted servers of a list are the ones nobody vouched for, named onc
         ["https://one.example"]), ["https://two.example"])
     // The presets validate, so every shipped server is on the trusted list.
     assert.deepEqual(ValidateNetworkConfig({Networks: DefaultNetworks}), {Networks: DefaultNetworks})
+})
+
+// The network names the file, the build names the directory: a packaged
+// build opens the stored path itself, a checkout keeps its databases under
+// dev/, and MEMO_DATA picks any other single directory name for a run that
+// should touch neither. Every network moves alike, not just the first preset.
+test("the build's databases live in one directory under ~/.memo, chosen once", () => {
+    assert.equal(DataDirectory(true), "")
+    assert.equal(DataDirectory(false), "dev")
+    assert.equal(DataDirectory(true, ""), "")
+    assert.equal(DataDirectory(false, "smoke"), "smoke")
+    assert.equal(DataDirectory(true, "smoke"), "smoke")
+    for (const bad of [".", "..", "a/b", "a\\b", "/abs"]) {
+        assert.throws(() => DataDirectory(false, bad), /single directory name/)
+    }
+    assert.deepEqual(DefaultNetworks.map((preset) => InDataDirectory(preset, "").DatabaseFile),
+        ["~/.memo/memo.db", "~/.memo/memo-sv.db", "~/.memo/memo-local.db"])
+    assert.deepEqual(DefaultNetworks.map((preset) => InDataDirectory(preset, "dev").DatabaseFile),
+        ["~/.memo/dev/memo.db", "~/.memo/dev/memo-sv.db", "~/.memo/dev/memo-local.db"])
+    const custom = ValidateNetworkOption({...option, Id: "mine", DatabaseFile: "~/.memo/mine.db"})
+    assert.equal(InDataDirectory(custom, "smoke").DatabaseFile, "~/.memo/smoke/mine.db")
+    // The stored option is untouched: only the copy the build opens moves.
+    assert.equal(custom.DatabaseFile, "~/.memo/mine.db")
+    assert.equal(InDataDirectory(custom, ""), custom)
 })
