@@ -25,13 +25,13 @@ test("policy rejections are marked permanent so callers can cache them", async (
     await assert.rejects(DownloadExternalImage("http://127.0.0.1/image.png"), PermanentImageError)
 })
 
-const withFakeResponse = async (writeResponse, action) => {
+const withFakeResponse = async (writeResponse, action, headers = {}) => {
     const originalGet = http.get
     http.get = (_url, _options, callback) => {
         const request = new EventEmitter()
         const response = new PassThrough()
         response.statusCode = 200
-        response.headers = {}
+        response.headers = headers
         request.destroy = (error) => {
             response.destroy(error)
             request.emit("error", error)
@@ -49,12 +49,21 @@ const withFakeResponse = async (writeResponse, action) => {
     }
 }
 
-test("rejects a body that exceeds the streaming cap", async () => {
+test("an oversized body is rejected permanently so callers stop asking", async () => {
     await withFakeResponse(
         (response) => response.end(Buffer.alloc(MaxImageBytes + 1)),
         () => assert.rejects(
             downloadUntil("http://8.8.8.8/image.png", 0, Date.now() + 1_000),
-            /exceeds size limit/))
+            (error) => error instanceof PermanentImageError && /exceeds size limit/.test(error.message)))
+})
+
+test("an oversized content-length is rejected permanently before the body is read", async () => {
+    await withFakeResponse(
+        (response) => response.end(Buffer.alloc(1)),
+        () => assert.rejects(
+            downloadUntil("http://8.8.8.8/image.png", 0, Date.now() + 1_000),
+            (error) => error instanceof PermanentImageError && /exceeds size limit/.test(error.message)),
+        {"content-length": String(MaxImageBytes + 1)})
 })
 
 test("an overall deadline stops a host that keeps feeding bytes", async () => {

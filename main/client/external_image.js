@@ -4,7 +4,10 @@ const https = require("https")
 const net = require("net")
 const {SafeExternalUrl} = require("../common/util/urls")
 
-const MaxImageBytes = 512 * 1024
+// Bounds the transfer only. What gets stored is display-sized by
+// shrink_image.js, so this just has to clear what image hosts serve for an
+// avatar; the earlier 512 KiB cap rejected ordinary imgur uploads.
+const MaxImageBytes = 8 * 1024 * 1024
 const RequestTimeoutMs = 10_000
 const MaxRedirects = 5
 
@@ -66,7 +69,7 @@ const readBody = (response, maxBytes) => new Promise((resolve, reject) => {
     response.on("data", (chunk) => {
         size += chunk.length
         if (size > maxBytes) {
-            response.destroy(new Error("Profile image exceeds size limit"))
+            response.destroy(new PermanentImageError("Profile image exceeds size limit"))
             return
         }
         chunks.push(chunk)
@@ -123,7 +126,7 @@ const downloadUntil = (input, redirects, deadline) => new Promise((resolve, reje
             const length = Number(response.headers["content-length"])
             if (Number.isFinite(length) && length > MaxImageBytes) {
                 response.resume()
-                throw new Error("Profile image exceeds size limit")
+                throw new PermanentImageError("Profile image exceeds size limit")
             }
             finish(resolve, await readBody(response, MaxImageBytes))
         } catch (error) {

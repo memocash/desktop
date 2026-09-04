@@ -1,5 +1,6 @@
 const {GetPicExists, SavePic} = require("../data/tables");
 const {DownloadExternalImage} = require("./external_image");
+const {MaxStoredBytes, ShrinkImage} = require("./shrink_image");
 
 // Magic bytes of the raster formats an <img> can decode. The renderer labels
 // every cached pic "data:image/png" and lets the decoder sniff the real format,
@@ -34,6 +35,11 @@ const isImage = (data) => {
 //   GetPicExists skip the re-download forever. An empty blob keeps that same
 //   "don't ask again" property - the URL is dead, not slow - while the render
 //   sites' length checks fall back to the default pic.
+// - A download over the transfer cap, a source too large to decode, or an
+//   undecodable format over the stored cap, is stored the same way: the file
+//   is what it is, and asking again every sync only repeats the rejection. A
+//   PNG or JPEG within reason is never too big, since it is shrunk to display
+//   size before it is stored (see shrink_image.js).
 // - A network error or non-2xx status saves nothing, so the next sync retries.
 //   Those are the transient cases, and leaving the row absent is what makes a
 //   host that was merely down recoverable.
@@ -54,7 +60,7 @@ const SaveImagesFromProfiles = async (conf, profiles) => {
         try {
             data = await DownloadExternalImage(profile.pic.pic)
         } catch (e) {
-            console.log("SaveImagesFromProfiles: pic download failed for " + profile.pic.pic, e)
+            console.log("SaveImagesFromProfiles: pic download failed for " + profile.pic.pic + ": " + e.message)
             if (e.permanent) {
                 data = Buffer.alloc(0)
                 profile.pic.data = data
@@ -62,13 +68,29 @@ const SaveImagesFromProfiles = async (conf, profiles) => {
             }
             continue
         }
-        if (!isImage(data)) {
-            console.log("SaveImagesFromProfiles: pic is not an image, caching empty: " + profile.pic.pic)
-            data = Buffer.alloc(0)
-        }
+        data = storable(profile.pic.pic, data)
         profile.pic.data = data
         await SavePic(conf, profile.pic.pic, data)
     }
+}
+
+// The bytes a downloaded body is stored as, or an empty tombstone.
+const storable = (url, data) => {
+    if (!isImage(data)) {
+        console.log("SaveImagesFromProfiles: pic is not an image, caching empty: " + url)
+        return Buffer.alloc(0)
+    }
+    const shrunk = ShrinkImage(data)
+    if (shrunk && !shrunk.length) {
+        console.log("SaveImagesFromProfiles: pic is too large to decode, caching empty: " + url)
+        return shrunk
+    }
+    const stored = shrunk || data
+    if (stored.length > MaxStoredBytes) {
+        console.log("SaveImagesFromProfiles: pic is too large to store, caching empty: " + url)
+        return Buffer.alloc(0)
+    }
+    return stored
 }
 
 module.exports = {
