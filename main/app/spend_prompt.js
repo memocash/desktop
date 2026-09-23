@@ -107,7 +107,7 @@ const SpendPromptHandlers = () => {
     // prompt page is not on the app origin - it is a file main loads itself -
     // so this channel accepts exactly that file and nothing else: not the app
     // pages, and not any other file: frame.
-    const promptIpc = GuardedIpc((url) => url === pathToFileURL(PromptPage).href)
+    const promptIpc = GuardedIpc((e) => e.senderFrame.url === pathToFileURL(PromptPage).href)
     promptIpc.on(Handlers.SpendPromptReply, (e, message) => settle(e.sender.id, message))
 }
 

@@ -66,8 +66,23 @@ stub("../spend_prompt", {
 })
 
 const keystore = require("../keystore")
-const {GetWallet, SetWindow, ForgetWindow} = require("../window_state")
+const {AddLoadWindow, GetWallet, SetWallet, SetWindow, ForgetWindow} = require("../window_state")
 const {Handlers} = require("../../common/util")
+// Unlocking and creating open the wallet in a window of main's own, which
+// there is no Electron here to create. The stand-in binds the wallet to the
+// window that asked, as the page used to be left holding it, and reports the
+// key main would have sent to the new window's preload - so what is under
+// test is the state a wallet window starts from, by whatever id it has.
+const opened = []
+const realWindow = require("../window")
+stub("../window", {
+    ...realWindow,
+    OpenWalletWindow: async (loadWinId, state, sessionKey) => {
+        opened.push({loadWinId, state, sessionKey})
+        SetWallet(loadWinId, state)
+        return loadWinId
+    },
+})
 require("./wallet.js").WalletHandlers()
 
 // Every temp tree is remembered and removed once the file's tests are done -
@@ -84,11 +99,24 @@ const tempDir = () => {
     return dir
 }
 
-// Events carry the frame url the guarded ipc surface checks; these tests play
-// the app's own page, so requests present the app origin the way a real
-// renderer frame would.
-const e = (id) => ({sender: {id}, senderFrame: {url: "app://-/wallet"}})
-const unlock = (id, walletPath) => handlers[Handlers.UnlockWallet](e(id), walletPath, "pw")
+// Events carry the frame the guarded ipc surface checks; these tests play the
+// app's own page from its main frame, so requests present the app origin the
+// way a real renderer frame would. The stubbed ipcMain captures handlers
+// unguarded, so the frame is a courtesy here; ipc.test.js drives the guard.
+const e = (id) => {
+    const frame = {url: "app://-/wallet"}
+    return {sender: {id, mainFrame: frame}, senderFrame: frame}
+}
+// The load page's channels admit the windows main opened on it, by id. These
+// tests unlock and create from an id and then act in it as the wallet window
+// (see the OpenWalletWindow stand-in), so the id is registered as a load
+// window the first time it asks and presents the load page's frame.
+const load = (id) => {
+    AddLoadWindow(id)
+    const frame = {url: "file:///app/renderer/out/load/index.html"}
+    return {sender: {id, mainFrame: frame}, senderFrame: frame}
+}
+const unlock = (id, walletPath) => handlers[Handlers.UnlockWallet](load(id), walletPath, "pw")
 const change = (id, threshold, password) => handlers[Handlers.UpdateWallet](
     e(id), "changeSettings", {PasswordThreshold: threshold}, password)
 
@@ -207,7 +235,7 @@ const passwordlessWallet = async (walletPath, settings) => {
 const openPasswordless = async (id, walletPath) => {
     SetWindow(id, {id})
     keystore.AllowPath(id, walletPath)
-    assert.equal((await handlers[Handlers.UnlockWallet](e(id), walletPath, undefined)).ok, true)
+    assert.equal((await handlers[Handlers.UnlockWallet](load(id), walletPath, undefined)).ok, true)
 }
 
 const sign = (id) => handlers[Handlers.SignTransaction](e(id), spendRequest(), undefined)
@@ -545,7 +573,7 @@ test("an approved removal binds to the wallet the dialog asked about", async () 
         // same window; then the person approves what they were asked.
         dialogResponse = async () => {
             assert.equal((await handlers[Handlers.UnlockWallet](
-                e(23), swappedPath, undefined)).ok, true)
+                load(23), swappedPath, undefined)).ok, true)
             return 1
         }
         assert.equal((await handlers[Handlers.RemovePrivateKey](
@@ -578,7 +606,7 @@ test("an approved export reveals the wallet the dialog asked about", async () =>
     const swapMidDialog = () => {
         dialogResponse = async () => {
             assert.equal((await handlers[Handlers.UnlockWallet](
-                e(24), swappedPath, undefined)).ok, true)
+                load(24), swappedPath, undefined)).ok, true)
             return 1
         }
     }
@@ -601,7 +629,7 @@ test("an approved export reveals the wallet the dialog asked about", async () =>
         // Back on the asked-about wallet, swapped again mid-dialog: the
         // approval reveals that wallet's own key, not the swapped one's.
         assert.equal((await handlers[Handlers.UnlockWallet](
-            e(24), askedPath, undefined)).ok, true)
+            load(24), askedPath, undefined)).ok, true)
         swapMidDialog()
         const revealed = await handlers[Handlers.ExportPrivateKey](
             e(24), walletAddress, undefined)
@@ -624,19 +652,19 @@ test("a seed wallet is created from main's pending seed, and only once confirmed
         SetWindow(14, {id: 14})
         keystore.AllowPath(14, walletPath)
         const create = (target) =>
-            handlers[Handlers.CreateWallet](e(14), target, true, [], [], undefined)
+            handlers[Handlers.CreateWallet](load(14), target, true, [], [], undefined)
 
         // Nothing pending, then pending but unconfirmed, then a confirmation
         // that misses: no wallet at any of those stops.
         assert.match((await create(walletPath)).error, /no confirmed seed/)
-        const words = await handlers[Handlers.GenerateSeed](e(14))
+        const words = await handlers[Handlers.GenerateSeed](load(14))
         assert.match((await create(walletPath)).error, /no confirmed seed/)
-        assert.equal(await handlers[Handlers.ConfirmSeed](e(14), "abandon about"), false)
+        assert.equal(await handlers[Handlers.ConfirmSeed](load(14), "abandon about"), false)
         assert.match((await create(walletPath)).error, /no confirmed seed/)
 
         // Confirmed with main's own words, the wallet is written - holding
         // exactly what main generated, not anything the renderer chose.
-        assert.equal(await handlers[Handlers.ConfirmSeed](e(14), words), true)
+        assert.equal(await handlers[Handlers.ConfirmSeed](load(14), words), true)
         assert.equal((await create(walletPath)).ok, true)
         assert.equal((await keystore.ReadWallet(walletPath)).wallet.seed, words)
         assert.equal(GetWallet(14).wallet.seed, undefined)
@@ -660,9 +688,9 @@ test("an imported seed is what the wallet stores, spacing aside", async () => {
     try {
         SetWindow(15, {id: 15})
         keystore.AllowPath(15, walletPath)
-        assert.equal(await handlers[Handlers.ImportSeed](e(15), "not a mnemonic"), false)
-        assert.equal(await handlers[Handlers.ImportSeed](e(15), " " + phrase.split(" ").join("  ")), true)
-        const created = await handlers[Handlers.CreateWallet](e(15), walletPath, true, [], [], undefined)
+        assert.equal(await handlers[Handlers.ImportSeed](load(15), "not a mnemonic"), false)
+        assert.equal(await handlers[Handlers.ImportSeed](load(15), " " + phrase.split(" ").join("  ")), true)
+        const created = await handlers[Handlers.CreateWallet](load(15), walletPath, true, [], [], undefined)
         assert.equal(created.ok, true)
         assert.equal((await keystore.ReadWallet(walletPath)).wallet.seed, phrase)
     } finally {
@@ -685,9 +713,9 @@ test("a passwordless wallet's secrets go through main's dialog, or nowhere", asy
     try {
         SetWindow(16, {id: 16})
         keystore.AllowPath(16, seedPath)
-        assert.equal(await handlers[Handlers.ImportSeed](e(16), phrase), true)
+        assert.equal(await handlers[Handlers.ImportSeed](load(16), phrase), true)
         assert.equal((await handlers[Handlers.CreateWallet](
-            e(16), seedPath, true, [], [], undefined)).ok, true)
+            load(16), seedPath, true, [], [], undefined)).ok, true)
 
         // Declined: no seed crosses, and the refusal is an answer the modal
         // matches on rather than an error to display.

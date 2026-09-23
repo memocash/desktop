@@ -4,7 +4,7 @@ import NetworkForm from "./network/form";
 import {Panes} from "./common";
 import {WalletErrors} from "../../../main/common/util"
 
-const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
+const LoadHome = ({setPane, setFilePath, selectNetwork, networkValueRef}) => {
     // Why this name cannot be opened, rather than only that it cannot. A name
     // with a separator in it and a file this version cannot parse are different
     // problems, and neither is the one the old boolean named.
@@ -33,10 +33,14 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         setPane(Panes.Step2SelectType)
     }
     // Main opens and decrypts the file; the renderer only learns whether the
-    // password was right - or, now, that the wallet could not be opened for a
-    // reason no password would have fixed, which used to leave Next doing
-    // nothing at all.
+    // password was right - or that the wallet could not be opened for a
+    // reason no password would have fixed. On success there is nothing left
+    // to do here: main has opened the wallet in a window of its own and is
+    // closing this one.
     const onLoadWallet = async (pathToWallet, password) => {
+        if (!await selectNetwork()) {
+            return
+        }
         const {error} = await window.electron.unlockWallet(pathToWallet, password)
         if (error === WalletErrors.WrongPassword) {
             setHasEnteredWrongPassword(true)
@@ -44,9 +48,7 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         }
         if (error) {
             setFileError(error)
-            return
         }
-        await loadWallet()
     }
     // Answers with a result, so the reason a name cannot be used arrives here
     // instead of throwing at the destructuring. Both callers get that for free,

@@ -1,5 +1,4 @@
 import {useRef, useState} from "react"
-import {useRouter} from "../components/util/router"
 import LoadHome from "../components/load"
 import AddSeed from "../components/load/add_seed"
 import ConfirmSeed from "../components/load/confirm_seed"
@@ -12,8 +11,12 @@ import {WalletErrors} from "../../main/common/util"
 import NetworkConfiguration from "../components/load/network/configuration";
 import {SelectNetwork} from "../components/load/network/common"
 
-const Index = () => {
-    const router = useRouter()
+// The page main opens first, and File > New/Restore opens again: choose or
+// create a wallet. It is loaded from disk in a window of its own, and the
+// wallet it unlocks or creates opens in another: main opens that window with
+// the wallet already in it and closes this one, so nothing here runs on after
+// success and no route leads from here to there.
+const Load = () => {
     const [filePath, setFilePath] = useState()
     const [pane, setPane] = useState(Panes.Step1ChooseFile)
     // Whether the wallet being created is built on a seed. The seed itself
@@ -24,7 +27,6 @@ const Index = () => {
     const [keyList, setKeyList] = useState([])
     const [addressList, setAddressList] = useState([])
     const networkValueRef = useRef()
-    const [_, setCalledPush] = useState(false)
     const onChooseSeedWallet = () => {
         setSeedWallet(true)
         setPane(Panes.Step3SetSeed)
@@ -48,6 +50,9 @@ const Index = () => {
         }
     }
     const handlePasswordCreated = async (password) => {
+        if (!await selectNetwork()) {
+            return
+        }
         const {error} = await window.electron.createFile(filePath, seedWallet, keyList, addressList, password)
         // Main refuses to write over an existing wallet. This screen is only
         // reached for a name with no file behind it, so getting here means the
@@ -59,42 +64,33 @@ const Index = () => {
             window.electron.showMessageDialog(error === WalletErrors.WalletExists
                 ? "A wallet named " + filePath + " already exists."
                 : error)
-            return
         }
-        await loadWallet()
     }
-    const loadWallet = async () => {
+    // Before a wallet is unlocked or created, never after: the wallet window
+    // main opens on success is set onto whatever network this window chose,
+    // so the choice has to be made - and the person asked about a server they
+    // have not approved - while this window is still the one asking. Main
+    // refuses an id that matches no configured network, so the dialog can say
+    // so: falling through used to open the wallet with no network set at all,
+    // leaving every data call in the window to fail against a network nobody
+    // chose.
+    const selectNetwork = async () => {
         try {
-            // Main sets the window onto the configured network with this id
-            // and remembers it as the default. It refuses an id that matches
-            // no configured network, so the dialog below can say so: falling
-            // through used to open the wallet with no network set at all,
-            // leaving every data call in the window to fail against a
-            // network nobody chose.
             await SelectNetwork(networkValueRef.current)
+            return true
         } catch (error) {
             window.electron.showMessageDialog("Unable to select network: " + error.message)
-            return
+            return false
         }
-        let calledPushLatest
-        setCalledPush(latest => {
-            calledPushLatest = latest
-            return latest
-        });
-        if (calledPushLatest) {
-            return
-        }
-        setCalledPush(true)
-        await router.push("/wallet")
     }
     return (
         <div className={styles.rootPage}>
             <div className={styles.content}>
                 <div className={styles.imageWrapper}>
-                    <img alt={"Memo logo"} src="/memo-logo-large.png"/>
+                    <img alt={"Memo logo"} src="../memo-logo-large.png"/>
                 </div>
                 <div className={styles.main}>
-                    {pane === Panes.Step1ChooseFile && <LoadHome setFilePath={setFilePath} loadWallet={loadWallet}
+                    {pane === Panes.Step1ChooseFile && <LoadHome setFilePath={setFilePath} selectNetwork={selectNetwork}
                                                                  setPane={setPane} networkValueRef={networkValueRef}/>}
                     {pane === Panes.Step2SelectType && <SelectType onChooseSeedWallet={onChooseSeedWallet}
                                                                    setPane={setPane}/>}
@@ -111,4 +107,4 @@ const Index = () => {
     )
 }
 
-export default Index
+export default Load

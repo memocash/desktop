@@ -3,10 +3,12 @@ const esbuild = require("esbuild")
 
 const root = path.resolve(__dirname, "..")
 
-// The spend prompt is a window of its own with its own preload: it carries the
-// password and nothing else, and shares no surface with the wallet page.
+// The spend prompt and the load page are windows of their own with preloads
+// of their own: each carries a password and nothing the wallet page holds,
+// and shares no surface with it.
 const bundles = [
     ["index.js", "preload.bundle.cjs"],
+    ["load.js", "preload.load.bundle.cjs"],
     ["spend_prompt.js", "preload.spend.bundle.cjs"],
 ]
 
