@@ -3,7 +3,11 @@
 # is what keeps those pins moving: it proposes the new SHA with a diff to
 # review, instead of the pin silently going stale. It also covers the actions
 # advisory gap - action fixes often ship without a published advisory, so
-# security-only updates would miss them.
+# security-only updates would miss them. SHA pins get no advisory alerts at
+# all, so this schedule is the only thing that moves them, fixes included: a
+# pin can sit up to a month behind a fix unless someone bumps it by hand.
+# Monthly and grouped into one PR is the accepted trade for about a dozen
+# reviews a year instead of one per action release.
 #
 # npm is deliberately absent: version updates there are churn with little
 # security value for this repo, and each update is itself supply-chain
@@ -13,4 +17,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
