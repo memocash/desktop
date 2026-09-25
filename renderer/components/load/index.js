@@ -12,6 +12,12 @@ const LoadHome = ({setPane, setFilePath, selectNetwork, networkValueRef}) => {
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
+    // Whether an unlock is in flight: the button is held while it is, and a
+    // second Enter under key derivation is dropped rather than asking main for
+    // a second wallet window on a second session. The ref is what the guard
+    // reads, since state only reaches the handlers on the next render.
+    const [busy, setBusy] = useState(false)
+    const inFlight = useRef(false)
     const walletInput = useRef()
     const passwordInput = useRef()
     useEffect(() => {(async () => {
@@ -77,16 +83,22 @@ const LoadHome = ({setPane, setFilePath, selectNetwork, networkValueRef}) => {
         await loadFile(filepath)
     }
     const handleClickNext = async () => {
+        if (inFlight.current) {
+            return
+        }
         const pathname = walletInput.current.value
         if (!fileExists) {
             onCreateWallet(pathname)
             return
         }
-        if (!passwordProtectedFile) {
-            await onLoadWallet(pathname)
-            return
+        inFlight.current = true
+        setBusy(true)
+        try {
+            await onLoadWallet(pathname, passwordProtectedFile ? passwordInput.current.value : undefined)
+        } finally {
+            inFlight.current = false
+            setBusy(false)
         }
-        await onLoadWallet(pathname, passwordInput.current.value)
     }
     const passwordKeyDown = async (e) => {
         if (e.keyCode === 13) {
@@ -128,7 +140,7 @@ const LoadHome = ({setPane, setFilePath, selectNetwork, networkValueRef}) => {
                 </div>
             </div>
             <div className={styles.buttons}>
-                <button onClick={handleClickNext} disabled={!!fileError}>Next</button>
+                <button onClick={handleClickNext} disabled={busy || !!fileError}>Next</button>
             </div>
         </div>
     )

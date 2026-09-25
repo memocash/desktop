@@ -3,6 +3,7 @@ const path = require("path")
 const http = require("http")
 const esbuild = require("esbuild")
 const {BuildOptions, WriteStatic, outDir} = require("./build-renderer")
+const {IsLoadPagePath} = require("../main/common/util/load_page")
 
 // Development stand-in for the packaged app:// handler: main spawns this
 // script when not packaged (see main/dev_server.js) and loads its windows
@@ -24,10 +25,14 @@ const ContentTypes = {
 // The URL parser upstream already folds dotted segments and leaves encoded
 // ones undecoded; the containment check here is the second lock on the same
 // door, and has to be segment-exact so a sibling directory sharing the
-// root's prefix does not pass as inside it.
+// root's prefix does not pass as inside it. The load page is refused the way
+// the packaged server refuses it: in the export, served by nobody.
 const Resolve = (root, urlPath) => {
     const file = path.normalize(path.join(root, urlPath))
     if (file !== root && !file.startsWith(root + path.sep)) {
+        return null
+    }
+    if (IsLoadPagePath(path.relative(root, file))) {
         return null
     }
     for (const candidate of [file, path.join(file, "index.html")]) {

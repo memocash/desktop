@@ -18,6 +18,22 @@ test("renderer paths remain inside the static export", () => {
     assert.equal(ResolveRendererPath(root, "/%E0%A4%A"), null)
 })
 
+// The load page sits in the export but is served by nobody: main loads it
+// from disk, and a wallet page that could navigate to it on the app origin
+// would have a genuine password screen to show. Shell, directory index,
+// bundles, and any spelling of the name a case-blind filesystem would open.
+test("the load page is never served on the app origin", () => {
+    const root = path.resolve("/app/renderer/out")
+    for (const pathname of ["/load", "/load/", "/load/index.html", "/Load/index.html", "/%6Coad",
+        "/assets/load.js", "/assets/load.css", "/assets/LOAD.js"]) {
+        assert.equal(ResolveRendererPath(root, pathname), null, pathname)
+    }
+    // Sharing the name's prefix is not being the load page.
+    assert.equal(ResolveRendererPath(root, "/loader/index.html"), path.join(root, "loader/index.html"))
+    assert.equal(ResolveRendererPath(root, "/assets/loader.js"), path.join(root, "assets/loader.js"))
+    assert.equal(ResolveRendererPath(root, "/assets/wallet.js"), path.join(root, "assets/wallet.js"))
+})
+
 // The handler as registration wires it up, driven with a real file on disk and
 // net.fetch stubbed to answer the way Electron's does - a Response whose
 // headers are already set.

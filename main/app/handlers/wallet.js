@@ -16,7 +16,7 @@ const pendingSeed = require("../pending_seed");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
 const {KeyFinder, PreviewSpend, SignTransaction, WalletAddresses} = require("../transaction_signer");
-const {OpenLoadWindow, OpenWalletWindow, eConf} = require("../window");
+const {OpenLoadWindow, OpenWalletWindow, RequireNetworkOption, eConf} = require("../window");
 const {
     SetWallet, GetWallet, SetMenu, GetWindow, CopyPublicToFileWindows,
     CopyWalletToTxWindows, TxWindowParent,
@@ -107,6 +107,7 @@ const normalizeSeedWallet = async (filename, password) => {
 // sees the session key - both go straight to the new window (see
 // main/app/window.js OpenWalletWindow).
 const unlockWallet = async (winId, walletName, password) => {
+    RequireNetworkOption(winId)
     const filename = keystore.ResolveWalletPath(winId, walletName)
     let read
     try {
@@ -132,11 +133,32 @@ const unlockWallet = async (winId, walletName, password) => {
     return {ok: true}
 }
 
+// One unlock or create at a time from a load window. A second ask while the
+// first is still deriving its key - Enter pressed twice - would otherwise
+// open a second wallet window on a second session from the one password
+// typed. The page holds its button too; this is the half that cannot be
+// scripted around.
+const opening = new Set()
+const oneAtATime = async (winId, open) => {
+    if (opening.has(winId)) {
+        throw new Error("a wallet is already opening from this window")
+    }
+    opening.add(winId)
+    try {
+        return await open()
+    } finally {
+        opening.delete(winId)
+    }
+}
+
 // The seed never arrives in this call: a seed wallet says so with a flag, and
 // the words come from the pending seed main has been holding for this window -
 // generated or imported there, and confirmed there. The renderer's part in
 // naming the seed ended when it could generate one; see ../pending_seed.
 const createWallet = async (winId, walletName, useSeed, keyList, addressList, password) => {
+    // Before the file is written and the seed dropped: a refusal here leaves
+    // the name free and the words in place for the retry.
+    RequireNetworkOption(winId)
     const seedPhrase = useSeed ? pendingSeed.Use(winId) : undefined
     if (!Dir.IsFullPath(walletName)) {
         await fs.mkdir(Dir.DefaultPath, {recursive: true, mode: 0o700})
@@ -909,7 +931,7 @@ const WalletHandlers = () => {
     // has opened, the named wallet that is in the way - so only the failure
     // needs wrapping.
     loadIpc.handle(Handlers.UnlockWallet, async (e, walletName, password) =>
-        unlockWallet(e.sender.id, walletName, password).catch(asError))
+        oneAtATime(e.sender.id, () => unlockWallet(e.sender.id, walletName, password)).catch(asError))
     // The creation flow's seed, kept on this side for its whole life: the
     // renderer asks for words to display, offers a typed phrase for checking,
     // and learns only whether it matched.
@@ -917,7 +939,8 @@ const WalletHandlers = () => {
     loadIpc.handle(Handlers.ImportSeed, async (e, phrase) => pendingSeed.Import(e.sender.id, phrase))
     loadIpc.handle(Handlers.ConfirmSeed, async (e, typed) => pendingSeed.Confirm(e.sender.id, typed))
     loadIpc.handle(Handlers.CreateWallet, async (e, walletName, useSeed, keyList, addressList, password) =>
-        createWallet(e.sender.id, walletName, useSeed, keyList, addressList, password).catch(asError))
+        oneAtATime(e.sender.id,
+            () => createWallet(e.sender.id, walletName, useSeed, keyList, addressList, password)).catch(asError))
     ipcMain.handle(Handlers.UpdateWallet, async (e, op, values, password) => {
         const result = await operationResult(() => updateWallet(e.sender.id, op, values, password))
         // A settings change that opened a budget hands its key back the way

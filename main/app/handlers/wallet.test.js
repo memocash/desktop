@@ -66,7 +66,7 @@ stub("../spend_prompt", {
 })
 
 const keystore = require("../keystore")
-const {AddLoadWindow, GetWallet, SetWallet, SetWindow, ForgetWindow} = require("../window_state")
+const {AddLoadWindow, GetWallet, SetNetworkOption, SetWallet, SetWindow, ForgetWindow} = require("../window_state")
 const {Handlers} = require("../../common/util")
 // Unlocking and creating open the wallet in a window of main's own, which
 // there is no Electron here to create. The stand-in binds the wallet to the
@@ -110,9 +110,11 @@ const e = (id) => {
 // The load page's channels admit the windows main opened on it, by id. These
 // tests unlock and create from an id and then act in it as the wallet window
 // (see the OpenWalletWindow stand-in), so the id is registered as a load
-// window the first time it asks and presents the load page's frame.
+// window the first time it asks and presents the load page's frame, with a
+// network chosen, as the page chooses one before it unlocks or creates.
 const load = (id) => {
     AddLoadWindow(id)
+    SetNetworkOption(id, {id: "test-network"})
     const frame = {url: "file:///app/renderer/out/load/index.html"}
     return {sender: {id, mainFrame: frame}, senderFrame: frame}
 }
@@ -696,6 +698,57 @@ test("an imported seed is what the wallet stores, spacing aside", async () => {
     } finally {
         pendingSeed.Discard(15)
         cleanup(15, dir)
+    }
+})
+
+// The wallet window a load window opens is set onto the network the load
+// window chose, so a window that chose none is refused - before the file is
+// written and the pending seed dropped, or a refused create would leave the
+// name taken and the words gone for the retry.
+test("a load window that chose no network is refused before anything is written or spent", async () => {
+    const dir = tempDir()
+    const walletPath = path.join(dir, "no_network")
+    try {
+        SetWindow(16, {id: 16})
+        keystore.AllowPath(16, walletPath)
+        const words = await handlers[Handlers.GenerateSeed](load(16))
+        assert.equal(await handlers[Handlers.ConfirmSeed](load(16), words), true)
+        const unchosen = load(16)
+        SetNetworkOption(16, undefined)
+        const created = await handlers[Handlers.CreateWallet](unchosen, walletPath, true, [], [], "pw")
+        assert.match(created.error, /no network/)
+        assert.equal(fs.existsSync(walletPath), false, "no file was written")
+        assert.match((await handlers[Handlers.UnlockWallet](unchosen, walletPath, "pw")).error, /no network/)
+        // With a network chosen, the same words make the wallet.
+        assert.equal((await handlers[Handlers.CreateWallet](load(16), walletPath, true, [], [], "pw")).ok, true)
+        assert.equal((await keystore.ReadWallet(walletPath, "pw")).wallet.seed, words)
+    } finally {
+        pendingSeed.Discard(16)
+        cleanup(16, dir)
+    }
+})
+
+// Enter pressed twice under key derivation must not open two wallet windows
+// on two sessions from one password: a second ask from a load window while
+// its first is still opening is refused, whatever the page does.
+test("one unlock at a time from a load window", async () => {
+    const dir = tempDir()
+    const walletPath = path.join(dir, "twice")
+    try {
+        SetWindow(17, {id: 17})
+        keystore.AllowPath(17, walletPath)
+        await keystore.CreateWalletFile(walletPath,
+            keystore.NewWallet(undefined, [], ["1BoatSLRHtKNngkdXEeobR76b53LETtpyT"]), "pw")
+        const before = opened.length
+        const first = unlock(17, walletPath)
+        const second = await unlock(17, walletPath)
+        assert.match(second.error, /already opening/)
+        assert.equal((await first).ok, true)
+        assert.equal(opened.length, before + 1, "one wallet window opened")
+        // Once the first has opened, the window may ask again.
+        assert.equal((await unlock(17, walletPath)).ok, true)
+    } finally {
+        cleanup(17, dir)
     }
 })
 

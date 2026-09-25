@@ -1,6 +1,5 @@
 const {BrowserWindow} = require("electron");
 const path = require("path");
-const {pathToFileURL} = require("url");
 const {Handlers, Listeners} = require("../common/util");
 const {GuardedIpc} = require("./ipc");
 const {BackgroundColor} = require("./window");
@@ -22,6 +21,13 @@ const PromptPreload = path.join(__dirname, "..", "preload.spend.bundle.cjs")
 // entry per open prompt: a spend is serialised long before it reaches here, and
 // each step is asked and answered before the next is sent.
 const waiting = new Map()
+
+// The prompt windows main has opened and not yet closed. Like the load
+// windows (see ../window_state.js), they are known by the WebContents id main
+// registered when it opened them, not by the url of their frame: main put
+// each id here itself, so membership says "a window main loaded from the
+// prompt page", and a window leaves the moment it closes.
+const prompts = new Set()
 
 const settle = (winId, message) => {
     const resolve = waiting.get(winId)
@@ -51,6 +57,8 @@ const OpenSpendPrompt = async (parent) => {
         },
     })
     const id = win.webContents.id
+    prompts.add(id)
+    win.once("closed", () => prompts.delete(id))
     // A closed window is a refusal, however it was closed. Whatever is waiting
     // on an answer gets one rather than hanging on a window that has gone.
     const cancelOnClose = () => settle(id, {cancelled: true})
@@ -105,9 +113,12 @@ const SpendPromptHandlers = () => {
     // Answers come from the prompt's own preload and are matched to the window
     // they came from, so nothing can answer for a prompt it was not asked. The
     // prompt page is not on the app origin - it is a file main loads itself -
-    // so this channel accepts exactly that file and nothing else: not the app
-    // pages, and not any other file: frame.
-    const promptIpc = GuardedIpc((e) => e.senderFrame.url === pathToFileURL(PromptPage).href)
+    // so this channel admits the windows main opened on it, by id, showing a
+    // local file: not the app pages, and not any other window. The same rule
+    // as the load surface's (see ./ipc.js), rather than an exact compare
+    // against the file's url, which Chromium normalises in ways an odd
+    // install path would not survive.
+    const promptIpc = GuardedIpc((e) => prompts.has(e.sender.id) && e.senderFrame.url.startsWith("file:"))
     promptIpc.on(Handlers.SpendPromptReply, (e, message) => settle(e.sender.id, message))
 }
 

@@ -27,6 +27,9 @@ const Load = () => {
     const [keyList, setKeyList] = useState([])
     const [addressList, setAddressList] = useState([])
     const networkValueRef = useRef()
+    // Whether a create is in flight: Finish pressed again while main is still
+    // writing the wallet is dropped rather than asking for a second window.
+    const creating = useRef(false)
     const onChooseSeedWallet = () => {
         setSeedWallet(true)
         setPane(Panes.Step3SetSeed)
@@ -50,20 +53,28 @@ const Load = () => {
         }
     }
     const handlePasswordCreated = async (password) => {
-        if (!await selectNetwork()) {
+        if (creating.current) {
             return
         }
-        const {error} = await window.electron.createFile(filePath, seedWallet, keyList, addressList, password)
-        // Main refuses to write over an existing wallet. This screen is only
-        // reached for a name with no file behind it, so getting here means the
-        // file appeared in between - opening the wallet would find no wallet.
-        // Anything else it refuses for says so in its own words: this is the last
-        // step of the creation flow, and a button that did nothing here left the
-        // seed just written down belonging to no wallet at all.
-        if (error) {
-            window.electron.showMessageDialog(error === WalletErrors.WalletExists
-                ? "A wallet named " + filePath + " already exists."
-                : error)
+        creating.current = true
+        try {
+            if (!await selectNetwork()) {
+                return
+            }
+            const {error} = await window.electron.createFile(filePath, seedWallet, keyList, addressList, password)
+            // Main refuses to write over an existing wallet. This screen is only
+            // reached for a name with no file behind it, so getting here means the
+            // file appeared in between - opening the wallet would find no wallet.
+            // Anything else it refuses for says so in its own words: this is the last
+            // step of the creation flow, and a button that did nothing here left the
+            // seed just written down belonging to no wallet at all.
+            if (error) {
+                window.electron.showMessageDialog(error === WalletErrors.WalletExists
+                    ? "A wallet named " + filePath + " already exists."
+                    : error)
+            }
+        } finally {
+            creating.current = false
         }
     }
     // Before a wallet is unlocked or created, never after: the wallet window

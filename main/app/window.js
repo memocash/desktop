@@ -31,10 +31,14 @@ const AppIcon = path.join(__dirname, "..", "..", "build", "icon.png")
 // reach of an app:// or http: page altogether - Chromium refuses to frame or
 // navigate to a local file from either, before any policy of ours is asked -
 // so the pages that hold a wallet and the page that takes its password
-// cannot meet, in dev or packaged, with nothing to configure. What that
-// gives up is the app:// handler: no header policy and no path containment
-// for this one page, which is why its preload is its own and its channels
-// are guarded by window rather than by url (see main/app/ipc.js).
+// cannot meet, in dev or packaged, with nothing to configure. The page sits
+// in the export beside the pages the app origin serves, but neither the
+// app:// handler nor the dev server will serve it (see
+// main/common/util/load_page.js), so no wallet page can navigate its own
+// window to it either. What that gives up is the app:// handler: no header
+// policy and no path containment for this one page, which is why its
+// preload is its own and its channels are guarded by window rather than by
+// url (see main/app/ipc.js).
 const LoadPage = path.join(__dirname, "..", "..", "renderer", "out", "load", "index.html")
 const LoadPreload = path.join(__dirname, "..", "preload.load.bundle.cjs")
 const WalletPreload = path.join(__dirname, "..", "preload.bundle.cjs")
@@ -233,11 +237,20 @@ const OpenLoadWindow = async () => {
 // delivery waiting on it is withdrawn so the key is held by nothing, and the
 // failure goes back to the load window, which stays open for another try
 // rather than being closed onto a wallet window that never came up.
-const OpenWalletWindow = async (loadWinId, state, sessionKey) => {
+// The network a load window chose, which the wallet window it opens is set
+// onto. Unlocking and creating ask this first, before a file is read or
+// written or a pending seed spent, so a window that chose nothing is refused
+// at no cost; the check here is the one that holds for the window itself.
+const RequireNetworkOption = (loadWinId) => {
     const networkOption = GetNetworkOption(loadWinId)
     if (!networkOption) {
         throw new Error("no network has been selected for this wallet")
     }
+    return networkOption
+}
+
+const OpenWalletWindow = async (loadWinId, state, sessionKey) => {
+    const networkOption = RequireNetworkOption(loadWinId)
     const loadWin = GetWindow(loadWinId)
     const bounds = loadWin && !loadWin.isDestroyed() ? loadWin.getBounds() : NextWindowBounds()
     const win = mainWindow(bounds, WalletPreload)
@@ -324,5 +337,6 @@ module.exports = {
     GetRuntimeNetworkOption,
     OpenLoadWindow,
     OpenWalletWindow,
+    RequireNetworkOption,
     CreateTxWindow,
 }
