@@ -3,7 +3,10 @@ const path = require("path")
 const {pathToFileURL} = require("url")
 const {app, net, protocol, session} = require("electron")
 const {ContentSecurityPolicyHeader} = require("./common/util")
+const {IsLoadPagePath} = require("./common/util/load_page")
 
+// A name inside the export, and not the load page's - that one is in the
+// export but on no origin (see main/common/util/load_page.js).
 const ResolveRendererPath = (root, pathname) => {
     let decoded
     try {
@@ -13,7 +16,7 @@ const ResolveRendererPath = (root, pathname) => {
     }
     const resolved = path.resolve(root, "." + decoded)
     const relative = path.relative(root, resolved)
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    if (relative.startsWith("..") || path.isAbsolute(relative) || IsLoadPagePath(relative)) {
         return null
     }
     return resolved

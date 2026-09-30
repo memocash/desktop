@@ -1,5 +1,5 @@
 const {Menu, MenuItem, Notification, app, clipboard, dialog} = require("electron");
-const {ipcMain} = require("../ipc");
+const {ipcMain, sharedIpc} = require("../ipc");
 const {Dir, Handlers, Modals, Listeners} = require("../../common/util");
 const {AllowPath} = require("../keystore");
 const {OpenExternalUrl} = require("../window");
@@ -12,7 +12,10 @@ const {
 } = require("../window_state");
 
 const WindowHandlers = () => {
-    ipcMain.handle(Handlers.GetWindowId, async (e) => e.sender.id)
+    // What the load page needs as much as the wallet page does: its own id, a
+    // dialog, the file picker, the clipboard. Everything else here is the
+    // wallet page's.
+    sharedIpc.handle(Handlers.GetWindowId, async (e) => e.sender.id)
     ipcMain.handle(Handlers.GetAppInfo, async () => ({
         name: app.getName(),
         version: app.getVersion(),
@@ -25,7 +28,7 @@ const WindowHandlers = () => {
     ipcMain.on(Handlers.CloseWindow, (e) => GetWindow(e.sender.id).close())
     // The seed step clears whatever the user copied out of the seed box. The
     // sandboxed preload has no clipboard module of its own, so it asks here.
-    ipcMain.on(Handlers.ClearClipboard, () => clipboard.clear())
+    sharedIpc.on(Handlers.ClearClipboard, () => clipboard.clear())
     ipcMain.on(Handlers.SetWindowStorage, (e, key, value) => {
         if (GetStorage(e.sender.id) === undefined) {
             SetStorage(e.sender.id, {})
@@ -78,7 +81,7 @@ const WindowHandlers = () => {
     // protocol check happens in the main process where the renderer cannot skip
     // it. The url is untrusted: on-chain data reaches this.
     ipcMain.on(Handlers.OpenExternal, (e, url) => OpenExternalUrl(url))
-    ipcMain.handle(Handlers.OpenFileDialog, async (e) => {
+    sharedIpc.handle(Handlers.OpenFileDialog, async (e) => {
         const win = GetWindow(e.sender.id)
         const {canceled, filePaths} = await dialog.showOpenDialog(win, {defaultPath: Dir.DefaultPath})
         if (canceled) {
@@ -90,7 +93,7 @@ const WindowHandlers = () => {
         AllowPath(e.sender.id, filePaths[0])
         return filePaths[0]
     })
-    ipcMain.on(Handlers.ShowMessageDialog, (e, message) => {
+    sharedIpc.on(Handlers.ShowMessageDialog, (e, message) => {
         dialog.showMessageBoxSync(GetWindow(e.sender.id), {
             title: "Memo",
             message: message,

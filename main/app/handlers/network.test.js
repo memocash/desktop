@@ -66,11 +66,23 @@ const stored = () => JSON.parse(fs.readFileSync(Dir.NetworkConfigFile, "utf8"))
 const approvals = () => fs.existsSync(Dir.NetworkApprovedFile)
     ? JSON.parse(fs.readFileSync(Dir.NetworkApprovedFile, "utf8")) : undefined
 
-const e = (id) => ({sender: {id}, senderFrame: {url: "app://-/"}})
+// The configuration channels answer load windows, judged by id: each id
+// these tests speak for is registered as one. GetWindowNetwork is the wallet
+// page's, on the app origin.
+const {AddLoadWindow} = require("../window_state")
+const e = (id) => {
+    AddLoadWindow(id)
+    const frame = {url: "file:///app/renderer/out/load/index.html"}
+    return {sender: {id, mainFrame: frame}, senderFrame: frame}
+}
+const app = (id) => {
+    const frame = {url: "app://-/wallet"}
+    return {sender: {id, mainFrame: frame}, senderFrame: frame}
+}
 const get = () => handlers[Handlers.GetNetworkConfig](e(1))
 const save = (id, config) => handlers[Handlers.SaveNetworkConfig](e(id), config)
 const select = (id, networkId) => handlers[Handlers.SelectNetwork](e(id), networkId)
-const windowNetwork = (id) => handlers[Handlers.GetWindowNetwork](e(id))
+const windowNetwork = (id) => handlers[Handlers.GetWindowNetwork](app(id))
 
 const presets = () => ({Networks: DefaultNetworks.map((option) => ({...option}))})
 const withServer = (config, id, Server) => ({

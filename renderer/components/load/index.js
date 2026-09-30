@@ -4,7 +4,7 @@ import NetworkForm from "./network/form";
 import {Panes} from "./common";
 import {WalletErrors} from "../../../main/common/util"
 
-const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
+const LoadHome = ({setPane, setFilePath, selectNetwork, networkValueRef}) => {
     // Why this name cannot be opened, rather than only that it cannot. A name
     // with a separator in it and a file this version cannot parse are different
     // problems, and neither is the one the old boolean named.
@@ -12,6 +12,12 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
     const [fileExists, setFileExists] = useState(false)
     const [passwordProtectedFile, setPasswordProtectedFile] = useState(false)
     const [hasEnteredWrongPassword, setHasEnteredWrongPassword] = useState(false)
+    // Whether an unlock is in flight: the button is held while it is, and a
+    // second Enter under key derivation is dropped rather than asking main for
+    // a second wallet window on a second session. The ref is what the guard
+    // reads, since state only reaches the handlers on the next render.
+    const [busy, setBusy] = useState(false)
+    const inFlight = useRef(false)
     const walletInput = useRef()
     const passwordInput = useRef()
     useEffect(() => {(async () => {
@@ -33,10 +39,14 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         setPane(Panes.Step2SelectType)
     }
     // Main opens and decrypts the file; the renderer only learns whether the
-    // password was right - or, now, that the wallet could not be opened for a
-    // reason no password would have fixed, which used to leave Next doing
-    // nothing at all.
+    // password was right - or that the wallet could not be opened for a
+    // reason no password would have fixed. On success there is nothing left
+    // to do here: main has opened the wallet in a window of its own and is
+    // closing this one.
     const onLoadWallet = async (pathToWallet, password) => {
+        if (!await selectNetwork()) {
+            return
+        }
         const {error} = await window.electron.unlockWallet(pathToWallet, password)
         if (error === WalletErrors.WrongPassword) {
             setHasEnteredWrongPassword(true)
@@ -44,9 +54,7 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         }
         if (error) {
             setFileError(error)
-            return
         }
-        await loadWallet()
     }
     // Answers with a result, so the reason a name cannot be used arrives here
     // instead of throwing at the destructuring. Both callers get that for free,
@@ -75,16 +83,22 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
         await loadFile(filepath)
     }
     const handleClickNext = async () => {
+        if (inFlight.current) {
+            return
+        }
         const pathname = walletInput.current.value
         if (!fileExists) {
             onCreateWallet(pathname)
             return
         }
-        if (!passwordProtectedFile) {
-            await onLoadWallet(pathname)
-            return
+        inFlight.current = true
+        setBusy(true)
+        try {
+            await onLoadWallet(pathname, passwordProtectedFile ? passwordInput.current.value : undefined)
+        } finally {
+            inFlight.current = false
+            setBusy(false)
         }
-        await onLoadWallet(pathname, passwordInput.current.value)
     }
     const passwordKeyDown = async (e) => {
         if (e.keyCode === 13) {
@@ -126,7 +140,7 @@ const LoadHome = ({setPane, setFilePath, loadWallet, networkValueRef}) => {
                 </div>
             </div>
             <div className={styles.buttons}>
-                <button onClick={handleClickNext} disabled={!!fileError}>Next</button>
+                <button onClick={handleClickNext} disabled={busy || !!fileError}>Next</button>
             </div>
         </div>
     )

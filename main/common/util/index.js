@@ -1,4 +1,4 @@
-const {ContentSecurityPolicy, ContentSecurityPolicyHeader} = require("./csp");
+const {ContentSecurityPolicy, ContentSecurityPolicyHeader, LoadContentSecurityPolicy} = require("./csp");
 const {Dir} = require("./dir");
 const {WalletErrors} = require("./errors");
 const {Modals} = require("./modals");
@@ -10,6 +10,7 @@ const {IsSameOrigin, SafeExternalUrl} = require("./urls");
 module.exports = {
     ContentSecurityPolicy: ContentSecurityPolicy,
     ContentSecurityPolicyHeader: ContentSecurityPolicyHeader,
+    LoadContentSecurityPolicy: LoadContentSecurityPolicy,
     DefaultHiddenTabs: DefaultHiddenTabs,
     Dir: Dir,
     Handlers: Handlers,

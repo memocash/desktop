@@ -1,34 +1,43 @@
 const fs = require("fs")
 const path = require("path")
-const {ContentSecurityPolicy} = require("../main/common/util")
+const {ContentSecurityPolicy, LoadContentSecurityPolicy} = require("../main/common/util")
 
 const root = path.resolve(__dirname, "..")
 const outDir = path.join(root, "renderer", "out")
 
-// One bundle per window. The layout mirrors what the Next export produced,
-// because main expects it: the app:// handler resolves an extensionless
-// request like app://-/tx to tx/index.html, so each page keeps its own
-// directory (see main/static_server.js).
+// One bundle per window, each page in a directory of its own. The wallet and
+// transaction pages are served over the app origin, where the app:// handler
+// resolves an extensionless request like app://-/tx to tx/index.html (see
+// main/static_server.js). The load page is not served at all: main loads
+// load/index.html from disk, so it is on no origin any page could reach, and
+// its policy is its own (see main/app/window.js and main/common/util/csp.js).
 const Pages = [
-    {name: "index", title: "Memo", html: "index.html"},
-    {name: "tx", title: "Transaction", html: path.join("tx", "index.html")},
-    {name: "wallet", title: "Memo", html: path.join("wallet", "index.html")},
+    {name: "load", title: "Memo", html: path.join("load", "index.html"), csp: LoadContentSecurityPolicy},
+    {name: "tx", title: "Transaction", html: path.join("tx", "index.html"), csp: ContentSecurityPolicy},
+    {name: "wallet", title: "Memo", html: path.join("wallet", "index.html"), csp: ContentSecurityPolicy},
 ]
 
-// The same CSP the app:// handler sends as a header, delivered as a meta tag
-// so it also binds the document in development, where pages come from the
-// local dev server instead (see main/common/util/csp.js).
-const Html = ({name, title}) => `<!DOCTYPE html>
+// Each shell reaches its assets by a path relative to itself. The pages on the
+// app origin could name them from the root, but the load page cannot: a root
+// path in a file: document is the root of the disk. One rule for every shell,
+// rather than one page that is different.
+const AssetPrefix = (html) => "../".repeat(html.split(path.sep).length - 1)
+
+// Each page's policy, delivered as a meta tag: for the pages on the app origin
+// the same one the app:// handler sends as a header, so the policy also binds
+// the document in development, where pages come from the local dev server
+// instead; for the load page the only delivery there is.
+const Html = ({name, title, html, csp}) => `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="${ContentSecurityPolicy()}">
+<meta http-equiv="Content-Security-Policy" content="${csp()}">
 <title>${title}</title>
-<link rel="stylesheet" href="/assets/${name}.css">
+<link rel="stylesheet" href="${AssetPrefix(html)}assets/${name}.css">
 </head>
 <body>
 <div id="root"></div>
-<script src="/assets/${name}.js"></script>
+<script src="${AssetPrefix(html)}assets/${name}.js"></script>
 </body>
 </html>
 `
@@ -67,7 +76,7 @@ const WriteStatic = (dir = outDir) => {
     }
 }
 
-module.exports = {BuildOptions, Pages, WriteStatic, outDir}
+module.exports = {AssetPrefix, BuildOptions, Pages, WriteStatic, outDir}
 
 if (require.main === module) {
     const esbuild = require("esbuild")

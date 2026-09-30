@@ -14,7 +14,7 @@ process.on("uncaughtException", (err) => {
     app.exit(1)
 })
 
-const {ApplyContentsSecurity, CreateWindow, DataDir} = require("./app/window");
+const {ApplyContentsSecurity, OpenLoadWindow, DataDir} = require("./app/window");
 const {AllHandlers} = require("./app/handlers");
 const {ApplyStoredTheme} = require("./app/handlers/theme");
 const {SweepStrandedTempFiles, TightenWalletPermissions} = require("./app/keystore");
@@ -65,6 +65,6 @@ app.whenReady().then(async () => {
     // looking for them is looking: dev builds keep theirs apart, see DataDir.
     console.log("databases under ~/.memo" + (DataDir ? "/" + DataDir : ""))
     AllHandlers()
-    await CreateWindow()
+    await OpenLoadWindow()
     ScheduleUpdateChecks()
 })

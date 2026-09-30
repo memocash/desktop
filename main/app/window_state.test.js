@@ -1,6 +1,7 @@
 const test = require("node:test")
 const assert = require("node:assert")
 const {
+    AddLoadWindow,
     AddTxWindow,
     CopyPublicToFileWindows,
     CopyWalletToTxWindows,
@@ -8,6 +9,7 @@ const {
     GetWallet,
     GetWindow,
     HeldWindowIds,
+    IsLoadWindow,
     IsWalletWindow,
     SetMenu,
     SetNetworkOption,
@@ -28,12 +30,15 @@ const open = (winId, wallet) => {
 
 test("closing a window leaves nothing of it behind", () => {
     open(1, {filename: "wallet", integrityKey: "secret", session: {envelope: {}}})
+    AddLoadWindow(1)
     assert.notEqual(GetWindow(1), undefined)
     assert.equal(IsWalletWindow(1), true)
+    assert.equal(IsLoadWindow(1), true)
 
     ForgetWindow(1)
     assert.equal(GetWindow(1), undefined)
     assert.equal(IsWalletWindow(1), false)
+    assert.equal(IsLoadWindow(1), false, "a closed load window must not go on being admitted")
     assert.equal(GetWallet(1), undefined)
     const held = HeldWindowIds()
     for (const [name, ids] of Object.entries(held)) {
