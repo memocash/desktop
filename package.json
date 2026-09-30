@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "buffer": "^6.0.3",
-    "electron": "43.3.0",
+    "electron": "43.5.0",
     "electron-builder": "^26.16.1",
     "esbuild": "^0.28.2",
     "react": "^19.2.8",
