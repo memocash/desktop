@@ -67,17 +67,25 @@ stub("../spend_prompt", {
 
 const keystore = require("../keystore")
 const {AddLoadWindow, GetWallet, SetNetworkOption, SetWallet, SetWindow, ForgetWindow} = require("../window_state")
-const {Handlers} = require("../../common/util")
+const {Handlers, WalletErrors} = require("../../common/util")
 // Unlocking and creating open the wallet in a window of main's own, which
 // there is no Electron here to create. The stand-in binds the wallet to the
 // window that asked, as the page used to be left holding it, and reports the
 // key main would have sent to the new window's preload - so what is under
 // test is the state a wallet window starts from, by whatever id it has.
 const opened = []
+// Set to an error to have the next open fail the way a window whose page
+// never loaded does; consumed by that one call.
+let failNextOpen
 const realWindow = require("../window")
 stub("../window", {
     ...realWindow,
     OpenWalletWindow: async (loadWinId, state, sessionKey) => {
+        if (failNextOpen) {
+            const failure = failNextOpen
+            failNextOpen = undefined
+            throw failure
+        }
         opened.push({loadWinId, state, sessionKey})
         SetWallet(loadWinId, state)
         return loadWinId
@@ -101,8 +109,11 @@ const tempDir = () => {
 
 // Events carry the frame the guarded ipc surface checks; these tests play the
 // app's own page from its main frame, so requests present the app origin the
-// way a real renderer frame would. The stubbed ipcMain captures handlers
-// unguarded, so the frame is a courtesy here; ipc.test.js drives the guard.
+// way a real renderer frame would. Only electron is stubbed, so the guard in
+// ../ipc.js is live here and every call below goes through it: a channel
+// moved from one surface to another is refused by these events, which is what
+// pins the password channels to the load surface. ipc.test.js drives the
+// guard's rules on their own.
 const e = (id) => {
     const frame = {url: "app://-/wallet"}
     return {sender: {id, mainFrame: frame}, senderFrame: frame}
@@ -749,6 +760,32 @@ test("one unlock at a time from a load window", async () => {
         assert.equal((await unlock(17, walletPath)).ok, true)
     } finally {
         cleanup(17, dir)
+    }
+})
+
+// A wallet window that fails to come up after a create - the dev server gone,
+// the window closed under its load - leaves a written wallet behind. Finish
+// again cannot make it; the answer says the wallet stands and where it opens,
+// and unlocking it by name is what works.
+test("a created wallet whose window fails to open says so, and opens from the first screen", async () => {
+    const dir = tempDir()
+    const walletPath = path.join(dir, "orphaned")
+    const address = ["1BoatSLRHtKNngkdXEeobR76b53LETtpyT"]
+    try {
+        SetWindow(18, {id: 18})
+        keystore.AllowPath(18, walletPath)
+        failNextOpen = new Error("ERR_CONNECTION_REFUSED")
+        const created = await handlers[Handlers.CreateWallet](load(18), walletPath, false, [], address, "pw")
+        assert.match(created.error, /was created/)
+        assert.match(created.error, /ERR_CONNECTION_REFUSED/)
+        assert.match(created.error, /first screen/)
+        assert.equal(fs.existsSync(walletPath), true, "the wallet stands")
+        assert.equal((await handlers[Handlers.CreateWallet](load(18), walletPath, false, [], address, "pw")).error,
+            WalletErrors.WalletExists)
+        assert.equal((await unlock(18, walletPath)).ok, true)
+        assert.deepEqual(GetWallet(18).wallet.addresses, address)
+    } finally {
+        cleanup(18, dir)
     }
 })
 

@@ -37,12 +37,18 @@ const findFile = async (candidate) => {
 // the kind of foothold layered checks exist to contain - would pass the name
 // check and still point anywhere. Both sides are resolved to their real
 // locations so a legitimately symlinked install root (tmpdirs and app mounts
-// often are) still contains its own files.
+// often are) still contains its own files. The load page is refused here a
+// second time, by where the file really is: a link into load/ under another
+// name, or a spelling the filesystem folds onto it that the name check did
+// not foresee, is still the load page once resolved.
 const containedRealPath = async (root, file) => {
     try {
         const real = await fs.realpath(file)
         const relative = path.relative(await fs.realpath(root), real)
-        return relative.startsWith("..") || path.isAbsolute(relative) ? null : real
+        if (relative.startsWith("..") || path.isAbsolute(relative) || IsLoadPagePath(relative)) {
+            return null
+        }
+        return real
     } catch (_) {
         return null
     }

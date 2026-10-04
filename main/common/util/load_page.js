@@ -8,11 +8,16 @@
 // anywhere on the app origin - so both refuse the page's files by this one
 // rule: its shell directory, and its bundles under assets/. Case-blind,
 // since the filesystems the app ships on mostly are, and a request differing
-// only in case would otherwise open what the exact name refuses.
+// only in case would otherwise open what the exact name refuses. Blind to
+// trailing dots and spaces on a segment too: Windows drops them when it opens
+// a name, so "load." and "load " are the load directory there, and a check
+// that read them as other names would be the one thing standing between a
+// wallet page and a served copy of the password screen.
 const LoadPageName = "load"
 
 const IsLoadPagePath = (relativePath) => {
     const [first, second] = relativePath.toLowerCase().split(/[\\/]/)
+        .map((segment) => segment.replace(/[. ]+$/, ""))
     return first === LoadPageName
         || (first === "assets" && second !== undefined && second.startsWith(LoadPageName + "."))
 }

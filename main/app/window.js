@@ -217,6 +217,18 @@ const OpenLoadWindow = async () => {
     await win.loadFile(LoadPage)
 }
 
+// The network a load window chose, which the wallet window it opens is set
+// onto. Unlocking and creating ask this first, before a file is read or
+// written or a pending seed spent, so a window that chose nothing is refused
+// at no cost; the check here is the one that holds for the window itself.
+const RequireNetworkOption = (loadWinId) => {
+    const networkOption = GetNetworkOption(loadWinId)
+    if (!networkOption) {
+        throw new Error("no network has been selected for this wallet")
+    }
+    return networkOption
+}
+
 // The window a wallet lives in, opened by main once a load window has unlocked
 // or created one. The load window never holds the wallet: its state is bound
 // to the new window's id from the start, along with the network the load page
@@ -235,20 +247,10 @@ const OpenLoadWindow = async () => {
 // closed while loading - leaves nothing behind either: the window is
 // destroyed, which runs the same forgetting a closed window's does, the
 // delivery waiting on it is withdrawn so the key is held by nothing, and the
-// failure goes back to the load window, which stays open for another try
-// rather than being closed onto a wallet window that never came up.
-// The network a load window chose, which the wallet window it opens is set
-// onto. Unlocking and creating ask this first, before a file is read or
-// written or a pending seed spent, so a window that chose nothing is refused
-// at no cost; the check here is the one that holds for the window itself.
-const RequireNetworkOption = (loadWinId) => {
-    const networkOption = GetNetworkOption(loadWinId)
-    if (!networkOption) {
-        throw new Error("no network has been selected for this wallet")
-    }
-    return networkOption
-}
-
+// failure goes back to the load window, which stays open rather than being
+// closed onto a wallet window that never came up. An unlock is simply asked
+// again; a create has its file written by then and says so (see
+// handlers/wallet.js createWallet).
 const OpenWalletWindow = async (loadWinId, state, sessionKey) => {
     const networkOption = RequireNetworkOption(loadWinId)
     const loadWin = GetWindow(loadWinId)

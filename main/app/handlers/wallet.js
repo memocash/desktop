@@ -196,13 +196,21 @@ const createWallet = async (winId, walletName, useSeed, keyList, addressList, pa
     pendingSeed.Discard(winId)
     // A new wallet has no spend budget, so there is no session to open: the
     // window it gets holds the wallet and nothing that could spend from it.
-    await OpenWalletWindow(winId, {
-        wallet: keystore.PublicWallet(wallet),
-        filename,
-        encrypted: !!(password && password.length),
-        integrityKey,
-        session: undefined,
-    })
+    try {
+        await OpenWalletWindow(winId, {
+            wallet: keystore.PublicWallet(wallet),
+            filename,
+            encrypted: !!(password && password.length),
+            integrityKey,
+            session: undefined,
+        })
+    } catch (e) {
+        // Unlike an unlock that fails here, this one is not retried by asking
+        // again: the file is written and the seed spent, so Finish would now
+        // find the name taken. The wallet stands; say so, and where it opens.
+        throw new Error("The wallet " + walletName + " was created, but its window could not be opened: "
+            + e.message + ". Open it from the first screen.")
+    }
     return {ok: true}
 }
 
