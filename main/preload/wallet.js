@@ -3,7 +3,10 @@ const {Handlers, Listeners} = require("../common/util/handlers");
 const {WalletErrors} = require("../common/util/errors");
 
 // Nothing here touches the filesystem or a cipher. Each call names an operation
-// and main decides whether to perform it - see main/app/keystore.js.
+// and main decides whether to perform it - see main/app/keystore.js. Nothing
+// here unlocks or creates a wallet either: that is the load page's preload
+// (load.js), in a window of its own, and this window was opened by main with
+// the wallet already in it.
 //
 // The session key lives here and nowhere else on this side. Main holds the
 // password sealed under it and neither half is a password alone, so a spend
@@ -14,9 +17,17 @@ const {WalletErrors} = require("../common/util/errors");
 // and main's half then opens for nobody, so the next spend asks for the password.
 let sessionKey
 
+// The key to the session unlocking opened arrives from main once this
+// preload exists to hold it - main opened this window for the wallet, and
+// sends the key here rather than to the window that typed the password.
+// Registered here, not on the bridge, so the page can neither receive it nor
+// hand one in.
+ipcRenderer.on(Listeners.SessionKey, (e, key) => {
+    sessionKey = key
+})
+
 // Strips the session key out of a main-process reply, keeping it on this side of
-// the context bridge. A reply with no key leaves the current one alone; only
-// unlocking replaces it outright.
+// the context bridge. A reply with no key leaves the current one alone.
 const keepSessionKey = ({sessionKey: key, ...rest}) => {
     if (key) {
         sessionKey = key
@@ -28,18 +39,6 @@ const keepSessionKey = ({sessionKey: key, ...rest}) => {
 // key alone.
 const updateWallet = (op) => async (values, password) =>
     keepSessionKey(await ipcRenderer.invoke(Handlers.UpdateWallet, op, values, password))
-
-// A rejection from a handler arrives prefixed with the channel it came over
-// ("Error invoking remote method 'x': Error: ..."). Callers that show the
-// reason to the person get the reason alone.
-const unwrapped = async (invoked) => {
-    try {
-        return await invoked
-    } catch (error) {
-        throw new Error(String(error.message)
-            .replace(/^Error invoking remote method '[^']*': (?:[A-Za-z]*Error: )?/, ""))
-    }
-}
 
 // Main asks this window to make a spend on behalf of a preview window it opened,
 // which has no key of its own. It is the same call this window makes for itself,
@@ -65,18 +64,6 @@ module.exports = {
     addKeys: updateWallet("addKeys"),
     removeKeys: updateWallet("removeKeys"),
     changeSettings: updateWallet("changeSettings"),
-    // Answers {exists, encrypted} - what the load screen needs to decide whether
-    // to offer opening, creating, or a password box.
-    checkFile: async (walletName) => ipcRenderer.invoke(Handlers.CheckWalletFile, walletName),
-    // No seed crosses here: useSeed says the wallet should be built on the
-    // pending seed main already holds for this window - the one it generated
-    // or was handed to import, and saw confirmed.
-    createFile: async (walletName, useSeed, keyList, addressList, password) =>
-        ipcRenderer.invoke(Handlers.CreateWallet, walletName, useSeed, keyList, addressList, password),
-    generateSeed: async () => ipcRenderer.invoke(Handlers.GenerateSeed),
-    importSeed: async (phrase) => ipcRenderer.invoke(Handlers.ImportSeed, phrase),
-    confirmSeed: async (typed) => ipcRenderer.invoke(Handlers.ConfirmSeed, typed),
-    getExistingWalletFiles: async () => ipcRenderer.invoke(Handlers.GetExistingWalletFiles),
     getWalletInfo: async (addresses) => ipcRenderer.invoke(Handlers.GetWalletInfo, addresses),
     getWallet: async () => ipcRenderer.invoke(Handlers.GetWallet),
     authenticateWallet: async (password) => ipcRenderer.invoke(Handlers.AuthenticateWallet, password),
@@ -86,17 +73,7 @@ module.exports = {
     removePrivateKey: async (address, password) =>
         ipcRenderer.invoke(Handlers.RemovePrivateKey, address, password),
     getWalletFileInfo: async () => ipcRenderer.invoke(Handlers.GetWalletFileInfo),
-    unlockWallet: async (walletName, password) => {
-        sessionKey = undefined
-        return keepSessionKey(
-            await ipcRenderer.invoke(Handlers.UnlockWallet, walletName, password))
-    },
     walletLoaded: () => ipcRenderer.send(Handlers.WalletLoaded),
-    // The page shows what these refuse for - next to the field, or in a
-    // dialog of its own - so the message crosses without the channel name
-    // Electron prefixes to a handler's rejection.
-    saveNetworkConfig: async (networkConfig) =>
-        unwrapped(ipcRenderer.invoke(Handlers.SaveNetworkConfig, networkConfig)),
     // No password crosses from the page: main signs on the session if the budget
     // covers it, and otherwise asks in a window of its own. What this offers is a
     // key it cannot read, and what it learns is whether that was enough.
@@ -120,7 +97,5 @@ module.exports = {
         // on this side of the bridge like every other one.
         return keepSessionKey(await ipcRenderer.invoke(Handlers.SignOnParentSession, request))
     },
-    getNetworkConfig: async () => ipcRenderer.invoke(Handlers.GetNetworkConfig),
     getWindowNetwork: async () => await ipcRenderer.invoke(Handlers.GetWindowNetwork),
-    selectNetwork: async (id) => unwrapped(ipcRenderer.invoke(Handlers.SelectNetwork, id)),
 }

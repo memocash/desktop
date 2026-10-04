@@ -15,6 +15,11 @@ test("the dev resolver serves the export and only the export", (t) => {
     fs.mkdirSync(path.join(root, "tx"), {recursive: true})
     fs.writeFileSync(path.join(root, "index.html"), "root")
     fs.writeFileSync(path.join(root, "tx", "index.html"), "tx")
+    fs.mkdirSync(path.join(root, "load"))
+    fs.writeFileSync(path.join(root, "load", "index.html"), "load")
+    fs.mkdirSync(path.join(root, "assets"))
+    fs.writeFileSync(path.join(root, "assets", "load.js"), "load bundle")
+    fs.writeFileSync(path.join(root, "assets", "loader.js"), "not the load page")
     fs.writeFileSync(path.join(dir, "secret.txt"), "outside")
     // A sibling of the export whose name extends the export's own.
     fs.mkdirSync(path.join(dir, "outside"))
@@ -32,4 +37,10 @@ test("the dev resolver serves the export and only the export", (t) => {
     assert.equal(Resolve(root, "/%2e%2e/secret.txt"), null)
     // Sharing the root's prefix is not being inside the root.
     assert.equal(Resolve(root, "/../outside/index.html"), null)
+    // The load page is in the export and served by nobody, here as in the
+    // packaged server (see main/common/util/load_page.js).
+    for (const urlPath of ["/load", "/load/index.html", "/Load/index.html", "/assets/load.js"]) {
+        assert.equal(Resolve(root, urlPath), null, urlPath)
+    }
+    assert.equal(Resolve(root, "/assets/loader.js"), path.join(root, "assets", "loader.js"))
 })

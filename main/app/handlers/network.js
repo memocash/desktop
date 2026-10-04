@@ -1,4 +1,4 @@
-const {ipcMain} = require("../ipc");
+const {ipcMain, loadIpc} = require("../ipc");
 const {dialog} = require("electron");
 const fs = require("fs/promises");
 const {Dir, Handlers} = require("../../common/util");
@@ -151,10 +151,13 @@ const selectNetwork = async (winId, id) => {
 }
 
 const NetworkHandlers = () => {
-    ipcMain.handle(Handlers.GetNetworkConfig, async () => (await readStored()).config)
-    ipcMain.handle(Handlers.SaveNetworkConfig, async (e, networkConfig) =>
+    // The configuration is read, edited, and chosen from on the load page;
+    // a wallet window is set onto its network before its page loads (see
+    // main/app/window.js OpenWalletWindow) and only ever asks which.
+    loadIpc.handle(Handlers.GetNetworkConfig, async () => (await readStored()).config)
+    loadIpc.handle(Handlers.SaveNetworkConfig, async (e, networkConfig) =>
         saveNetworkConfig(e.sender.id, networkConfig))
-    ipcMain.handle(Handlers.SelectNetwork, async (e, id) => selectNetwork(e.sender.id, id))
+    loadIpc.handle(Handlers.SelectNetwork, async (e, id) => selectNetwork(e.sender.id, id))
     ipcMain.handle(Handlers.GetWindowNetwork, async (e) =>
         GetRuntimeNetworkOption(GetNetworkOption(e.sender.id)))
 }

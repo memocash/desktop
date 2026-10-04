@@ -100,6 +100,9 @@ const Handlers = {
 
 const Listeners = {
     DisplayModal: "display-modal",
+    // Main hands a wallet window the key to the session it opened at unlock,
+    // once the window's preload is there to hold it (see main/app/window.js).
+    SessionKey: "session-key",
     SignOnSession: "sign-on-session",
     SpendPromptStep: "spend-prompt-step",
     SelectTab: "select-tab",

@@ -18,6 +18,15 @@ const networkOptions = {}
 // window that does - which is how the update notice ends up sent somewhere it
 // cannot be drawn. A Map so the ids stay numbers and keep their insertion order.
 const txParents = new Map()
+// The windows main opened on the load page - the one served from disk, with
+// the preload that can unlock and create wallets. The load channels admit a
+// sender by its presence here and nothing else: not by the url of its frame,
+// which a compromised wallet page could present by framing the same document,
+// and which Chromium normalises in ways a string compare on an odd install
+// path would not survive. Main put each id here itself when it opened the
+// window, so membership says "a window main loaded from the load page", and a
+// window leaves the moment it is forgotten.
+const loadWindows = new Set()
 
 const GetMenu = (winId) => menus[winId]
 const GetNetworkOption = (winId) => networkOptions[winId]
@@ -35,6 +44,8 @@ const SetWallet = (winId, wallet) => wallets[winId] = wallet
 const SetWindow = (winId, win) => windows[winId] = win
 
 const AddTxWindow = (parentId, winId) => txParents.set(winId, parentId)
+const AddLoadWindow = (winId) => loadWindows.add(winId)
+const IsLoadWindow = (winId) => loadWindows.has(winId)
 
 // The transaction windows opened from a wallet window. They are handed a copy of
 // the parent's wallet state when they open, so whatever changes it afterwards
@@ -119,6 +130,7 @@ const ForgetWindow = (winId) => {
     delete networkOptions[winId]
     delete windows[winId]
     txParents.delete(winId)
+    loadWindows.delete(winId)
 }
 
 // For tests, which need to see that nothing is left rather than take it on
@@ -130,9 +142,11 @@ const HeldWindowIds = () => ({
     networkOptions: Object.keys(networkOptions),
     windows: Object.keys(windows),
     txWindows: [...txParents.keys()].map(String),
+    loadWindows: [...loadWindows].map(String),
 })
 
 module.exports = {
+    AddLoadWindow,
     AddTxWindow,
     CopyPublicToFileWindows,
     CopyWalletToTxWindows,
@@ -143,6 +157,7 @@ module.exports = {
     GetWallet,
     GetWindow,
     HeldWindowIds,
+    IsLoadWindow,
     IsWalletWindow,
     SetMenu,
     SetNetworkOption,

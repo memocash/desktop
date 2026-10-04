@@ -18,6 +18,24 @@ test("renderer paths remain inside the static export", () => {
     assert.equal(ResolveRendererPath(root, "/%E0%A4%A"), null)
 })
 
+// The load page sits in the export but is served by nobody: main loads it
+// from disk, and a wallet page that could navigate to it on the app origin
+// would have a genuine password screen to show. Shell, directory index,
+// bundles, and any spelling of the name a case-blind filesystem would open.
+test("the load page is never served on the app origin", () => {
+    const root = path.resolve("/app/renderer/out")
+    for (const pathname of ["/load", "/load/", "/load/index.html", "/Load/index.html", "/%6Coad",
+        "/assets/load.js", "/assets/load.css", "/assets/LOAD.js",
+        // Windows opens "load." and "load " as load.
+        "/load./index.html", "/load%20/index.html", "/load.%20./index.html", "/assets%20/load.js"]) {
+        assert.equal(ResolveRendererPath(root, pathname), null, pathname)
+    }
+    // Sharing the name's prefix is not being the load page.
+    assert.equal(ResolveRendererPath(root, "/loader/index.html"), path.join(root, "loader/index.html"))
+    assert.equal(ResolveRendererPath(root, "/assets/loader.js"), path.join(root, "assets/loader.js"))
+    assert.equal(ResolveRendererPath(root, "/assets/wallet.js"), path.join(root, "assets/wallet.js"))
+})
+
 // The handler as registration wires it up, driven with a real file on disk and
 // net.fetch stubbed to answer the way Electron's does - a Response whose
 // headers are already set.
@@ -81,4 +99,35 @@ test("a symlink inside the export cannot serve what lies outside it", async (t) 
     assert.equal(fetched.length, 0, "the linked-to file must never be fetched")
     assert.equal((await handle({url: "app://-/index.html"})).status, 200)
     assert.equal(fetched.length, 1)
+})
+
+// The name check refuses the load page by what was asked for; a link under
+// another name answers that name with the load page itself, and is refused by
+// where the file really is.
+test("a symlink to the load page under another name is not served either", async (t) => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "memo-static-"))
+    t.after(() => fs.rm(dir, {recursive: true, force: true}))
+    const root = path.join(dir, "renderer", "out")
+    await fs.mkdir(path.join(root, "load"), {recursive: true})
+    await fs.writeFile(path.join(root, "load", "index.html"), "<!doctype html>")
+    await fs.symlink(path.join(root, "load"), path.join(root, "alias"))
+    await fs.writeFile(path.join(root, "index.html"), "<!doctype html>")
+    electronStub.app.getAppPath = () => dir
+    electronStub.protocol.registerSchemesAsPrivileged = () => {}
+    let onReady
+    electronStub.app.on = (_event, listener) => onReady = listener
+    let handle
+    electronStub.session.defaultSession = {protocol: {handle: (_scheme, fn) => handle = fn}}
+    const fetched = []
+    electronStub.net.fetch = async (href) => {
+        fetched.push(href)
+        return new Response("<!doctype html>", {status: 200, statusText: "OK"})
+    }
+    RegisterRendererProtocol(path.join("renderer", "out"))
+    onReady()
+
+    assert.equal((await handle({url: "app://-/alias/index.html"})).status, 404)
+    assert.equal((await handle({url: "app://-/alias"})).status, 404)
+    assert.equal(fetched.length, 0, "the load page must never be fetched")
+    assert.equal((await handle({url: "app://-/index.html"})).status, 200)
 })

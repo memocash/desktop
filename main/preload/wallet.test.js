@@ -8,6 +8,7 @@ const assert = require("node:assert")
 // dead-end a preview window instead of relaying.
 const invoked = []
 const respond = {}
+const listeners = {}
 const stub = (request, exports) => {
     const filename = require.resolve(request)
     require.cache[filename] = {id: filename, filename, loaded: true, exports}
@@ -18,21 +19,20 @@ stub("electron", {
             invoked.push(channel)
             return respond[channel](...args)
         },
-        on: () => {},
+        on: (channel, fn) => listeners[channel] = fn,
         send: () => {},
     },
 })
 
-const {Handlers} = require("../common/util/handlers")
+const {Handlers, Listeners} = require("../common/util/handlers")
 const {WalletErrors} = require("../common/util/errors")
 const preload = require("./wallet.js")
 
 test("a spend refused as password-required is relayed even while a session key is held", async () => {
-    respond[Handlers.UnlockWallet] = async () => ({ok: true, sessionKey: "stale-key"})
-    const unlocked = await preload.unlockWallet("wallet", "pw")
-    // The key stays on this side of the bridge.
-    assert.equal(unlocked.sessionKey, undefined)
-    assert.deepEqual(unlocked, {ok: true})
+    // The key arrives from main, which opened this window for the wallet a
+    // load window unlocked; nothing on the bridge can hand one in or read it.
+    assert.equal(preload.unlockWallet, undefined, "unlocking is the load preload's alone")
+    listeners[Listeners.SessionKey]({}, "stale-key")
 
     let offeredKey
     respond[Handlers.SignTransaction] = async (request, sessionKey) => {
@@ -68,21 +68,4 @@ test("an answer other than password-required comes back without relaying", async
         assert.deepEqual(await preload.signTransaction({raw: "00"}), answer)
         assert.deepEqual(invoked, [Handlers.SignTransaction])
     }
-})
-
-// The network editor and the load screen show a handler's refusal to the
-// person - a rejected server, a declined dialog - and Electron's channel
-// prefix on the rejection is not part of that reason. Success is untouched.
-test("network calls reject with the handler's reason alone", async () => {
-    const wrapped = (message) => new Error(
-        "Error invoking remote method 'save-network-config': Error: " + message)
-    respond[Handlers.SaveNetworkConfig] = async () => { throw wrapped("not allowed in the confirmation dialog") }
-    await assert.rejects(preload.saveNetworkConfig({}), {message: "not allowed in the confirmation dialog"})
-    respond[Handlers.SaveNetworkConfig] = async () => { throw new Error(
-        "Error invoking remote method 'save-network-config': TypeError: Invalid network server") }
-    await assert.rejects(preload.saveNetworkConfig({}), {message: "Invalid network server"})
-    respond[Handlers.SelectNetwork] = async () => { throw new Error("no configured network matches the selection") }
-    await assert.rejects(preload.selectNetwork("gone"), {message: "no configured network matches the selection"})
-    respond[Handlers.SelectNetwork] = async (id) => ({Id: id})
-    assert.deepEqual(await preload.selectNetwork("bch"), {Id: "bch"})
 })

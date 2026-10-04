@@ -19,6 +19,10 @@
 //   local cache, and the inline images linked in posts, which come from imgur.
 // - connect-src: graphql goes out through the main process over ipc, so the
 //   renderer itself only ever talks to its own origin.
+// - frame-src: nothing in the app frames anything. Without this a page could
+//   frame a same-origin document and script it - the ipc guard admits main
+//   frames only, but the policy closes the door the guard would otherwise be
+//   the only thing behind.
 // - object-src/base-uri close off plugin embedding and <base> rewriting.
 const ContentSecurityPolicy = () => [
     "default-src 'self'",
@@ -26,6 +30,23 @@ const ContentSecurityPolicy = () => [
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://i.imgur.com",
     "connect-src 'self'",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'none'",
+].join("; ")
+
+// The load page's policy. It is loaded from disk, in a window of its own, and
+// talks to main over its own preload and to nothing else: no connect-src, no
+// remote images, no frames. Meta tag only - a file: document passes through
+// no handler that could send a header, and frame-ancestors is moot for a
+// document nothing but a file: page could frame in the first place. A future
+// need on this page for something over the network goes through main over
+// ipc, the way GraphQL does; it does not loosen this.
+const LoadContentSecurityPolicy = () => [
+    "default-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
 ].join("; ")
@@ -42,4 +63,5 @@ const ContentSecurityPolicyHeader = () =>
 module.exports = {
     ContentSecurityPolicy,
     ContentSecurityPolicyHeader,
+    LoadContentSecurityPolicy,
 }

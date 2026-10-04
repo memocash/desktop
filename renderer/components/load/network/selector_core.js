@@ -1,5 +1,5 @@
 // The network selector's computable parts, in commonjs so node's test runner
-// can require them directly - configuration.js and pages/index.js are jsx
+// can require them directly - configuration.js and pages/load.js are jsx
 // that only the bundler loads. Each of these carries a decision that once
 // lived inline in an event handler, where reverting it could only be noticed
 // by clicking through the app.

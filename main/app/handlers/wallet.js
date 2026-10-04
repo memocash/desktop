@@ -1,4 +1,4 @@
-const {ipcMain} = require("../ipc");
+const {ipcMain, loadIpc} = require("../ipc");
 const {dialog} = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
@@ -16,7 +16,7 @@ const pendingSeed = require("../pending_seed");
 const {addressesForKeys} = require("../derivation");
 const {normalizeSeedWalletData} = require("../seed_wallet");
 const {KeyFinder, PreviewSpend, SignTransaction, WalletAddresses} = require("../transaction_signer");
-const {CreateWindow, eConf} = require("../window");
+const {OpenLoadWindow, OpenWalletWindow, RequireNetworkOption, eConf} = require("../window");
 const {
     SetWallet, GetWallet, SetMenu, GetWindow, CopyPublicToFileWindows,
     CopyWalletToTxWindows, TxWindowParent,
@@ -102,8 +102,12 @@ const normalizeSeedWallet = async (filename, password) => {
 // The renderer used to decrypt the file itself and hand the plaintext wallet and
 // password back through an ipcMain.on, which left it in charge of what main
 // trusted. Now it only names a wallet and offers a password, and finds out
-// whether that worked.
+// whether that worked. The wallet itself opens in a window of its own: the
+// window that asked is a load window, and it neither holds the wallet nor
+// sees the session key - both go straight to the new window (see
+// main/app/window.js OpenWalletWindow).
 const unlockWallet = async (winId, walletName, password) => {
+    RequireNetworkOption(winId)
     const filename = keystore.ResolveWalletPath(winId, walletName)
     let read
     try {
@@ -125,9 +129,26 @@ const unlockWallet = async (winId, walletName, password) => {
         session: undefined,
     }
     const {sessionKey, session: sealed} = openSession(state, password)
-    rememberWallet(winId, {...state, session: sealed})
-    // The key goes no further than the preload, which keeps it out of the page.
-    return {ok: true, sessionKey}
+    await OpenWalletWindow(winId, {...state, session: sealed}, sessionKey)
+    return {ok: true}
+}
+
+// One unlock or create at a time from a load window. A second ask while the
+// first is still deriving its key - Enter pressed twice - would otherwise
+// open a second wallet window on a second session from the one password
+// typed. The page holds its button too; this is the half that cannot be
+// scripted around.
+const opening = new Set()
+const oneAtATime = async (winId, open) => {
+    if (opening.has(winId)) {
+        throw new Error("a wallet is already opening from this window")
+    }
+    opening.add(winId)
+    try {
+        return await open()
+    } finally {
+        opening.delete(winId)
+    }
 }
 
 // The seed never arrives in this call: a seed wallet says so with a flag, and
@@ -135,6 +156,9 @@ const unlockWallet = async (winId, walletName, password) => {
 // generated or imported there, and confirmed there. The renderer's part in
 // naming the seed ended when it could generate one; see ../pending_seed.
 const createWallet = async (winId, walletName, useSeed, keyList, addressList, password) => {
+    // Before the file is written and the seed dropped: a refusal here leaves
+    // the name free and the words in place for the retry.
+    RequireNetworkOption(winId)
     const seedPhrase = useSeed ? pendingSeed.Use(winId) : undefined
     if (!Dir.IsFullPath(walletName)) {
         await fs.mkdir(Dir.DefaultPath, {recursive: true, mode: 0o700})
@@ -157,15 +181,9 @@ const createWallet = async (winId, walletName, useSeed, keyList, addressList, pa
             ...(addressList || []),
         ])]
     }
+    let integrityKey
     try {
-        const integrityKey = await keystore.CreateWalletFile(filename, wallet, password)
-        rememberWallet(winId, {
-            wallet: keystore.PublicWallet(wallet),
-            filename,
-            encrypted: !!(password && password.length),
-            integrityKey,
-            session: undefined,
-        })
+        integrityKey = await keystore.CreateWalletFile(filename, wallet, password)
     } catch (e) {
         if (e.code === "EEXIST") {
             return {error: WalletErrors.WalletExists}
@@ -176,6 +194,23 @@ const createWallet = async (winId, walletName, useSeed, keyList, addressList, pa
     // Dropped only on success, so a refused name doesn't cost the words the
     // person just finished confirming.
     pendingSeed.Discard(winId)
+    // A new wallet has no spend budget, so there is no session to open: the
+    // window it gets holds the wallet and nothing that could spend from it.
+    try {
+        await OpenWalletWindow(winId, {
+            wallet: keystore.PublicWallet(wallet),
+            filename,
+            encrypted: !!(password && password.length),
+            integrityKey,
+            session: undefined,
+        })
+    } catch (e) {
+        // Unlike an unlock that fails here, this one is not retried by asking
+        // again: the file is written and the seed spent, so Finish would now
+        // find the name taken. The wallet stands; say so, and where it opens.
+        throw new Error("The wallet " + walletName + " was created, but its window could not be opened: "
+            + e.message + ". Open it from the first screen.")
+    }
     return {ok: true}
 }
 
@@ -893,21 +928,27 @@ const WalletHandlers = () => {
             return keystore.WithWalletLock(state.filename,
                 () => removePrivateKey(state, address, password))
         }))
-    ipcMain.handle(Handlers.CheckWalletFile, async (e, walletName) =>
+    // The load page's channels, and the only ones that take a password or
+    // show a seed. They register under the load surface alone: a wallet page
+    // holds no preload that names them and no guard that would admit it, so
+    // a password phished in a wallet page has nowhere to go.
+    loadIpc.handle(Handlers.CheckWalletFile, async (e, walletName) =>
         operationResult(() => keystore.WalletFileState(e.sender.id, walletName)))
-    ipcMain.handle(Handlers.GetExistingWalletFiles, async () => keystore.ListWalletFiles())
-    // These two answer in their own shape - a session key beside the ok, the
-    // named wallet that is in the way - so only the failure needs wrapping.
-    ipcMain.handle(Handlers.UnlockWallet, async (e, walletName, password) =>
-        unlockWallet(e.sender.id, walletName, password).catch(asError))
+    loadIpc.handle(Handlers.GetExistingWalletFiles, async () => keystore.ListWalletFiles())
+    // These two answer in their own shape - an ok that means a wallet window
+    // has opened, the named wallet that is in the way - so only the failure
+    // needs wrapping.
+    loadIpc.handle(Handlers.UnlockWallet, async (e, walletName, password) =>
+        oneAtATime(e.sender.id, () => unlockWallet(e.sender.id, walletName, password)).catch(asError))
     // The creation flow's seed, kept on this side for its whole life: the
     // renderer asks for words to display, offers a typed phrase for checking,
     // and learns only whether it matched.
-    ipcMain.handle(Handlers.GenerateSeed, async (e) => pendingSeed.Generate(e.sender.id))
-    ipcMain.handle(Handlers.ImportSeed, async (e, phrase) => pendingSeed.Import(e.sender.id, phrase))
-    ipcMain.handle(Handlers.ConfirmSeed, async (e, typed) => pendingSeed.Confirm(e.sender.id, typed))
-    ipcMain.handle(Handlers.CreateWallet, async (e, walletName, useSeed, keyList, addressList, password) =>
-        createWallet(e.sender.id, walletName, useSeed, keyList, addressList, password).catch(asError))
+    loadIpc.handle(Handlers.GenerateSeed, async (e) => pendingSeed.Generate(e.sender.id))
+    loadIpc.handle(Handlers.ImportSeed, async (e, phrase) => pendingSeed.Import(e.sender.id, phrase))
+    loadIpc.handle(Handlers.ConfirmSeed, async (e, typed) => pendingSeed.Confirm(e.sender.id, typed))
+    loadIpc.handle(Handlers.CreateWallet, async (e, walletName, useSeed, keyList, addressList, password) =>
+        oneAtATime(e.sender.id,
+            () => createWallet(e.sender.id, walletName, useSeed, keyList, addressList, password)).catch(asError))
     ipcMain.handle(Handlers.UpdateWallet, async (e, op, values, password) => {
         const result = await operationResult(() => updateWallet(e.sender.id, op, values, password))
         // A settings change that opened a budget hands its key back the way
@@ -922,7 +963,7 @@ const WalletHandlers = () => {
     ipcMain.handle(Handlers.SignOnParentSession, signOnParentSession)
     ipcMain.on(Handlers.SignOnSessionResult, signOnSessionResult)
     ipcMain.on(Handlers.WalletLoaded, (e) => {
-        SetMenu(e.sender.id, menu.ShowMenu(GetWindow(e.sender.id), CreateWindow, GetWallet(e.sender.id).wallet))
+        SetMenu(e.sender.id, menu.ShowMenu(GetWindow(e.sender.id), OpenLoadWindow, GetWallet(e.sender.id).wallet))
         const walletName = path.parse(GetWallet(e.sender.id).filename).name
         GetWindow(e.sender.id).title = "Memo - " + walletName
     })
