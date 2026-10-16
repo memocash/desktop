@@ -405,13 +405,15 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, author
     if (typeof authorizeSpend === "function" && !authorizeSpend({outgoing, carriesTokens})) {
         throw new Error(WalletErrors.PasswordRequired)
     }
-    if (payments.length) {
-        if (typeof confirmSpend !== "function") {
-            throw new Error("a payment leaving the wallet needs confirmation")
-        }
-        if (!await confirmSpend({payments, fee})) {
-            throw new Error(WalletErrors.SpendCancelled)
-        }
+    // Every signature is put to the caller that can ask, a post or a like as
+    // much as a payment: the fee is what leaves on those, and the only thing
+    // that keeps it small is a person seeing it. A caller with no way to ask
+    // can still sign what stays in the wallet, never what leaves it.
+    if (payments.length && typeof confirmSpend !== "function") {
+        throw new Error("a payment leaving the wallet needs confirmation")
+    }
+    if (typeof confirmSpend === "function" && !await confirmSpend({payments, fee})) {
+        throw new Error(WalletErrors.SpendCancelled)
     }
 
     let signed

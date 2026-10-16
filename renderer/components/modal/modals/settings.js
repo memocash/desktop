@@ -18,8 +18,8 @@ const confirmHints = {
             "exports still ask for the password.",
     },
     passwordless: {
-        every: "Every payment out of this wallet is shown for approval before it is signed. " +
-            "Posts and likes don't ask.",
+        every: "Every transaction, posts and likes included, is shown for approval before it is " +
+            "signed.",
         limit: "Sends up to that total go through without asking. Once it is used up, the next " +
             "send asks, and approving it starts the total again. Token sends always ask.",
         never: "Sends are signed with nothing shown. Anything running in this window can spend " +

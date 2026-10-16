@@ -749,11 +749,12 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
             confirmSpend,
         })
         // A wallet with no password still puts a person in front of its sends,
-        // unless its owner turned that off: a payment leaving the wallet is
-        // approved in main's own window, and an approved budget meters the ones
-        // after it the way password sessions do. Signing that pays nothing out -
-        // a post, a like - carries only its fee and goes through unprompted,
-        // which is what keeps the confirmation about money leaving.
+        // unless its owner turned that off: every signature is approved in
+        // main's own window, the way an encrypted wallet's takes the password,
+        // and an approved budget meters the ones after it the way password
+        // sessions do. A post or a like asks too: it carries only its fee, but
+        // nothing else keeps that fee small, and unprompted signing is how a
+        // compromised page would burn the balance in fees.
         if (!state.encrypted) {
             const wallet = (await readForOperation(winId)).wallet
             if (!confirmsSends(state.wallet)) {
@@ -844,16 +845,14 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
     }
 }
 
-// A passwordless wallet's spend, put in front of the person at the machine.
-// The window opens only when a payment actually leaves the wallet, from inside
-// the signer's confirmation hook - so what it shows is what the keys establish,
-// not a preview to reconcile later, and fee-only signing never opens it.
+// A passwordless wallet's signature, put in front of the person at the machine
+// from inside the signer's confirmation hook - so what it shows is what the
+// keys establish, not a preview to reconcile later.
 //
 // An approval is also what starts the budget, when the owner has set one: the
 // fresh session opens here and nowhere else, so a renderer cannot restart it by
 // unlocking again or rewriting settings - the only way to more silent budget is
-// another person-approved spend. A sign that asked nobody (cancelled, or
-// fee-only) starts nothing.
+// another person-approved signature. A cancelled one starts nothing.
 const approvedSign = async (winId, sign, wallet) => {
     let prompt
     let approved = false

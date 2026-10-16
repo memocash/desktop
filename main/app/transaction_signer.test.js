@@ -459,14 +459,23 @@ test("a declined confirmation signs nothing", async () => {
     assert.equal(asked, 1)
 })
 
-test("change and data outputs are not a spend and need no confirmation", async () => {
+test("change and data outputs are not a spend, but a caller that can ask is asked", async () => {
     const txb = new Transaction()
     txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
     txb.addOutput(bscript.compile(
         [opcodes.OP_RETURN, Buffer.from("6d02", "hex"), Buffer.from("hello")]), 0)
     txb.addOutput(baddress.toOutputScript(address), 9000)
     const post = {...request(), raw: txb.toBuffer().toString("hex")}
+    // Nothing leaves, so a caller with no way to ask may still sign it.
     assert.ok((await SignTransaction(post)).raw)
+    // One that can ask is asked, with no payments and the fee - a post costs
+    // its fee, and the person seeing it is what keeps that fee small.
+    const asked = []
+    await assert.rejects(SignTransaction({...post, confirmSpend: async (spend) => {
+        asked.push(spend)
+        return false
+    }}), {message: "spend-cancelled"})
+    assert.deepEqual(asked, [{payments: [], fee: 1000}])
 })
 
 test("value attached to a data output is treated as leaving the wallet", async () => {

@@ -253,6 +253,17 @@ const openPasswordless = async (id, walletPath) => {
 
 const sign = (id) => handlers[Handlers.SignTransaction](e(id), spendRequest(), undefined)
 
+// A signature that pays nobody: the one input back to the wallet, less a fee.
+const signFeeOnly = (id) => {
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(baddress.toOutputScript(walletAddress), 9000)
+    return handlers[Handlers.SignTransaction](e(id), {
+        raw: txb.toBuffer().toString("hex"),
+        inputs: [{prev_hash: prevHash, prev_index: 1}],
+    }, undefined)
+}
+
 const settle = (id, values) =>
     handlers[Handlers.UpdateWallet](e(id), "changeSettings", values, undefined)
 
@@ -298,6 +309,16 @@ test("a passwordless wallet's send is approved in main's window, or does not hap
         assert.equal(GetWallet(10).session, undefined)
         await sign(10)
         assert.equal(approveCalls.length, 3)
+
+        // A signature that pays nobody - a post, a like - is approved the same
+        // way, as an encrypted wallet's would take the password: left unasked,
+        // its fee is the one thing a compromised page could spend freely.
+        approveResponse = false
+        assert.equal((await signFeeOnly(10)).error, "spend-cancelled")
+        approveResponse = true
+        assert.equal((await signFeeOnly(10)).ok, true)
+        assert.equal(approveCalls.length, 5)
+        assert.deepEqual(approveCalls[4], {payments: [], fee: 1000})
     } finally {
         cleanup(10, dir)
     }
