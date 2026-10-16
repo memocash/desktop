@@ -129,6 +129,21 @@
     margin: 3px 0 0 20px;
 }
 
+/* Every choice's hint shares one cell, so the box is sized by the longest and
+   holds still as the choice changes. */
+.hintStack {
+    display: grid;
+}
+
+.hintStack > * {
+    grid-area: 1 / 1;
+}
+
+/* Takes up its space without being seen, focused, or read out. */
+.unchosen {
+    visibility: hidden;
+}
+
 .flex {
     align-items: center;
     display: flex;
