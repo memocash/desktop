@@ -128,14 +128,15 @@ const SettingsModal = ({onClose, setModal}) => {
                             <label>
                                 <input checked={directTx} type="checkbox" onChange={
                                     () => setDirectTx(!directTx)}/>
-                                {} Send transactions without previewing
+                                {} Skip transaction preview for Memo actions
                             </label>
                             <div className={styles.hint}>
-                                Skips the preview and broadcasts as soon as a send is confirmed.
+                                Likes, posts, follows and other Memo actions go out when you click
+                                them, with no transaction preview first.
                             </div>
                         </div>
                         <div className={styles.option}>
-                            <label htmlFor="confirmMode">{encrypted ? "Ask for the password" : "Confirm sends"}</label>
+                            <label htmlFor="confirmMode">{encrypted ? "Ask for the password" : "Approve sends"}</label>
                             {} <select id="confirmMode" value={confirmMode}
                                        onChange={(e) => setConfirmMode(e.target.value)}>
                                 <option value="every">Every send</option>
