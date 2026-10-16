@@ -216,9 +216,11 @@ const createWallet = async (winId, walletName, useSeed, keyList, addressList, pa
 
 // A wallet whose owner has set a spend budget gets a session: main keeps the
 // password sealed under a key it does not retain, and hands that key to the
-// renderer. Neither half is a password on its own, and a spend needs both. There
-// is nothing to seal for a wallet with no password, or one whose budget is zero -
-// which is every wallet until somebody raises it - so those get no session here.
+// renderer. Neither half is a password on its own, and a spend needs both. An
+// owner who turned confirmation off gets one too, with no budget to it. There is
+// nothing to seal for a wallet with no password, or one whose budget is zero and
+// whose confirmation is on - which is every wallet until somebody changes it - so
+// those get no session here.
 //
 // A passwordless wallet's budget session opens in one place only: after a person
 // approves a spend in main's own window (see approvedSign). Opening one here -
@@ -226,8 +228,8 @@ const createWallet = async (winId, walletName, useSeed, keyList, addressList, pa
 // free by asking again, which costs an encrypted wallet the password every time
 // and would cost a passwordless one nothing.
 const openSession = (walletState, password) => {
-    const threshold = spendThreshold(walletState.wallet)
-    if (!walletState.encrypted || !threshold || !password) {
+    const wanted = spendThreshold(walletState.wallet) || !confirmsSends(walletState.wallet)
+    if (!walletState.encrypted || !wanted || !password) {
         return {}
     }
     const {key, envelope} = session.Seal(password)
@@ -240,9 +242,10 @@ const spendThreshold = (wallet) => {
     return Number.isSafeInteger(threshold) && threshold > 0 ? threshold : 0
 }
 
-// Whether a wallet with no password puts its sends in front of a person at all.
-// On unless its owner turned it off - including for files from before the
-// setting existed, which read as the default.
+// Whether a wallet puts its sends in front of a person at all: an approval for
+// one with no password, the password for an encrypted one. On unless its owner
+// turned it off - including for files from before the setting existed, which
+// read as the default.
 const confirmsSends = (wallet) => {
     const settings = (wallet && wallet.settings) || {}
     return settings[keystore.ConfirmSetting] !== false
@@ -310,18 +313,21 @@ const updateWallet = async (winId, op, values, password) => {
     // the wallet with the offered password is the proof; it throws WrongPassword
     // if it isn't one, before anything is written.
     const changingSettings = op === "changeSettings"
-    if (changingSettings && encrypted) {
-        await keystore.ReadWallet(filename, password)
-    }
-    // The same rule with no password to prove: the settings decide when a spend
+    // That read happens below, and doubles as the source of the settings being
+    // replaced. The same rule with no password to prove: the settings decide when a spend
     // is put in front of a person, so a change that loosens that - turning
     // confirmation off, or raising how much may leave unseen - is itself put in
     // front of a person, in main's own window. Otherwise anything that can
     // reach this handler could quietly grant itself the silent sends the
     // confirmation exists to prevent. Tightening passes freely: taking
-    // protection away from an attacker needs no ceremony.
-    if (changingSettings && !encrypted) {
-        await confirmLoosenedSpending(winId, filename, values)
+    // protection away from an attacker needs no ceremony. An encrypted wallet
+    // has proved the password by now, and is asked only about turning the
+    // password off: the password modal is drawn by the page, so a window
+    // that phished it could otherwise give itself the token sends no budget
+    // ever covers.
+    if (changingSettings) {
+        const {wallet: stored} = await keystore.ReadWallet(filename, encrypted ? password : undefined)
+        await confirmLoosenedSpending(winId, encrypted, keystore.PublicWallet(stored).settings, values)
     }
     // An imported key widens what the wallet calls its own: its address joins
     // the owned lists, so payments routed there read as change - kept out of
@@ -402,13 +408,12 @@ const readCaptured = (state, password) =>
 const readForOperation = async (winId, password) =>
     readCaptured(GetWallet(winId), password)
 
-// Asks the person at the machine whether a passwordless wallet may loosen its
-// spend confirmation. Judged against the file, not any window's cache, and
+// Asks the person at the machine whether a wallet may loosen its spend
+// confirmation. Judged against the file's settings, not any window's cache, and
 // asked in a native dialog the page cannot draw, cover, or answer. Declining
-// throws, so nothing is written.
-const confirmLoosenedSpending = async (winId, filename, values) => {
-    const stored = keystore.PublicWallet((await keystore.ReadWallet(filename)).wallet)
-    const current = stored.settings
+// throws, so nothing is written. An encrypted wallet's budget is already gated
+// by the password, so only turning the password off is asked about there.
+const confirmLoosenedSpending = async (winId, encrypted, current, values) => {
     const requested = {...current, ...(values || {})}
     const confirmedNow = current[keystore.ConfirmSetting] !== false
     const confirmedAfter = requested[keystore.ConfirmSetting] !== false
@@ -417,11 +422,19 @@ const confirmLoosenedSpending = async (winId, filename, values) => {
     // A wallet already sending silently has nothing left to loosen; enabling
     // confirmation, or lowering how much may go unseen, only tightens.
     const loosens = confirmedNow &&
-        (!confirmedAfter || (thresholdAfter > thresholdNow))
+        (!confirmedAfter || (!encrypted && thresholdAfter > thresholdNow))
     if (!loosens) {
         return
     }
-    const asking = !confirmedAfter
+    const asking = !confirmedAfter && encrypted
+        ? {
+            message: "Let this wallet send without the password?",
+            detail: "While this wallet is open, anything running in the wallet " +
+                "window can send coins and tokens with no password asked and " +
+                "nothing shown. The file stays encrypted, and exports still ask " +
+                "for the password. You can turn it back on in Settings.",
+        }
+        : !confirmedAfter
         ? {
             message: "Let this wallet send without asking?",
             detail: "This wallet has no password. With confirmation off, anything " +
@@ -606,6 +619,16 @@ const withinBudget = (winId, {outgoing, carriesTokens}) => {
     return state.session.spent + outgoing <= spendThreshold(state.wallet)
 }
 
+// Whether the unbudgeted session a send began on is still the window's. Sessions
+// are replaced, never edited, by everything that should end this one - a
+// settings change on the file, another unlock, the window closing - so the same
+// object still being there is the proof. The policy is read again as well, so
+// the answer never rests on identity alone.
+const stillUnlimited = (winId, began) => {
+    const state = GetWallet(winId)
+    return !!began && !!state && state.session === began && !confirmsSends(state.wallet)
+}
+
 // Records what the session has spent, and closes it once the budget is gone:
 // the sealed password is dropped, so the key the renderer holds opens nothing
 // and the next spend has to be authorised again.
@@ -707,7 +730,8 @@ const signHere = async (e, request) =>
     Serialize("sign:" + e.sender.id, () => signOne(e, request, undefined, false))
 
 // Signing what the renderer built, on one of two authorities: a session with
-// budget left, which asks nobody anything, or a password typed into main's own
+// budget left - or with none to run out, its owner having turned the password
+// off - which asks nobody anything, or a password typed into main's own
 // window, which also confirms where the money is going. Which one applies is
 // decided here and never by the caller - the renderer offers a session key it
 // cannot read and finds out whether that was enough.
@@ -715,13 +739,13 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
     const winId = e.sender.id
     try {
         const state = GetWallet(winId)
-        const sign = async ({wallet, metered, confirmSpend}) => SignTransaction({
+        const sign = async ({wallet, metered, authorizeSpend, confirmSpend}) => SignTransaction({
             raw: request.raw,
             inputs: request.inputs,
             beatHash: request.beatHash,
             wallet,
             getOutput: (hash, index) => GetOutput(eConf(e), hash, index),
-            authorizeSpend: metered ? (spend) => withinBudget(winId, spend) : undefined,
+            authorizeSpend: metered ? (spend) => withinBudget(winId, spend) : authorizeSpend,
             confirmSpend,
         })
         // A wallet with no password still puts a person in front of its sends,
@@ -758,7 +782,26 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
             return await approvedSign(winId, sign, wallet)
         }
         const spending = spendPassword(winId, sessionKey)
-        if (spending !== undefined) {
+        // Confirmation off is a session with no budget: nothing metered or
+        // charged, tokens included, for as long as the session lasts. Whether
+        // it still lasts is asked again once the spend is analysed, the way the
+        // budget is: the prevout reads take long enough for the owner to turn
+        // confirmation back on, or for the window to close or open another
+        // wallet, and any of those replaces the session this send began on.
+        if (spending !== undefined && !confirmsSends(state.wallet)) {
+            try {
+                return {ok: true, value: await sign({
+                    wallet: (await readForOperation(winId, spending)).wallet,
+                    authorizeSpend: () => stillUnlimited(winId, state.session),
+                    confirmSpend: async () => true,
+                })}
+            } catch (error) {
+                if (error.message !== WalletErrors.PasswordRequired) {
+                    throw error
+                }
+                // Revoked mid-flight. Nothing signed, so ask properly.
+            }
+        } else if (spending !== undefined) {
             try {
                 // Inside the budget is exactly what the budget means: it goes
                 // through with nothing shown. The check happens in the signer,

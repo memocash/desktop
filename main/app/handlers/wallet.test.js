@@ -404,6 +404,166 @@ test("raising a passwordless budget is asked in main's dialog, lowering is not",
     }
 })
 
+// A token send: 60 of a 100-token input paid outside, 40 back to the wallet,
+// on dust. No satoshi budget covers it, which is what makes it the case where
+// an encrypted wallet's "never ask" is more than a very large threshold.
+const tokenHash = "aa".repeat(32)
+const slpPush = (buffer) => Buffer.concat([Buffer.from([buffer.length]), buffer])
+const slpAmount = (amount) => Buffer.from(amount.toString(16).padStart(16, "0"), "hex")
+const tokenRequest = () => {
+    const txb = new Transaction()
+    txb.addInput(Buffer.from(prevHash, "hex").reverse(), 1)
+    txb.addOutput(Buffer.concat([
+        Buffer.from([opcodes.OP_RETURN]),
+        slpPush(Buffer.from("534c5000", "hex")),
+        slpPush(Buffer.from([1])),
+        slpPush(Buffer.from("SEND")),
+        slpPush(Buffer.from(tokenHash, "hex")),
+        slpPush(slpAmount(60n)),
+        slpPush(slpAmount(40n)),
+    ]), 0)
+    txb.addOutput(baddress.toOutputScript(outsideAddress), 546)
+    txb.addOutput(baddress.toOutputScript(walletAddress), 546)
+    return {
+        raw: txb.toBuffer().toString("hex"),
+        inputs: [{prev_hash: prevHash, prev_index: 1}],
+    }
+}
+const serveTokenPrevout = () => {
+    getOutput = async (hash, index) => hash !== prevHash || index !== 1 ? undefined : {
+        hash: prevHash,
+        index: 1,
+        address: walletAddress,
+        value: 2000,
+        script: baddress.toOutputScript(walletAddress).toString("hex"),
+        slp_validity: "VALID",
+        slp_token_hash: tokenHash,
+        slp_amount: "100",
+        slp_token_type: 1,
+    }
+}
+
+test("an encrypted wallet with the password off signs everything, tokens too, once main's dialog allows it", async () => {
+    const dir = tempDir()
+    const walletPath = path.join(dir, "password_off")
+    const id = 25
+    try {
+        await keystore.CreateWalletFile(walletPath,
+            keystore.NewWallet(undefined, [walletKey.toWIF()], [walletAddress]), "pw")
+        SetWindow(id, {id})
+        keystore.AllowPath(id, walletPath)
+        assert.equal((await unlock(id, walletPath)).ok, true)
+        const diskConfirms = async () =>
+            keystore.PublicWallet((await keystore.ReadWallet(walletPath, "pw")).wallet)
+                .settings.ConfirmSends !== false
+        const off = {PasswordThreshold: 0, ConfirmSends: false}
+        const turnOff = (password) =>
+            handlers[Handlers.UpdateWallet](e(id), "changeSettings", off, password)
+        const signWith = (key, request) => handlers[Handlers.SignTransaction](e(id), request, key)
+
+        // The password comes first; without it nothing is asked or written.
+        assert.deepEqual(await turnOff(undefined), {error: keystore.WrongPassword})
+        assert.equal(dialogCalls.length, 0)
+
+        // With it, main's dialog still decides: the password modal is the
+        // page's, and a declined dialog leaves the file as it was.
+        dialogResponse = 0
+        assert.notEqual((await turnOff("pw")).error, undefined)
+        assert.equal(dialogCalls.length, 1)
+        assert.equal(await diskConfirms(), true)
+
+        dialogResponse = 1
+        const allowed = await turnOff("pw")
+        assert.equal(allowed.ok, true)
+        assert.equal(dialogCalls.length, 2)
+        assert.equal(await diskConfirms(), false)
+        assert.notEqual(allowed.sessionKey, undefined)
+
+        // Plain sends go through on the session, as many as are asked for:
+        // nothing is metered, so nothing runs out. The stub's password prompt
+        // cancels, so any send that asked would fail here.
+        servePrevout()
+        for (let i = 0; i < 3; i++) {
+            assert.equal((await signWith(allowed.sessionKey, spendRequest())).ok, true)
+        }
+        // And a token send, which no budget ever covers.
+        serveTokenPrevout()
+        const token = await signWith(allowed.sessionKey, tokenRequest())
+        assert.equal(token.ok, true)
+        assert.equal(token.value.carriesTokens, true)
+
+        // The session is still the gate: no key, no signature.
+        assert.equal((await signWith(undefined, tokenRequest())).error, WalletErrors.SpendCancelled)
+
+        // Unlocking again opens the unbudgeted session straight away.
+        assert.equal((await unlock(id, walletPath)).ok, true)
+        const reopened = opened[opened.length - 1].sessionKey
+        assert.notEqual(reopened, undefined)
+        assert.equal((await signWith(reopened, tokenRequest())).ok, true)
+
+        // Turning it back on tightens: no dialog, and the session is gone.
+        const on = await handlers[Handlers.UpdateWallet](e(id), "changeSettings",
+            {PasswordThreshold: 0, ConfirmSends: true}, "pw")
+        assert.equal(on.ok, true)
+        assert.equal(on.sessionKey, undefined)
+        assert.equal(dialogCalls.length, 2)
+        assert.equal(GetWallet(id).session, undefined)
+        assert.equal((await signWith(reopened, tokenRequest())).error, WalletErrors.SpendCancelled)
+
+        // Raising an encrypted budget is the password's to allow, not a dialog's.
+        assert.equal((await change(id, 50000, "pw")).ok, true)
+        assert.equal(dialogCalls.length, 2)
+    } finally {
+        cleanup(id, dir)
+    }
+})
+
+// The send that was already under way when the owner turned the password back
+// on: its prevout read outlasts the settings write, and what it began on must
+// not carry it past the revocation into a silent signature.
+test("revoking Never while a send awaits prevout prevents a silent signature", async () => {
+    const dir = tempDir()
+    const walletPath = path.join(dir, "revoke_never")
+    const id = 26
+    let release
+    try {
+        await keystore.CreateWalletFile(walletPath,
+            keystore.NewWallet(undefined, [walletKey.toWIF()], [walletAddress]), "pw")
+        SetWindow(id, {id})
+        keystore.AllowPath(id, walletPath)
+        assert.equal((await unlock(id, walletPath)).ok, true)
+        dialogResponse = 1
+        const off = await handlers[Handlers.UpdateWallet](e(id), "changeSettings",
+            {PasswordThreshold: 0, ConfirmSends: false}, "pw")
+        assert.equal(off.ok, true)
+        servePrevout()
+        const original = getOutput
+        let arrived
+        const waiting = new Promise(resolve => { arrived = resolve })
+        const blocked = new Promise(resolve => { release = resolve })
+        getOutput = async (...args) => {
+            arrived()
+            await blocked
+            return original(...args)
+        }
+        const pending = handlers[Handlers.SignTransaction](e(id), spendRequest(), off.sessionKey)
+        await waiting
+        const on = await handlers[Handlers.UpdateWallet](e(id), "changeSettings",
+            {PasswordThreshold: 0, ConfirmSends: true}, "pw")
+        assert.equal(on.ok, true)
+        assert.equal(GetWallet(id).session, undefined)
+        release()
+        // Not signed: it falls back to asking for the password, which the
+        // stub's prompt cancels.
+        const result = await pending
+        assert.notEqual(result.ok, true, "revoked session must not silently sign")
+        assert.equal(result.error, WalletErrors.SpendCancelled)
+    } finally {
+        if (release) release()
+        cleanup(id, dir)
+    }
+})
+
 // The injection this gate closes: a key the renderer imports on its own
 // becomes an address the wallet owns, and payments routed there read as
 // change - out of the outgoing total, off the leaving-payments list, past the

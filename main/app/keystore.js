@@ -364,9 +364,13 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
 // PasswordThreshold is how many satoshis may leave the wallet, in total, before
 // the password is asked for again. Zero means every send is asked for, which is
 // what a wallet gets until someone deliberately raises it. For a wallet with no
-// password the same threshold meters an approval window instead: ConfirmSends
-// decides whether such a wallet confirms its sends at all - on by default, and
+// password the same threshold meters an approval window instead. ConfirmSends
+// decides whether a wallet asks before its sends at all - on by default, and
 // turning it off is the owner's deliberate choice, made in main's own window.
+// Off on an encrypted wallet means a session with no budget: sends, token sends
+// included, go without the password while the wallet is open. The file stays
+// encrypted and its exports still take the password; what is given up is only
+// the guard against the wallet's own window.
 const DefaultSettings = {
     DirectTx: false,
     PasswordThreshold: 0,
