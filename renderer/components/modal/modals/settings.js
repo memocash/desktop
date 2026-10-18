@@ -27,11 +27,16 @@ const confirmHints = {
     },
 }
 
-// Preferences, opened from the app menu. Two kinds of setting live here: the
-// ones stored in the wallet file, which go through main behind the Save button,
-// and the app-wide ones, which apply as soon as they change. They are grouped
-// and labelled so the Save button clearly belongs to the first kind only.
+// The two kinds of setting, each on its own tab with its own button row. The
+// Wallet tab's settings live in the wallet file and go through main behind its
+// Save button; the Application tab's apply as soon as they change, so it has no
+// Save button to wonder about. Both panes stay mounted so a change on one
+// survives a look at the other.
+const Panes = {Wallet: "wallet", Application: "application"}
+
+// Preferences, opened from the app menu.
 const SettingsModal = ({onClose, setModal}) => {
+    const [pane, setPane] = useState(Panes.Wallet)
     const [loaded, setLoaded] = useState(false)
     const [directTx, setDirectTx] = useState(true)
     const [threshold, setThreshold] = useState("0")
@@ -59,14 +64,13 @@ const SettingsModal = ({onClose, setModal}) => {
     })()},[])
 
     // Appearance is app-global and applied immediately via nativeTheme, so it is
-    // saved on change rather than waiting for the Save button.
+    // saved on change; the Application tab has no Save button.
     const changeTheme = async (value) => {
         setTheme(value)
         await window.electron.setTheme(value)
     }
 
-    // Update checks are app-global as well, so they are saved on change rather
-    // than with the wallet settings behind the Save button.
+    // Update checks are app-global as well, so they are saved on change too.
     const changeCheckUpdates = async (value) => {
         setCheckUpdates(value)
         await window.electron.setUpdatePrefs({checkAutomatically: value})
@@ -118,71 +122,104 @@ const SettingsModal = ({onClose, setModal}) => {
         await save()
     }
 
+    // The two tabs are a strip of their own above the panes, so left and right
+    // move between them as they do on the wallet's tab strip.
+    const other = pane === Panes.Wallet ? Panes.Application : Panes.Wallet
+    const tabKeyDown = (e) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+            return
+        }
+        e.preventDefault()
+        const next = e.key === "Home" ? Panes.Wallet : e.key === "End" ? Panes.Application : other
+        setPane(next)
+        document.getElementById(`settings-tab-${next}`)?.focus()
+    }
+    const tab = (name, title) => <button type="button" role="tab" id={`settings-tab-${name}`}
+                                         aria-selected={pane === name} aria-controls={`settings-pane-${name}`}
+                                         tabIndex={pane === name ? 0 : -1} onKeyDown={tabKeyDown}
+                                         className={pane === name ? styles.tabSelected : undefined}
+                                         onClick={() => setPane(name)}>{title}</button>
+    // Shared by both panes: the one hidden is still laid out, so the modal keeps
+    // the size of the larger whichever is showing.
+    const paneProps = (name) => ({
+        role: "tabpanel", id: `settings-pane-${name}`, "aria-labelledby": `settings-tab-${name}`,
+        className: [styles.pane, pane === name ? undefined : styles.unchosen].filter(c => c).join(" "),
+    })
+
     return (
         <Modal onClose={onClose} title={"Settings"}>
             <div className={[styles.root, styles.rootWide].join(" ")}>
-                {!loaded ? <p>Loading...</p> : <form onSubmit={formSubmit}>
-                    <div className={styles.section}>
-                        <h3 className={styles.sectionTitle}>Sending <span>Saved with this wallet</span></h3>
-                        <div className={styles.option}>
-                            <label>
-                                <input checked={directTx} type="checkbox" onChange={
-                                    () => setDirectTx(!directTx)}/>
-                                {} Skip transaction preview for Memo actions
-                            </label>
-                            <div className={styles.hint}>
-                                Likes, posts, follows and other Memo actions go out when you click
-                                them, with no transaction preview first.
+                {!loaded ? <p>Loading...</p> : <>
+                    <div className={styles.tabs} role="tablist" aria-label="Settings sections">
+                        {tab(Panes.Wallet, "Wallet")}
+                        {tab(Panes.Application, "Application")}
+                    </div>
+                    <div className={styles.panes}>
+                        <form onSubmit={formSubmit} {...paneProps(Panes.Wallet)}>
+                            <p className={styles.note}>Saved with this wallet.</p>
+                            <div className={styles.option}>
+                                <label>
+                                    <input checked={directTx} type="checkbox" onChange={
+                                        () => setDirectTx(!directTx)}/>
+                                    {} Skip transaction preview for Memo actions
+                                </label>
+                                <div className={styles.hint}>
+                                    Likes, posts, follows and other Memo actions go out when you click
+                                    them, with no transaction preview first.
+                                </div>
                             </div>
-                        </div>
-                        <div className={styles.option}>
-                            <label htmlFor="confirmMode">{encrypted ? "Ask for the password" : "Approve sends"}</label>
-                            {} <select id="confirmMode" value={confirmMode}
-                                       onChange={(e) => setConfirmMode(e.target.value)}>
-                                <option value="every">Every send</option>
-                                <option value="limit">After a running total</option>
-                                <option value="never">Never</option>
-                            </select>
-                            {/* Kept in the layout when unused, as are the hints below, so
-                                changing the choice doesn't resize the modal - and disabled
-                                then, so its hidden min can't refuse the submit. */}
-                            <span className={thresholdMatters ? undefined : styles.unchosen}>
-                                {} <input id="confirmThreshold" type="number" min="1" step="1"
-                                          disabled={!thresholdMatters}
-                                          value={threshold} onChange={(e) => setThreshold(e.target.value)}/>
-                                {} satoshis
-                            </span>
-                            <div className={[styles.hint, styles.hintStack].join(" ")}>
-                                {Object.entries(confirmHints[encrypted ? "encrypted" : "passwordless"]).map(
-                                    ([mode, text]) => <span key={mode}
-                                        className={mode === confirmMode ? undefined : styles.unchosen}>{text}</span>)}
+                            <div className={styles.option}>
+                                <label htmlFor="confirmMode">{encrypted ? "Ask for the password" : "Approve sends"}</label>
+                                {} <select id="confirmMode" value={confirmMode}
+                                           onChange={(e) => setConfirmMode(e.target.value)}>
+                                    <option value="every">Every send</option>
+                                    <option value="limit">After a running total</option>
+                                    <option value="never">Never</option>
+                                </select>
+                                {/* Kept in the layout when unused, as are the hints below, so
+                                    changing the choice doesn't resize the modal - and disabled
+                                    then, so its hidden min can't refuse the submit. */}
+                                <span className={thresholdMatters ? undefined : styles.unchosen}>
+                                    {} <input id="confirmThreshold" type="number" min="1" step="1"
+                                              disabled={!thresholdMatters}
+                                              value={threshold} onChange={(e) => setThreshold(e.target.value)}/>
+                                    {} satoshis
+                                </span>
+                                <div className={[styles.hint, styles.hintStack].join(" ")}>
+                                    {Object.entries(confirmHints[encrypted ? "encrypted" : "passwordless"]).map(
+                                        ([mode, text]) => <span key={mode}
+                                            className={mode === confirmMode ? undefined : styles.unchosen}>{text}</span>)}
+                                </div>
                             </div>
+                            {error.length > 0 && <div className={styles.error}>{error}</div>}
+                            <ModalFooter>
+                                <button type="button" onClick={onClose}>Close</button>
+                                <button type="submit" className={"button_primary"} disabled={!changed}>Save</button>
+                            </ModalFooter>
+                        </form>
+                        <div {...paneProps(Panes.Application)}>
+                            <p className={styles.note}>Saved as soon as they change.</p>
+                            <div className={styles.option}>
+                                <label>
+                                    <input checked={checkUpdates} type="checkbox" onChange={
+                                        () => changeCheckUpdates(!checkUpdates)}/>
+                                    {} Automatically check for new versions
+                                </label>
+                            </div>
+                            <div className={styles.option}>
+                                <label htmlFor="theme">Appearance:</label>
+                                {} <select id="theme" value={theme} onChange={(e) => changeTheme(e.target.value)}>
+                                    <option value="system">System</option>
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </div>
+                            <ModalFooter>
+                                <button type="button" onClick={onClose}>Close</button>
+                            </ModalFooter>
                         </div>
                     </div>
-                    <div className={styles.section}>
-                        <h3 className={styles.sectionTitle}>Application <span>Saved right away</span></h3>
-                        <div className={styles.option}>
-                            <label>
-                                <input checked={checkUpdates} type="checkbox" onChange={
-                                    () => changeCheckUpdates(!checkUpdates)}/>
-                                {} Automatically check for new versions
-                            </label>
-                        </div>
-                        <div className={styles.option}>
-                            <label htmlFor="theme">Appearance:</label>
-                            {} <select id="theme" value={theme} onChange={(e) => changeTheme(e.target.value)}>
-                                <option value="system">System</option>
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                            </select>
-                        </div>
-                    </div>
-                    {error.length > 0 && <div className={styles.error}>{error}</div>}
-                    <ModalFooter>
-                        <button type="button" onClick={onClose}>Close</button>
-                        <button type="submit" className={"button_primary"} disabled={!changed}>Save</button>
-                    </ModalFooter>
-                </form>}
+                </>}
             </div>
         </Modal>
     )
