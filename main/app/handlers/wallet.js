@@ -321,10 +321,11 @@ const updateWallet = async (winId, op, values, password) => {
     // reach this handler could quietly grant itself the silent sends the
     // confirmation exists to prevent. Tightening passes freely: taking
     // protection away from an attacker needs no ceremony. An encrypted wallet
-    // has proved the password by now, and is asked only about turning the
-    // password off: the password modal is drawn by the page, so a window
-    // that phished it could otherwise give itself the token sends no budget
-    // ever covers.
+    // has proved the password by now, which is the whole gate for its budget,
+    // and is asked only about turning the password off. That dialog is not a
+    // defence against a stolen password - one of those already exports the
+    // seed with nothing asked - but the one place the choice that hands the
+    // page the wallet is put in words the page cannot draw or cover.
     if (changingSettings) {
         const {wallet: stored} = await keystore.ReadWallet(filename, encrypted ? password : undefined)
         await confirmLoosenedSpending(winId, encrypted, keystore.PublicWallet(stored).settings, values)
@@ -412,7 +413,8 @@ const readForOperation = async (winId, password) =>
 // confirmation. Judged against the file's settings, not any window's cache, and
 // asked in a native dialog the page cannot draw, cover, or answer. Declining
 // throws, so nothing is written. An encrypted wallet's budget is already gated
-// by the password, so only turning the password off is asked about there.
+// by the password, so only turning the password off is asked about there - as
+// a ceremony for the choice, not as a second lock (see updateWallet).
 const confirmLoosenedSpending = async (winId, encrypted, current, values) => {
     const requested = {...current, ...(values || {})}
     const confirmedNow = current[keystore.ConfirmSetting] !== false
@@ -626,7 +628,16 @@ const withinBudget = (winId, {outgoing, carriesTokens}) => {
 // the answer never rests on identity alone.
 const stillUnlimited = (winId, began) => {
     const state = GetWallet(winId)
-    return !!began && !!state && state.session === began && !confirmsSends(state.wallet)
+    return !!began && !!state && state.session === began && stillSkipsApproval(winId)
+}
+
+// The same question for a passwordless wallet, which has no session to hold it
+// to: whether the window still has a wallet, and whether that wallet still signs
+// without a person's approval. Read at the moment of signing, not when the send
+// began.
+const stillSkipsApproval = (winId) => {
+    const state = GetWallet(winId)
+    return !!state && !confirmsSends(state.wallet)
 }
 
 // Records what the session has spent, and closes it once the budget is gone:
@@ -757,11 +768,22 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
         // compromised page would burn the balance in fees.
         if (!state.encrypted) {
             const wallet = (await readForOperation(winId)).wallet
+            // Approval off is asked again once the spend is analysed, as the
+            // encrypted session below is: the prevout reads are long enough
+            // for the owner to turn it back on under this send.
             if (!confirmsSends(state.wallet)) {
-                return {ok: true, value: await sign({
-                    wallet,
-                    confirmSpend: async () => true,
-                })}
+                try {
+                    return {ok: true, value: await sign({
+                        wallet,
+                        authorizeSpend: () => stillSkipsApproval(winId),
+                        confirmSpend: async () => true,
+                    })}
+                } catch (error) {
+                    if (error.message !== WalletErrors.PasswordRequired) {
+                        throw error
+                    }
+                    // Turned back on mid-flight. Nothing signed, so ask properly.
+                }
             }
             if (state.session) {
                 try {

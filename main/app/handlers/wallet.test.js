@@ -393,6 +393,44 @@ test("confirmation off means exactly that, and turning it off is asked in main's
     }
 })
 
+// The passwordless counterpart of the encrypted revocation test below: no
+// session to hold the send to, so the policy alone is read again at signing.
+test("turning approval back on while a passwordless send awaits prevout prevents a silent signature", async () => {
+    const dir = tempDir()
+    const walletPath = path.join(dir, "revoke_confirm_off")
+    const id = 14
+    let release
+    try {
+        await passwordlessWallet(walletPath, {ConfirmSends: false})
+        servePrevout()
+        await openPasswordless(id, walletPath)
+        const original = getOutput
+        let arrived
+        const waiting = new Promise(resolve => { arrived = resolve })
+        const blocked = new Promise(resolve => { release = resolve })
+        getOutput = async (...args) => {
+            arrived()
+            await blocked
+            return original(...args)
+        }
+        const pending = sign(id)
+        await waiting
+        assert.equal((await settle(id, {ConfirmSends: true})).ok, true)
+        assert.equal(dialogCalls.length, 0)
+        release()
+        // Not signed silently: it falls back to asking in main's window, and
+        // the stub declines.
+        approveResponse = false
+        const result = await pending
+        assert.notEqual(result.ok, true, "a send that began with approval off must not sign after it is turned back on")
+        assert.equal(result.error, WalletErrors.SpendCancelled)
+        assert.equal(approveCalls.length, 1)
+    } finally {
+        if (release) release()
+        cleanup(id, dir)
+    }
+})
+
 test("raising a passwordless budget is asked in main's dialog, lowering is not", async () => {
     const dir = tempDir()
     const walletPath = path.join(dir, "confirm_raise")
