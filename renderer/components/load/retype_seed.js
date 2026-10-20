@@ -6,12 +6,12 @@ import {Panes} from "./common";
 // against a copy kept here - the phrase that passes this step is the phrase
 // the wallet will actually store. Going back lands on a remounted seed pane,
 // which asks main for new words.
-const ConfirmSeed = ({setPane}) => {
+const RetypeSeed = ({setPane}) => {
     const [isWrongSeedPhrase, setIsWrongSeedPhrase] = useState(false)
     const seedPhraseInput = useRef()
     const validateSeedPhrase = async () => {
-        const confirmed = await window.electron.confirmSeed(seedPhraseInput.current.value)
-        if (confirmed) {
+        const retyped = await window.electron.retypeSeed(seedPhraseInput.current.value)
+        if (retyped) {
             setPane(Panes.Step5SetPassword)
         } else {
             setIsWrongSeedPhrase(true)
@@ -26,9 +26,9 @@ const ConfirmSeed = ({setPane}) => {
     return (
         <div className={styles.root}>
             <div className={styles.box}>
-                <div><b>Confirm Seed</b></div>
+                <div><b>Retype Seed</b></div>
                 <div className={styles.boxMain}>
-                    <p>Please type your seed here to confirm it has been stored.</p>
+                    <p>Type your seed again from where you stored it.</p>
                     <textarea className={styles.seedPhrase} ref={seedPhraseInput} onChange={handleEditSeedPhrase}/>
                     {isWrongSeedPhrase &&
                         <p>That is the wrong seed phrase! Try again</p>
@@ -43,4 +43,4 @@ const ConfirmSeed = ({setPane}) => {
     )
 }
 
-export default ConfirmSeed
+export default RetypeSeed

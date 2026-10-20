@@ -1009,7 +1009,7 @@ const WalletHandlers = () => {
     // and learns only whether it matched.
     loadIpc.handle(Handlers.GenerateSeed, async (e) => pendingSeed.Generate(e.sender.id))
     loadIpc.handle(Handlers.ImportSeed, async (e, phrase) => pendingSeed.Import(e.sender.id, phrase))
-    loadIpc.handle(Handlers.ConfirmSeed, async (e, typed) => pendingSeed.Confirm(e.sender.id, typed))
+    loadIpc.handle(Handlers.RetypeSeed, async (e, typed) => pendingSeed.Retype(e.sender.id, typed))
     loadIpc.handle(Handlers.CreateWallet, async (e, walletName, useSeed, keyList, addressList, password) =>
         oneAtATime(e.sender.id,
             () => createWallet(e.sender.id, walletName, useSeed, keyList, addressList, password)).catch(asError))

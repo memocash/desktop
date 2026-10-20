@@ -873,11 +873,11 @@ test("an approved export reveals the wallet the dialog asked about", async () =>
 })
 
 // The creation flow, driven over its channels: the seed is born in main, the
-// confirmation is judged in main, and the create call carries a flag where the
+// retyped words are judged in main, and the create call carries a flag where the
 // words used to travel.
 const pendingSeed = require("../pending_seed")
 
-test("a seed wallet is created from main's pending seed, and only once confirmed", async () => {
+test("a seed wallet is created from main's pending seed, and only once retyped", async () => {
     const dir = tempDir()
     const walletPath = path.join(dir, "seeded")
     try {
@@ -888,15 +888,15 @@ test("a seed wallet is created from main's pending seed, and only once confirmed
 
         // Nothing pending, then pending but unconfirmed, then a confirmation
         // that misses: no wallet at any of those stops.
-        assert.match((await create(walletPath)).error, /no confirmed seed/)
+        assert.match((await create(walletPath)).error, /no retyped seed/)
         const words = await handlers[Handlers.GenerateSeed](load(14))
-        assert.match((await create(walletPath)).error, /no confirmed seed/)
-        assert.equal(await handlers[Handlers.ConfirmSeed](load(14), "abandon about"), false)
-        assert.match((await create(walletPath)).error, /no confirmed seed/)
+        assert.match((await create(walletPath)).error, /no retyped seed/)
+        assert.equal(await handlers[Handlers.RetypeSeed](load(14), "abandon about"), false)
+        assert.match((await create(walletPath)).error, /no retyped seed/)
 
         // Confirmed with main's own words, the wallet is written - holding
         // exactly what main generated, not anything the renderer chose.
-        assert.equal(await handlers[Handlers.ConfirmSeed](load(14), words), true)
+        assert.equal(await handlers[Handlers.RetypeSeed](load(14), words), true)
         assert.equal((await create(walletPath)).ok, true)
         assert.equal((await keystore.ReadWallet(walletPath)).wallet.seed, words)
         assert.equal(GetWallet(14).wallet.seed, undefined)
@@ -905,7 +905,7 @@ test("a seed wallet is created from main's pending seed, and only once confirmed
         // own flow rather than reusing words already bound to a wallet.
         const againPath = path.join(dir, "seeded_again")
         keystore.AllowPath(14, againPath)
-        assert.match((await create(againPath)).error, /no confirmed seed/)
+        assert.match((await create(againPath)).error, /no retyped seed/)
     } finally {
         pendingSeed.Discard(14)
         cleanup(14, dir)
@@ -942,7 +942,7 @@ test("a load window that chose no network is refused before anything is written 
         SetWindow(16, {id: 16})
         keystore.AllowPath(16, walletPath)
         const words = await handlers[Handlers.GenerateSeed](load(16))
-        assert.equal(await handlers[Handlers.ConfirmSeed](load(16), words), true)
+        assert.equal(await handlers[Handlers.RetypeSeed](load(16), words), true)
         const unchosen = load(16)
         SetNetworkOption(16, undefined)
         const created = await handlers[Handlers.CreateWallet](unchosen, walletPath, true, [], [], "pw")

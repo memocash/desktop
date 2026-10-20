@@ -38,7 +38,7 @@ const Handlers = {
     ClearClipboard: "clear-clipboard",
     CheckWalletFile: "check-wallet-file",
     AuthenticateWallet: "authenticate-wallet",
-    ConfirmSeed: "confirm-seed",
+    RetypeSeed: "retype-seed",
     CreateWallet: "create-wallet",
     GenerateSeed: "generate-seed",
     ImportSeed: "import-seed",

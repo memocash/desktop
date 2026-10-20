@@ -41,7 +41,7 @@ const AddSeed = ({setPane, onBack}) => {
     }
     const onStoredSeed = () => {
         window.electron.clearClipboard()
-        setPane(Panes.Step4ConfirmSeed)
+        setPane(Panes.Step4RetypeSeed)
     }
     return (
         <div className={styles.root}>

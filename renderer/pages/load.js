@@ -1,7 +1,7 @@
 import {useRef, useState} from "react"
 import LoadHome from "../components/load"
 import AddSeed from "../components/load/add_seed"
-import ConfirmSeed from "../components/load/confirm_seed"
+import RetypeSeed from "../components/load/retype_seed"
 import CreatePassword from "../components/load/create_password"
 import SelectType from "../components/load/select_type"
 import ImportKeys from "../components/load/import_keys";
@@ -21,7 +21,7 @@ const Load = () => {
     const [pane, setPane] = useState(Panes.Step1ChooseFile)
     // Whether the wallet being created is built on a seed. The seed itself
     // stays in main for the whole flow - the panes ask main to generate,
-    // import, and confirm it - so all this page keeps is which kind of wallet
+    // import, and retype it - so all this page keeps is which kind of wallet
     // to ask for at the end.
     const [seedWallet, setSeedWallet] = useState(false)
     const [keyList, setKeyList] = useState([])
@@ -108,7 +108,7 @@ const Load = () => {
                     {pane === Panes.Step3SetKeys && <ImportKeys onSetKeysAndAddresses={onSetKeysAndAddresses}
                                                                 onBack={onBackFromAddSeed}/>}
                     {pane === Panes.Step3SetSeed && <AddSeed setPane={setPane} onBack={onBackFromAddSeed}/>}
-                    {pane === Panes.Step4ConfirmSeed && <ConfirmSeed setPane={setPane}/>}
+                    {pane === Panes.Step4RetypeSeed && <RetypeSeed setPane={setPane}/>}
                     {pane === Panes.Step5SetPassword && <CreatePassword onPasswordCreated={handlePasswordCreated}
                                                                         onBack={onBackFromCreatePassword}/>}
                     {pane === Panes.NetworkConfiguration && <NetworkConfiguration setPane={setPane}/>}

@@ -20,12 +20,12 @@ contextBridge.exposeInMainWorld("electron", {
     checkFile: async (walletName) => ipcRenderer.invoke(Handlers.CheckWalletFile, walletName),
     // No seed crosses here: useSeed says the wallet should be built on the
     // pending seed main already holds for this window - the one it generated
-    // or was handed to import, and saw confirmed.
+    // or was handed to import, and saw retyped.
     createFile: async (walletName, useSeed, keyList, addressList, password) =>
         ipcRenderer.invoke(Handlers.CreateWallet, walletName, useSeed, keyList, addressList, password),
     generateSeed: async () => ipcRenderer.invoke(Handlers.GenerateSeed),
     importSeed: async (phrase) => ipcRenderer.invoke(Handlers.ImportSeed, phrase),
-    confirmSeed: async (typed) => ipcRenderer.invoke(Handlers.ConfirmSeed, typed),
+    retypeSeed: async (typed) => ipcRenderer.invoke(Handlers.RetypeSeed, typed),
     getExistingWalletFiles: async () => ipcRenderer.invoke(Handlers.GetExistingWalletFiles),
     unlockWallet: async (walletName, password) =>
         ipcRenderer.invoke(Handlers.UnlockWallet, walletName, password),
