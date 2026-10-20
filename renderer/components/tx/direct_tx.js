@@ -172,8 +172,8 @@ const DirectTx = async (inputs, outputs, beatHash, setModal, onDone) => {
         outer_transaction.outer_transactionIDEleRef.value = txb.getId()
         outer_transaction.outer_beatHash.current = beatHash
         // No password crosses from here at all. Main signs on the session if the
-        // budget covers it, and otherwise asks for the password and confirms the
-        // destinations in a window of its own, which this page cannot reach.
+        // budget covers it, and otherwise asks for the password and has the
+        // destinations approved in a window of its own, which this page cannot reach.
         await setAndPushTx(outer_transaction, setModal, onDone)
     }
 }

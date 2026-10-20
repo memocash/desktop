@@ -1,12 +1,12 @@
-// The settings form's send-confirmation decisions, in commonjs so node's test
+// The settings form's send-approval decisions, in commonjs so node's test
 // runner can require them directly - settings.js is jsx that only the bundler
 // loads. The pattern router_core and selector_core set.
 
 // Which choice a wallet's stored settings amount to: the threshold field
-// carries a running total, and turning confirmation off is its own switch.
+// carries a running total, and turning approval off is its own switch.
 // A wallet whose file predates either reads as asking every time.
-const ConfirmModeOf = (settings) => {
-    if (settings.ConfirmSends === false) {
+const ApproveModeOf = (settings) => {
+    if (settings.ApproveSends === false) {
         return "never"
     }
     return (settings.PasswordThreshold || 0) > 0 ? "limit" : "every"
@@ -34,14 +34,14 @@ const ThresholdError = (mode, threshold) => {
 
 // The stored form of a choice. A threshold left in the field from an earlier
 // choice is never written.
-const ConfirmValues = (mode, threshold) => ({
+const ApproveValues = (mode, threshold) => ({
     PasswordThreshold: ThresholdInUse(mode) ? Number(threshold) : 0,
-    ConfirmSends: mode !== "never",
+    ApproveSends: mode !== "never",
 })
 
 module.exports = {
-    ConfirmModeOf,
-    ConfirmValues,
+    ApproveModeOf,
+    ApproveValues,
     ThresholdError,
     ThresholdInUse,
 }

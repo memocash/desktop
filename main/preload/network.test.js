@@ -25,8 +25,8 @@ const preload = require("./network.js")
 test("network calls reject with the handler's reason alone", async () => {
     const wrapped = (message) => new Error(
         "Error invoking remote method 'save-network-config': Error: " + message)
-    respond[Handlers.SaveNetworkConfig] = async () => { throw wrapped("not allowed in the confirmation dialog") }
-    await assert.rejects(preload.saveNetworkConfig({}), {message: "not allowed in the confirmation dialog"})
+    respond[Handlers.SaveNetworkConfig] = async () => { throw wrapped("not allowed in the approval dialog") }
+    await assert.rejects(preload.saveNetworkConfig({}), {message: "not allowed in the approval dialog"})
     respond[Handlers.SaveNetworkConfig] = async () => { throw new Error(
         "Error invoking remote method 'save-network-config': TypeError: Invalid network server") }
     await assert.rejects(preload.saveNetworkConfig({}), {message: "Invalid network server"})

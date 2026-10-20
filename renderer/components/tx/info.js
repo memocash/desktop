@@ -412,7 +412,7 @@ const Info = () => {
         navigator.clipboard.writeText(Buffer(txInfoRef.current.raw).toString("hex"))
     }
     // Nothing is asked for here. Main signs on the session if the budget covers
-    // it, and otherwise asks for the password and confirms the destinations in a
+    // it, and otherwise asks for the password and has the destinations approved in a
     // window of its own - this page never handles either.
     const clickSign = async () => {
         const feeRate = feeRef.current / size

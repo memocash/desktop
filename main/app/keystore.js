@@ -237,6 +237,9 @@ const UpdatePublic = async (walletPath, integrityKey, apply) => {
         throw new Error("wallet file must be migrated before a public update")
     }
     const publicData = {...form.doc.public}
+    if (publicData.settings) {
+        publicData.settings = MigrateSettings(publicData.settings)
+    }
     apply(publicData)
     await writeContents(walletPath, walletFile.EncodePublic(form.doc, publicData, integrityKey))
     return publicData
@@ -364,7 +367,7 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
 // PasswordThreshold is how many satoshis may leave the wallet, in total, before
 // the password is asked for again. Zero means every send is asked for, which is
 // what a wallet gets until someone deliberately raises it. For a wallet with no
-// password the same threshold meters an approval window instead. ConfirmSends
+// password the same threshold meters an approval window instead. ApproveSends
 // decides whether a wallet asks before its sends at all - on by default, and
 // turning it off is the owner's deliberate choice, made in main's own window.
 // Off on an encrypted wallet means a session with no budget: sends, token sends
@@ -374,11 +377,25 @@ const NewWallet = (seedPhrase, keyList, addressList) => ({
 const DefaultSettings = {
     DirectTx: false,
     PasswordThreshold: 0,
-    ConfirmSends: true,
+    ApproveSends: true,
 }
 
 const ThresholdSetting = "PasswordThreshold"
-const ConfirmSetting = "ConfirmSends"
+const ApproveSetting = "ApproveSends"
+
+// The approval switch was stored as ConfirmSends through 0.2.2. A file written
+// then reads as what it meant, under the current name; the old one is dropped
+// so no wallet carries both. Applied wherever stored settings are read, and on
+// every public write, so the file itself moves over the first time it is touched.
+const LegacyApproveSetting = "ConfirmSends"
+const MigrateSettings = (stored) => {
+    if (!stored || !(LegacyApproveSetting in stored)) {
+        return stored
+    }
+    const {[LegacyApproveSetting]: legacy, ...settings} = stored
+    return settings[ApproveSetting] === undefined ? {...settings, [ApproveSetting]: legacy} : settings
+}
+const WalletSettings = (stored) => ({...DefaultSettings, ...MigrateSettings(stored)})
 
 // What may cross to the renderer, and equally what may be written outside the
 // envelope: the same fields walletFile keeps inside it are dropped here, so the
@@ -394,7 +411,7 @@ const PublicWallet = (wallet) => {
         addresses: wallet.addresses || [],
         changeList: wallet.changeList || [],
         slpList: wallet.slpList || [],
-        settings: {...DefaultSettings, ...wallet.settings},
+        settings: WalletSettings(wallet.settings),
         canSign: !!(seed || (keys && keys.length)),
         walletType: seed ? "seed" : (keys && keys.length ? "imported" : "watch"),
     }
@@ -431,13 +448,13 @@ const ApplyWalletUpdate = (wallet, op, values) => {
             (!Number.isSafeInteger(threshold) || threshold < 0)) {
             throw new Error("password threshold must be a whole number of satoshis")
         }
-        // The same certainty for the confirmation switch: anything but a plain
-        // boolean would make "is confirmation on" a judgment call.
-        const confirm = values && values[ConfirmSetting]
-        if (confirm !== undefined && typeof confirm !== "boolean") {
-            throw new Error("send confirmation must be on or off")
+        // The same certainty for the approval switch: anything but a plain
+        // boolean would make "is approval on" a judgment call.
+        const approve = values && values[ApproveSetting]
+        if (approve !== undefined && typeof approve !== "boolean") {
+            throw new Error("send approval must be on or off")
         }
-        wallet.settings = {...DefaultSettings, ...wallet.settings, ...values}
+        wallet.settings = {...WalletSettings(wallet.settings), ...values}
         return
     }
     const listOp = ListOps[op]
@@ -471,7 +488,7 @@ module.exports = {
     ResolveWalletPath,
     SweepStrandedTempFiles,
     ThresholdSetting,
-    ConfirmSetting,
+    ApproveSetting,
     TightenWalletPermissions,
     UpdatePublic,
     UpdateTouchesSecret,

@@ -59,7 +59,7 @@ stub("../spend_prompt", {
             return approveResponse
         },
         askPassword: async () => undefined,
-        confirm: async () => false,
+        approveMismatch: async () => false,
         close: () => {},
     }),
     SpendPromptHandlers: () => {},
@@ -280,7 +280,7 @@ const cleanup = (id, dir) => {
 
 test("a passwordless wallet's send is approved in main's window, or does not happen", async () => {
     const dir = tempDir()
-    const walletPath = path.join(dir, "confirm_default")
+    const walletPath = path.join(dir, "approve_default")
     try {
         await passwordlessWallet(walletPath)
         servePrevout()
@@ -326,7 +326,7 @@ test("a passwordless wallet's send is approved in main's window, or does not hap
 
 test("a passwordless budget opens only on approval, meters silently, and closes spent", async () => {
     const dir = tempDir()
-    const walletPath = path.join(dir, "confirm_budget")
+    const walletPath = path.join(dir, "approve_budget")
     try {
         // Room for two silent sends of 10000 after the approved one, not three.
         await passwordlessWallet(walletPath, {PasswordThreshold: 25000})
@@ -358,34 +358,34 @@ test("a passwordless budget opens only on approval, meters silently, and closes 
     }
 })
 
-test("confirmation off means exactly that, and turning it off is asked in main's dialog", async () => {
+test("approval off means exactly that, and turning it off is asked in main's dialog", async () => {
     const dir = tempDir()
-    const walletPath = path.join(dir, "confirm_off")
+    const walletPath = path.join(dir, "approve_off")
     try {
         await passwordlessWallet(walletPath)
         servePrevout()
         await openPasswordless(12, walletPath)
         const diskConfirms = async () =>
             keystore.PublicWallet((await keystore.ReadWallet(walletPath)).wallet)
-                .settings.ConfirmSends !== false
+                .settings.ApproveSends !== false
 
         // The dialog declines: the setting stays, and so does the prompt.
         dialogResponse = 0
-        const refused = await settle(12, {ConfirmSends: false})
+        const refused = await settle(12, {ApproveSends: false})
         assert.notEqual(refused.error, undefined)
         assert.equal(dialogCalls.length, 1)
         assert.equal(await diskConfirms(), true)
 
         // The dialog allows: sends now sign with nobody asked.
         dialogResponse = 1
-        assert.equal((await settle(12, {ConfirmSends: false})).ok, true)
+        assert.equal((await settle(12, {ApproveSends: false})).ok, true)
         assert.equal(dialogCalls.length, 2)
         assert.equal(await diskConfirms(), false)
         assert.equal((await sign(12)).ok, true)
         assert.equal(approveCalls.length, 0)
 
         // Turning it back on tightens, so no dialog stands in the way.
-        assert.equal((await settle(12, {ConfirmSends: true})).ok, true)
+        assert.equal((await settle(12, {ApproveSends: true})).ok, true)
         assert.equal(dialogCalls.length, 2)
         assert.equal(await diskConfirms(), true)
     } finally {
@@ -401,7 +401,7 @@ test("turning approval back on while a passwordless send awaits prevout prevents
     const id = 14
     let release
     try {
-        await passwordlessWallet(walletPath, {ConfirmSends: false})
+        await passwordlessWallet(walletPath, {ApproveSends: false})
         servePrevout()
         await openPasswordless(id, walletPath)
         const original = getOutput
@@ -415,7 +415,7 @@ test("turning approval back on while a passwordless send awaits prevout prevents
         }
         const pending = sign(id)
         await waiting
-        assert.equal((await settle(id, {ConfirmSends: true})).ok, true)
+        assert.equal((await settle(id, {ApproveSends: true})).ok, true)
         assert.equal(dialogCalls.length, 0)
         release()
         // Not signed silently: it falls back to asking in main's window, and
@@ -433,7 +433,7 @@ test("turning approval back on while a passwordless send awaits prevout prevents
 
 test("raising a passwordless budget is asked in main's dialog, lowering is not", async () => {
     const dir = tempDir()
-    const walletPath = path.join(dir, "confirm_raise")
+    const walletPath = path.join(dir, "approve_raise")
     try {
         await passwordlessWallet(walletPath)
         await openPasswordless(13, walletPath)
@@ -514,8 +514,8 @@ test("an encrypted wallet with the password off signs everything, tokens too, on
         assert.equal((await unlock(id, walletPath)).ok, true)
         const diskConfirms = async () =>
             keystore.PublicWallet((await keystore.ReadWallet(walletPath, "pw")).wallet)
-                .settings.ConfirmSends !== false
-        const off = {PasswordThreshold: 0, ConfirmSends: false}
+                .settings.ApproveSends !== false
+        const off = {PasswordThreshold: 0, ApproveSends: false}
         const turnOff = (password) =>
             handlers[Handlers.UpdateWallet](e(id), "changeSettings", off, password)
         const signWith = (key, request) => handlers[Handlers.SignTransaction](e(id), request, key)
@@ -562,7 +562,7 @@ test("an encrypted wallet with the password off signs everything, tokens too, on
 
         // Turning it back on tightens: no dialog, and the session is gone.
         const on = await handlers[Handlers.UpdateWallet](e(id), "changeSettings",
-            {PasswordThreshold: 0, ConfirmSends: true}, "pw")
+            {PasswordThreshold: 0, ApproveSends: true}, "pw")
         assert.equal(on.ok, true)
         assert.equal(on.sessionKey, undefined)
         assert.equal(dialogCalls.length, 2)
@@ -593,7 +593,7 @@ test("revoking Never while a send awaits prevout prevents a silent signature", a
         assert.equal((await unlock(id, walletPath)).ok, true)
         dialogResponse = 1
         const off = await handlers[Handlers.UpdateWallet](e(id), "changeSettings",
-            {PasswordThreshold: 0, ConfirmSends: false}, "pw")
+            {PasswordThreshold: 0, ApproveSends: false}, "pw")
         assert.equal(off.ok, true)
         servePrevout()
         const original = getOutput
@@ -608,7 +608,7 @@ test("revoking Never while a send awaits prevout prevents a silent signature", a
         const pending = handlers[Handlers.SignTransaction](e(id), spendRequest(), off.sessionKey)
         await waiting
         const on = await handlers[Handlers.UpdateWallet](e(id), "changeSettings",
-            {PasswordThreshold: 0, ConfirmSends: true}, "pw")
+            {PasswordThreshold: 0, ApproveSends: true}, "pw")
         assert.equal(on.ok, true)
         assert.equal(GetWallet(id).session, undefined)
         release()
@@ -626,7 +626,7 @@ test("revoking Never while a send awaits prevout prevents a silent signature", a
 // The injection this gate closes: a key the renderer imports on its own
 // becomes an address the wallet owns, and payments routed there read as
 // change - out of the outgoing total, off the leaving-payments list, past the
-// send confirmation. On a passwordless wallet nothing stood between the
+// send approval. On a passwordless wallet nothing stood between the
 // handler and the write.
 test("a passwordless key import is asked in main's dialog, an encrypted one is not", async () => {
     const dir = tempDir()

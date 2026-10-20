@@ -3,7 +3,7 @@
 // Being single-threaded is not the same as being atomic: anything that awaits
 // gives every other pending operation a turn, so a check and the write that
 // depends on it can be separated by an arbitrary amount of other work. A spend
-// budget read before a confirmation dialog and charged after it is exactly that
+// budget read before an approval dialog and charged after it is exactly that
 // shape - two sends can both be told there is room, because neither has been
 // charged yet when the other asks.
 //

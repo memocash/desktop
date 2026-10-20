@@ -8,7 +8,7 @@ const crypto = require("crypto")
 //
 // What this is not: protection against a compromised renderer. That renderer
 // holds the key and can ask main to spend with it. What bounds that is the
-// budget the caller enforces around this, and the confirmation main asks for
+// budget the caller enforces around this, and the approval main asks for
 // before anything leaves the wallet.
 
 const KeyBytes = 32

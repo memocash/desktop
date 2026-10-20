@@ -3,11 +3,11 @@ import styles from "../../../styles/modal.module.css"
 import {useEffect, useState} from "react";
 import GetWallet from "../../util/wallet";
 import {Modals, WalletErrors} from "../../../../main/common/util";
-import {ConfirmModeOf, ConfirmValues, ThresholdError, ThresholdInUse} from "./settings_core";
+import {ApproveModeOf, ApproveValues, ThresholdError, ThresholdInUse} from "./settings_core";
 
-// What each send confirmation choice means, for a wallet with a password and one
+// What each send approval choice means, for a wallet with a password and one
 // without.
-const confirmHints = {
+const approveHints = {
     encrypted: {
         every: "Every send asks for the password and shows where it pays.",
         limit: "Sends up to that total go through without the password and without showing you " +
@@ -41,8 +41,8 @@ const SettingsModal = ({onClose, setModal}) => {
     const [loaded, setLoaded] = useState(false)
     const [directTx, setDirectTx] = useState(true)
     const [threshold, setThreshold] = useState("0")
-    const [confirmMode, setConfirmMode] = useState("every")
-    const [saved, setSaved] = useState({directTx: true, threshold: 0, confirmMode: "every"})
+    const [approveMode, setApproveMode] = useState("every")
+    const [saved, setSaved] = useState({directTx: true, threshold: 0, approveMode: "every"})
     const [encrypted, setEncrypted] = useState(false)
     const [error, setError] = useState("")
     const [theme, setTheme] = useState("system")
@@ -53,11 +53,11 @@ const SettingsModal = ({onClose, setModal}) => {
         // Every wallet asks before its sends - for the password if it has one,
         // for an approval if not: every time, over a running total, or -
         // deliberately - not at all.
-        const mode = ConfirmModeOf(wallet.settings)
+        const mode = ApproveModeOf(wallet.settings)
         setDirectTx(wallet.settings.DirectTx)
         setThreshold(String(walletThreshold))
-        setConfirmMode(mode)
-        setSaved({directTx: wallet.settings.DirectTx, threshold: walletThreshold, confirmMode: mode})
+        setApproveMode(mode)
+        setSaved({directTx: wallet.settings.DirectTx, threshold: walletThreshold, approveMode: mode})
         setEncrypted((await window.electron.getWalletFileInfo()).encrypted)
         setTheme(await window.electron.getTheme())
         setCheckUpdates((await window.electron.getUpdatePrefs()).checkAutomatically)
@@ -80,7 +80,7 @@ const SettingsModal = ({onClose, setModal}) => {
     const save = async (password) => {
         const {error} = await window.electron.changeSettings({
             DirectTx: directTx,
-            ...ConfirmValues(confirmMode, threshold),
+            ...ApproveValues(approveMode, threshold),
         }, password)
         if (error) {
             // A wrong password lands here too, and the password modal is the one
@@ -95,14 +95,14 @@ const SettingsModal = ({onClose, setModal}) => {
         return true
     }
 
-    const thresholdMatters = ThresholdInUse(confirmMode)
+    const thresholdMatters = ThresholdInUse(approveMode)
     const changed = directTx !== saved.directTx ||
-        confirmMode !== saved.confirmMode ||
+        approveMode !== saved.approveMode ||
         (thresholdMatters && Number(threshold) !== saved.threshold)
 
     const formSubmit = async (e) => {
         e.preventDefault()
-        const thresholdError = ThresholdError(confirmMode, threshold)
+        const thresholdError = ThresholdError(approveMode, threshold)
         if (thresholdError) {
             setError(thresholdError)
             return
@@ -114,7 +114,7 @@ const SettingsModal = ({onClose, setModal}) => {
         // failure after it. No comparison against the loaded values: this
         // window's copy can be stale, and main asks regardless. A passwordless
         // wallet has nothing to prove here; main puts any loosening of the
-        // send confirmation in front of the user in its own dialog instead,
+        // send approval in front of the user in its own dialog instead,
         // as it does for an encrypted wallet turning the password off.
         if (encrypted) {
             setModal(Modals.Password, {onCorrectPassword: save, authenticate: false})
@@ -170,9 +170,9 @@ const SettingsModal = ({onClose, setModal}) => {
                                 </div>
                             </div>
                             <div className={styles.option}>
-                                <label htmlFor="confirmMode">{encrypted ? "Ask for the password" : "Approve sends"}</label>
-                                {} <select id="confirmMode" value={confirmMode}
-                                           onChange={(e) => setConfirmMode(e.target.value)}>
+                                <label htmlFor="approveMode">{encrypted ? "Ask for the password" : "Approve sends"}</label>
+                                {} <select id="approveMode" value={approveMode}
+                                           onChange={(e) => setApproveMode(e.target.value)}>
                                     <option value="every">Every send</option>
                                     <option value="limit">After a running total</option>
                                     <option value="never">Never</option>
@@ -181,15 +181,15 @@ const SettingsModal = ({onClose, setModal}) => {
                                     changing the choice doesn't resize the modal - and disabled
                                     then, so its hidden min can't refuse the submit. */}
                                 <span className={thresholdMatters ? undefined : styles.unchosen}>
-                                    {} <input id="confirmThreshold" type="number" min="1" step="1"
+                                    {} <input id="approveThreshold" type="number" min="1" step="1"
                                               disabled={!thresholdMatters}
                                               value={threshold} onChange={(e) => setThreshold(e.target.value)}/>
                                     {} satoshis
                                 </span>
                                 <div className={[styles.hint, styles.hintStack].join(" ")}>
-                                    {Object.entries(confirmHints[encrypted ? "encrypted" : "passwordless"]).map(
+                                    {Object.entries(approveHints[encrypted ? "encrypted" : "passwordless"]).map(
                                         ([mode, text]) => <span key={mode}
-                                            className={mode === confirmMode ? undefined : styles.unchosen}>{text}</span>)}
+                                            className={mode === approveMode ? undefined : styles.unchosen}>{text}</span>)}
                                 </div>
                             </div>
                             {error.length > 0 && <div className={styles.error}>{error}</div>}

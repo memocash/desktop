@@ -11,7 +11,7 @@ const {BackgroundColor} = require("./window");
 // wallet, not the ones the page said it was paying.
 //
 // It is modal to the window that asked, which is what stops the page from
-// drawing over it or dismissing it - a confirmation the page could cover is
+// drawing over it or dismissing it - an approval the page could cover is
 // worth nothing. Closing it any other way counts as cancelling.
 
 const PromptPage = path.join(__dirname, "..", "assets", "spend_prompt.html")
@@ -47,7 +47,7 @@ const OpenSpendPrompt = async (parent) => {
         resizable: false,
         minimizable: false,
         maximizable: false,
-        title: "Confirm send",
+        title: "Approve send",
         backgroundColor: BackgroundColor(),
         webPreferences: {
             nodeIntegration: false,
@@ -88,16 +88,16 @@ const OpenSpendPrompt = async (parent) => {
         },
         // Only reached when the keys disagree with what was shown: the payments
         // they establish, for a yes or a no, with nothing signed either way.
-        confirm: async ({payments, fee}) => {
-            const {confirmed} = await ask({name: "confirm", payments, fee})
-            return confirmed === true
+        approveMismatch: async ({payments, fee}) => {
+            const {approved} = await ask({name: "mismatch", payments, fee})
+            return approved === true
         },
         // A send from a wallet with no password: the same window and the same
         // main-derived destinations, with nothing to type - the answer is the
         // person seeing where it pays and saying send.
         approve: async ({payments, fee}) => {
-            const {confirmed} = await ask({name: "approve", payments, fee})
-            return confirmed === true
+            const {approved} = await ask({name: "approve", payments, fee})
+            return approved === true
         },
         close: () => {
             win.off("closed", cancelOnClose)

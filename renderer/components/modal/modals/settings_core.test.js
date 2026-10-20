@@ -1,13 +1,13 @@
 const test = require("node:test")
 const assert = require("node:assert")
-const {ConfirmModeOf, ConfirmValues, ThresholdError, ThresholdInUse} = require("./settings_core")
+const {ApproveModeOf, ApproveValues, ThresholdError, ThresholdInUse} = require("./settings_core")
 
 test("stored settings read as the choice they amount to", () => {
-    assert.equal(ConfirmModeOf({}), "every")
-    assert.equal(ConfirmModeOf({PasswordThreshold: 0, ConfirmSends: true}), "every")
-    assert.equal(ConfirmModeOf({PasswordThreshold: 5000}), "limit")
-    assert.equal(ConfirmModeOf({PasswordThreshold: 5000, ConfirmSends: false}), "never")
-    assert.equal(ConfirmModeOf({PasswordThreshold: 0, ConfirmSends: false}), "never")
+    assert.equal(ApproveModeOf({}), "every")
+    assert.equal(ApproveModeOf({PasswordThreshold: 0, ApproveSends: true}), "every")
+    assert.equal(ApproveModeOf({PasswordThreshold: 5000}), "limit")
+    assert.equal(ApproveModeOf({PasswordThreshold: 5000, ApproveSends: false}), "never")
+    assert.equal(ApproveModeOf({PasswordThreshold: 0, ApproveSends: false}), "never")
 })
 
 // The regression: the threshold field stays on the page under every choice, and
@@ -36,7 +36,7 @@ test("only a running total is held to a valid threshold", () => {
 })
 
 test("a choice is stored without any threshold it doesn't use", () => {
-    assert.deepEqual(ConfirmValues("every", "500"), {PasswordThreshold: 0, ConfirmSends: true})
-    assert.deepEqual(ConfirmValues("limit", "500"), {PasswordThreshold: 500, ConfirmSends: true})
-    assert.deepEqual(ConfirmValues("never", "500"), {PasswordThreshold: 0, ConfirmSends: false})
+    assert.deepEqual(ApproveValues("every", "500"), {PasswordThreshold: 0, ApproveSends: true})
+    assert.deepEqual(ApproveValues("limit", "500"), {PasswordThreshold: 500, ApproveSends: true})
+    assert.deepEqual(ApproveValues("never", "500"), {PasswordThreshold: 0, ApproveSends: false})
 })

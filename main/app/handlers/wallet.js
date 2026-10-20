@@ -217,9 +217,9 @@ const createWallet = async (winId, walletName, useSeed, keyList, addressList, pa
 // A wallet whose owner has set a spend budget gets a session: main keeps the
 // password sealed under a key it does not retain, and hands that key to the
 // renderer. Neither half is a password on its own, and a spend needs both. An
-// owner who turned confirmation off gets one too, with no budget to it. There is
+// owner who turned approval off gets one too, with no budget to it. There is
 // nothing to seal for a wallet with no password, or one whose budget is zero and
-// whose confirmation is on - which is every wallet until somebody changes it - so
+// whose approval is on - which is every wallet until somebody changes it - so
 // those get no session here.
 //
 // A passwordless wallet's budget session opens in one place only: after a person
@@ -228,7 +228,7 @@ const createWallet = async (winId, walletName, useSeed, keyList, addressList, pa
 // free by asking again, which costs an encrypted wallet the password every time
 // and would cost a passwordless one nothing.
 const openSession = (walletState, password) => {
-    const wanted = spendThreshold(walletState.wallet) || !confirmsSends(walletState.wallet)
+    const wanted = spendThreshold(walletState.wallet) || !approvesSends(walletState.wallet)
     if (!walletState.encrypted || !wanted || !password) {
         return {}
     }
@@ -246,9 +246,9 @@ const spendThreshold = (wallet) => {
 // one with no password, the password for an encrypted one. On unless its owner
 // turned it off - including for files from before the setting existed, which
 // read as the default.
-const confirmsSends = (wallet) => {
+const approvesSends = (wallet) => {
     const settings = (wallet && wallet.settings) || {}
-    return settings[keystore.ConfirmSetting] !== false
+    return settings[keystore.ApproveSetting] !== false
 }
 
 // An update can outlive the window that asked for it: several are queued behind
@@ -316,10 +316,10 @@ const updateWallet = async (winId, op, values, password) => {
     // That read happens below, and doubles as the source of the settings being
     // replaced. The same rule with no password to prove: the settings decide when a spend
     // is put in front of a person, so a change that loosens that - turning
-    // confirmation off, or raising how much may leave unseen - is itself put in
+    // approval off, or raising how much may leave unseen - is itself put in
     // front of a person, in main's own window. Otherwise anything that can
     // reach this handler could quietly grant itself the silent sends the
-    // confirmation exists to prevent. Tightening passes freely: taking
+    // approval exists to prevent. Tightening passes freely: taking
     // protection away from an attacker needs no ceremony. An encrypted wallet
     // has proved the password by now, which is the whole gate for its budget,
     // and is asked only about turning the password off. That dialog is not a
@@ -328,18 +328,18 @@ const updateWallet = async (winId, op, values, password) => {
     // page the wallet is put in words the page cannot draw or cover.
     if (changingSettings) {
         const {wallet: stored} = await keystore.ReadWallet(filename, encrypted ? password : undefined)
-        await confirmLoosenedSpending(winId, encrypted, keystore.PublicWallet(stored).settings, values)
+        await approveLoosenedSpending(winId, encrypted, keystore.PublicWallet(stored).settings, values)
     }
     // An imported key widens what the wallet calls its own: its address joins
     // the owned lists, so payments routed there read as change - kept out of
-    // the outgoing total and the leaving-payments list a send confirmation
+    // the outgoing total and the leaving-payments list a send approval
     // shows. On an encrypted wallet the import already needs the password,
     // because the keys live in the secret envelope. With no password to prove,
     // the import is put in front of the person at the machine - otherwise
     // anything that can reach this handler could slip in a key it generated
     // and collect "change" at an address it controls.
     if (op === "addKeys" && !encrypted) {
-        await confirmKeyImport(winId)
+        await approveKeyImport(winId)
     }
     // Removal is the same list through the other door, gated the same way. It
     // injects nothing - the owned set only shrinks - but it is destructive:
@@ -347,7 +347,7 @@ const updateWallet = async (winId, op, values, password) => {
     // are unspendable. An encrypted wallet's gate stays the password the
     // envelope read demands.
     if (op === "removeKeys" && !encrypted) {
-        await confirmKeyRemoval(winId)
+        await approveKeyRemoval(winId)
     }
     await keystore.WithWalletLock(filename, async () => {
         if (keystore.UpdateTouchesSecret(op)) {
@@ -410,25 +410,25 @@ const readForOperation = async (winId, password) =>
     readCaptured(GetWallet(winId), password)
 
 // Asks the person at the machine whether a wallet may loosen its spend
-// confirmation. Judged against the file's settings, not any window's cache, and
+// approval. Judged against the file's settings, not any window's cache, and
 // asked in a native dialog the page cannot draw, cover, or answer. Declining
 // throws, so nothing is written. An encrypted wallet's budget is already gated
 // by the password, so only turning the password off is asked about there - as
 // a ceremony for the choice, not as a second lock (see updateWallet).
-const confirmLoosenedSpending = async (winId, encrypted, current, values) => {
+const approveLoosenedSpending = async (winId, encrypted, current, values) => {
     const requested = {...current, ...(values || {})}
-    const confirmedNow = current[keystore.ConfirmSetting] !== false
-    const confirmedAfter = requested[keystore.ConfirmSetting] !== false
+    const approvesNow = current[keystore.ApproveSetting] !== false
+    const approvesAfter = requested[keystore.ApproveSetting] !== false
     const thresholdNow = current[keystore.ThresholdSetting] || 0
     const thresholdAfter = requested[keystore.ThresholdSetting] || 0
     // A wallet already sending silently has nothing left to loosen; enabling
-    // confirmation, or lowering how much may go unseen, only tightens.
-    const loosens = confirmedNow &&
-        (!confirmedAfter || (!encrypted && thresholdAfter > thresholdNow))
+    // approval, or lowering how much may go unseen, only tightens.
+    const loosens = approvesNow &&
+        (!approvesAfter || (!encrypted && thresholdAfter > thresholdNow))
     if (!loosens) {
         return
     }
-    const asking = !confirmedAfter && encrypted
+    const asking = !approvesAfter && encrypted
         ? {
             message: "Let this wallet send without the password?",
             detail: "While this wallet is open, anything running in the wallet " +
@@ -436,10 +436,10 @@ const confirmLoosenedSpending = async (winId, encrypted, current, values) => {
                 "nothing shown. The file stays encrypted, and exports still ask " +
                 "for the password. You can turn it back on in Settings.",
         }
-        : !confirmedAfter
+        : !approvesAfter
         ? {
             message: "Let this wallet send without asking?",
-            detail: "This wallet has no password. With confirmation off, anything " +
+            detail: "This wallet has no password. With approval off, anything " +
                 "running in the wallet window can send coins with no window like " +
                 "this appearing first. You can turn it back on in Settings.",
         }
@@ -447,18 +447,18 @@ const confirmLoosenedSpending = async (winId, encrypted, current, values) => {
             message: "Let up to " + thresholdAfter.toLocaleString("en-US") +
                 " satoshis leave without asking?",
             detail: "Sends will go through with nothing shown until they add up " +
-                "to that amount. Token sends are always confirmed.",
+                "to that amount. Token sends are always approved.",
         }
     const {response} = await dialog.showMessageBox(GetWindow(winId), {
         type: "warning",
         buttons: ["Cancel", "Allow"],
         defaultId: 0,
         cancelId: 0,
-        title: "Spend confirmation",
+        title: "Spend approval",
         ...asking,
     })
     if (response !== 1) {
-        throw new Error("not allowed in the confirmation dialog")
+        throw new Error("not allowed in the approval dialog")
     }
 }
 
@@ -467,7 +467,7 @@ const confirmLoosenedSpending = async (winId, encrypted, current, values) => {
 // main, modal to the asking window, impossible for the page to cover or
 // answer. Importing is a rare, deliberate act, so the friction lands on
 // nobody's routine. Declining throws, so nothing is written.
-const confirmKeyImport = async (winId) => {
+const approveKeyImport = async (winId) => {
     const {response} = await dialog.showMessageBox(GetWindow(winId), {
         type: "warning",
         buttons: ["Cancel", "Import"],
@@ -481,11 +481,11 @@ const confirmKeyImport = async (winId) => {
             "key, cancel.",
     })
     if (response !== 1) {
-        throw new Error("not allowed in the confirmation dialog")
+        throw new Error("not allowed in the approval dialog")
     }
 }
 
-// The removal mirror of confirmKeyImport: on a passwordless wallet, forgetting
+// The removal mirror of approveKeyImport: on a passwordless wallet, forgetting
 // a key is asked of the person at the machine, in the same dialog main draws
 // for the import. Losing a key is not the theft the import gate closes, but a
 // wallet whose owner kept no backup loses the coins at that address with it.
@@ -493,7 +493,7 @@ const confirmKeyImport = async (winId) => {
 // and bind the write to that same capture: the dialog waits on a person, and
 // nothing suspends the renderer while it waits - it could open a different
 // wallet on the same window, and an approval must not carry over to it.
-const confirmKeyRemoval = async (winId) => {
+const approveKeyRemoval = async (winId) => {
     const {response} = await dialog.showMessageBox(GetWindow(winId), {
         type: "warning",
         buttons: ["Cancel", "Remove"],
@@ -507,7 +507,7 @@ const confirmKeyRemoval = async (winId) => {
             "choose to remove a key, cancel.",
     })
     if (response !== 1) {
-        throw new Error("not allowed in the confirmation dialog")
+        throw new Error("not allowed in the approval dialog")
     }
 }
 
@@ -520,7 +520,7 @@ const confirmKeyRemoval = async (winId) => {
 // waits on a person while the renderer keeps running, and an approval - or an
 // encrypted wallet's dialogless pass-through - must not carry over to a wallet
 // swapped onto the window mid-flight.
-const confirmPasswordlessExport = async (winId, state, message, detail) => {
+const approvePasswordlessExport = async (winId, state, message, detail) => {
     // No wallet is the caller's problem, reported by the read that follows;
     // an encrypted wallet's gate is knowing the password.
     if (!state || state.encrypted) {
@@ -580,7 +580,7 @@ const exportPrivateKey = async (state, address, password) =>
     walletKey((await readCaptured(state, password)).wallet, address)
 
 // Works entirely from the state its caller captured, never from the window's
-// current state: a removal that was confirmed over one wallet must land on
+// current state: a removal that was approved over one wallet must land on
 // that wallet's file, whatever the window has been switched to since.
 const removePrivateKey = async (state, address, password) => {
     const {wallet: stored} = await keystore.ReadWallet(
@@ -637,7 +637,7 @@ const stillUnlimited = (winId, began) => {
 // began.
 const stillSkipsApproval = (winId) => {
     const state = GetWallet(winId)
-    return !!state && !confirmsSends(state.wallet)
+    return !!state && !approvesSends(state.wallet)
 }
 
 // Records what the session has spent, and closes it once the budget is gone:
@@ -666,7 +666,7 @@ const chargeSession = (winId, outgoing) => {
 //
 // This grants the preview nothing its parent didn't already have: the budget is
 // the parent's, checked and charged against the parent's session, and a payment
-// leaving the wallet is still confirmed - over the parent window, since that is
+// leaving the wallet is still approved - over the parent window, since that is
 // whose session pays for it.
 //
 // A parent that cannot answer - closed, or reloaded and no longer holding the
@@ -743,21 +743,21 @@ const signHere = async (e, request) =>
 // Signing what the renderer built, on one of two authorities: a session with
 // budget left - or with none to run out, its owner having turned the password
 // off - which asks nobody anything, or a password typed into main's own
-// window, which also confirms where the money is going. Which one applies is
+// window, which also approves where the money is going. Which one applies is
 // decided here and never by the caller - the renderer offers a session key it
 // cannot read and finds out whether that was enough.
 const signOne = async (e, request, sessionKey, mayRelay = true) => {
     const winId = e.sender.id
     try {
         const state = GetWallet(winId)
-        const sign = async ({wallet, metered, authorizeSpend, confirmSpend}) => SignTransaction({
+        const sign = async ({wallet, metered, authorizeSpend, approveSpend}) => SignTransaction({
             raw: request.raw,
             inputs: request.inputs,
             beatHash: request.beatHash,
             wallet,
             getOutput: (hash, index) => GetOutput(eConf(e), hash, index),
             authorizeSpend: metered ? (spend) => withinBudget(winId, spend) : authorizeSpend,
-            confirmSpend,
+            approveSpend,
         })
         // A wallet with no password still puts a person in front of its sends,
         // unless its owner turned that off: every signature is approved in
@@ -771,12 +771,12 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
             // Approval off is asked again once the spend is analysed, as the
             // encrypted session below is: the prevout reads are long enough
             // for the owner to turn it back on under this send.
-            if (!confirmsSends(state.wallet)) {
+            if (!approvesSends(state.wallet)) {
                 try {
                     return {ok: true, value: await sign({
                         wallet,
                         authorizeSpend: () => stillSkipsApproval(winId),
-                        confirmSpend: async () => true,
+                        approveSpend: async () => true,
                     })}
                 } catch (error) {
                     if (error.message !== WalletErrors.PasswordRequired) {
@@ -790,7 +790,7 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
                     const value = await sign({
                         wallet,
                         metered: true,
-                        confirmSpend: async () => true,
+                        approveSpend: async () => true,
                     })
                     chargeSession(winId, value.outgoing)
                     return {ok: true, value}
@@ -805,18 +805,18 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
             return await approvedSign(winId, sign, wallet)
         }
         const spending = spendPassword(winId, sessionKey)
-        // Confirmation off is a session with no budget: nothing metered or
+        // Approval off is a session with no budget: nothing metered or
         // charged, tokens included, for as long as the session lasts. Whether
         // it still lasts is asked again once the spend is analysed, the way the
         // budget is: the prevout reads take long enough for the owner to turn
-        // confirmation back on, or for the window to close or open another
+        // approval back on, or for the window to close or open another
         // wallet, and any of those replaces the session this send began on.
-        if (spending !== undefined && !confirmsSends(state.wallet)) {
+        if (spending !== undefined && !approvesSends(state.wallet)) {
             try {
                 return {ok: true, value: await sign({
                     wallet: (await readForOperation(winId, spending)).wallet,
                     authorizeSpend: () => stillUnlimited(winId, state.session),
-                    confirmSpend: async () => true,
+                    approveSpend: async () => true,
                 })}
             } catch (error) {
                 if (error.message !== WalletErrors.PasswordRequired) {
@@ -833,7 +833,7 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
                 const value = await sign({
                     wallet: (await readForOperation(winId, spending)).wallet,
                     metered: true,
-                    confirmSpend: async () => true,
+                    approveSpend: async () => true,
                 })
                 chargeSession(winId, value.outgoing)
                 return {ok: true, value}
@@ -868,7 +868,7 @@ const signOne = async (e, request, sessionKey, mayRelay = true) => {
 }
 
 // A passwordless wallet's signature, put in front of the person at the machine
-// from inside the signer's confirmation hook - so what it shows is what the
+// from inside the signer's approval hook - so what it shows is what the
 // keys establish, not a preview to reconcile later.
 //
 // An approval is also what starts the budget, when the owner has set one: the
@@ -881,7 +881,7 @@ const approvedSign = async (winId, sign, wallet) => {
     try {
         const value = await sign({
             wallet,
-            confirmSpend: async (actual) => {
+            approveSpend: async (actual) => {
                 prompt = await OpenSpendPrompt(GetWindow(winId))
                 approved = await prompt.approve(actual)
                 return approved
@@ -926,8 +926,8 @@ const promptedSign = async (winId, sign, preview) => {
             }
             const value = await sign({
                 wallet,
-                confirmSpend: async (actual) =>
-                    CoversSpend(preview, actual) || prompt.confirm(actual),
+                approveSpend: async (actual) =>
+                    CoversSpend(preview, actual) || prompt.approveMismatch(actual),
             })
             // Typing the password starts the budget again from the moment
             // somebody proved they were there, which is also how a session that
@@ -961,7 +961,7 @@ const WalletHandlers = () => {
     ipcMain.handle(Handlers.ExportSeed, async (e, password) =>
         operationResult(async () => {
             const state = GetWallet(e.sender.id)
-            await confirmPasswordlessExport(e.sender.id, state,
+            await approvePasswordlessExport(e.sender.id, state,
                 "Reveal this wallet's seed phrase?",
                 "This wallet has no password. The seed phrase is the whole " +
                 "wallet: anyone who reads it can take everything it holds, " +
@@ -971,7 +971,7 @@ const WalletHandlers = () => {
     ipcMain.handle(Handlers.ExportPrivateKey, async (e, address, password) =>
         operationResult(async () => {
             const state = GetWallet(e.sender.id)
-            await confirmPasswordlessExport(e.sender.id, state,
+            await approvePasswordlessExport(e.sender.id, state,
                 "Reveal the private key for this address?",
                 "This wallet has no password. Anyone who reads the key can " +
                 "spend everything the address holds.")
@@ -987,7 +987,7 @@ const WalletHandlers = () => {
             // update queued behind it.
             const state = GetWallet(e.sender.id)
             if (state && !state.encrypted) {
-                await confirmKeyRemoval(e.sender.id)
+                await approveKeyRemoval(e.sender.id)
             }
             return keystore.WithWalletLock(state.filename,
                 () => removePrivateKey(state, address, password))

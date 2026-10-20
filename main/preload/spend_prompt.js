@@ -44,10 +44,10 @@ window.addEventListener("DOMContentLoaded", () => {
     let asking = "password"
 
     const submit = () => {
-        // The two steps with no password box: the mismatch re-confirmation, and
+        // The two steps with no password box: the mismatch re-approval, and
         // a passwordless wallet's approval. Seeing the payments is the answer.
-        if (asking === "confirm" || asking === "approve") {
-            reply({confirmed: true})
+        if (asking === "mismatch" || asking === "approve") {
+            reply({approved: true})
             return
         }
         // An empty box is not an answer: leave the window as it is rather than
@@ -70,14 +70,14 @@ window.addEventListener("DOMContentLoaded", () => {
     ipcRenderer.on(Listeners.SpendPromptStep, (e, step) => {
         asking = step.name
         ok.disabled = false
-        const confirming = step.name === "confirm"
+        const mismatch = step.name === "mismatch"
         const typing = step.name === "password"
-        show(el("mismatch"), confirming)
+        show(el("mismatch"), mismatch)
         show(passwordStep, typing)
         show(wrong, typing && step.wrong === true)
         const total = step.payments.reduce((sum, {value}) => sum + value, 0)
         const tokens = step.payments.some(({tokenAmount, baton}) => tokenAmount || baton)
-        el("heading").textContent = confirming ? "This pays somewhere else" :
+        el("heading").textContent = mismatch ? "This pays somewhere else" :
             (step.payments.length ? "Send out of this wallet?" : "Sign this transaction?")
         el("summary").textContent = !step.payments.length ?
             "Nothing leaves this wallet except the network fee." :
@@ -97,7 +97,7 @@ window.addEventListener("DOMContentLoaded", () => {
             return row
         }))
         el("fee").textContent = "Network fee: " + satoshis(step.fee)
-        ok.textContent = confirming ? "Send anyway" : (step.payments.length ? "Send" : "Sign")
+        ok.textContent = mismatch ? "Send anyway" : (step.payments.length ? "Send" : "Sign")
         if (typing) {
             password.focus()
         }

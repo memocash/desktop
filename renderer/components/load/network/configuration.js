@@ -31,7 +31,7 @@ const NetworkConfiguration = ({setPane}) => {
         checkFormDifference()
     }
     const onSelectChange = () => {
-        const confirmMessage = "" +
+        const discardMessage = "" +
             "You have unsaved changes.\n" +
             "Are you sure you want to select another network?\n" +
             "Changes will be lost."
@@ -40,7 +40,7 @@ const NetworkConfiguration = ({setPane}) => {
             currentId: network.Id,
             nextId: selectValueRef.current.value,
             hasChanged,
-            confirmDiscard: () => confirm(confirmMessage),
+            approveDiscard: () => confirm(discardMessage),
         })
         if (next.revertTo !== undefined) {
             selectValueRef.current.value = next.revertTo
@@ -91,11 +91,11 @@ const NetworkConfiguration = ({setPane}) => {
         }
     }
     const clickBack = () => {
-        const confirmMessage = "" +
+        const discardMessage = "" +
             "You have unsaved changes.\n" +
             "Are you sure you want to go back?\n" +
             "Changes will be lost."
-        if (hasChanged && !confirm(confirmMessage)) {
+        if (hasChanged && !confirm(discardMessage)) {
             return false
         }
         setPane(Panes.Step1ChooseFile)

@@ -9,8 +9,8 @@ const {IsLoopbackHost} = require("../../../../main/common/util/network_config")
 // network, unless unsaved changes make it ask first - and a declined ask
 // keeps the current network, telling the caller to put the highlight back.
 // A clean form never asks.
-const NextSelection = ({options, currentId, nextId, hasChanged, confirmDiscard}) => {
-    if (hasChanged && !confirmDiscard()) {
+const NextSelection = ({options, currentId, nextId, hasChanged, approveDiscard}) => {
+    if (hasChanged && !approveDiscard()) {
         return {revertTo: currentId}
     }
     return {network: options.find((option) => option.Id === nextId)}

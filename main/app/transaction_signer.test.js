@@ -49,7 +49,7 @@ test("signs using authoritative prevout metadata", async () => {
 })
 
 test("what leaves the wallet is the payment plus the fee", async () => {
-    const signed = await SignTransaction({...payment(), confirmSpend: async () => true})
+    const signed = await SignTransaction({...payment(), approveSpend: async () => true})
     assert.equal(signed.outgoing, 9000 + signed.fee)
     assert.equal(signed.fee, 1000)
     assert.equal(signed.carriesTokens, false)
@@ -410,32 +410,32 @@ const payment = ({outputValue = 9000} = {}) => {
     return {...request(), raw: txb.toBuffer().toString("hex")}
 }
 
-test("a payment leaving the wallet is refused when there is no way to confirm it", async () => {
-    await assert.rejects(SignTransaction(payment()), {message: /needs confirmation/})
+test("a payment leaving the wallet is refused when there is no way to approve it", async () => {
+    await assert.rejects(SignTransaction(payment()), {message: /needs approval/})
 })
 
 test("listing an address the wallet has no key for does not make it change", async () => {
     // The address lists are public metadata a renderer rewrites without a
     // password, so appending a destination to them must not pass it off as
-    // change and skip the confirmation.
+    // change and skip the approval.
     const listed = payment()
     listed.wallet = {...listed.wallet, addresses: [address, outside]}
-    await assert.rejects(SignTransaction(listed), {message: /needs confirmation/})
+    await assert.rejects(SignTransaction(listed), {message: /needs approval/})
 
     const changeList = payment()
     changeList.wallet = {...changeList.wallet, changeList: [outside]}
-    await assert.rejects(SignTransaction(changeList), {message: /needs confirmation/})
+    await assert.rejects(SignTransaction(changeList), {message: /needs approval/})
 
     const slpList = payment()
     slpList.wallet = {...slpList.wallet, slpList: [outside]}
-    await assert.rejects(SignTransaction(slpList), {message: /needs confirmation/})
+    await assert.rejects(SignTransaction(slpList), {message: /needs approval/})
 })
 
-test("confirmation names each outside destination, its amount, and the fee", async () => {
+test("approval names each outside destination, its amount, and the fee", async () => {
     const asked = []
     const signed = await SignTransaction({
         ...payment(),
-        confirmSpend: async (request) => {
+        approveSpend: async (request) => {
             asked.push(request)
             return true
         },
@@ -447,11 +447,11 @@ test("confirmation names each outside destination, its amount, and the fee", asy
     assert.equal(asked[0].fee, 1000)
 })
 
-test("a declined confirmation signs nothing", async () => {
+test("a declined approval signs nothing", async () => {
     let asked = 0
     await assert.rejects(SignTransaction({
         ...payment(),
-        confirmSpend: async () => {
+        approveSpend: async () => {
             asked++
             return false
         },
@@ -471,7 +471,7 @@ test("change and data outputs are not a spend, but a caller that can ask is aske
     // One that can ask is asked, with no payments and the fee - a post costs
     // its fee, and the person seeing it is what keeps that fee small.
     const asked = []
-    await assert.rejects(SignTransaction({...post, confirmSpend: async (spend) => {
+    await assert.rejects(SignTransaction({...post, approveSpend: async (spend) => {
         asked.push(spend)
         return false
     }}), {message: "spend-cancelled"})
@@ -484,7 +484,7 @@ test("value attached to a data output is treated as leaving the wallet", async (
     txb.addOutput(bscript.compile(
         [opcodes.OP_RETURN, Buffer.from("burn")]), 9000)
     const burn = {...request(), raw: txb.toBuffer().toString("hex")}
-    await assert.rejects(SignTransaction(burn), {message: /needs confirmation/})
+    await assert.rejects(SignTransaction(burn), {message: /needs approval/})
 })
 
 test("an output whose script names no address counts as leaving the wallet", async () => {
@@ -493,7 +493,7 @@ test("an output whose script names no address counts as leaving the wallet", asy
     txb.addOutput(bscript.compile([opcodes.OP_TRUE]), 9000)
     const odd = {...request(), raw: txb.toBuffer().toString("hex")}
     let asked
-    assert.ok((await SignTransaction({...odd, confirmSpend: async (request) => {
+    assert.ok((await SignTransaction({...odd, approveSpend: async (request) => {
         asked = request
         return true
     }})).raw)
@@ -501,7 +501,7 @@ test("an output whose script names no address counts as leaving the wallet", asy
         [{address: undefined, value: 9000, tokenAmount: undefined, baton: false}])
 })
 
-test("confirmation reports the token amount an outside output carries", async () => {
+test("approval reports the token amount an outside output carries", async () => {
     const tokenHash = "aa".repeat(32)
     const sendScript = Buffer.concat([
         Buffer.from([opcodes.OP_RETURN]),
@@ -529,7 +529,7 @@ test("confirmation reports the token amount an outside output carries", async ()
         slp_token_type: 1,
     })
     let asked
-    const signed = await SignTransaction({...send, confirmSpend: async (request) => {
+    const signed = await SignTransaction({...send, approveSpend: async (request) => {
         asked = request
         return true
     }})
@@ -573,10 +573,10 @@ const mint = ({mintTo, batonTo, batonVout = Buffer.from([2])}) => {
     }
 }
 
-test("confirmation reports minted tokens sent outside the wallet", async () => {
+test("approval reports minted tokens sent outside the wallet", async () => {
     let asked
     assert.ok((await SignTransaction({...mint({mintTo: outside, batonTo: address}),
-        confirmSpend: async (request) => {
+        approveSpend: async (request) => {
             asked = request
             return true
         }})).raw)
@@ -584,10 +584,10 @@ test("confirmation reports minted tokens sent outside the wallet", async () => {
         [{address: outside, value: 546, tokenAmount: "1000", baton: false}])
 })
 
-test("confirmation reports a mint baton leaving the wallet", async () => {
+test("approval reports a mint baton leaving the wallet", async () => {
     let asked
     assert.ok((await SignTransaction({...mint({mintTo: address, batonTo: outside}),
-        confirmSpend: async (request) => {
+        approveSpend: async (request) => {
             asked = request
             return true
         }})).raw)
@@ -596,7 +596,7 @@ test("confirmation reports a mint baton leaving the wallet", async () => {
         [{address: outside, value: 546, tokenAmount: undefined, baton: true}])
 })
 
-test("a mint keeping its tokens and baton needs no confirmation", async () => {
+test("a mint keeping its tokens and baton needs no approval", async () => {
     assert.ok((await SignTransaction(mint({mintTo: address, batonTo: address}))).raw)
 })
 
@@ -650,14 +650,14 @@ test("the preview reads the address list where signing reads the keys", async ()
     const preview = await PreviewSpend(listed)
     assert.deepEqual(preview.payments, [])
     assert.equal(preview.fee, 1000)
-    let confirmed
-    await SignTransaction({...listed, confirmSpend: async (spend) => {
-        confirmed = spend
+    let approved
+    await SignTransaction({...listed, approveSpend: async (spend) => {
+        approved = spend
         return true
     }})
-    assert.equal(confirmed.payments.length, 1)
-    assert.equal(confirmed.payments[0].address, foreign)
-    assert.equal(confirmed.payments[0].value, 9000)
+    assert.equal(approved.payments.length, 1)
+    assert.equal(approved.payments[0].address, foreign)
+    assert.equal(approved.payments[0].value, 9000)
 })
 
 // The ordering constraint is renderer-supplied and compared as a string against

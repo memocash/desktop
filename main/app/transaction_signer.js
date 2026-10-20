@@ -365,7 +365,7 @@ const analyzeSpend = async ({raw, inputs, wallet, getOutput, findKey}) => {
     // spend it again, plus the fee. Change is not spent, and neither is a data
     // output. Known before any key work, so a caller that meters spending can
     // refuse from the authoritative figure rather than from anything the
-    // renderer offered - and refuse before anyone is asked to confirm a
+    // renderer offered - and refuse before anyone is asked to approve a
     // transaction that isn't going to be signed.
     const outgoing = payments.reduce((total, {value}) => total + value, 0) + fee
     const carriesTokens = payments.some(({tokenAmount, baton}) => !!tokenAmount || baton)
@@ -387,7 +387,7 @@ const PreviewSpend = async ({raw, inputs, wallet, getOutput}) => {
     return {fee, payments}
 }
 
-const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, authorizeSpend, confirmSpend}) => {
+const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, authorizeSpend, approveSpend}) => {
     if (!wallet.seed && !(wallet.keys && wallet.keys.length)) {
         throw new Error("watch-only-wallet")
     }
@@ -409,10 +409,10 @@ const SignTransaction = async ({raw, inputs, beatHash, wallet, getOutput, author
     // much as a payment: the fee is what leaves on those, and the only thing
     // that keeps it small is a person seeing it. A caller with no way to ask
     // can still sign what stays in the wallet, never what leaves it.
-    if (payments.length && typeof confirmSpend !== "function") {
-        throw new Error("a payment leaving the wallet needs confirmation")
+    if (payments.length && typeof approveSpend !== "function") {
+        throw new Error("a payment leaving the wallet needs approval")
     }
-    if (typeof confirmSpend === "function" && !await confirmSpend({payments, fee})) {
+    if (typeof approveSpend === "function" && !await approveSpend({payments, fee})) {
         throw new Error(WalletErrors.SpendCancelled)
     }
 

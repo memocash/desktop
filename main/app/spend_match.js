@@ -10,7 +10,7 @@
 //
 // A payment the preview did not show is the shape of a compromised renderer
 // getting a signature for somewhere else, so it is not signed on the strength of
-// the first answer: it goes back to be confirmed against what the keys say.
+// the first answer: it goes back to be approved against what the keys say.
 
 const identity = ({address, value, tokenAmount, baton}) =>
     JSON.stringify([address || "", value, tokenAmount || "", baton === true])

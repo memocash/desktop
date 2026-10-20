@@ -19,16 +19,16 @@ test("selection change switches, asks when dirty, and reverts when declined", ()
     const options = config().Networks
     let asked = 0
     const clean = NextSelection({options, currentId: "bch", nextId: "bsv",
-        hasChanged: false, confirmDiscard: () => { asked++; return false }})
+        hasChanged: false, approveDiscard: () => { asked++; return false }})
     assert.equal(clean.network.Id, "bsv")
     assert.equal(asked, 0)
     const declined = NextSelection({options, currentId: "bch", nextId: "bsv",
-        hasChanged: true, confirmDiscard: () => { asked++; return false }})
+        hasChanged: true, approveDiscard: () => { asked++; return false }})
     assert.deepEqual(declined, {revertTo: "bch"})
     assert.equal(asked, 1)
-    const confirmed = NextSelection({options, currentId: "bch", nextId: "bsv",
-        hasChanged: true, confirmDiscard: () => true})
-    assert.equal(confirmed.network.Id, "bsv")
+    const approved = NextSelection({options, currentId: "bch", nextId: "bsv",
+        hasChanged: true, approveDiscard: () => true})
+    assert.equal(approved.network.Id, "bsv")
 })
 
 // A save the validator refuses rejects before the result exists, so the

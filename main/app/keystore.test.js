@@ -218,13 +218,13 @@ test("changing settings fills in the defaults and keeps untouched values", () =>
     ApplyWalletUpdate(wallet, "changeSettings", {})
     // A wallet asks for its password - or, passwordless, an approval - on every
     // send until someone says otherwise.
-    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 0, ConfirmSends: true})
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 0, ApproveSends: true})
     ApplyWalletUpdate(wallet, "changeSettings", {PasswordThreshold: 10000})
-    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 10000, ConfirmSends: true})
+    assert.deepEqual(wallet.settings, {DirectTx: false, PasswordThreshold: 10000, ApproveSends: true})
     ApplyWalletUpdate(wallet, "changeSettings", {DirectTx: true})
-    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ConfirmSends: true})
-    ApplyWalletUpdate(wallet, "changeSettings", {ConfirmSends: false})
-    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ConfirmSends: false})
+    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ApproveSends: true})
+    ApplyWalletUpdate(wallet, "changeSettings", {ApproveSends: false})
+    assert.deepEqual(wallet.settings, {DirectTx: true, PasswordThreshold: 10000, ApproveSends: false})
 })
 
 test("a spend budget has to be a whole number of satoshis", () => {
@@ -232,11 +232,11 @@ test("a spend budget has to be a whole number of satoshis", () => {
         assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {PasswordThreshold: threshold}),
             {message: /whole number of satoshis/}, "accepted " + threshold)
     }
-    // The confirmation switch is policy the same way, so its shape is held to
+    // The approval switch is policy the same way, so its shape is held to
     // the same standard: a boolean or nothing.
-    for (const confirm of ["off", 0, 1, null]) {
-        assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {ConfirmSends: confirm}),
-            {message: /on or off/}, "accepted " + confirm)
+    for (const approve of ["off", 0, 1, null]) {
+        assert.throws(() => ApplyWalletUpdate({}, "changeSettings", {ApproveSends: approve}),
+            {message: /on or off/}, "accepted " + approve)
     }
     // Zero is a policy, not a missing value: it means ask every time.
     const wallet = {}
@@ -428,6 +428,31 @@ test("a public update rewrites the wallet without the password", async () => {
     assert.deepEqual(wallet.addresses, ["addr1", "addr2"])
     assert.equal(wallet.seed, "seed words here")
     assert.deepEqual(wallet.keys, ["WIFkey"])
+})
+
+// The approval switch was stored as ConfirmSends through 0.2.2. A file from then
+// reads under the current name, and moves over on its first public write.
+test("a wallet stored with ConfirmSends reads and rewrites as ApproveSends", async () => {
+    const legacy = {...NewWallet("seed words here", [], ["addr1"]), settings: {ConfirmSends: false}}
+    assert.deepEqual(PublicWallet(legacy).settings,
+        {DirectTx: false, PasswordThreshold: 0, ApproveSends: false})
+    // Both present: the current name wins and the old one goes.
+    assert.deepEqual(PublicWallet({settings: {ConfirmSends: false, ApproveSends: true}}).settings,
+        {DirectTx: false, PasswordThreshold: 0, ApproveSends: true})
+    const applied = {settings: {ConfirmSends: false}}
+    ApplyWalletUpdate(applied, "changeSettings", {})
+    assert.deepEqual(applied.settings, {DirectTx: false, PasswordThreshold: 0, ApproveSends: false})
+
+    const walletPath = await tempWallet("legacy_confirm_sends")
+    await WriteWallet(walletPath, legacy, "hunter2")
+    const {integrityKey} = await ReadWallet(walletPath, "hunter2")
+    // A public write that says nothing about settings still moves the file over,
+    // and what it returns is what the windows' caches are rebuilt from.
+    const publicData = await UpdatePublic(walletPath, integrityKey, (data) =>
+        ApplyWalletUpdate(data, "addAddresses", ["addr2"]))
+    assert.deepEqual(publicData.settings, {ApproveSends: false})
+    const {wallet} = await ReadWallet(walletPath, "hunter2")
+    assert.deepEqual(wallet.settings, {ApproveSends: false})
 })
 
 test("a public update cannot be signed with another wallet's integrity key", async () => {

@@ -7,7 +7,7 @@ const later = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 test("operations under one name never overlap", async () => {
     const order = []
     // The shape of the spend budget: read a value, wait for something slow -
-    // a confirmation dialog - and only then write the value back.
+    // an approval dialog - and only then write the value back.
     let total = 0
     const spend = (amount, wait) => Serialize("wallet", async () => {
         const seen = total

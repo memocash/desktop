@@ -69,7 +69,7 @@ const writeStored = async (config, approved) => {
 // to the asking window, impossible for the page to cover or answer. The
 // presets and anything on this machine pass without asking, as does a server
 // approved here before. Declining throws, so nothing is written or set.
-const confirmServers = async (winId, servers, ifNot) => {
+const approveServers = async (winId, servers, ifNot) => {
     const {response} = await dialog.showMessageBox(GetWindow(winId), {
         type: "warning",
         buttons: ["Cancel", "Use server"],
@@ -87,7 +87,7 @@ const confirmServers = async (winId, servers, ifNot) => {
             "If you didn't just " + ifNot + ", cancel.",
     })
     if (response !== 1) {
-        throw new Error("not allowed in the confirmation dialog")
+        throw new Error("not allowed in the approval dialog")
     }
 }
 
@@ -105,7 +105,7 @@ const saveNetworkConfig = async (winId, networkConfig) => {
     const {approved} = await readStored()
     const untrusted = UntrustedServers(validated.Networks, approved)
     if (untrusted.length) {
-        await confirmServers(winId, untrusted, "edit the network configuration")
+        await approveServers(winId, untrusted, "edit the network configuration")
     }
     await writeStored(validated, [...approved, ...untrusted])
 }
@@ -137,7 +137,7 @@ const selectNetwork = async (winId, id) => {
     let option = config.Networks[index]
     const untrusted = UntrustedServers([option], approved)
     if (untrusted.length) {
-        await confirmServers(winId, untrusted, "choose this network");
+        await approveServers(winId, untrusted, "choose this network");
         ({config, approved} = await readStored())
         index = find(config)
         if (index === -1 || config.Networks[index].Server !== option.Server) {
